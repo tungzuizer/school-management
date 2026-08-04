@@ -1,4 +1,4 @@
-﻿    "use client";
+    "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -7,6 +7,23 @@ import {
   getDailyReportStats,
   getReportDetail,
 } from "./actions";
+import {
+  FileText,
+  Building2,
+  Calendar,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Award,
+  MessageSquare,
+  Users,
+  Clock,
+  UserX,
+  X,
+  AlertCircle,
+  BarChart3,
+  FileCheck,
+} from "lucide-react";
 
 interface ReportItem {
   id: string;
@@ -103,9 +120,11 @@ export default function AdminDailyReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold"> Báo cáo hàng ngày - Tổng hợp</h1>
-          <p className="text-gray-500 text-sm">
-            Xem tổng hợp báo cáo hàng ngày từ tất cả các lớp
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <FileText className="w-6 h-6 text-indigo-650" /> Báo cáo hàng ngày — Tổng hợp
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Xem tổng hợp báo cáo hàng ngày từ tất cả các lớp trong toàn trường
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -175,9 +194,10 @@ export default function AdminDailyReportsPage() {
           <p className="mt-2 text-gray-500">Đang tải...</p>
         </div>
       ) : reports.length === 0 ? (
-        <div className="bg-white rounded-xl border p-8 text-center text-gray-400">
-          <p className="text-4xl mb-2"></p>
-          <p>Chưa có báo cáo nào cho ngày {new Date(selectedDate).toLocaleDateString("vi-VN")}</p>
+        <div className="bg-white rounded-xl border p-12 text-center text-gray-400 shadow-sm">
+          <FileText className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+          <p className="text-sm font-semibold">Chưa có báo cáo nào được gửi</p>
+          <p className="text-xs text-gray-400 mt-1">Không tìm thấy báo cáo hàng ngày nào cho ngày {new Date(selectedDate).toLocaleDateString("vi-VN")}</p>
         </div>
       ) : (
         <div className="bg-white rounded-xl border overflow-hidden">
@@ -283,44 +303,46 @@ export default function AdminDailyReportsPage() {
             <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <div>
                 <h2 className="text-lg font-bold">
-                  Báo cáo lớp {selectedReport.classRoom.name}
+                  Báo cáo sinh hoạt lớp {selectedReport.classRoom.name}
                 </h2>
-                <p className="text-sm text-gray-500">
-                  {new Date(selectedReport.date).toLocaleDateString("vi-VN")} —{" "}
-                  {selectedReport.classRoom.school.name}
+                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>{new Date(selectedReport.date).toLocaleDateString("vi-VN")} — {selectedReport.classRoom.school.name}
                   {selectedReport.classRoom.campus
                     ? ` (${selectedReport.classRoom.campus.name})`
-                    : ""}
+                    : ""}</span>
                 </p>
               </div>
               <button
                 onClick={() => setShowDetail(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
               >
-                X
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
               {/* Summary */}
               <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Vắng</p>
+                <div className="text-center p-3 bg-gray-50 rounded-xl border">
+                  <p className="text-xs text-gray-500 font-semibold mb-0.5">Vắng</p>
                   <p className={`text-xl font-bold ${selectedReport.absentCount > 0 ? "text-red-600" : "text-green-600"}`}>
                     {selectedReport.absentCount}
                   </p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Muộn</p>
+                <div className="text-center p-3 bg-gray-50 rounded-xl border">
+                  <p className="text-xs text-gray-500 font-semibold mb-0.5">Muộn</p>
                   <p className={`text-xl font-bold ${selectedReport.lateCount > 0 ? "text-amber-600" : "text-green-600"}`}>
                     {selectedReport.lateCount}
                   </p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500">Trạng thái</p>
-                  <p className="text-sm font-medium mt-1">
-                    {selectedReport.status === "SENT" ? " Đã gửi" : " Nháp"}
-                  </p>
+                <div className="text-center p-3 bg-gray-50 rounded-xl border flex flex-col justify-center items-center">
+                  <p className="text-xs text-gray-500 font-semibold mb-0.5">Trạng thái</p>
+                  <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full mt-0.5 ${
+                    selectedReport.status === "SENT" ? "bg-green-105 text-green-700" : "bg-yellow-105 text-yellow-700"
+                  }`}>
+                    {selectedReport.status === "SENT" ? "Đã gửi" : "Bản nháp"}
+                  </span>
                 </div>
               </div>
 
@@ -339,11 +361,14 @@ export default function AdminDailyReportsPage() {
               {selectedReport.incidentSummary && (() => {
                 const incidents = parseIncidents(selectedReport.incidentSummary);
                 return (
-                  <div className="space-y-2">
+                  <div className="space-y-2 text-xs">
                     {incidents.violations?.length > 0 && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-xs font-medium text-red-700 mb-1">Vi phạm:</p>
-                        <ul className="text-sm text-red-900 space-y-1">
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                        <p className="font-bold text-red-700 mb-1 flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          <span>Vi phạm nề nếp:</span>
+                        </p>
+                        <ul className="text-red-950 space-y-1">
                           {incidents.violations.map((v: { name: string; description: string }, i: number) => (
                             <li key={i}>• <strong>{v.name}:</strong> {v.description}</li>
                           ))}
@@ -351,9 +376,12 @@ export default function AdminDailyReportsPage() {
                       </div>
                     )}
                     {incidents.commendations?.length > 0 && (
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-xs font-medium text-green-700 mb-1"> Khen thưởng:</p>
-                        <ul className="text-sm text-green-900 space-y-1">
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
+                        <p className="font-bold text-green-700 mb-1 flex items-center gap-1.5">
+                          <Award className="w-3.5 h-3.5" />
+                          <span>Khen thưởng/biểu dương từ giáo viên:</span>
+                        </p>
+                        <ul className="text-green-950 space-y-1">
                           {incidents.commendations.map((c: { name: string; description: string }, i: number) => (
                             <li key={i}>• <strong>{c.name}:</strong> {c.description}</li>
                           ))}
@@ -370,9 +398,12 @@ export default function AdminDailyReportsPage() {
                   const feedbacks = JSON.parse(selectedReport.parentFeedbackSummary);
                   if (feedbacks.length > 0) {
                     return (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-xs font-medium text-blue-700 mb-1"> Phản hồi phụ huynh:</p>
-                        <ul className="text-sm text-blue-900 space-y-1">
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs">
+                        <p className="font-bold text-blue-700 mb-1 flex items-center gap-1.5">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Ý kiến đóng góp/phản hồi từ phụ huynh:</span>
+                        </p>
+                        <ul className="text-blue-955 space-y-1">
                           {feedbacks.map((f: { studentName: string; content: string; channel?: string }, i: number) => (
                             <li key={i}>
                               • <strong>PH {f.studentName}</strong>
@@ -389,11 +420,14 @@ export default function AdminDailyReportsPage() {
               })()}
 
               {/* Report text */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-2"> Nội dung báo cáo:</p>
-                <div className="p-4 bg-gray-50 border rounded-lg whitespace-pre-wrap text-sm leading-relaxed">
+              <div className="text-xs">
+                <p className="font-bold text-gray-500 mb-2 flex items-center gap-1">
+                  <FileCheck className="w-4 h-4 text-gray-400" />
+                  <span>Nội dung báo cáo chi tiết:</span>
+                </p>
+                <div className="p-4 bg-gray-50 border rounded-xl whitespace-pre-wrap leading-relaxed text-gray-750 font-medium">
                   {selectedReport.editedText || selectedReport.aiGeneratedText || (
-                    <span className="text-gray-400 italic">Chưa có nội dung</span>
+                    <span className="text-gray-400 italic">Chưa có nội dung báo cáo ngày</span>
                   )}
                 </div>
               </div>
