@@ -1,7 +1,18 @@
-﻿"use client";
+"use client";
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import {
+  BookOpen,
+  Users,
+  LayoutGrid,
+  ClipboardList,
+  BarChart3,
+  AlertTriangle,
+  MessageSquare,
+  Building,
+  Calendar,
+} from "lucide-react";
 import {
   getHomeroomClass,
   getClassStudents,
@@ -82,6 +93,16 @@ const TABS = [
   { key: "feedback", label: "Phối hợp phụ huynh" },
 ] as const;
 
+const TAB_ICONS = {
+  overview: Users,
+  groups: LayoutGrid,
+  seating: ClipboardList,
+  conduct: BarChart3,
+  grades: ClipboardList,
+  incidents: AlertTriangle,
+  feedback: MessageSquare,
+};
+
 const PERIODS = [
   { value: "MID_HK1", label: "Giữa HKI" },
   { value: "HK1", label: "Cuối HKI" },
@@ -156,36 +177,40 @@ export default function HomeroomPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-           Sổ Chủ Nhiệm Điện Tử
+      <div className="bg-white rounded-xl border p-6 shadow-sm">
+        <h1 className="text-2xl font-bold text-gray-905 flex items-center gap-2">
+           <BookOpen className="w-6 h-6 text-emerald-600" /> Sổ Chủ Nhiệm Điện Tử
         </h1>
-        <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-600">
-          <span><strong>Lớp:</strong> {classInfo.name}</span>
-          <span><strong>Khối:</strong> {classInfo.gradeLevel}</span>
-          <span><strong>Trường:</strong> {classInfo.school.name}</span>
-          {classInfo.campus && <span><strong>Phân hiệu:</strong> {classInfo.campus.name}</span>}
-          <span><strong>Sĩ số:</strong> {classInfo._count.students} học sinh</span>
+        <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-500 font-medium">
+          <span className="flex items-center gap-1"><Users className="w-4 h-4 text-gray-400" /> Lớp: {classInfo.name}</span>
+          <span className="flex items-center gap-1"><BookOpen className="w-4 h-4 text-gray-400" /> Khối: {classInfo.gradeLevel}</span>
+          <span className="flex items-center gap-1"><Building className="w-4 h-4 text-gray-400" /> Trường: {classInfo.school.name}</span>
+          {classInfo.campus && <span className="flex items-center gap-1"><Building className="w-4 h-4 text-gray-400" /> Phân hiệu: {classInfo.campus.name}</span>}
+          <span className="flex items-center gap-1"><Users className="w-4 h-4 text-gray-400" /> Sĩ số: {classInfo._count.students} học sinh</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="border-b overflow-x-auto">
+      <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+        <div className="border-b overflow-x-auto bg-gray-50/50">
           <div className="flex">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  tab === t.key
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+            {TABS.map((t) => {
+              const Icon = TAB_ICONS[t.key] || Users;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`px-4 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
+                    tab === t.key
+                      ? "border-blue-600 text-blue-700 bg-white"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${tab === t.key ? "text-blue-605" : "text-gray-450"}`} />
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
