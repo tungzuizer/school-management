@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure inputs don't zoom on iOS */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Make all buttons easier to tap on mobile */
+button, a, [role="button"] {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better focus styles for accessibility */
+:focus-visible {
+  outline: 3px solid #4f46e5;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Hide scrollbar but keep functionality on mobile nav */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Easy Mode styling updates */
+html.easy-mode body {
+  font-size: 19px !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+/* Adjust heading sizes under easy mode */
+html.easy-mode h1 {
+  font-size: 1.875rem !important;
+}
+html.easy-mode h2 {
+  font-size: 1.5rem !important;
+}
+html.easy-mode h3 {
+  font-size: 1.25rem !important;
+}
+
+/* Increase button select and input spacing for older/tech-illiterate users */
+html.easy-mode button, 
+html.easy-mode a, 
+html.easy-mode select, 
+html.easy-mode input, 
+html.easy-mode textarea {
+  font-size: 18px !important;
+}
+
+html.easy-mode .easy-mode-action-btn {
+  min-height: 54px !important;
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+
+/* High contrast shadow and text helper styles */
+html.easy-mode .easy-mode-guide {
+  font-weight: 500;
+  border-width: 2px !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+}
