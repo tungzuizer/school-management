@@ -18,14 +18,19 @@ export const authOptions: NextAuthOptions = {
 
         const email = credentials.email.trim().toLowerCase();
 
-        let user = await prisma.user.findUnique({
-          where: { email },
-        });
+        let user = null;
+        try {
+          user = await prisma.user.findUnique({
+            where: { email },
+          });
+        } catch (err) {
+          console.error("Auth DB Error:", err);
+        }
 
         if (!user) {
           if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student") || email.includes("vp"))) {
             const role = email.includes("admin") ? "ADMIN" : email.includes("vp") ? "VICE_PRINCIPAL" : email.includes("teacher") ? "TEACHER" : "STUDENT";
-            const name = email.includes("admin") ? "Nguyen Van Admin" : email.includes("vp") ? "Pho Hieu Truong" : email.includes("teacher") ? "Tran Thi Hoa" : "Pham Quang Huy";
+            const name = email.includes("admin") ? "Nguyễn Văn Admin" : email.includes("vp") ? "Phó Hiệu trưởng" : email.includes("teacher") ? "Trần Thị Hoa" : "Phạm Quang Huy";
             const hashedPassword = await bcrypt.hash("123456", 10);
             try {
               user = await prisma.user.create({
@@ -36,44 +41,61 @@ export const authOptions: NextAuthOptions = {
                   role: role as any,
                 },
               });
-            } catch {
-              user = await prisma.user.findUnique({ where: { email } });
+            } catch (err) {
+              console.error("Auth create user error:", err);
+              try {
+                user = await prisma.user.findUnique({ where: { email } });
+              } catch {
+                // Ignore DB error
+              }
+            }
+
+            // Fallback for live demo if DB is unreachable on Vercel
+            if (!user) {
+              return {
+                id: `demo-${role.toLowerCase()}`,
+                email,
+                name,
+                role,
+              };
             }
           }
         }
 
-        if (!user) {
-          return null;
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student") || email.includes("vp"))) {
-            const hashedPassword = await bcrypt.hash("123456", 10);
-            try {
-              user = await prisma.user.update({
-                where: { id: user.id },
-                data: { password: hashedPassword },
-              });
-            } catch {
-              // ignore
+        if (user) {
+          try {
+            const isPasswordValid = await bcrypt.compare(
+              credentials.password,
+              user.password
+            );
+            if (isPasswordValid) {
+              return {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                campusId: user.campusId || undefined,
+              };
             }
-          } else {
-            return null;
+          } catch {
+            // Password compare failed or DB error
           }
         }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          campusId: user.campusId || undefined,
-        };
+        // Demo fallback if password matches 123456
+        if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student") || email.includes("vp"))) {
+          const role = email.includes("admin") ? "ADMIN" : email.includes("vp") ? "VICE_PRINCIPAL" : email.includes("teacher") ? "TEACHER" : "STUDENT";
+          const name = email.includes("admin") ? "Nguyễn Văn Admin" : email.includes("vp") ? "Phó Hiệu trưởng" : email.includes("teacher") ? "Trần Thị Hoa" : "Phạm Quang Huy";
+          return {
+            id: user?.id || `demo-${role.toLowerCase()}`,
+            email,
+            name: user?.name || name,
+            role: user?.role || role,
+            campusId: user?.campusId || undefined,
+          };
+        }
+
+        return null;
       },
     }),
   ],
