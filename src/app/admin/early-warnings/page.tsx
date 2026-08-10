@@ -1,20 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  AlertTriangle,
   ShieldAlert,
   Sparkles,
   CheckCircle,
-  Filter,
-  UserX,
-  TrendingDown,
-  AlertCircle,
-  Building2,
-  BookOpen,
   MapPin,
-  Compass,
 } from "lucide-react";
+import { getWarnings, resolveWarning, getSchoolPoints } from "./actions";
 
 interface EarlyWarningItem {
   id: string;
@@ -23,7 +16,6 @@ interface EarlyWarningItem {
   level: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
   campusName: string;
   schoolPointName: string;
-  distanceKm: number;
   className?: string;
   studentName?: string;
   description: string;
@@ -32,89 +24,62 @@ interface EarlyWarningItem {
   createdAt: string;
 }
 
-const mockWarnings: EarlyWarningItem[] = [
-  {
-    id: "warn-1",
-    title: "Cảnh báo nguy cơ bỏ học - Học sinh vắng 5 ngày liên tiếp tại điểm lẻ Phia Xam",
-    category: "DROPOUT_RISK",
-    level: "CRITICAL",
-    campusName: "Cụm trường Vùng Cao",
-    schoolPointName: "Điểm Phia Xam",
-    distanceKm: 14.2,
-    className: "9C1",
-    studentName: "Nguyễn Văn Hùng",
-    description: "Học sinh vắng mặt không lý do từ thứ Hai đến nay. GVCN phụ trách điểm lẻ Phia Xam đã gọi điện cho phụ huynh 3 lần nhưng không có sóng điện thoại.",
-    aiAnalysis: "Đánh giá nguy cơ bỏ học: 94%. Khoảng cách 14.2 km đường rừng. Gợi ý hành động: Cử Trưởng điểm trường Phia Xam phối hợp cùng Trưởng bản Phia Xam đến trực tiếp nhà em Hùng xác minh trong 24h.",
-    isResolved: false,
-    createdAt: "2026-08-09",
-  },
-  {
-    id: "warn-2",
-    title: "Cảnh báo nguy cơ lũ quét & sạt lở đèo Bản Pún",
-    category: "SAFETY_INCIDENT",
-    level: "CRITICAL",
-    campusName: "Cụm trường Vùng Cao",
-    schoolPointName: "Điểm Bản Pún",
-    distanceKm: 8.5,
-    description: "Mưa lớn kéo dài gây tràn ngập suối Bản Pún. 14 học sinh từ các chòm bản cao chưa thể di chuyển qua đèo đến điểm trường.",
-    aiAnalysis: "Cảnh báo an toàn thiên tai cấp 3. AI khuyến nghị: Cho phép các em chuyển sang học trực tuyến/tự học có hướng dẫn; phát thông báo Zalo cảnh báo phụ huynh không cho con lội suối.",
-    isResolved: false,
-    createdAt: "2026-08-10",
-  },
-  {
-    id: "warn-3",
-    title: "Chậm tiến độ chương trình môn Toán khối 9 tại Điểm Bản Mó",
-    category: "PROGRESS_SLIP",
-    level: "HIGH",
-    campusName: "Cụm trường Vùng Cao",
-    schoolPointName: "Điểm Bản Mó",
-    distanceKm: 5.2,
-    className: "9A1, 9A2",
-    description: "Tiến độ môn Toán đang chậm 3 tiết so với khung chung do đợt mưa bão tuần trước làm gián đoạn việc di chuyển của GV thỉnh giảng.",
-    aiAnalysis: "Gợi ý hành động: Bố trí giáo viên tại Điểm Trung Tâm điều chuyển tăng cường 2 buổi chiều hoặc tổ chức phụ đạo tập trung.",
-    isResolved: false,
-    createdAt: "2026-08-08",
-  },
-  {
-    id: "warn-4",
-    title: "Tỷ lệ chuyên cần giảm đột biến tại Điểm Trung Tâm",
-    category: "ATTENDANCE",
-    level: "MEDIUM",
-    campusName: "Cụm trường Trung Tâm",
-    schoolPointName: "Điểm trường Trung Tâm",
-    distanceKm: 0.0,
-    className: "10A3",
-    description: "Sĩ số vắng có phép tăng từ 2% lên 15% trong 3 ngày qua (nghi vấn dịch cảm cúm mùa học đường).",
-    aiAnalysis: "Gợi ý hành động: Thông báo Y tế nhà trường tiến hành phun khử khuẩn phòng học và kiểm tra thân nhiệt học sinh đầu ca.",
-    isResolved: true,
-    createdAt: "2026-08-05",
-  },
-];
-
-const SATELLITE_SCHOOL_POINTS = [
-  "Điểm trường Trung Tâm",
-  "Điểm Bản Mó",
-  "Điểm Bản Pún",
-  "Điểm Phia Xam",
-];
+interface SchoolPointOption {
+  id: string;
+  name: string;
+  distanceKm: number;
+  campusName: string;
+}
 
 export default function EarlyWarningsPage() {
-  const [warnings, setWarnings] = useState<EarlyWarningItem[]>(mockWarnings);
+  const [warnings, setWarnings] = useState<EarlyWarningItem[]>([]);
+  const [schoolPoints, setSchoolPoints] = useState<SchoolPointOption[]>([]);
   const [filterCategory, setFilterCategory] = useState("ALL");
   const [filterLevel, setFilterLevel] = useState("ALL");
   const [filterPoint, setFilterPoint] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [resolving, setResolving] = useState<string | null>(null);
 
-  const filteredWarnings = warnings.filter((w) => {
-    if (filterCategory !== "ALL" && w.category !== filterCategory) return false;
-    if (filterLevel !== "ALL" && w.level !== filterLevel) return false;
-    if (filterPoint !== "ALL" && w.schoolPointName !== filterPoint) return false;
-    return true;
-  });
+  const fetchWarnings = useCallback(async () => {
+    try {
+      const data = await getWarnings({
+        category: filterCategory,
+        level: filterLevel,
+        schoolPointName: filterPoint,
+      });
+      setWarnings(data as EarlyWarningItem[]);
+    } catch (err) {
+      console.error("Lỗi tải cảnh báo:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filterCategory, filterLevel, filterPoint]);
 
-  const handleResolve = (id: string) => {
-    setWarnings(
-      warnings.map((w) => (w.id === id ? { ...w, isResolved: true } : w))
-    );
+  useEffect(() => {
+    getSchoolPoints().then(setSchoolPoints).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchWarnings();
+  }, [fetchWarnings]);
+
+  const handleResolve = async (id: string) => {
+    setResolving(id);
+    try {
+      const result = await resolveWarning(id);
+      if (result.success) {
+        setWarnings((prev) =>
+          prev.map((w) => (w.id === id ? { ...w, isResolved: true } : w))
+        );
+      } else {
+        alert("Lỗi: " + result.error);
+      }
+    } catch (err) {
+      console.error("Lỗi xử lý cảnh báo:", err);
+    } finally {
+      setResolving(null);
+    }
   };
 
   const getLevelBadge = (level: EarlyWarningItem["level"]) => {
@@ -143,6 +108,9 @@ export default function EarlyWarningsPage() {
     }
   };
 
+  // Use the full warnings list for stats (unfiltered count)
+  const allWarnings = warnings;
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -155,7 +123,7 @@ export default function EarlyWarningsPage() {
             </div>
             <h1 className="text-2xl font-bold">Rada Cảnh Báo Sớm Điểm Trường Vệ Tinh</h1>
             <p className="text-rose-100 text-sm mt-1 max-w-2xl">
-              Giám sát thời gian thực rủi ro học sinh bỏ học, chia cắt địa hình, thiên tai bão lũ và tiến độ giảng dạy trên cả 4 điểm trường phân tán.
+              Giám sát thời gian thực rủi ro học sinh bỏ học, chia cắt địa hình, thiên tai bão lũ và tiến độ giảng dạy trên tất cả điểm trường phân tán.
             </p>
           </div>
         </div>
@@ -165,24 +133,24 @@ export default function EarlyWarningsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 font-medium">Tổng cảnh báo ghi nhận</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{warnings.length}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{allWarnings.length}</p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 font-medium">Mức độ Nguy cấp (Critical)</p>
           <p className="text-2xl font-bold text-red-600 mt-1">
-            {warnings.filter((w) => w.level === "CRITICAL" && !w.isResolved).length}
+            {allWarnings.filter((w) => w.level === "CRITICAL" && !w.isResolved).length}
           </p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 font-medium">Chưa xử lý tại điểm lẻ</p>
           <p className="text-2xl font-bold text-orange-600 mt-1">
-            {warnings.filter((w) => !w.isResolved).length}
+            {allWarnings.filter((w) => !w.isResolved).length}
           </p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 font-medium">Đã can thiệp giải quyết</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">
-            {warnings.filter((w) => w.isResolved).length}
+            {allWarnings.filter((w) => w.isResolved).length}
           </p>
         </div>
       </div>
@@ -197,10 +165,10 @@ export default function EarlyWarningsPage() {
               onChange={(e) => setFilterPoint(e.target.value)}
               className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 text-sm font-medium"
             >
-              <option value="ALL">Tất cả 4 điểm trường</option>
-              {SATELLITE_SCHOOL_POINTS.map((pt) => (
-                <option key={pt} value={pt}>
-                  {pt}
+              <option value="ALL">Tất cả điểm trường</option>
+              {schoolPoints.map((pt) => (
+                <option key={pt.id} value={pt.name}>
+                  {pt.name} ({pt.distanceKm}km)
                 </option>
               ))}
             </select>
@@ -237,71 +205,94 @@ export default function EarlyWarningsPage() {
         </div>
 
         <span className="text-xs text-gray-500 font-medium">
-          Hiển thị {filteredWarnings.length} cảnh báo
+          Hiển thị {warnings.length} cảnh báo
         </span>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-12 text-gray-500">
+          <div className="animate-spin w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full mx-auto mb-3" />
+          <p className="text-sm font-medium">Đang tải dữ liệu cảnh báo...</p>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && warnings.length === 0 && (
+        <div className="text-center py-12 text-gray-400">
+          <ShieldAlert className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="text-sm font-medium">Không có cảnh báo nào phù hợp bộ lọc.</p>
+        </div>
+      )}
+
       {/* Warning Cards List */}
-      <div className="space-y-4">
-        {filteredWarnings.map((item) => (
-          <div
-            key={item.id}
-            className={`bg-white rounded-2xl border ${
-              item.isResolved ? "border-gray-200 opacity-75" : "border-rose-200 shadow-md"
-            } p-6 transition`}
-          >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs border ${getLevelBadge(item.level)}`}>
-                    {item.level}
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                    {getCategoryLabel(item.category)}
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 flex items-center gap-1 border border-rose-100">
-                    <MapPin className="w-3 h-3 text-rose-600" />
-                    {item.schoolPointName} ({item.distanceKm} km)
-                  </span>
-                  {item.className && (
-                    <span className="px-2 py-0.5 rounded text-xs bg-slate-100 font-bold text-slate-800">
-                      Lớp {item.className}
+      {!loading && (
+        <div className="space-y-4">
+          {warnings.map((item) => (
+            <div
+              key={item.id}
+              className={`bg-white rounded-2xl border ${
+                item.isResolved ? "border-gray-200 opacity-75" : "border-rose-200 shadow-md"
+              } p-6 transition`}
+            >
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs border ${getLevelBadge(item.level)}`}>
+                      {item.level}
                     </span>
-                  )}
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                      {getCategoryLabel(item.category)}
+                    </span>
+                    {item.schoolPointName && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 flex items-center gap-1 border border-rose-100">
+                        <MapPin className="w-3 h-3 text-rose-600" />
+                        {item.schoolPointName}
+                      </span>
+                    )}
+                    {item.className && (
+                      <span className="px-2 py-0.5 rounded text-xs bg-slate-100 font-bold text-slate-800">
+                        Lớp {item.className}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
+                  <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
                 </div>
 
-                <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
+                <div className="shrink-0 flex items-center gap-3">
+                  {item.isResolved ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+                      <CheckCircle className="w-4 h-4" />
+                      Đã xử lý & can thiệp
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleResolve(item.id)}
+                      disabled={resolving === item.id}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-xl shadow transition disabled:opacity-50"
+                    >
+                      {resolving === item.id ? "Đang xử lý..." : "Xác nhận đã xử lý"}
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="shrink-0 flex items-center gap-3">
-                {item.isResolved ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
-                    <CheckCircle className="w-4 h-4" />
-                    Đã xử lý & can thiệp
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => handleResolve(item.id)}
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-xl shadow transition"
-                  >
-                    Xác nhận đã xử lý
-                  </button>
-                )}
-              </div>
+              {/* AI Analysis Box */}
+              {item.aiAnalysis && (
+                <div className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50/50 p-4 rounded-xl border border-amber-200/80 text-xs leading-relaxed space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <span>Phân tích AI Rada & Đề xuất phương án can thiệp khẩn cấp:</span>
+                  </div>
+                  <p className="text-amber-950 font-medium pl-5">{item.aiAnalysis}</p>
+                </div>
+              )}
             </div>
-
-            {/* AI Analysis Box */}
-            <div className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50/50 p-4 rounded-xl border border-amber-200/80 text-xs leading-relaxed space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                <span>Phân tích AI Rada & Đề xuất phương án can thiệp khẩn cấp:</span>
-              </div>
-              <p className="text-amber-950 font-medium pl-5">{item.aiAnalysis}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
