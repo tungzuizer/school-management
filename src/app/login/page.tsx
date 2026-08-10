@@ -47,7 +47,19 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const result = await signIn("credentials", { email, password, redirect: false });
+      let result = await signIn("credentials", { email, password, redirect: false });
+      if (result?.error) {
+        // Auto-seed database if demo accounts do not exist yet in remote database
+        try {
+          const seedRes = await fetch("/api/db-seed?secret=seed123");
+          if (seedRes.ok) {
+            result = await signIn("credentials", { email, password, redirect: false });
+          }
+        } catch {
+          // ignore fetch error
+        }
+      }
+
       if (result?.error) {
         setError("Email hoặc mật khẩu không chính xác. Vui lòng thử lại.");
         setLoading(false);
