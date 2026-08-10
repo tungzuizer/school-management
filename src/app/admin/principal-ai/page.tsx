@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Bot,
   Send,
@@ -20,7 +20,14 @@ import {
   RefreshCw,
   MapPin,
   Navigation,
+  Loader2,
 } from "lucide-react";
+import {
+  askPrincipalAI,
+  saveDecision,
+  getDecisionLogs,
+  getSchoolPointsContext,
+} from "./actions";
 
 interface Message {
   id: string;
@@ -43,11 +50,18 @@ interface Message {
 
 interface SavedDecision {
   id: string;
-  title: string;
-  date: string;
-  campus: string;
-  decision: string;
-  status: "DA_PHE_DUYET" | "DANG_THUC_HIEN" | "CAN_THEO_DOI";
+  query: string;
+  aiRecommendation: string;
+  decisionTaken: string;
+  createdAt: string;
+}
+
+interface SchoolPointInfo {
+  name: string;
+  distanceKm: number;
+  studentsCount: number;
+  teacherCount: number;
+  campusName: string;
 }
 
 export default function PrincipalAIPage() {
@@ -58,38 +72,55 @@ export default function PrincipalAIPage() {
     {
       id: "1",
       sender: "ai",
-      text: "Xin chào Thầy/Cô Hiệu trưởng! Tôi là Trợ lý AI Tư vấn Ra Quyết định Ban Giám hiệu Đa Điểm Trường. Tôi đã được đồng bộ dữ liệu thời gian thực từ 4 điểm trường (Điểm Trung Tâm - 0km, Điểm Bản Mó - 5.2km, Điểm Bản Pún - 8.5km, Điểm Phia Xam - 14.2km). Thầy/Cô cần tham vấn phương án chỉ đạo nào hôm nay?",
+      text: "Xin chào Thầy/Cô Hiệu trưởng! Tôi là Trợ lý AI Tư vấn Ra Quyết định Ban Giám hiệu Đa Điểm Trường. Thầy/Cô cần tham vấn phương án chỉ đạo nào hôm nay?",
       timestamp: "08:00",
     },
   ]);
 
-  const [savedDecisions, setSavedDecisions] = useState<SavedDecision[]>([
-    {
-      id: "DEC-001",
-      title: "Điều chuyển luân phiên 2 GV Tiếng Anh từ Điểm Trung Tâm lên Điểm Phia Xam",
-      date: "08/03/2026",
-      campus: "Điểm Phia Xam (14.2km)",
-      decision: "Phê duyệt chế độ luân chuyển theo học kỳ kèm phụ cấp di chuyển vùng đặc biệt khó khăn.",
-      status: "DANG_THUC_HIEN",
-    },
-    {
-      id: "DEC-002",
-      title: "Phương án ứng phó sạt lở đèo & tràn suối tại Điểm Bản Pún",
-      date: "05/03/2026",
-      campus: "Điểm Bản Pún (8.5km)",
-      decision: "Cho phép 14 học sinh chòm bản cao chuyển sang hình thức tự học có hướng dẫn và trực tuyến qua Zalo.",
-      status: "DA_PHE_DUYET",
-    },
-  ]);
+  const [savedDecisions, setSavedDecisions] = useState<SavedDecision[]>([]);
+  const [schoolPoints, setSchoolPoints] = useState<SchoolPointInfo[]>([]);
+  const [loadingDecisions, setLoadingDecisions] = useState(true);
+  const [loadingPoints, setLoadingPoints] = useState(true);
+
+  // Fetch decision logs on mount
+  const fetchDecisions = useCallback(async () => {
+    try {
+      setLoadingDecisions(true);
+      const data = await getDecisionLogs();
+      setSavedDecisions(data);
+    } catch {
+      console.error("Lỗi khi tải nhật ký quyết định");
+    } finally {
+      setLoadingDecisions(false);
+    }
+  }, []);
+
+  // Fetch school points context on mount
+  const fetchSchoolPoints = useCallback(async () => {
+    try {
+      setLoadingPoints(true);
+      const data = await getSchoolPointsContext();
+      setSchoolPoints(data);
+    } catch {
+      console.error("Lỗi khi tải dữ liệu điểm trường");
+    } finally {
+      setLoadingPoints(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDecisions();
+    fetchSchoolPoints();
+  }, [fetchDecisions, fetchSchoolPoints]);
 
   const presetQueries = [
-    "Điều chuyển giáo viên Tiếng Anh từ Điểm Trung Tâm lên Điểm Phia Xam (14.2km)",
-    "Phương án xử lý rủi ro học sinh nguy cơ bỏ học 5 ngày liên tiếp ở Điểm Phia Xam",
-    "Phân bổ ngân sách 400 triệu đầu tư phòng máy di động cho 4 điểm trường",
-    "Kế hoạch đảm bảo an toàn giao thông & phòng chống thiên tai lũ quét đèo Bản Pún",
+    "Điều chuyển giáo viên Tiếng Anh từ Điểm Trung Tâm lên điểm trường xa nhất",
+    "Phương án xử lý rủi ro học sinh nguy cơ bỏ học nhiều ngày liên tiếp",
+    "Phân bổ ngân sách đầu tư phòng máy di động cho các điểm trường",
+    "Kế hoạch đảm bảo an toàn giao thông & phòng chống thiên tai cho điểm trường vùng cao",
   ];
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const query = textToSend || inputQuery;
     if (!query.trim() || isAnalyzing) return;
 
@@ -104,120 +135,60 @@ export default function PrincipalAIPage() {
     if (!textToSend) setInputQuery("");
     setIsAnalyzing(true);
 
-    setTimeout(() => {
-      let aiResponse: Message;
+    try {
+      const result = await askPrincipalAI(query);
 
-      if (query.includes("Điều chuyển") || query.includes("giáo viên")) {
-        aiResponse = {
+      if (result.success && result.data) {
+        const aiResponse: Message = {
           id: (Date.now() + 1).toString(),
           sender: "ai",
-          text: `AI đã phân tích tọa độ địa lý (14.2 km), thời khóa biểu và phụ cấp vùng khó cho đề xuất: "${query}"`,
+          text: `AI đã phân tích dữ liệu thực tế từ hệ thống và đưa ra khuyến nghị cho: "${query}"`,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          recommendation: {
-            summary:
-              "Đề xuất luân chuyển giảng dạy theo cụm tiết tập trung vào các ngày thứ 2-4-6 kết hợp hỗ trợ kinh phí di chuyển 1.200.000đ/tháng là phương án tối ưu nhất.",
-            riskLevel: "MEDIUM",
-            options: [
-              {
-                title: "Phương án A: Điều chuyển cố định 1 năm",
-                score: 75,
-                pros: ["Đảm bảo 100% tiết học Tiếng Anh tại Phia Xam"],
-                cons: ["Tâm lý GV ngại di chuyển xa (14.2km đường núi)", "Nguy cơ đơn phương xin chuyển trường"],
-              },
-              {
-                title: "Phương án B: Luân chuyển theo cụm tiết thứ 2-4-6 + Phụ cấp vùng lẻ (Khuyên dùng)",
-                score: 94,
-                pros: [
-                  "Tạo sự công bằng giữa đội ngũ giáo viên bộ môn",
-                  "Gom tiết giảng dạy gọn gàng, giảm số lần di chuyển trong tuần",
-                  "GV vui vẻ nhận nhiệm vụ do có mức hỗ trợ thỏa đáng",
-                ],
-                cons: ["Cần tinh chỉnh thời khóa biểu giữa 2 điểm trường"],
-              },
-            ],
-            policyNote:
-              "Căn cứ Điều 28 Thông tư 32/2020/TT-BGDĐT về điều động giáo viên tại trường phổ thông nhiều điểm trường.",
-            actionSteps: [
-              "Họp Tổ chuyên môn Tiếng Anh để lấy ý kiến và nguyện vọng cá nhân",
-              "Ban hành Quyết định điều động kèm phụ cấp di chuyển điểm lẻ",
-              "Bố trí phương tiện xe máy chuyên dụng hoặc hỗ trợ nhiên liệu di chuyển",
-            ],
-          },
+          recommendation: result.data.recommendation,
         };
-      } else if (query.includes("bỏ học") || query.includes("Phia Xam")) {
-        aiResponse = {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          text: `Dưới đây là phương án can thiệp đa bên hỗ trợ học sinh vắng mặt kéo dài tại Điểm Phia Xam (14.2km):`,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          recommendation: {
-            summary:
-              "Kích hoạt quy trình can thiệp liên ngành 3 bước: Trưởng điểm trường + GVCN + Trưởng bản Phia Xam đến tận nhà vận động.",
-            riskLevel: "HIGH",
-            options: [
-              {
-                title: "Phương án 1: Trưởng điểm trường & Trưởng bản trực tiếp đến nhà trong 24h",
-                score: 96,
-                pros: [
-                  "Tiếp cận nhanh gia đình tại bản xa mà không bị cản trở bởi việc mất sóng di động",
-                  "Nắm rõ nguyên nhân hoàn cảnh gia đình (kinh tế, ốm đau hoặc theo bố mẹ đi nương)",
-                  "Tạo niềm tin hỗ trợ từ chính quyền thôn bản",
-                ],
-                cons: ["Tốn thời gian di chuyển trong điều kiện thời tiết xấu"],
-              },
-            ],
-            policyNote:
-              "Căn cứ Chỉ thị 08/CT-TTg về tăng cường phối hợp nhà trường, gia đình và xã hội trong phòng chống bỏ học vùng dân tộc thiểu số.",
-            actionSteps: [
-              "Giao Trưởng điểm trường Phia Xam lập đoàn vận động cùng Trưởng bản",
-              "Bố trí nguồn Quỹ khuyến học hỗ trợ sách vở và nhu yếu phẩm nếu học sinh khó khăn",
-              "Báo cáo tiến độ về cho Hiệu trưởng trước 17:00 hàng ngày",
-            ],
-          },
-        };
+        setMessages((prev) => [...prev, aiResponse]);
       } else {
-        aiResponse = {
+        const errorMsg: Message = {
           id: (Date.now() + 1).toString(),
           sender: "ai",
-          text: `AI đã tổng hợp dữ liệu 4 điểm trường và phân tích yêu cầu: "${query}". Dưới đây là khuyến nghị chiến lược cho Ban Giám hiệu:`,
+          text: `⚠️ Không thể phân tích yêu cầu: ${result.error || "Lỗi không xác định"}. Vui lòng thử lại.`,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          recommendation: {
-            summary:
-              "Ưu tiên cân đối nguồn lực giữa Điểm Trung Tâm và các điểm lẻ theo mô hình chia sẻ tài nguyên di động.",
-            riskLevel: "LOW",
-            options: [
-              {
-                title: "Phương án phân bổ di động Hub & Spoke",
-                score: 90,
-                pros: ["Tối ưu hiệu suất thiết bị", "Đảm bảo công bằng cho học sinh vùng sâu vùng xa"],
-                cons: ["Cần điều phối lịch xe di chuyển định kỳ"],
-              },
-            ],
-            actionSteps: [
-              "Lập kế hoạch phân bổ chi tiết cho từng điểm trường",
-              "Phê duyệt và theo dõi tiến độ qua hệ thống quản lý",
-            ],
-          },
         };
+        setMessages((prev) => [...prev, errorMsg]);
       }
-
-      setMessages((prev) => [...prev, aiResponse]);
+    } catch {
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: "ai",
+        text: "⚠️ Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.",
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setIsAnalyzing(false);
-    }, 1200);
+    }
   };
 
-  const handleSaveDecision = (msg: Message) => {
+  const handleSaveDecision = async (msg: Message) => {
     if (!msg.recommendation) return;
-    const newDec: SavedDecision = {
-      id: `DEC-00${savedDecisions.length + 1}`,
-      title: msg.text.length > 50 ? msg.text.substring(0, 50) + "..." : msg.text,
-      date: new Date().toLocaleDateString("vi-VN"),
-      campus: "4 Điểm Trường",
-      decision: msg.recommendation.summary,
-      status: "DANG_THUC_HIEN",
-    };
-    setSavedDecisions([newDec, ...savedDecisions]);
-    alert("Đã lưu quyết định vào Nhật ký chỉ đạo thành công!");
+
+    try {
+      const result = await saveDecision({
+        query: msg.text,
+        aiRecommendation: msg.recommendation.summary,
+        decisionTaken: msg.recommendation.options
+          .sort((a, b) => b.score - a.score)[0]?.title || "Đang xem xét",
+      });
+
+      if (result.success && result.data) {
+        setSavedDecisions((prev) => [result.data!, ...prev]);
+        alert("✅ Đã lưu quyết định vào Nhật ký chỉ đạo thành công!");
+      } else {
+        alert(`❌ Lỗi khi lưu: ${result.error}`);
+      }
+    } catch {
+      alert("❌ Đã xảy ra lỗi khi lưu quyết định.");
+    }
   };
 
   return (
@@ -234,11 +205,11 @@ export default function PrincipalAIPage() {
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight">Trợ Lý AI Tư Vấn Ra Quyết Định Hiệu Trưởng</h1>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/30 text-blue-200 border border-blue-400/30">
-                  4 Điểm Trường Vệ Tinh
+                  {schoolPoints.length > 0 ? `${schoolPoints.length} Điểm Trường` : "Đa Điểm Trường"}
                 </span>
               </div>
               <p className="text-blue-100/80 text-sm mt-1">
-                Hệ thống tham vấn đa phương án cho Hiệu trưởng: Phân tích địa hình, khoảng cách (Bản Mó, Bản Pún, Phia Xam), pháp lý và tối ưu lực lượng giáo viên.
+                Hệ thống tham vấn đa phương án cho Hiệu trưởng: Phân tích dữ liệu thực tế, khoảng cách địa lý, pháp lý và tối ưu nguồn lực.
               </p>
             </div>
           </div>
@@ -285,7 +256,7 @@ export default function PrincipalAIPage() {
                 <h2>Gợi ý tình huống quản lý điểm lẻ</h2>
               </div>
               <p className="text-xs text-gray-500">
-                Chọn tình huống mẫu để AI phân tích khoảng cách và dữ liệu 4 điểm trường:
+                Chọn tình huống mẫu để AI phân tích dữ liệu thực tế từ hệ thống:
               </p>
               <div className="space-y-2">
                 {presetQueries.map((query, idx) => (
@@ -306,18 +277,29 @@ export default function PrincipalAIPage() {
               </div>
             </div>
 
-            {/* Satellite school points context badge */}
+            {/* Satellite school points context badge - REAL DATA */}
             <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4 text-xs text-blue-900 space-y-2">
               <div className="flex items-center gap-2 font-bold text-blue-950">
                 <Building2 className="w-4 h-4 text-blue-600" />
-                Tọa độ & Sĩ số 4 điểm trường
+                Tọa độ & Sĩ số các điểm trường
               </div>
-              <ul className="space-y-1 text-gray-600 list-disc list-inside">
-                <li>Điểm Trung Tâm (0km): 850 HS - 42 GV</li>
-                <li>Điểm Bản Mó (5.2km): 320 HS - 16 GV</li>
-                <li>Điểm Bản Pún (8.5km): 180 HS - 10 GV</li>
-                <li>Điểm Phia Xam (14.2km): 100 HS - 6 GV</li>
-              </ul>
+              {loadingPoints ? (
+                <div className="flex items-center gap-2 text-gray-500 py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang tải dữ liệu...</span>
+                </div>
+              ) : schoolPoints.length > 0 ? (
+                <ul className="space-y-1 text-gray-600 list-disc list-inside">
+                  {schoolPoints.map((sp, idx) => (
+                    <li key={idx}>
+                      {sp.name} ({sp.distanceKm}km): {sp.studentsCount} HS
+                      {sp.teacherCount > 0 ? ` - ${sp.teacherCount} GV` : ""}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 italic">Chưa có dữ liệu điểm trường.</p>
+              )}
             </div>
           </div>
 
@@ -328,7 +310,7 @@ export default function PrincipalAIPage() {
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-sm font-semibold text-gray-700">
-                  AI Decision Engine v3.4 - Đã kết nối GIS & Quy chế BGD&ĐT
+                  AI Decision Engine - Dữ liệu thời gian thực
                 </span>
               </div>
               <button
@@ -510,10 +492,10 @@ export default function PrincipalAIPage() {
 
               {isAnalyzing && (
                 <div className="flex items-center gap-3 text-gray-500 text-sm italic">
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white animate-spin">
-                    <RefreshCw className="w-4 h-4" />
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white">
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   </div>
-                  <span>AI đang tính toán khoảng cách 4 điểm trường & tổng hợp quy định BGD&ĐT...</span>
+                  <span>AI đang phân tích dữ liệu thực tế từ hệ thống & tổng hợp khuyến nghị...</span>
                 </div>
               )}
             </div>
@@ -547,13 +529,13 @@ export default function PrincipalAIPage() {
           </div>
         </div>
       ) : (
-        /* Saved Decision Logs Tab */
+        /* Saved Decision Logs Tab - REAL DATA */
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b border-gray-100 pb-4">
             <div>
               <h2 className="text-lg font-bold text-gray-800">Nhật ký Chỉ đạo & Quyết định Ban Giám hiệu</h2>
               <p className="text-xs text-gray-500 mt-1">
-                Lịch sử các văn bản, thông báo và quyết định chỉ đạo 4 điểm trường được tham vấn từ Trợ lý AI.
+                Lịch sử các quyết định chỉ đạo được tham vấn từ Trợ lý AI.
               </p>
             </div>
             <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">
@@ -561,53 +543,56 @@ export default function PrincipalAIPage() {
             </span>
           </div>
 
-          <div className="space-y-4">
-            {savedDecisions.map((dec) => (
-              <div
-                key={dec.id}
-                className="p-5 rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition space-y-3 bg-gray-50/30"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <span className="px-2.5 py-1 bg-slate-900 text-white font-mono text-xs font-bold rounded-lg">
-                      {dec.id}
+          {loadingDecisions ? (
+            <div className="flex items-center justify-center py-12 gap-3 text-gray-500">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <span>Đang tải nhật ký quyết định...</span>
+            </div>
+          ) : savedDecisions.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">Chưa có quyết định nào được ghi nhận</p>
+              <p className="text-xs mt-1">Hãy tham vấn AI và lưu quyết định để bắt đầu.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {savedDecisions.map((dec) => (
+                <div
+                  key={dec.id}
+                  className="p-5 rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition space-y-3 bg-gray-50/30"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <span className="px-2.5 py-1 bg-slate-900 text-white font-mono text-xs font-bold rounded-lg">
+                        #{dec.id.substring(0, 8)}
+                      </span>
+                      <h3 className="font-bold text-gray-800 text-base line-clamp-1">
+                        {dec.query.length > 80 ? dec.query.substring(0, 80) + "..." : dec.query}
+                      </h3>
+                    </div>
+
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto bg-blue-100 text-blue-800">
+                      Đã ghi nhận
                     </span>
-                    <h3 className="font-bold text-gray-800 text-base">{dec.title}</h3>
                   </div>
 
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto ${
-                      dec.status === "DA_PHE_DUYET"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : dec.status === "DANG_THUC_HIEN"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    {dec.status === "DA_PHE_DUYET"
-                      ? "Đã phê duyệt"
-                      : dec.status === "DANG_THUC_HIEN"
-                      ? "Đang triển khai"
-                      : "Cần theo dõi"}
-                  </span>
-                </div>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded-xl border border-gray-100 font-medium">
+                    <strong>Khuyến nghị AI:</strong> {dec.aiRecommendation}
+                  </p>
 
-                <p className="text-sm text-gray-700 bg-white p-3 rounded-xl border border-gray-100 font-medium">
-                  {dec.decision}
-                </p>
+                  {dec.decisionTaken && (
+                    <p className="text-sm text-emerald-700 bg-emerald-50 p-3 rounded-xl border border-emerald-100 font-medium">
+                      <strong>Quyết định:</strong> {dec.decisionTaken}
+                    </p>
+                  )}
 
-                <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
-                  <div className="flex items-center gap-4">
-                    <span>Phạm vi: <strong className="text-gray-600">{dec.campus}</strong></span>
-                    <span>Ngày ban hành: <strong className="text-gray-600">{dec.date}</strong></span>
+                  <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
+                    <span>Ngày: <strong className="text-gray-600">{dec.createdAt}</strong></span>
                   </div>
-                  <button className="text-blue-600 font-semibold hover:underline flex items-center gap-1">
-                    Xem chi tiết văn bản <ArrowRight className="w-3 h-3" />
-                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
