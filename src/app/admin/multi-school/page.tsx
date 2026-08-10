@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -20,16 +20,36 @@ import {
   Bar,
 } from "recharts";
 
+type SchoolPointDetail = {
+  id: string;
+  name: string;
+  address: string | null;
+  distanceKm: number | null;
+  managerName: string | null;
+  phone: string | null;
+  classCount: number;
+  studentCount: number;
+};
+
+type CampusDetail = {
+  id: string;
+  name: string;
+  address: string | null;
+  schoolPoints: SchoolPointDetail[];
+};
+
 type SchoolOverview = {
   id: string;
   name: string;
   address: string | null;
   campusCount: number;
+  schoolPointsCount?: number;
   classCount: number;
   studentCount: number;
   teacherCount: number;
   attendanceRate: number;
   avgScore: number;
+  campusDetails?: CampusDetail[];
 };
 
 type Alert = {
@@ -252,7 +272,8 @@ export default function MultiSchoolPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {school.campusCount}
+                    <span className="font-medium text-indigo-700">{school.campusCount} PH</span>
+                    <span className="text-xs text-gray-400 block">({school.schoolPointsCount || 0} điểm lẻ)</span>
                   </td>
                   <td className="px-4 py-3 text-center">{school.classCount}</td>
                   <td className="px-4 py-3 text-center font-medium">
@@ -290,6 +311,62 @@ export default function MultiSchoolPage() {
           </table>
         </div>
       </div>
+
+      {/* Sơ đồ cây mô hình 3 cấp (Trường -> Phân hiệu -> Điểm trường) */}
+      {overview.find((s) => s.id === selectedSchool)?.campusDetails && (
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
+            <span>🏰</span> Mô hình Điểm trường Phân tán 3 Cấp
+          </h3>
+          <div className="space-y-6">
+            {overview
+              .find((s) => s.id === selectedSchool)
+              ?.campusDetails?.map((campus) => (
+                <div key={campus.id} className="border border-indigo-100 rounded-xl p-4 bg-indigo-50/30">
+                  <div className="flex items-center justify-between border-b border-indigo-100 pb-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-indigo-600 text-white font-bold px-2.5 py-1 rounded-md text-xs">
+                        Phân hiệu
+                      </span>
+                      <h4 className="font-bold text-indigo-950 text-base">{campus.name}</h4>
+                    </div>
+                    <span className="text-xs text-gray-500">📍 {campus.address}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {campus.schoolPoints.map((sp) => (
+                      <div key={sp.id} className="bg-white p-4 rounded-lg border shadow-sm flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold text-gray-900 text-sm">{sp.name}</span>
+                            <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">
+                              {sp.distanceKm === 0 ? "Điểm trung tâm" : `Cách ${sp.distanceKm} km`}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-3">📍 {sp.address}</p>
+                          <div className="text-xs space-y-1 text-gray-600 bg-gray-50 p-2 rounded">
+                            <div className="flex justify-between">
+                              <span>Phụ trách:</span>
+                              <span className="font-medium text-gray-800">{sp.managerName || "Chưa gán"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>SĐT:</span>
+                              <span className="font-medium text-gray-800">{sp.phone || "—"}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 pt-3 border-t flex justify-between text-xs text-gray-500">
+                          <span>{sp.classCount} Lớp học</span>
+                          <span className="font-bold text-indigo-600">{sp.studentCount} Học sinh</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Charts section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

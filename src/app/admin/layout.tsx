@@ -20,6 +20,10 @@ import {
   X,
   ChevronDown,
   Settings,
+  Bot,
+  UserCheck,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -35,6 +39,15 @@ type MenuGroup = {
 };
 
 const menuGroups: MenuGroup[] = [
+  {
+    title: "Trợ lý AI Hiệu Trưởng",
+    items: [
+      { label: "Tư vấn ra quyết định", href: "/admin/principal-ai", icon: Bot },
+      { label: "Bố trí dạy thay & Điều chuyển", href: "/admin/substitute-dispatch", icon: UserCheck },
+      { label: "Cảnh báo sớm học sinh/lớp", href: "/admin/early-warnings", icon: AlertTriangle },
+      { label: "Tổng hợp báo cáo ngày", href: "/admin/daily-summary", icon: Sparkles },
+    ],
+  },
   {
     title: "Tổng quan",
     items: [

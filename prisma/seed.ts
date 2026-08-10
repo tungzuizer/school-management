@@ -7,6 +7,9 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Clean existing data (in reverse dependency order)
+  await prisma.decisionLog.deleteMany();
+  await prisma.earlyWarning.deleteMany();
+  await prisma.substituteAssignment.deleteMany();
   await prisma.classJournalEntry.deleteMany();
   await prisma.lessonPlan.deleteMany();
   await prisma.dailyReport.deleteMany();
@@ -24,6 +27,7 @@ async function main() {
   await prisma.group.deleteMany();
   await prisma.teacher.deleteMany();
   await prisma.classRoom.deleteMany();
+  await prisma.schoolPoint.deleteMany();
   await prisma.campus.deleteMany();
   await prisma.subject.deleteMany();
   await prisma.school.deleteMany();
@@ -68,20 +72,37 @@ async function main() {
 
   // ===== SCHOOLS =====
   const school1 = await prisma.school.create({
-    data: { name: "Trường THCS Nguyễn Huệ", address: "123 Trần Phú, Hà Đông, Hà Nội", phone: "024-3123-4567", email: "thcs.nguyenhue@edu.vn" },
+    data: { name: "Trường PTDTBT THCS Mường Mát", address: "Xã Mường Mát, Huyện Kỳ Sơn, Nghệ An", phone: "0238-3123-888", email: "thcs.muongmat@nghean.edu.vn" },
   });
 
   const school2 = await prisma.school.create({
-    data: { name: "Trường THCS Lê Quý Đôn", address: "456 Nguyễn Trãi, Thanh Xuân, Hà Nội", phone: "024-3234-5678", email: "thcs.lequydon@edu.vn" },
+    data: { name: "Trường THCS Nguyễn Huệ", address: "123 Trần Phú, Hà Đông, Hà Nội", phone: "024-3123-4567", email: "thcs.nguyenhue@edu.vn" },
   });
 
   // ===== CAMPUSES (Phân hiệu) =====
   const campus1 = await prisma.campus.create({
-    data: { schoolId: school1.id, name: "Phân hiệu 1 - Trần Phú", address: "123 Trần Phú, Hà Đông" },
+    data: { schoolId: school1.id, name: "Phân hiệu 1 - Trung Tâm", address: "Bản Trung Tâm, Xã Mường Mát" },
   });
 
   const campus2 = await prisma.campus.create({
-    data: { schoolId: school1.id, name: "Phân hiệu 2 - Quang Trung", address: "45 Quang Trung, Hà Đông" },
+    data: { schoolId: school1.id, name: "Phân hiệu 2 - Cụm Sơn Lâm", address: "Bản Sơn Lâm, Xã Mường Mát" },
+  });
+
+  // ===== SCHOOL POINTS (Điểm trường lẻ / Vệ tinh) =====
+  const spCenter = await prisma.schoolPoint.create({
+    data: { campusId: campus1.id, name: "Điểm trường Trung Tâm", address: "Bản Trung Tâm", distanceKm: 0.0, managerName: "Thầy Nguyễn Văn Admin", phone: "0988-111-222" },
+  });
+
+  const spBanMo = await prisma.schoolPoint.create({
+    data: { campusId: campus1.id, name: "Điểm trường Bản Mó", address: "Bản Mó (vùng cao)", distanceKm: 5.2, managerName: "Cô Trần Thị Hoa", phone: "0988-222-333" },
+  });
+
+  const spBanPun = await prisma.schoolPoint.create({
+    data: { campusId: campus2.id, name: "Điểm trường Bản Pún", address: "Bản Pún (suối sâu)", distanceKm: 8.5, managerName: "Thầy Lê Văn Minh", phone: "0988-333-444" },
+  });
+
+  const spPhiaXam = await prisma.schoolPoint.create({
+    data: { campusId: campus2.id, name: "Điểm trường Phia Xam", address: "Đỉnh Phia Xam (giao thông khó)", distanceKm: 14.2, managerName: "Cô Phạm Thị Lan", phone: "0988-444-555" },
   });
 
   // ===== SUBJECTS =====
@@ -107,15 +128,15 @@ async function main() {
 
   // ===== CLASSROOMS =====
   const class6A1 = await prisma.classRoom.create({
-    data: { name: "6A1", gradeLevel: 6, schoolId: school1.id, campusId: campus1.id, homeroomTeacherId: teacher1.id },
+    data: { name: "6A1 (Trung tâm)", gradeLevel: 6, schoolId: school1.id, campusId: campus1.id, schoolPointId: spCenter.id, homeroomTeacherId: teacher1.id },
   });
 
   const class6A2 = await prisma.classRoom.create({
-    data: { name: "6A2", gradeLevel: 6, schoolId: school1.id, campusId: campus1.id, homeroomTeacherId: teacher2.id },
+    data: { name: "6A2 (Bản Mó)", gradeLevel: 6, schoolId: school1.id, campusId: campus1.id, schoolPointId: spBanMo.id, homeroomTeacherId: teacher2.id },
   });
 
   const class7A1 = await prisma.classRoom.create({
-    data: { name: "7A1", gradeLevel: 7, schoolId: school1.id, campusId: campus2.id, homeroomTeacherId: teacher3.id },
+    data: { name: "7A1 (Bản Pún)", gradeLevel: 7, schoolId: school1.id, campusId: campus2.id, schoolPointId: spBanPun.id, homeroomTeacherId: teacher3.id },
   });
 
   // ===== GROUPS (Tổ trong lớp) =====
@@ -381,12 +402,73 @@ async function main() {
     },
   });
 
+  // ===== EARLY WARNINGS (Cảnh báo thông minh) =====
+  await prisma.earlyWarning.createMany({
+    data: [
+      {
+        title: "Nguy cơ sạt lở đường tới Điểm Phia Xam",
+        category: "SAFETY_INCIDENT",
+        level: "CRITICAL",
+        campusName: "Phân hiệu 2 - Cụm Sơn Lâm",
+        schoolPointName: "Điểm trường Phia Xam",
+        className: "Lớp ghép 4+5 Phia Xam",
+        description: "Mưa lớn kéo dài 3 ngày làm nguy cơ sạt lở đèo Phia Xam (Km 12). 18 học sinh không thể đến điểm trường chính.",
+        aiAnalysis: "Đề xuất: Cho phép Điểm Phia Xam học trực tuyến/giao bài tự học tại chỗ. GV phụ trách Bản Pún phối hợp quản lý.",
+        isResolved: false,
+      },
+      {
+        title: "Tỷ lệ vắng mặt cao bất thường tại Điểm Bản Mó",
+        category: "ATTENDANCE",
+        level: "HIGH",
+        campusName: "Phân hiệu 1 - Trung Tâm",
+        schoolPointName: "Điểm trường Bản Mó",
+        className: "6A2 (Bản Mó)",
+        studentName: "Nhiều học sinh",
+        description: "Có 5/15 học sinh vắng mặt liên tiếp 2 ngày do mùa thu hoạch ngô rừng.",
+        aiAnalysis: "Đề xuất Trưởng bản và GVCN Cô Trần Thị Hoa cử cán bộ thôn bản vận động phụ huynh cho học sinh đi học trở lại.",
+        isResolved: false,
+      },
+      {
+        title: "Nguy cơ bỏ học của HS Vi Văn Khang",
+        category: "DROPOUT_RISK",
+        level: "MEDIUM",
+        campusName: "Phân hiệu 2 - Cụm Sơn Lâm",
+        schoolPointName: "Điểm trường Bản Pún",
+        className: "7A1 (Bản Pún)",
+        studentName: "Vi Văn Khang",
+        description: "Học sinh nghỉ học 3 buổi trong tuần, gia đình khó khăn dự định cho con đi làm rẫy xa.",
+        aiAnalysis: "Đề xuất Hiệu trưởng chỉ đạo Quỹ hỗ trợ học sinh bán trú hỗ trợ 100% tiền ăn và đồ dùng học tập.",
+        isResolved: false,
+      },
+    ],
+  });
+
+  // ===== SUBSTITUTE ASSIGNMENTS (Dạy thay phân tán) =====
+  await prisma.substituteAssignment.createMany({
+    data: [
+      {
+        originalTeacher: "Cô Trần Thị Hoa",
+        substituteTeacher: "Thầy Lê Văn Minh",
+        campusName: "Phân hiệu 1 - Trung Tâm",
+        schoolPointName: "Điểm trường Bản Mó",
+        distanceKm: 5.2,
+        className: "6A2 (Bản Mó)",
+        subjectName: "Toán",
+        date: journalDate1,
+        period: 2,
+        reason: "Tập huấn chuyên môn tại Huyện",
+        aiRecommendation: "AI chọn Thầy Lê Văn Minh: Có lịch trống tiết 2, đang ở điểm Trung Tâm (cách 5.2km), đáp ứng tốt môn Toán.",
+        status: "APPROVED",
+      },
+    ],
+  });
+
   console.log("✅ Seed completed successfully!");
   console.log("📧 Demo accounts:");
   console.log("   Admin:   admin@school.com / 123456");
   console.log("   Teacher: teacher@school.com / 123456");
   console.log("   Student: student@school.com / 123456");
-  console.log(`📊 Created: ${students.length} students, 3 teachers, 2 schools, 2 campuses, 3 classes`);
+  console.log(`📊 Created: ${students.length} students, 3 teachers, 2 schools, 2 campuses, 4 school points, 3 classes`);
 }
 
 main()

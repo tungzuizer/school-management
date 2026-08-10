@@ -14,7 +14,19 @@ export async function getMultiSchoolOverview(dateFrom?: string, dateTo?: string)
           teachingAssignments: { select: { teacherId: true } },
         },
       },
-      campuses: true,
+      campuses: {
+        include: {
+          schoolPoints: {
+            include: {
+              classRooms: {
+                include: {
+                  _count: { select: { students: true } },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -69,16 +81,36 @@ export async function getMultiSchoolOverview(dateFrom?: string, dateTo?: string)
         }
       }
 
+      const schoolPointsCount = school.campuses.reduce((sum, c) => sum + (c.schoolPoints?.length || 0), 0);
+
+      const campusDetails = school.campuses.map((c) => ({
+        id: c.id,
+        name: c.name,
+        address: c.address,
+        schoolPoints: c.schoolPoints.map((sp) => ({
+          id: sp.id,
+          name: sp.name,
+          address: sp.address,
+          distanceKm: sp.distanceKm,
+          managerName: sp.managerName,
+          phone: sp.phone,
+          classCount: sp.classRooms.length,
+          studentCount: sp.classRooms.reduce((sum, cl) => sum + cl._count.students, 0),
+        })),
+      }));
+
       return {
         id: school.id,
         name: school.name,
         address: school.address,
-        campusCount: (school as any).campuses?.length || 0,
+        campusCount: school.campuses.length,
+        schoolPointsCount,
         classCount: school.classRooms.length,
         studentCount,
         teacherCount: teacherIds.size,
         attendanceRate,
         avgScore,
+        campusDetails,
       };
     })
   );
