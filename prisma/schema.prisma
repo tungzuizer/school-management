@@ -134,8 +134,9 @@ model School {
   updatedAt DateTime @updatedAt
 
   // Relations
-  campuses   Campus[]
-  classRooms ClassRoom[]
+  campuses          Campus[]
+  classRooms        ClassRoom[]
+  academicCalendars AcademicCalendar[]
 
   @@index([name])
 }
@@ -203,6 +204,7 @@ model ClassRoom {
   dailyReports        DailyReport[]
   lessonPlans         LessonPlan[]
   journalEntries      ClassJournalEntry[]
+  monthlyPlans        MonthlyPlan[]
 
   @@index([schoolId])
   @@index([campusId])
@@ -679,4 +681,58 @@ model DecisionLog {
   createdAt        DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ==================== LỊCH NĂM HỌC & AI NHẮC VIỆC ====================
+
+model AcademicCalendar {
+  id         String   @id @default(cuid())
+  schoolId   String
+  schoolYear String   // VD: "2026-2027"
+  title      String
+  content    String   @db.Text  // Nội dung lịch năm học (text/markdown)
+  fileUrl    String?            // Link file nếu upload
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, schoolYear])
+  @@index([schoolId])
+}
+
+// ==================== KẾ HOẠCH THÁNG & NỘI DUNG SINH HOẠT TUẦN ====================
+
+model MonthlyPlan {
+  id          String   @id @default(cuid())
+  classId     String
+  month       Int      // 1-12
+  year        Int
+  planContent String?  @db.Text // Kế hoạch tháng
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  classRoom        ClassRoom        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  weeklyActivities WeeklyActivity[]
+
+  @@unique([classId, month, year])
+  @@index([classId])
+}
+
+model WeeklyActivity {
+  id            String   @id @default(cuid())
+  monthlyPlanId String
+  weekNumber    Int      // Tuần 1, 2, 3, 4, 5
+  content       String?  @db.Text // Nội dung sinh hoạt tuần
+  notes         String?  @db.Text // Ghi chú
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  monthlyPlan MonthlyPlan @relation(fields: [monthlyPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([monthlyPlanId, weekNumber])
+  @@index([monthlyPlanId])
 }

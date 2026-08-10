@@ -19,7 +19,7 @@ export async function getVPDashboardStats(campusId: string) {
   const totalTeachers = await prisma.teacher.count({
     where: {
       OR: [
-        { homeroomClass: { campusId } },
+        { homeroomClasses: { some: { campusId } } },
         { teachingAssignments: { some: { classRoom: { campusId } } } },
       ],
     },
