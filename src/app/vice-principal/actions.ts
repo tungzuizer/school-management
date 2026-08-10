@@ -367,14 +367,7 @@ export async function getVPLessonPlans(campusId: string) {
 
 export async function getVPWarnings(campusId: string) {
   try {
-    const effectiveCampusId = await getEffectiveCampusId(campusId);
     const warnings = await prisma.earlyWarning.findMany({
-      where: {
-        OR: [
-          { campusId: effectiveCampusId },
-          { campusId: null },
-        ],
-      },
       orderBy: { createdAt: "desc" },
       take: 20,
     });
@@ -386,7 +379,7 @@ export async function getVPWarnings(campusId: string) {
         description: w.description,
         level: w.level,
         category: w.category,
-        resolved: w.resolved,
+        resolved: w.isResolved,
         createdAt: w.createdAt.toISOString(),
       }));
     }
