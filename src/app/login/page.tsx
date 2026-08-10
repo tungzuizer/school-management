@@ -28,7 +28,7 @@ export default function LoginPage() {
     try {
       const result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error) {
-        setError(result.error);
+        setError("Email hoặc mật khẩu không chính xác. Vui lòng thử lại.");
         setLoading(false);
         return;
       }
@@ -47,7 +47,7 @@ export default function LoginPage() {
     try {
       const result = await signIn("credentials", { email: demoEmail, password: "123456", redirect: false });
       if (result?.error) {
-        setError(result.error);
+        setError("Không thể đăng nhập tài khoản demo. Vui lòng thử lại.");
         setLoading(false);
         return;
       }
