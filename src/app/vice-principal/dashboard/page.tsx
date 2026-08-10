@@ -45,7 +45,8 @@ const COLORS = ["#0d9488", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"
 
 export default function VPDashboardPage() {
   const { data: session } = useSession();
-  const campusId = session?.user?.campusId;
+  const rawCampusId = session?.user?.campusId;
+  const campusId = rawCampusId || "demo-campus";
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [weekData, setWeekData] = useState<WeekData>([]);
@@ -57,21 +58,16 @@ export default function VPDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!campusId) {
-      setLoading(false);
-      return;
-    }
-
     async function loadData() {
       try {
         const [s, w, g, a, i, t, c] = await Promise.all([
-          getVPDashboardStats(campusId!),
-          getVPAttendanceByWeek(campusId!),
-          getVPGradesByClass(campusId!),
-          getVPClassAttendanceRanking(campusId!),
-          getVPRecentIncidents(campusId!),
-          getVPTodaySummary(campusId!),
-          getVPCampusInfo(campusId!),
+          getVPDashboardStats(campusId),
+          getVPAttendanceByWeek(campusId),
+          getVPGradesByClass(campusId),
+          getVPClassAttendanceRanking(campusId),
+          getVPRecentIncidents(campusId),
+          getVPTodaySummary(campusId),
+          getVPCampusInfo(campusId),
         ]);
         setStats(s);
         setWeekData(w);
@@ -99,20 +95,7 @@ export default function VPDashboardPage() {
       </div>
     );
   }
-
-  if (!campusId) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center max-w-md">
-          <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-700 mb-2">Chua duoc gan phan hieu</h2>
-          <p className="text-gray-500">
-            Tai khoan cua ban chua duoc gan vao phan hieu nao. Vui long lien he Hieu truong de duoc phan cong.
-          </p>
-        </div>
-      </div>
-    );
-  }
+>>>>>>>
 
   const todayStr = new Date().toLocaleDateString("vi-VN", {
     weekday: "long",
@@ -126,7 +109,7 @@ export default function VPDashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tong quan Phan hieu</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Tổng quan Phân hiệu</h1>
           <p className="text-sm text-gray-500 mt-1 capitalize">{todayStr}</p>
         </div>
         {campusInfo && (
@@ -137,7 +120,22 @@ export default function VPDashboardPage() {
         )}
       </div>
 
+      {/* Unassigned Campus Warning Banner */}
+      {!rawCampusId && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-amber-900 text-sm">Chưa được gán phân hiệu</p>
+            <p className="text-xs text-amber-800 mt-0.5">
+              Tài khoản của bạn chưa được gán vào phân hiệu nào. Vui lòng liên hệ Hiệu trưởng để được phân công. (Hệ thống đang hiển thị dữ liệu Phân hiệu thử nghiệm).
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Campus Info Card */}
+>>>>>>>
+
       {campusInfo && (
         <div className="bg-gradient-to-r from-teal-700 to-teal-600 text-white rounded-xl p-5">
           <div className="flex items-start gap-3 mb-4">

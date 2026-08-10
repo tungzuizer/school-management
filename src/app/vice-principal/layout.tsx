@@ -231,11 +231,19 @@ export default function VicePrincipalLayout({ children }: { children: React.Reac
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              {!session?.user?.campusId && (
+                <div className="mx-4 mt-3 px-3 py-2 bg-amber-500/20 border border-amber-400/30 rounded-lg">
+                  <p className="text-[10px] text-amber-200 uppercase font-bold tracking-wider">Chưa được gán phân hiệu</p>
+                  <p className="text-[11px] text-amber-100 mt-0.5">Tài khoản của bạn chưa được gán vào phân hiệu nào. Vui lòng liên hệ Hiệu trưởng để được phân công.</p>
+                </div>
+              )}
 
               <nav className="flex-1 overflow-auto py-3 px-2 space-y-1">
                 {menuGroups.map((group) => {
                   const GroupIcon = group.icon;
                   return (
+>>>>>>>
+
                     <div key={group.title} className="mb-1">
                       <div className="flex items-center gap-2 px-3 py-1.5">
                         <GroupIcon className="w-4 h-4 text-teal-300" />
