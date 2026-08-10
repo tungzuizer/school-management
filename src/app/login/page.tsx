@@ -12,18 +12,30 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const redirectByRole = async () => {
+  const redirectByRole = async (targetEmail?: string) => {
     let session = await getSession();
     if (!session?.user?.role) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       session = await getSession();
     }
     const role = session?.user?.role;
     if (role === "ADMIN") {
       window.location.href = "/admin/dashboard";
+      return;
     } else if (role === "TEACHER") {
       window.location.href = "/teacher/dashboard";
+      return;
     } else if (role === "STUDENT") {
+      window.location.href = "/student/dashboard";
+      return;
+    }
+
+    const checkEmail = (targetEmail || email).toLowerCase();
+    if (checkEmail.includes("admin")) {
+      window.location.href = "/admin/dashboard";
+    } else if (checkEmail.includes("teacher")) {
+      window.location.href = "/teacher/dashboard";
+    } else if (checkEmail.includes("student")) {
       window.location.href = "/student/dashboard";
     } else {
       window.location.href = "/admin/dashboard";
@@ -41,7 +53,7 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      await redirectByRole();
+      await redirectByRole(email);
     } catch {
       setError("Đã xảy ra lỗi. Vui lòng thử lại.");
       setLoading(false);
@@ -54,15 +66,28 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const result = await signIn("credentials", { email: demoEmail, password: "123456", redirect: false });
+      let result = await signIn("credentials", { email: demoEmail, password: "123456", redirect: false });
       if (result?.error) {
-        setError("Không thể đăng nhập tài khoản demo. Vui lòng thử lại.");
+        // Auto-seed database if demo accounts do not exist yet
+        try {
+          const seedRes = await fetch("/api/db-seed?secret=seed123");
+          if (seedRes.ok) {
+            result = await signIn("credentials", { email: demoEmail, password: "123456", redirect: false });
+          }
+        } catch {
+          // ignore seed fetch error
+        }
+      }
+
+      if (result?.error) {
+        setError("Không thể đăng nhập tài khoản demo. Vui lòng kiểm tra lại cơ sở dữ liệu.");
         setLoading(false);
         return;
       }
-      await redirectByRole();
+
+      await redirectByRole(demoEmail);
     } catch {
-      setError("Đã xảy ra lỗi. Vui lòng thử lại.");
+      setError("Đã xảy ra lỗi khi đăng nhập.");
       setLoading(false);
     }
   };
