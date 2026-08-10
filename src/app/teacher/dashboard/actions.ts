@@ -355,6 +355,143 @@ export async function getClassCompetitionStats(classId: string) {
   };
 }
 
+// ============ Week schedule for timetable view ============
+export async function getWeekSchedule(teacherId: string, weekStartDate?: string) {
+  // Calculate the Monday of the requested week
+  const baseDate = weekStartDate ? new Date(weekStartDate) : new Date();
+  const dayOfWeek = baseDate.getDay(); // 0=Sun
+  const monday = new Date(baseDate);
+  monday.setDate(baseDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  // Get all schedule entries for this teacher (they repeat weekly)
+  const schedules = await prisma.schedule.findMany({
+    where: { teacherId },
+    include: {
+      classRoom: { select: { name: true } },
+      subject: { select: { name: true } },
+    },
+    orderBy: [{ dayOfWeek: "asc" }, { period: "asc" }],
+  });
+
+  // Standard Vietnamese school period times
+  const periodTimes: Record<number, { start: string; end: string }> = {
+    1: { start: "07:00", end: "07:45" },
+    2: { start: "07:50", end: "08:35" },
+    3: { start: "08:40", end: "09:25" },
+    4: { start: "09:40", end: "10:25" },
+    5: { start: "10:30", end: "11:15" },
+    6: { start: "13:00", end: "13:45" },
+    7: { start: "13:50", end: "14:35" },
+    8: { start: "14:40", end: "15:25" },
+    9: { start: "15:40", end: "16:25" },
+    10: { start: "16:30", end: "17:15" },
+  };
+
+  // Build week dates array (Mon-Sun)
+  const weekDates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    weekDates.push(d.toISOString().split("T")[0]);
+  }
+
+  // Transform into timetable grid data
+  // Map: period -> { dayOfWeek -> slot }
+  const timetable: Record<number, Record<number, {
+    subjectName: string;
+    className: string;
+    room: string | null;
+  } | null>> = {};
+
+  // Find all periods that have at least one entry
+  const allPeriods = new Set<number>();
+  for (const s of schedules) {
+    allPeriods.add(s.period);
+  }
+
+  // Initialize all periods
+  for (const p of allPeriods) {
+    timetable[p] = {};
+    for (let d = 1; d <= 7; d++) {
+      timetable[p][d] = null;
+    }
+  }
+
+  // Fill in schedule entries
+  for (const s of schedules) {
+    timetable[s.period][s.dayOfWeek] = {
+      subjectName: s.subject.name,
+      className: s.classRoom.name,
+      room: s.room,
+    };
+  }
+
+  // Convert to serializable format
+  const periods = Array.from(allPeriods).sort((a, b) => a - b);
+  const grid = periods.map((period) => ({
+    period,
+    time: periodTimes[period] || { start: `T${period}`, end: "" },
+    slots: Array.from({ length: 7 }, (_, i) => {
+      const dayOfWeek = i + 1; // 1=Mon...7=Sun
+      return timetable[period]?.[dayOfWeek] || null;
+    }),
+  }));
+
+  return {
+    weekStart: monday.toISOString().split("T")[0],
+    weekEnd: sunday.toISOString().split("T")[0],
+    weekDates,
+    grid,
+    totalSlots: schedules.length,
+  };
+}
+
+// ============ Get teacher's courses/subjects for current term ============
+export async function getTeacherCourses(teacherId: string) {
+  const assignments = await prisma.teachingAssignment.findMany({
+    where: { teacherId },
+    include: {
+      subject: { select: { id: true, name: true } },
+      classRoom: { select: { id: true, name: true, gradeLevel: true } },
+    },
+    orderBy: [{ subject: { name: "asc" } }],
+  });
+
+  // Group by subject
+  const subjectMap = new Map<string, {
+    subjectId: string;
+    subjectName: string;
+    classes: { classId: string; className: string; gradeLevel: number }[];
+  }>();
+
+  for (const a of assignments) {
+    const existing = subjectMap.get(a.subjectId);
+    if (existing) {
+      existing.classes.push({
+        classId: a.classRoom.id,
+        className: a.classRoom.name,
+        gradeLevel: a.classRoom.gradeLevel,
+      });
+    } else {
+      subjectMap.set(a.subjectId, {
+        subjectId: a.subjectId,
+        subjectName: a.subject.name,
+        classes: [{
+          classId: a.classRoom.id,
+          className: a.classRoom.name,
+          gradeLevel: a.classRoom.gradeLevel,
+        }],
+      });
+    }
+  }
+
+  return Array.from(subjectMap.values());
+}
+
 // ============ Incomplete records check ============
 export async function getIncompleteRecords(classId: string) {
   const incomplete: { label: string; count: number; href: string }[] = [];
