@@ -12,6 +12,8 @@ import {
   MessageSquare,
   Building,
   Calendar,
+  Sparkles,
+  FileText,
 } from "lucide-react";
 import {
   getHomeroomClass,
@@ -31,6 +33,12 @@ import {
   getParentFeedbacks,
   createParentFeedback,
   getClassSizeByPeriods,
+  getAcademicCalendar,
+  saveAcademicCalendar,
+  getAIMonthlyReminder,
+  getMonthlyPlan,
+  saveMonthlyPlan,
+  saveWeeklyActivity,
 } from "./actions";
 
 // ============ Types ============
@@ -38,6 +46,7 @@ type ClassInfo = {
   id: string;
   name: string;
   gradeLevel: number;
+  schoolId: string;
   school: { name: string };
   campus: { name: string } | null;
   _count: { students: number };
@@ -91,9 +100,11 @@ const TABS = [
   { key: "grades", label: "Bảng điểm lớp" },
   { key: "incidents", label: "Vi phạm / Khen thưởng" },
   { key: "feedback", label: "Phối hợp phụ huynh" },
+  { key: "ai_reminder", label: "Trợ lý AI Nhắc việc" },
+  { key: "monthly_plan", label: "Kế hoạch tháng & Sinh hoạt tuần" },
 ] as const;
 
-const TAB_ICONS = {
+const TAB_ICONS: Record<string, React.ElementType> = {
   overview: Users,
   groups: LayoutGrid,
   seating: ClipboardList,
@@ -101,6 +112,8 @@ const TAB_ICONS = {
   grades: ClipboardList,
   incidents: AlertTriangle,
   feedback: MessageSquare,
+  ai_reminder: Sparkles,
+  monthly_plan: FileText,
 };
 
 const PERIODS = [
@@ -222,6 +235,8 @@ export default function HomeroomPage() {
           {tab === "grades" && <GradesTab classId={classInfo.id} />}
           {tab === "incidents" && <IncidentsTab classId={classInfo.id} students={students} showToast={showToast} />}
           {tab === "feedback" && <FeedbackTab classId={classInfo.id} students={students} showToast={showToast} />}
+          {tab === "ai_reminder" && <AIReminderTab schoolId={classInfo.schoolId} className={classInfo.name} showToast={showToast} />}
+          {tab === "monthly_plan" && <MonthlyPlanTab classId={classInfo.id} showToast={showToast} />}
         </div>
       </div>
 
@@ -971,6 +986,468 @@ function IncidentsTab({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ============ AI REMINDER TAB ============
+function AIReminderTab({
+  schoolId,
+  className,
+  showToast,
+}: {
+  schoolId: string;
+  className: string;
+  showToast: (m: string) => void;
+}) {
+  const [schoolYear, setSchoolYear] = useState("2026-2027");
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [calendarTitle, setCalendarTitle] = useState("");
+  const [calendarContent, setCalendarContent] = useState("");
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
+  const [savingCalendar, setSavingCalendar] = useState(false);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [aiReminder, setAiReminder] = useState("");
+  const [showCalendarForm, setShowCalendarForm] = useState(false);
+
+  useEffect(() => {
+    if (schoolId) loadCalendar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolId, schoolYear]);
+
+  async function loadCalendar() {
+    setLoadingCalendar(true);
+    const cal = await getAcademicCalendar(schoolId, schoolYear);
+    if (cal) {
+      setCalendarTitle(cal.title);
+      setCalendarContent(cal.content);
+    } else {
+      setCalendarTitle(`Kế hoạch năm học ${schoolYear}`);
+      setCalendarContent("");
+    }
+    setLoadingCalendar(false);
+  }
+
+  async function handleSaveCalendar() {
+    if (!schoolId) {
+      showToast("Không tìm thấy thông tin trường");
+      return;
+    }
+    setSavingCalendar(true);
+    await saveAcademicCalendar({
+      schoolId,
+      schoolYear,
+      title: calendarTitle || `Kế hoạch năm học ${schoolYear}`,
+      content: calendarContent,
+    });
+    setSavingCalendar(false);
+    showToast("Đã lưu kế hoạch năm học");
+  }
+
+  async function handleGenerateAI() {
+    setLoadingAI(true);
+    setAiReminder("");
+    const res = await getAIMonthlyReminder({
+      schoolId,
+      schoolYear,
+      month,
+      year,
+      className,
+    });
+    if (res.success && res.reminder) {
+      setAiReminder(res.reminder);
+      showToast("Đã tạo gợi ý nhắc việc AI!");
+    } else {
+      showToast(res.error || "Không thể tạo nhắc việc AI");
+    }
+    setLoadingAI(false);
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Dynamic Header & Controls */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-5 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse" /> AI Trợ Lý Nhắc Việc Chủ Nhiệm
+            </h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Phân tích kế hoạch năm học & tự động nhắc nhở công việc trọng tâm cho GVCN hàng tháng.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={month}
+              onChange={(e) => setMonth(+e.target.value)}
+              className="border border-blue-200 rounded-lg px-3 py-1.5 text-sm bg-white font-medium"
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(+e.target.value)}
+              className="border border-blue-200 rounded-lg px-3 py-1.5 text-sm w-24 bg-white font-medium"
+            />
+            <button
+              onClick={handleGenerateAI}
+              disabled={loadingAI}
+              className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 shadow"
+            >
+              {loadingAI ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  Đang phân tích...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" /> Phân tích & Nhắc việc AI
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Accordion / Toggle for Academic Calendar Input */}
+      <div className="border rounded-xl p-4 bg-white shadow-sm space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-emerald-600" />
+            <h4 className="font-semibold text-gray-800">Lịch & Kế hoạch năm học của Trường ({schoolYear})</h4>
+          </div>
+          <button
+            onClick={() => setShowCalendarForm(!showCalendarForm)}
+            className="text-xs text-blue-600 hover:underline font-medium"
+          >
+            {showCalendarForm ? "Thu gọn" : "Cập nhật / Xem kế hoạch"}
+          </button>
+        </div>
+
+        {showCalendarForm && (
+          <div className="pt-3 border-t space-y-3">
+            <div className="flex gap-3 items-center">
+              <label className="text-xs font-medium">Năm học:</label>
+              <input
+                type="text"
+                value={schoolYear}
+                onChange={(e) => setSchoolYear(e.target.value)}
+                placeholder="VD: 2026-2027"
+                className="border rounded px-2 py-1 text-xs w-32"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Tiêu đề kế hoạch</label>
+              <input
+                type="text"
+                value={calendarTitle}
+                onChange={(e) => setCalendarTitle(e.target.value)}
+                placeholder="Kế hoạch năm học 2026-2027"
+                className="w-full border rounded px-3 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Nội dung kế hoạch / Các sự kiện chính trong năm</label>
+              <textarea
+                value={calendarContent}
+                onChange={(e) => setCalendarContent(e.target.value)}
+                rows={6}
+                placeholder="Dán nội dung kế hoạch năm học của nhà trường vào đây (VD: Tháng 9 khai giảng, Tháng 10 thi giữa kỳ 1, Tháng 11 chào mừng ngày 20/11...)"
+                className="w-full border rounded px-3 py-2 text-sm font-mono"
+              />
+            </div>
+            <button
+              onClick={handleSaveCalendar}
+              disabled={savingCalendar}
+              className="bg-emerald-600 text-white px-4 py-1.5 rounded text-sm hover:bg-emerald-700 disabled:opacity-50 font-medium"
+            >
+              {savingCalendar ? "Đang lưu..." : "Lưu kế hoạch năm học"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* AI Output Display */}
+      {aiReminder ? (
+        <div className="bg-white border rounded-xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b pb-3">
+            <h4 className="font-bold text-gray-800 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500" /> Nhiệm vụ & Gợi ý công việc Tháng {month}/{year}
+            </h4>
+            <span className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-md font-semibold">
+              Tạo bởi AI Trợ lý GVCN
+            </span>
+          </div>
+          <div className="prose max-w-none text-sm text-gray-700 whitespace-pre-line leading-relaxed bg-gray-50/50 p-4 rounded-lg border">
+            {aiReminder}
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-white border border-dashed rounded-xl p-6">
+          <Sparkles className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <h4 className="text-gray-600 font-medium">Chưa có bản tổng hợp nhắc việc AI</h4>
+          <p className="text-xs text-gray-400 mt-1">
+            Nhấn nút "Phân tích & Nhắc việc AI" ở trên để AI tạo danh sách công việc tự động cho Tháng {month}/{year}.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ MONTHLY PLAN TAB ============
+function MonthlyPlanTab({
+  classId,
+  showToast,
+}: {
+  classId: string;
+  showToast: (m: string) => void;
+}) {
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [planId, setPlanId] = useState<string | null>(null);
+  const [planContent, setPlanContent] = useState("");
+  const [weeklyActivities, setWeeklyActivities] = useState<
+    Array<{ weekNumber: number; content: string; notes: string }>
+  >([
+    { weekNumber: 1, content: "", notes: "" },
+    { weekNumber: 2, content: "", notes: "" },
+    { weekNumber: 3, content: "", notes: "" },
+    { weekNumber: 4, content: "", notes: "" },
+    { weekNumber: 5, content: "", notes: "" },
+  ]);
+  const [activeWeek, setActiveWeek] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [savingWeek, setSavingWeek] = useState(false);
+
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classId, month, year]);
+
+  async function loadData() {
+    setLoading(true);
+    const plan = await getMonthlyPlan(classId, month, year);
+    if (plan) {
+      setPlanId(plan.id);
+      setPlanContent(plan.planContent || "");
+      const weeksMap = new Map<number, { content: string; notes: string }>(
+        plan.weeklyActivities.map((w) => [w.weekNumber, { content: w.content || "", notes: w.notes || "" }])
+      );
+      setWeeklyActivities(
+        Array.from({ length: 5 }, (_, i) => ({
+          weekNumber: i + 1,
+          content: weeksMap.get(i + 1)?.content || "",
+          notes: weeksMap.get(i + 1)?.notes || "",
+        }))
+      );
+    } else {
+      setPlanId(null);
+      setPlanContent("");
+      setWeeklyActivities(
+        Array.from({ length: 5 }, (_, i) => ({
+          weekNumber: i + 1,
+          content: "",
+          notes: "",
+        }))
+      );
+    }
+    setLoading(false);
+  }
+
+  async function handleSavePlan() {
+    setSavingPlan(true);
+    const res = await saveMonthlyPlan({ classId, month, year, planContent });
+    setPlanId(res.id);
+    setSavingPlan(false);
+    showToast("Đã lưu kế hoạch tháng!");
+  }
+
+  async function handleSaveWeek(weekNum: number) {
+    if (!planId) {
+      // Create monthly plan first if not existing
+      const res = await saveMonthlyPlan({ classId, month, year, planContent });
+      setPlanId(res.id);
+      const wData = weeklyActivities.find((w) => w.weekNumber === weekNum);
+      await saveWeeklyActivity({
+        monthlyPlanId: res.id,
+        weekNumber: weekNum,
+        content: wData?.content,
+        notes: wData?.notes,
+      });
+    } else {
+      setSavingWeek(true);
+      const wData = weeklyActivities.find((w) => w.weekNumber === weekNum);
+      await saveWeeklyActivity({
+        monthlyPlanId: planId,
+        weekNumber: weekNum,
+        content: wData?.content,
+        notes: wData?.notes,
+      });
+      setSavingWeek(false);
+    }
+    showToast(`Đã lưu nội dung Tuần ${weekNum}!`);
+  }
+
+  function updateWeekContent(weekNum: number, field: "content" | "notes", val: string) {
+    setWeeklyActivities((prev) =>
+      prev.map((w) => (w.weekNumber === weekNum ? { ...w, [field]: val } : w))
+    );
+  }
+
+  const currentWeekData = weeklyActivities.find((w) => w.weekNumber === activeWeek) || {
+    weekNumber: activeWeek,
+    content: "",
+    notes: "",
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header & Month Selector */}
+      <div className="flex flex-wrap gap-4 items-center justify-between bg-white border rounded-xl p-4 shadow-sm">
+        <div>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600" /> Kế Hoạch Tháng & Nội Dung Sinh Hoạt Tuần
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Lập kế hoạch làm việc tháng và chuẩn bị nội dung sinh hoạt chủ nhiệm theo từng tuần.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-medium text-gray-600">Tháng:</label>
+            <select
+              value={month}
+              onChange={(e) => setMonth(+e.target.value)}
+              className="border rounded-md px-2.5 py-1 text-sm font-medium"
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  Tháng {i + 1}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-medium text-gray-600">Năm:</label>
+            <input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(+e.target.value)}
+              className="border rounded-md px-2.5 py-1 text-sm w-20 font-medium"
+            />
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Kế hoạch tháng */}
+          <div className="bg-white border rounded-xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                  📌 Kế Hoạch Tháng {month}/{year}
+                </h4>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Mục tiêu, nhiệm vụ trọng tâm & hoạt động chủ yếu trong tháng
+                </label>
+                <textarea
+                  value={planContent}
+                  onChange={(e) => setPlanContent(e.target.value)}
+                  rows={14}
+                  placeholder={`- Mục tiêu thi đua trong tháng ${month}...\n- Công tác chuyên môn & học tập...\n- Hoạt động ngoại khóa & phong trào...\n- Phối hợp với gia đình học sinh...`}
+                  className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleSavePlan}
+              disabled={savingPlan}
+              className="bg-blue-600 text-white font-medium px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 mt-3 self-end"
+            >
+              {savingPlan ? "Đang lưu..." : "Lưu kế hoạch tháng"}
+            </button>
+          </div>
+
+          {/* Sinh hoạt tuần */}
+          <div className="bg-white border rounded-xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                  📋 Nội Dung Sinh Hoạt Tuần
+                </h4>
+              </div>
+
+              {/* Tabs Tuần 1-5 */}
+              <div className="flex border-b gap-1 overflow-x-auto">
+                {[1, 2, 3, 4, 5].map((wNum) => (
+                  <button
+                    key={wNum}
+                    onClick={() => setActiveWeek(wNum)}
+                    className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${
+                      activeWeek === wNum
+                        ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
+                        : "text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    Tuần {wNum}
+                  </button>
+                ))}
+              </div>
+
+              {/* Weekly Form */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Nội dung sinh hoạt chủ nhiệm Tuần {activeWeek}
+                  </label>
+                  <textarea
+                    value={currentWeekData.content}
+                    onChange={(e) => updateWeekContent(activeWeek, "content", e.target.value)}
+                    rows={8}
+                    placeholder={`1. Đánh giá tuần qua (sĩ số, học tập, kỷ luật)...\n2. Phổ biến kế hoạch tuần tới...\n3. Sinh hoạt theo chủ điểm...`}
+                    className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Ghi chú & Đánh giá kết quả thực hiện
+                  </label>
+                  <textarea
+                    value={currentWeekData.notes}
+                    onChange={(e) => updateWeekContent(activeWeek, "notes", e.target.value)}
+                    rows={3}
+                    placeholder="Ghi chú công việc phát sinh hoặc tự đánh giá..."
+                    className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => handleSaveWeek(activeWeek)}
+              disabled={savingWeek}
+              className="bg-emerald-600 text-white font-medium px-4 py-2 rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50 mt-3 self-end"
+            >
+              {savingWeek ? "Đang lưu..." : `Lưu Tuần ${activeWeek}`}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

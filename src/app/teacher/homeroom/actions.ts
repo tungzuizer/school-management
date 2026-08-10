@@ -289,3 +289,177 @@ export async function createParentFeedback(data: {
     },
   });
 }
+
+// ============ Lịch năm học & AI Nhắc việc ============
+export async function getAcademicCalendar(schoolId: string, schoolYear: string) {
+  return prisma.academicCalendar.findUnique({
+    where: { schoolId_schoolYear: { schoolId, schoolYear } },
+  });
+}
+
+export async function saveAcademicCalendar(data: {
+  schoolId: string;
+  schoolYear: string;
+  title: string;
+  content: string;
+  fileUrl?: string;
+}) {
+  return prisma.academicCalendar.upsert({
+    where: {
+      schoolId_schoolYear: {
+        schoolId: data.schoolId,
+        schoolYear: data.schoolYear,
+      },
+    },
+    update: {
+      title: data.title,
+      content: data.content,
+      fileUrl: data.fileUrl,
+    },
+    create: data,
+  });
+}
+
+export async function getAIMonthlyReminder(params: {
+  schoolId: string;
+  schoolYear: string;
+  month: number;
+  year: number;
+  className?: string;
+}) {
+  const calendar = await getAcademicCalendar(params.schoolId, params.schoolYear);
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  const apiBase = process.env.OPENAI_API_BASE || "http://localhost:20128/v1";
+
+  const calendarContent = calendar
+    ? calendar.content
+    : "Chưa có kế hoạch năm học chi tiết được tải lên cho trường.";
+
+  const prompt = `Bạn là trợ lý AI thông minh cho giáo viên chủ nhiệm.
+Dưới đây là Kế hoạch/Lịch năm học (${params.schoolYear}):
+---
+${calendarContent}
+---
+
+Hãy tổng hợp và gợi ý các công việc trọng tâm, nhiệm vụ quan trọng mà giáo viên chủ nhiệm lớp ${
+    params.className || ""
+  } cần chuẩn bị và thực hiện trong **Tháng ${params.month}/${params.year}**.
+
+Yêu cầu output:
+- Viết bằng tiếng Việt, rõ ràng, khoa học.
+- Chia thành các mục chính:
+  1. Nhiệm vụ trọng tâm của GVCN trong tháng ${params.month}
+  2. Các mốc thời gian / sự kiện quan trọng cần nhớ
+  3. Nội dung cần nhắc nhở và đôn đốc học sinh / phụ huynh
+  4. Lời khuyên & gợi ý nâng cao hiệu quả quản lý lớp`;
+
+  if (!apiKey) {
+    // Fallback if no API key set
+    return {
+      success: true,
+      reminder: `[Chưa cấu hình OPENAI_API_KEY - Gợi ý tự động cho Tháng ${params.month}/${params.year}]\n\n` +
+        `1. Nhiệm vụ trọng tâm:\n` +
+        `- Ổn định nếp sống, sĩ số và kỷ luật lớp học.\n` +
+        `- Cập nhật thông tin sổ liên lạc và rèn luyện của học sinh.\n` +
+        `- Kiểm tra tình hình học tập và chuẩn bị cho các kỳ kiểm tra.\n\n` +
+        `2. Sự kiện & Mốc thời gian:\n` +
+        `- Sinh hoạt chủ nhiệm hàng tuần.\n` +
+        `- Họp giao ban chủ nhiệm cấp trường/khối.\n\n` +
+        `3. Nhắc nhở học sinh & Phụ huynh:\n` +
+        `- Thực hiện nghiêm túc nội quy trường lớp.\n` +
+        `- Tăng cường phối hợp giữa gia đình và nhà trường.`,
+    };
+  }
+
+  try {
+    const res = await fetch(`${apiBase}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        messages: [
+          {
+            role: "system",
+            content: "Bạn là chuyên gia tư vấn quản lý giáo dục và trợ lý giáo viên chủ nhiệm.",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("AI API Error:", errText);
+      return { success: false, error: `Lỗi AI API (${res.status}): ${errText}` };
+    }
+
+    const data = await res.json();
+    const reminder = data.choices?.[0]?.message?.content || "Không nhận được phản hồi từ AI.";
+    return { success: true, reminder };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("AI Fetch Error:", message);
+    return { success: false, error: message };
+  }
+}
+
+// ============ Kế hoạch tháng & Sinh hoạt tuần ============
+export async function getMonthlyPlan(classId: string, month: number, year: number) {
+  return prisma.monthlyPlan.findUnique({
+    where: {
+      classId_month_year: { classId, month, year },
+    },
+    include: {
+      weeklyActivities: {
+        orderBy: { weekNumber: "asc" },
+      },
+    },
+  });
+}
+
+export async function saveMonthlyPlan(data: {
+  classId: string;
+  month: number;
+  year: number;
+  planContent: string;
+}) {
+  return prisma.monthlyPlan.upsert({
+    where: {
+      classId_month_year: {
+        classId: data.classId,
+        month: data.month,
+        year: data.year,
+      },
+    },
+    update: {
+      planContent: data.planContent,
+    },
+    create: data,
+  });
+}
+
+export async function saveWeeklyActivity(data: {
+  monthlyPlanId: string;
+  weekNumber: number;
+  content?: string;
+  notes?: string;
+}) {
+  return prisma.weeklyActivity.upsert({
+    where: {
+      monthlyPlanId_weekNumber: {
+        monthlyPlanId: data.monthlyPlanId,
+        weekNumber: data.weekNumber,
+      },
+    },
+    update: {
+      content: data.content,
+      notes: data.notes,
+    },
+    create: data,
+  });
+}
