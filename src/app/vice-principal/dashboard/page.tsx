@@ -95,7 +95,6 @@ export default function VPDashboardPage() {
       </div>
     );
   }
->>>>>>>
 
   const todayStr = new Date().toLocaleDateString("vi-VN", {
     weekday: "long",
@@ -134,8 +133,6 @@ export default function VPDashboardPage() {
       )}
 
       {/* Campus Info Card */}
->>>>>>>
-
       {campusInfo && (
         <div className="bg-gradient-to-r from-teal-700 to-teal-600 text-white rounded-xl p-5">
           <div className="flex items-start gap-3 mb-4">

@@ -242,8 +242,6 @@ export default function VicePrincipalLayout({ children }: { children: React.Reac
                 {menuGroups.map((group) => {
                   const GroupIcon = group.icon;
                   return (
->>>>>>>
-
                     <div key={group.title} className="mb-1">
                       <div className="flex items-center gap-2 px-3 py-1.5">
                         <GroupIcon className="w-4 h-4 text-teal-300" />
