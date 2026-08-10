@@ -77,6 +77,27 @@ enum ReportStatus {
   SENT
 }
 
+enum SubstituteStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  CANCELLED
+}
+
+enum WarningLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum WarningCategory {
+  ATTENDANCE
+  DROPOUT_RISK
+  PROGRESS_SLIP
+  SAFETY_INCIDENT
+}
+
 // ==================== MODELS ====================
 
 model User {
@@ -124,19 +145,40 @@ model Campus {
   updatedAt DateTime @updatedAt
 
   // Relations
-  school     School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  classRooms ClassRoom[]
+  school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  schoolPoints SchoolPoint[]
+  classRooms   ClassRoom[]
 
   @@index([schoolId])
+  @@index([name])
+}
+
+model SchoolPoint {
+  id          String   @id @default(cuid())
+  campusId    String
+  name        String   // VD: "Điểm trung tâm", "Điểm Bản Mó", "Điểm Bản Pún", "Điểm Phia Xam"
+  address     String?  // Địa chỉ / vị trí
+  distanceKm  Float?   @default(0.0) // Khoảng cách tới điểm trung tâm (km)
+  managerName String?  // Cán bộ / Giáo viên phụ trách điểm trường
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  campus     Campus      @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  classRooms ClassRoom[]
+
+  @@index([campusId])
   @@index([name])
 }
 
 model ClassRoom {
   id                String   @id @default(cuid())
   name              String
-  gradeLevel        Int      // Khối lớp: 6-12
+  gradeLevel        Int      // Khối lớp: 1-12
   schoolId          String
   campusId          String?
+  schoolPointId     String?
   homeroomTeacherId String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -144,6 +186,7 @@ model ClassRoom {
   // Relations
   school              School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   campus              Campus?             @relation(fields: [campusId], references: [id])
+  schoolPoint         SchoolPoint?        @relation(fields: [schoolPointId], references: [id])
   homeroomTeacher     Teacher?            @relation("HomeroomTeacher", fields: [homeroomTeacherId], references: [id])
   students            Student[]
   groups              Group[]
@@ -158,6 +201,7 @@ model ClassRoom {
 
   @@index([schoolId])
   @@index([campusId])
+  @@index([schoolPointId])
   @@index([gradeLevel])
   @@index([homeroomTeacherId])
 }
@@ -574,4 +618,60 @@ model ClassJournalEntry {
   @@index([teacherId])
   @@index([date])
   @@index([subjectId])
+}
+
+// ==================== PHÂN CÔNG DẠY THAY & CẢNH BÁO AI ====================
+
+model SubstituteAssignment {
+  id               String           @id @default(cuid())
+  originalTeacher  String           // Tên hoặc ID GV xin nghỉ
+  substituteTeacher String          // Tên hoặc ID GV được phân công dạy thay
+  campusName       String?          // Điểm trường / Phân hiệu
+  schoolPointName  String?          // Điểm trường lẻ (nếu có)
+  distanceKm       Float?           @default(0.0) // Khoảng cách di chuyển giữa 2 điểm
+  className        String           // Lớp học
+  subjectName      String           // Môn học
+  date             DateTime         // Ngày dạy thay
+  period           Int              // Tiết
+  reason           String?          @db.Text // Lý do nghỉ / điều chuyển
+  aiRecommendation String?          @db.Text // Đánh giá & lý do chọn của AI (tối ưu khoảng cách + chuyên môn)
+  status           SubstituteStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([date])
+  @@index([status])
+}
+
+model EarlyWarning {
+  id              String          @id @default(cuid())
+  title           String
+  category        WarningCategory
+  level           WarningLevel
+  campusName      String?         // Phân hiệu
+  schoolPointName String?         // Điểm trường lẻ (Bản Mó, Bản Pún, Phia Xam...)
+  className       String?         // Lớp
+  studentName     String?         // Học sinh (nếu có)
+  description     String          @db.Text
+  aiAnalysis      String?         @db.Text // Phân tích AI & Đề xuất hành động (cho BGH & Điểm trường)
+  isResolved      Boolean         @default(false)
+  resolvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([category])
+  @@index([level])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+model DecisionLog {
+  id               String   @id @default(cuid())
+  principalId      String?  // ID hoặc tên Hiệu trưởng
+  query            String   @db.Text // Câu hỏi / Vấn đề cần tư vấn
+  aiRecommendation String   @db.Text // Gợi ý phương án & ưu/nhược điểm từ AI
+  decisionTaken    String?  @db.Text // Quyết định thực tế của Hiệu trưởng
+  createdAt        DateTime @default(now())
+
+  @@index([createdAt])
 }
