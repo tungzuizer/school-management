@@ -70,6 +70,15 @@ async function main() {
     studentUsers.push(user);
   }
 
+  // ===== VICE PRINCIPAL USERS =====
+  const vpUser1 = await prisma.user.create({
+    data: { name: "Nguyen Thi VP1", email: "vp1@school.com", password: hashedPassword, role: Role.VICE_PRINCIPAL },
+  });
+
+  const vpUser2 = await prisma.user.create({
+    data: { name: "Tran Van VP2", email: "vp2@school.com", password: hashedPassword, role: Role.VICE_PRINCIPAL },
+  });
+
   // ===== SCHOOLS =====
   const school1 = await prisma.school.create({
     data: { name: "Trường PTDTBT THCS Mường Mát", address: "Xã Mường Mát, Huyện Kỳ Sơn, Nghệ An", phone: "0238-3123-888", email: "thcs.muongmat@nghean.edu.vn" },
@@ -87,6 +96,10 @@ async function main() {
   const campus2 = await prisma.campus.create({
     data: { schoolId: school1.id, name: "Phân hiệu 2 - Cụm Sơn Lâm", address: "Bản Sơn Lâm, Xã Mường Mát" },
   });
+
+  // ===== ASSIGN VP USERS TO CAMPUSES =====
+  await prisma.user.update({ where: { id: vpUser1.id }, data: { campusId: campus1.id } });
+  await prisma.user.update({ where: { id: vpUser2.id }, data: { campusId: campus2.id } });
 
   // ===== SCHOOL POINTS (Điểm trường lẻ / Vệ tinh) =====
   const spCenter = await prisma.schoolPoint.create({
@@ -465,10 +478,12 @@ async function main() {
 
   console.log("✅ Seed completed successfully!");
   console.log("📧 Demo accounts:");
-  console.log("   Admin:   admin@school.com / 123456");
+  console.log("   Admin (Hieu truong):   admin@school.com / 123456");
+  console.log("   VP1 (Pho Hieu truong): vp1@school.com / 123456");
+  console.log("   VP2 (Pho Hieu truong): vp2@school.com / 123456");
   console.log("   Teacher: teacher@school.com / 123456");
   console.log("   Student: student@school.com / 123456");
-  console.log(`📊 Created: ${students.length} students, 3 teachers, 2 schools, 2 campuses, 4 school points, 3 classes`);
+  console.log(`📊 Created: ${students.length} students, 3 teachers, 2 VPs, 2 schools, 2 campuses, 4 school points, 3 classes`);
 }
 
 main()

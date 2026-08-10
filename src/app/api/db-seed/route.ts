@@ -47,6 +47,17 @@ export async function GET(request: Request) {
       },
     });
 
+    await prisma.user.upsert({
+      where: { email: "vp1@school.com" },
+      update: { password: hashedPassword },
+      create: {
+        name: "Nguyen Thi VP1",
+        email: "vp1@school.com",
+        password: hashedPassword,
+        role: Role.VICE_PRINCIPAL,
+      },
+    });
+
     return NextResponse.json({ success: true, message: "Database seeded successfully" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to seed database" }, { status: 500 });

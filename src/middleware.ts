@@ -10,6 +10,9 @@ export default withAuth(
     if (path.startsWith("/admin") && token?.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
+    if (path.startsWith("/vice-principal") && token?.role !== "VICE_PRINCIPAL") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
     if (path.startsWith("/teacher") && token?.role !== "TEACHER") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
@@ -27,5 +30,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*", "/teacher/:path*", "/student/:path*"],
+  matcher: ["/admin/:path*", "/vice-principal/:path*", "/teacher/:path*", "/student/:path*"],
 };
