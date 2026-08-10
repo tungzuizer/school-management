@@ -3,7 +3,7 @@
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { GraduationCap, Mail, Lock, Loader2, ShieldCheck, BookOpen, User } from "lucide-react";
+import { GraduationCap, Mail, Lock, Loader2, ShieldCheck, BookOpen, User, Building2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,6 +25,9 @@ export default function LoginPage() {
     } else if (role === "TEACHER") {
       window.location.href = "/teacher/dashboard";
       return;
+    } else if (role === "VICE_PRINCIPAL") {
+      window.location.href = "/vice-principal/dashboard";
+      return;
     } else if (role === "STUDENT") {
       window.location.href = "/student/dashboard";
       return;
@@ -33,6 +36,8 @@ export default function LoginPage() {
     const checkEmail = (targetEmail || email).toLowerCase();
     if (checkEmail.includes("admin")) {
       window.location.href = "/admin/dashboard";
+    } else if (checkEmail.includes("vp")) {
+      window.location.href = "/vice-principal/dashboard";
     } else if (checkEmail.includes("teacher")) {
       window.location.href = "/teacher/dashboard";
     } else if (checkEmail.includes("student")) {
@@ -189,7 +194,7 @@ export default function LoginPage() {
               <p className="text-sm text-gray-400 text-center mb-4 font-semibold uppercase tracking-wider">
                 Đăng nhập nhanh (demo)
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => quickLogin("admin@school.com")}
                   disabled={loading}
@@ -197,6 +202,14 @@ export default function LoginPage() {
                 >
                   <ShieldCheck className="w-7 h-7 text-indigo-500 group-hover:text-indigo-600" />
                   <span className="text-sm font-semibold text-gray-600 group-hover:text-indigo-700">Hiệu trưởng</span>
+                </button>
+                <button
+                  onClick={() => quickLogin("vp1@school.com")}
+                  disabled={loading}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-colors disabled:opacity-50 group"
+                >
+                  <Building2 className="w-7 h-7 text-teal-500 group-hover:text-teal-600" />
+                  <span className="text-sm font-semibold text-gray-600 group-hover:text-teal-700">Phó Hiệu trưởng</span>
                 </button>
                 <button
                   onClick={() => quickLogin("teacher@school.com")}

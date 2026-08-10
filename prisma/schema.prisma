@@ -14,6 +14,7 @@ datasource db {
 
 enum Role {
   ADMIN
+  VICE_PRINCIPAL
   TEACHER
   STUDENT
 }
@@ -107,17 +108,20 @@ model User {
   password  String
   role      Role     @default(STUDENT)
   image     String?
+  campusId  String?  // Phan hieu phu trach (cho Hieu pho)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   teacher               Teacher?
   student               Student?
+  campus                Campus?  @relation(fields: [campusId], references: [id])
   sentNotifications     Notification[] @relation("SentNotifications")
   receivedNotifications Notification[] @relation("ReceivedNotifications")
 
   @@index([email])
   @@index([role])
+  @@index([campusId])
 }
 
 model School {
@@ -146,6 +150,7 @@ model Campus {
 
   // Relations
   school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  users        User[]
   schoolPoints SchoolPoint[]
   classRooms   ClassRoom[]
 

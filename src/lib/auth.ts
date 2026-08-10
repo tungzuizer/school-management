@@ -23,9 +23,9 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
-          if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student"))) {
-            const role = email.includes("admin") ? "ADMIN" : email.includes("teacher") ? "TEACHER" : "STUDENT";
-            const name = email.includes("admin") ? "Nguyễn Văn Admin" : email.includes("teacher") ? "Trần Thị Hoa" : "Phạm Quang Huy";
+          if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student") || email.includes("vp"))) {
+            const role = email.includes("admin") ? "ADMIN" : email.includes("vp") ? "VICE_PRINCIPAL" : email.includes("teacher") ? "TEACHER" : "STUDENT";
+            const name = email.includes("admin") ? "Nguyen Van Admin" : email.includes("vp") ? "Pho Hieu Truong" : email.includes("teacher") ? "Tran Thi Hoa" : "Pham Quang Huy";
             const hashedPassword = await bcrypt.hash("123456", 10);
             try {
               user = await prisma.user.create({
@@ -52,7 +52,7 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isPasswordValid) {
-          if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student"))) {
+          if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student") || email.includes("vp"))) {
             const hashedPassword = await bcrypt.hash("123456", 10);
             try {
               user = await prisma.user.update({
@@ -72,6 +72,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          campusId: user.campusId || undefined,
         };
       },
     }),
@@ -81,6 +82,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.campusId = user.campusId;
       }
       return token;
     },
@@ -88,6 +90,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
+        session.user.campusId = token.campusId as string | undefined;
       }
       return session;
     },
