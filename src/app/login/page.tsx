@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GraduationCap, Mail, Lock, Loader2, ShieldCheck, BookOpen, User } from "lucide-react";
@@ -13,12 +13,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const redirectByRole = async () => {
-    const res = await fetch("/api/auth/session");
-    const session = await res.json();
-    if (session?.user?.role === "ADMIN") router.push("/admin/dashboard");
-    else if (session?.user?.role === "TEACHER") router.push("/teacher/dashboard");
-    else if (session?.user?.role === "STUDENT") router.push("/student/dashboard");
-    else router.push("/");
+    let session = await getSession();
+    if (!session?.user?.role) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      session = await getSession();
+    }
+    const role = session?.user?.role;
+    if (role === "ADMIN") {
+      window.location.href = "/admin/dashboard";
+    } else if (role === "TEACHER") {
+      window.location.href = "/teacher/dashboard";
+    } else if (role === "STUDENT") {
+      window.location.href = "/student/dashboard";
+    } else {
+      window.location.href = "/admin/dashboard";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
