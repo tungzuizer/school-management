@@ -106,7 +106,7 @@ export async function collectDailyData(classId: string, date: string) {
   };
 }
 
-// Generate AI report using Anthropic API
+// Generate AI report using OpenAI-compatible API (OmniRoute)
 export async function generateAIReport(classId: string, date: string) {
   const data = await collectDailyData(classId, date);
   const classInfo = await prisma.classRoom.findUnique({
@@ -132,23 +132,23 @@ Yêu cầu:
 - Tổng cộng không quá 300 từ`;
 
   try {
-    // Try calling Anthropic API
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    // Call AI via OpenAI-compatible API (OmniRoute)
+    const apiKey = process.env.OPENAI_API_KEY;
+    const apiBase = process.env.OPENAI_API_BASE || "http://localhost:20128/v1";
     if (!apiKey) {
       return {
         success: false,
         text: null,
-        error: "Chưa cấu hình ANTHROPIC_API_KEY. Vui lòng nhập báo cáo thủ công.",
+        error: "Chưa cấu hình OPENAI_API_KEY. Vui lòng nhập báo cáo thủ công.",
         data,
       };
     }
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch(`${apiBase}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
@@ -170,7 +170,7 @@ Yêu cầu:
     }
 
     const result = await response.json();
-    const aiText = result.content?.[0]?.text || "";
+    const aiText = result.choices?.[0]?.message?.content || "";
 
     return { success: true, text: aiText, error: null, data };
   } catch (error: unknown) {
