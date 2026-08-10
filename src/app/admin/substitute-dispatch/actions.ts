@@ -122,6 +122,40 @@ export async function autoDispatchAI() {
       .map((sp) => `- ${sp.name} (${sp.campus.name}): ${sp.distanceKm ?? 0}km`)
       .join("\n");
 
+    // Get real teachers with specialties and assignments
+    const teachers = await prisma.teacher.findMany({
+      include: {
+        user: { select: { name: true } },
+        teachingAssignments: {
+          include: {
+            subject: { select: { name: true } },
+            classRoom: { include: { schoolPoint: true } },
+          },
+        },
+      },
+    });
+
+    const teachersContext = teachers.length > 0
+      ? teachers
+          .map((t) => {
+            const subjects = Array.from(
+              new Set([
+                t.specialty,
+                ...t.teachingAssignments.map((ta) => ta.subject.name),
+              ])
+            ).filter(Boolean).join(", ");
+            const points = Array.from(
+              new Set(
+                t.teachingAssignments
+                  .map((ta) => ta.classRoom.schoolPoint?.name)
+                  .filter(Boolean)
+              )
+            ).join(", ");
+            return `- ${t.user.name} (Môn dạy: ${subjects || "N/A"}, Điểm trường: ${points || "Điểm Trung Tâm"})`;
+          })
+          .join("\n")
+      : "Chưa có dữ liệu giáo viên.";
+
     // Get existing assignments today
     const existingToday = await prisma.substituteAssignment.findMany({
       where: { date: { gte: today, lt: tomorrow } },
@@ -132,6 +166,9 @@ export async function autoDispatchAI() {
       : "Chua co phan cong nao hom nay.";
 
     const prompt = `Ban la tro ly AI dieu chuyen giao vien day thay cho truong pho thong co nhieu diem truong ve tinh.
+
+DANH SACH GIAO VIEN THUC TE TRONG HE THONG:
+${teachersContext}
 
 HE THONG DIEM TRUONG:
 ${schoolPointsContext}
@@ -265,7 +302,44 @@ async function findSubstituteAI(input: {
     orderBy: { distanceKm: "asc" },
   });
 
+  // Get real teachers with specialties and assignments
+  const teachers = await prisma.teacher.findMany({
+    include: {
+      user: { select: { name: true } },
+      teachingAssignments: {
+        include: {
+          subject: { select: { name: true } },
+          classRoom: { include: { schoolPoint: true } },
+        },
+      },
+    },
+  });
+
+  const teachersContext = teachers.length > 0
+    ? teachers
+        .map((t) => {
+          const subjects = Array.from(
+            new Set([
+              t.specialty,
+              ...t.teachingAssignments.map((ta) => ta.subject.name),
+            ])
+          ).filter(Boolean).join(", ");
+          const points = Array.from(
+            new Set(
+              t.teachingAssignments
+                .map((ta) => ta.classRoom.schoolPoint?.name)
+                .filter(Boolean)
+            )
+          ).join(", ");
+          return `- ${t.user.name} (Môn dạy: ${subjects || "N/A"}, Điểm trường: ${points || "Điểm Trung Tâm"})`;
+        })
+        .join("\n")
+    : "Chưa có dữ liệu giáo viên.";
+
   const prompt = `Ban la tro ly AI dieu chuyen giao vien day thay. Hay de xuat giao vien day thay tot nhat:
+
+DANH SACH GIAO VIEN THUC TE TRONG HE THONG:
+${teachersContext}
 
 THONG TIN YEU CAU:
 - GV xin nghi: ${input.originalTeacher}
