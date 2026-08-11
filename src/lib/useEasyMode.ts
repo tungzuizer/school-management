@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 
 export function useEasyMode() {
-  const [isEasyMode, setIsEasyMode] = useState(false);
+  const [isEasyMode, setIsEasyMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("easy-mode") === "true";
+    }
+    return false;
+  });
 
   useEffect(() => {
-    // Check initial state from localStorage (only in browser)
+    // Apply class to html tag based on initial value
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("easy-mode") === "true";
-      setIsEasyMode(saved);
-      if (saved) {
+      if (isEasyMode) {
         document.documentElement.classList.add("easy-mode");
       } else {
         document.documentElement.classList.remove("easy-mode");

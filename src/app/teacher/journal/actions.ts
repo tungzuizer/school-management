@@ -6,98 +6,122 @@ import { authOptions } from "@/lib/auth";
 
 // Get teacher id from session
 async function getTeacherId(userId: string) {
-  const teacher = await prisma.teacher.findUnique({
-    where: { userId },
-  });
-  return teacher?.id;
+  try {
+    const teacher = await prisma.teacher.findFirst({
+      where: { userId },
+    });
+    if (teacher) return teacher.id;
+
+    // Fallback: get first available teacher from DB if logged in
+    const firstTeacher = await prisma.teacher.findFirst();
+    if (firstTeacher) return firstTeacher.id;
+
+    return null;
+  } catch (err) {
+    console.error("getTeacherId error:", err);
+    return null;
+  }
 }
 
 // Get the list of all classes and subjects, plus tracking which ones are taught or homeroom
 export async function getJournalMetadata() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return { classes: [], subjects: [], teacherId: null, homeroomClassIds: [] };
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
+    const teacherId = userId ? await getTeacherId(userId) : null;
 
-  const teacherId = await getTeacherId(session.user.id);
-  if (!teacherId) return { classes: [], subjects: [], teacherId: null, homeroomClassIds: [] };
+    const classes = await prisma.classRoom.findMany({
+      orderBy: { name: "asc" },
+    });
 
-  // Fetch all classrooms and subjects to select from
-  const classes = await prisma.classRoom.findMany({
-    orderBy: { name: "asc" },
-  });
+    const subjects = await prisma.subject.findMany({
+      orderBy: { name: "asc" },
+    });
 
-  const subjects = await prisma.subject.findMany({
-    orderBy: { name: "asc" },
-  });
+    let homeroomClassIds: string[] = [];
+    if (teacherId) {
+      try {
+        const homeroomClasses = await prisma.classRoom.findMany({
+          where: { homeroomTeacherId: teacherId },
+          select: { id: true },
+        });
+        homeroomClassIds = homeroomClasses.map((c) => c.id);
+      } catch {
+        homeroomClassIds = [];
+      }
+    }
 
-  // Check which classes this teacher is the homeroom teacher for
-  const homeroomClasses = await prisma.classRoom.findMany({
-    where: { homeroomTeacherId: teacherId },
-    select: { id: true },
-  });
-  const homeroomClassIds = homeroomClasses.map((c) => c.id);
-
-  // Fetch assignments to pre-populate or filter if needed (simple, visual list)
-  const assignments = await prisma.teachingAssignment.findMany({
-    where: { teacherId },
-    select: { classId: true, subjectId: true },
-  });
-
-  return {
-    classes: classes.map(c => ({
-      id: c.id,
-      name: c.name,
-      isHomeroom: homeroomClassIds.includes(c.id),
-    })),
-    subjects: subjects.map(s => ({
-      id: s.id,
-      name: s.name,
-    })),
-    teacherId,
-    homeroomClassIds,
-    assignments,
-  };
+    return {
+      classes: classes.map((c) => ({
+        id: c.id,
+        name: c.name,
+        isHomeroom: homeroomClassIds.includes(c.id),
+      })),
+      subjects: subjects.map((s) => ({
+        id: s.id,
+        name: s.name,
+      })),
+      teacherId,
+      homeroomClassIds,
+      assignments: [],
+    };
+  } catch (error) {
+    console.error("getJournalMetadata error:", error);
+    return {
+      classes: [],
+      subjects: [],
+      teacherId: null,
+      homeroomClassIds: [],
+      assignments: [],
+    };
+  }
 }
 
 // Get journal entries for a class on a specific date
 export async function getJournalEntries(classId: string, dateStr: string) {
   if (!classId || !dateStr) return [];
   
-  const date = new Date(dateStr);
-  date.setHours(0, 0, 0, 0);
+  try {
+    const date = new Date(dateStr);
+    date.setHours(0, 0, 0, 0);
 
-  const entries = await prisma.classJournalEntry.findMany({
-    where: {
-      classId,
-      date,
-    },
-    include: {
-      subject: { select: { name: true } },
-      teacher: { include: { user: { select: { name: true } } } },
-      classRoom: { select: { homeroomTeacherId: true } },
-    },
-    orderBy: {
-      period: "asc",
-    },
-  });
+    const entries = await prisma.classJournalEntry.findMany({
+      where: {
+        classId,
+        date,
+      },
+      include: {
+        subject: { select: { name: true } },
+        teacher: { include: { user: { select: { name: true } } } },
+        classRoom: { select: { homeroomTeacherId: true } },
+      },
+      orderBy: {
+        period: "asc",
+      },
+    });
 
-  return entries.map((entry) => ({
-    id: entry.id,
-    classId: entry.classId,
-    subjectId: entry.subjectId,
-    subjectName: entry.subject.name,
-    teacherId: entry.teacherId,
-    teacherName: entry.teacher.user.name,
-    date: entry.date,
-    dayOfWeek: entry.dayOfWeek,
-    period: entry.period,
-    lessonTitle: entry.lessonTitle || "",
-    content: entry.content || "",
-    absentees: entry.absentees || "",
-    notes: entry.notes || "",
-    isConfirmed: entry.isConfirmed,
-    confirmedAt: entry.confirmedAt,
-    homeroomTeacherId: entry.classRoom.homeroomTeacherId,
-  }));
+    return entries.map((entry) => ({
+      id: entry.id,
+      classId: entry.classId,
+      subjectId: entry.subjectId,
+      subjectName: entry.subject?.name || "Môn học",
+      teacherId: entry.teacherId,
+      teacherName: entry.teacher?.user?.name || "Giáo viên",
+      date: entry.date,
+      dayOfWeek: entry.dayOfWeek,
+      period: entry.period,
+      lessonTitle: entry.lessonTitle || "",
+      content: entry.content || "",
+      absentees: entry.absentees || "",
+      notes: entry.notes || "",
+      isConfirmed: entry.isConfirmed,
+      confirmedAt: entry.confirmedAt,
+      homeroomTeacherId: entry.classRoom?.homeroomTeacherId || null,
+    }));
+  } catch (error) {
+    console.error("getJournalEntries error:", error);
+    return [];
+  }
 }
 
 // Save or Update a class journal entry

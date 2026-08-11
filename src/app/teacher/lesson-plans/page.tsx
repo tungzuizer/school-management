@@ -89,20 +89,20 @@ export default function TeacherLessonPlansPage() {
     setLoading(true);
     try {
       const meta = await getLessonPlanMetadata();
-      setClasses(meta.classes);
-      setSubjects(meta.subjects);
+      setClasses(meta.classes || []);
+      setSubjects(meta.subjects || []);
 
-      if (meta.classes.length > 0) setFormClassId(meta.classes[0].id);
-      if (meta.subjects.length > 0) setFormSubjectId(meta.subjects[0].id);
+      if (meta.classes && meta.classes.length > 0) setFormClassId(meta.classes[0].id);
+      if (meta.subjects && meta.subjects.length > 0) setFormSubjectId(meta.subjects[0].id);
 
       const items = await getLessonPlans();
-      setPlans(items as any);
+      setPlans((items as any) || []);
     } catch (e: any) {
       showToast("Lỗi khi tải thông tin giáo án", "error");
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, []);
 
   useEffect(() => {
     fetchMetadataAndPlans();

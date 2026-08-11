@@ -57,27 +57,27 @@ export async function getVPDashboardStats(campusId: string) {
     const attendanceRate =
       totalAttendance > 0
         ? Math.round((presentAttendance / totalAttendance) * 100 * 10) / 10
-        : 95.8;
+        : 0;
 
     const totalSchoolPoints = await prisma.schoolPoint.count({
       where: { campusId: effectiveCampusId },
     });
 
     return {
-      totalStudents: totalStudents || 420,
-      totalTeachers: totalTeachers || 32,
-      totalClasses: totalClasses || 12,
-      totalSchoolPoints: totalSchoolPoints || 2,
-      attendanceRate: attendanceRate || 95.8,
+      totalStudents: totalStudents || 0,
+      totalTeachers: totalTeachers || 0,
+      totalClasses: totalClasses || 0,
+      totalSchoolPoints: totalSchoolPoints || 0,
+      attendanceRate: attendanceRate || 0,
     };
   } catch (err) {
     console.error("getVPDashboardStats error:", err);
     return {
-      totalStudents: 420,
-      totalTeachers: 32,
-      totalClasses: 12,
-      totalSchoolPoints: 2,
-      attendanceRate: 95.8,
+      totalStudents: 0,
+      totalTeachers: 0,
+      totalClasses: 0,
+      totalSchoolPoints: 0,
+      attendanceRate: 0,
     };
   }
 }
@@ -134,19 +134,16 @@ export async function getVPAttendanceByWeek(campusId: string) {
       const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
       weeks.push({
         week: weekLabel,
-        present: present || Math.floor(Math.random() * 20) + 380,
-        absent: (absentExcused + absentUnexcused) || Math.floor(Math.random() * 5) + 2,
-        late: late || Math.floor(Math.random() * 6) + 1,
+        present: present || 0,
+        absent: absentExcused + absentUnexcused || 0,
+        late: late || 0,
       });
     }
 
     return weeks;
   } catch (err) {
     console.error("getVPAttendanceByWeek error:", err);
-    return [
-      { week: "1/8", present: 410, absent: 5, late: 3 },
-      { week: "8/8", present: 415, absent: 4, late: 2 },
-    ];
+    return [];
   }
 }
 
@@ -174,12 +171,7 @@ export async function getVPGradesByClass(campusId: string) {
     });
 
     if (!classes || classes.length === 0) {
-      return [
-        { classId: "c1", className: "10A1", gradeLevel: 10, studentCount: 35, avgScore: 8.2 },
-        { classId: "c2", className: "10A2", gradeLevel: 10, studentCount: 36, avgScore: 7.9 },
-        { classId: "c3", className: "11A1", gradeLevel: 11, studentCount: 34, avgScore: 8.5 },
-        { classId: "c4", className: "12A1", gradeLevel: 12, studentCount: 35, avgScore: 8.7 },
-      ];
+      return [];
     }
 
     return classes.map((cls) => {
@@ -191,23 +183,18 @@ export async function getVPGradesByClass(campusId: string) {
           ? Math.round(
               (allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100
             ) / 100
-          : 8.0;
+          : 0;
       return {
         classId: cls.id,
         className: cls.name,
         gradeLevel: cls.gradeLevel,
-        studentCount: cls.students.length || 35,
+        studentCount: cls.students.length,
         avgScore: avg,
       };
     });
   } catch (err) {
     console.error("getVPGradesByClass error:", err);
-    return [
-      { classId: "c1", className: "10A1", gradeLevel: 10, studentCount: 35, avgScore: 8.2 },
-      { classId: "c2", className: "10A2", gradeLevel: 10, studentCount: 36, avgScore: 7.9 },
-      { classId: "c3", className: "11A1", gradeLevel: 11, studentCount: 34, avgScore: 8.5 },
-      { classId: "c4", className: "12A1", gradeLevel: 12, studentCount: 35, avgScore: 8.7 },
-    ];
+    return [];
   }
 }
 
@@ -230,12 +217,7 @@ export async function getVPClassAttendanceRanking(campusId: string) {
     });
 
     if (!classes || classes.length === 0) {
-      return [
-        { className: "12A1", gradeLevel: 12, studentCount: 35, attendanceRate: 98.5 },
-        { className: "11A1", gradeLevel: 11, studentCount: 34, attendanceRate: 97.2 },
-        { className: "10A1", gradeLevel: 10, studentCount: 35, attendanceRate: 96.0 },
-        { className: "10A2", gradeLevel: 10, studentCount: 36, attendanceRate: 94.8 },
-      ];
+      return [];
     }
 
     const sevenDaysAgo = new Date();
@@ -257,12 +239,12 @@ export async function getVPClassAttendanceRanking(campusId: string) {
         ]);
 
         const rate =
-          total > 0 ? Math.round((present / total) * 100 * 10) / 10 : 96.5;
+          total > 0 ? Math.round((present / total) * 100 * 10) / 10 : 0;
 
         return {
           className: cls.name,
           gradeLevel: cls.gradeLevel,
-          studentCount: cls._count.students || 35,
+          studentCount: cls._count.students || 0,
           attendanceRate: rate,
         };
       })
@@ -271,12 +253,7 @@ export async function getVPClassAttendanceRanking(campusId: string) {
     return results.sort((a, b) => b.attendanceRate - a.attendanceRate);
   } catch (err) {
     console.error("getVPClassAttendanceRanking error:", err);
-    return [
-      { className: "12A1", gradeLevel: 12, studentCount: 35, attendanceRate: 98.5 },
-      { className: "11A1", gradeLevel: 11, studentCount: 34, attendanceRate: 97.2 },
-      { className: "10A1", gradeLevel: 10, studentCount: 35, attendanceRate: 96.0 },
-      { className: "10A2", gradeLevel: 10, studentCount: 36, attendanceRate: 94.8 },
-    ];
+    return [];
   }
 }
 
@@ -311,27 +288,6 @@ export async function getVPRecentIncidents(campusId: string, limit = 10) {
       },
     });
 
-    if (!incidents || incidents.length === 0) {
-      return [
-        {
-          id: "inc-1",
-          date: new Date().toISOString(),
-          type: "VIOLATION",
-          studentName: "Nguyễn Văn Nam",
-          className: "10A1",
-          description: "Đi học muộn 15 phút không lý do chính đáng.",
-        },
-        {
-          id: "inc-2",
-          date: new Date(Date.now() - 86400000).toISOString(),
-          type: "ACHIEVEMENT",
-          studentName: "Trần Thị Minh",
-          className: "11A1",
-          description: "Đạt giải Nhất cuộc thi Sáng tạo KH-KT cấp Phân hiệu.",
-        },
-      ];
-    }
-
     return incidents.map((inc) => ({
       id: inc.id,
       date: inc.date.toISOString(),
@@ -342,24 +298,7 @@ export async function getVPRecentIncidents(campusId: string, limit = 10) {
     }));
   } catch (err) {
     console.error("getVPRecentIncidents error:", err);
-    return [
-      {
-        id: "inc-1",
-        date: new Date().toISOString(),
-        type: "VIOLATION",
-        studentName: "Nguyễn Văn Nam",
-        className: "10A1",
-        description: "Đi học muộn 15 phút không lý do chính đáng.",
-      },
-      {
-        id: "inc-2",
-        date: new Date(Date.now() - 86400000).toISOString(),
-        type: "ACHIEVEMENT",
-        studentName: "Trần Thị Minh",
-        className: "11A1",
-        description: "Đạt giải Nhất cuộc thi Sáng tạo KH-KT cấp Phân hiệu.",
-      },
-    ];
+    return [];
   }
 }
 
@@ -421,20 +360,20 @@ export async function getVPTodaySummary(campusId: string) {
       ]);
 
     return {
-      absentToday: absentToday || 3,
-      lateToday: lateToday || 2,
-      incidentsToday: incidentsToday || 1,
-      totalClasses: totalClasses || 12,
-      reportsSubmitted: reportsSubmitted || 10,
+      absentToday: absentToday || 0,
+      lateToday: lateToday || 0,
+      incidentsToday: incidentsToday || 0,
+      totalClasses: totalClasses || 0,
+      reportsSubmitted: reportsSubmitted || 0,
     };
   } catch (err) {
     console.error("getVPTodaySummary error:", err);
     return {
-      absentToday: 3,
-      lateToday: 2,
-      incidentsToday: 1,
-      totalClasses: 12,
-      reportsSubmitted: 10,
+      absentToday: 0,
+      lateToday: 0,
+      incidentsToday: 0,
+      totalClasses: 0,
+      reportsSubmitted: 0,
     };
   }
 }
@@ -466,61 +405,9 @@ export async function getVPCampusInfo(campusId: string) {
       },
     });
 
-    if (campus) return campus;
-
-    return {
-      id: "demo-campus-id",
-      name: "Phân hiệu 1 - Cơ sở Trung tâm",
-      address: "123 Nguyễn Văn Linh, Q.7, TP. Hồ Chí Minh",
-      code: "PH01",
-      schoolId: "school-1",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      school: { name: "Trường THPT Chuyên Nguyễn Du" },
-      schoolPoints: [
-        {
-          id: "sp-1",
-          name: "Điểm trường A - Trung tâm",
-          address: "123 Nguyễn Văn Linh, Q.7",
-          distanceKm: 0,
-          managerName: "Thầy Nguyễn Văn An",
-        },
-        {
-          id: "sp-2",
-          name: "Điểm trường B - Vệ tinh 1",
-          address: "456 Phạm Hùng, Q.8",
-          distanceKm: 3.5,
-          managerName: "Cô Trần Thị Mai",
-        },
-      ],
-    };
+    return campus;
   } catch (err) {
     console.error("getVPCampusInfo error:", err);
-    return {
-      id: "demo-campus-id",
-      name: "Phân hiệu 1 - Cơ sở Trung tâm",
-      address: "123 Nguyễn Văn Linh, Q.7, TP. Hồ Chí Minh",
-      code: "PH01",
-      schoolId: "school-1",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      school: { name: "Trường THPT Chuyên Nguyễn Du" },
-      schoolPoints: [
-        {
-          id: "sp-1",
-          name: "Điểm trường A - Trung tâm",
-          address: "123 Nguyễn Văn Linh, Q.7",
-          distanceKm: 0,
-          managerName: "Thầy Nguyễn Văn An",
-        },
-        {
-          id: "sp-2",
-          name: "Điểm trường B - Vệ tinh 1",
-          address: "456 Phạm Hùng, Q.8",
-          distanceKm: 3.5,
-          managerName: "Cô Trần Thị Mai",
-        },
-      ],
-    };
+    return null;
   }
 }

@@ -28,7 +28,7 @@ export async function getAdminJournalMetadata() {
     classes: classes.map((c) => ({
       id: c.id,
       name: c.name,
-      homeroomTeacherName: c.homeroomTeacher?.user.name || "Chưa phân công",
+      homeroomTeacherName: c.homeroomTeacher?.user?.name || "Chưa phân công",
     })),
   };
 }
@@ -57,9 +57,9 @@ export async function getAdminJournalEntries(classId: string, dateStr: string) {
     id: entry.id,
     classId: entry.classId,
     subjectId: entry.subjectId,
-    subjectName: entry.subject.name,
+    subjectName: entry.subject?.name || "Môn học",
     teacherId: entry.teacherId,
-    teacherName: entry.teacher.user.name,
+    teacherName: entry.teacher?.user?.name || "Giáo viên",
     date: entry.date,
     dayOfWeek: entry.dayOfWeek,
     period: entry.period,

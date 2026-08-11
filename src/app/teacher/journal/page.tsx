@@ -79,39 +79,61 @@ export default function ClassJournalPage() {
   const [formNotes, setFormNotes] = useState("");
   const [formSaving, setFormSaving] = useState(false);
 
+  const [initializing, setInitializing] = useState(true);
+
   // Load initial options
   useEffect(() => {
-    getJournalMetadata().then((data) => {
-      setClasses(data.classes);
-      setSubjects(data.subjects);
-      setTeacherId(data.teacherId);
-      if (data.classes.length > 0) {
-        // Pre-select homeroom class if exists, otherwise first class
-        const homeroom = data.classes.find(c => c.isHomeroom);
-        setSelectedClass(homeroom ? homeroom.id : data.classes[0].id);
-      }
-      if (data.subjects.length > 0) {
-        setFormSubjectId(data.subjects[0].id);
-      }
-    });
+    let mounted = true;
+    getJournalMetadata()
+      .then((data) => {
+        if (!mounted) return;
+        const fetchedClasses = data.classes || [];
+        const fetchedSubjects = data.subjects || [];
+        setClasses(fetchedClasses);
+        setSubjects(fetchedSubjects);
+        setTeacherId(data.teacherId);
+        if (fetchedClasses.length > 0) {
+          const homeroom = fetchedClasses.find((c) => c.isHomeroom);
+          setSelectedClass(homeroom ? homeroom.id : fetchedClasses[0].id);
+        }
+        if (fetchedSubjects.length > 0) {
+          setFormSubjectId(fetchedSubjects[0].id);
+        }
+      })
+      .catch((err) => {
+        console.error("getJournalMetadata error:", err);
+      })
+      .finally(() => {
+        if (mounted) setInitializing(false);
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const loadJournalEntries = useCallback(async () => {
-    if (!selectedClass || !selectedDate) return;
+    if (!selectedClass || !selectedDate) {
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await getJournalEntries(selectedClass, selectedDate);
       setEntries(data as any);
     } catch (e: any) {
-      showToast("Lỗi tải thông tin sổ đầu bài", "error");
+      console.error("loadJournalEntries error:", e);
+      setEntries([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedClass, selectedDate, showToast]);
+  }, [selectedClass, selectedDate]);
 
   useEffect(() => {
-    loadJournalEntries();
-  }, [loadJournalEntries]);
+    if (!initializing) {
+      loadJournalEntries();
+    }
+  }, [initializing, loadJournalEntries]);
 
   const handleOpenAddModal = (period: number) => {
     setEditingEntry(null);
@@ -291,10 +313,15 @@ export default function ClassJournalPage() {
       <div className="space-y-4">
         <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide px-1">Danh sách tiết học trong ngày</h2>
         
-        {loading ? (
-          <div className="py-8 flex flex-col items-center justify-center gap-2">
-            <ListRestart className="w-8 h-8 text-gray-400 animate-spin" />
-            <p className="text-xs text-gray-400">Đang tải dữ liệu...</p>
+        {initializing || loading ? (
+          <div className="py-8 flex flex-col items-center justify-center gap-2 bg-white rounded-2xl border border-gray-100 p-6">
+            <ListRestart className="w-8 h-8 text-blue-500 animate-spin" />
+            <p className="text-xs text-gray-400">Đang tải sổ đầu bài...</p>
+          </div>
+        ) : classes.length === 0 ? (
+          <div className="py-8 text-center bg-white rounded-2xl border border-gray-100 p-6 space-y-1">
+            <p className="text-sm font-semibold text-gray-700">Chưa có lớp học nào trong hệ thống</p>
+            <p className="text-xs text-gray-400">Vui lòng liên hệ Quản trị viên để cập nhật danh sách lớp.</p>
           </div>
         ) : (
           <div className="space-y-3">

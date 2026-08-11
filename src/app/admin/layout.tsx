@@ -15,6 +15,10 @@ import {
   Bell,
   Globe,
   FileBarChart,
+  BarChart3,
+  Target,
+  ShieldCheck,
+  FileText,
   LogOut,
   Menu,
   X,
@@ -43,6 +47,21 @@ type MenuGroup = {
 };
 
 const menuGroups: MenuGroup[] = [
+  {
+    title: "Phan he I: Quan tri chien luoc",
+    icon: Sparkles,
+    items: [
+      { label: "Dashboard Chien luoc", href: "/admin/strategy/dashboard", icon: BarChart3 },
+      { label: "Tong quan Chien luoc", href: "/admin/strategy", icon: LayoutDashboard },
+      { label: "Muc tieu chat luong", href: "/admin/strategy/quality-goals", icon: Target },
+      { label: "Ho so cho phe duyet", href: "/admin/strategy/approvals", icon: ShieldCheck },
+      { label: "Tep minh chung", href: "/admin/strategy/evidences", icon: FileText },
+      { label: "Bao cao & Xuat du lieu", href: "/admin/strategy/reports", icon: FileBarChart },
+      { label: "DanhMuc KPI Toan truong", href: "/admin/kpi/catalog", icon: Settings },
+      { label: "Nhap ket qua KPI", href: "/admin/kpi/entry", icon: FileBarChart },
+      { label: "Quy trinh Phe duyet KPI", href: "/admin/kpi/approval", icon: UserCheck },
+    ],
+  },
   {
     title: "Tro ly AI Hieu Truong",
     icon: Bot,

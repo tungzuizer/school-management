@@ -7,51 +7,56 @@ import { LessonPlanStatus, Role } from "@prisma/client";
 
 // Get all lesson plans for the admin approval portal page
 export async function getLessonPlansForAdmin() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id || session.user.role !== Role.ADMIN) {
-    throw new Error("Không có quyền thực hiện chức năng này");
-  }
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id || session.user.role !== Role.ADMIN) {
+      return [];
+    }
 
-  const plans = await prisma.lessonPlan.findMany({
-    include: {
-      teacher: {
-        include: {
-          user: { select: { name: true } }
-        }
+    const plans = await prisma.lessonPlan.findMany({
+      include: {
+        teacher: {
+          include: {
+            user: { select: { name: true } }
+          }
+        },
+        subject: { select: { name: true } },
+        classRoom: { select: { name: true } },
       },
-      subject: { select: { name: true } },
-      classRoom: { select: { name: true } },
-    },
-    orderBy: [
-      // Sort: SUBMITTED first, then APPROVED, REJECTED, DRAFT
-      { status: "asc" }, 
-      { createdAt: "desc" }
-    ],
-  });
+      orderBy: [
+        // Sort: SUBMITTED first, then APPROVED, REJECTED, DRAFT
+        { status: "asc" }, 
+        { createdAt: "desc" }
+      ],
+    });
 
-  // Filter out DRAFT plans, as admins only need to see SUBMITTED, APPROVED, or REJECTED
-  const reviewablePlans = plans.filter(p => p.status !== LessonPlanStatus.DRAFT);
+    // Filter out DRAFT plans, as admins only need to see SUBMITTED, APPROVED, or REJECTED
+    const reviewablePlans = plans.filter(p => p.status !== LessonPlanStatus.DRAFT);
 
-  return reviewablePlans.map(p => ({
-    id: p.id,
-    teacherName: p.teacher.user.name,
-    subjectName: p.subject.name,
-    className: p.classRoom.name,
-    weekNumber: p.weekNumber,
-    periodStart: p.periodStart,
-    periodEnd: p.periodEnd,
-    title: p.title,
-    objectives: p.objectives || "",
-    content: p.content || "",
-    activities: p.activities || "",
-    materials: p.materials || "",
-    assessment: p.assessment || "",
-    notes: p.notes || "",
-    status: p.status,
-    reviewNote: p.reviewNote || "",
-    reviewedAt: p.reviewedAt,
-    reviewedBy: p.reviewedBy,
-  }));
+    return reviewablePlans.map(p => ({
+      id: p.id,
+      teacherName: p.teacher?.user?.name || "Giáo viên",
+      subjectName: p.subject?.name || "Môn học",
+      className: p.classRoom?.name || "Lớp học",
+      weekNumber: p.weekNumber,
+      periodStart: p.periodStart,
+      periodEnd: p.periodEnd,
+      title: p.title,
+      objectives: p.objectives || "",
+      content: p.content || "",
+      activities: p.activities || "",
+      materials: p.materials || "",
+      assessment: p.assessment || "",
+      notes: p.notes || "",
+      status: p.status,
+      reviewNote: p.reviewNote || "",
+      reviewedAt: p.reviewedAt,
+      reviewedBy: p.reviewedBy,
+    }));
+  } catch (error) {
+    console.error("Error fetching lesson plans for admin:", error);
+    return [];
+  }
 }
 
 // Approve or Reject a lesson plan
