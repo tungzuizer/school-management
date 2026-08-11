@@ -145,14 +145,18 @@ export async function updateStudent(
 
 export async function deleteStudent(studentId: string) {
   try {
-    const student = await prisma.student.findUnique({ where: { id: studentId }, select: { userId: true } });
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      select: { userId: true },
+    });
     if (!student) return { success: false, error: "Không tìm thấy học sinh" };
 
     await prisma.user.delete({ where: { id: student.userId } });
     revalidatePath("/admin/students");
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message || "Lỗi khi xóa" };
+    console.error("Lỗi khi xóa học sinh:", error);
+    return { success: false, error: error.message || "Không thể xóa học sinh" };
   }
 }
 
