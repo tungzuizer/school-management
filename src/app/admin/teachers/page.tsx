@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getTeachers, createTeacher, updateTeacher, deleteTeacher } from "./actions";
+import { getTeachers, createTeacher, updateTeacher, deleteTeacher, createBulkTeachers, BulkTeacherInput } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
@@ -26,6 +26,108 @@ export default function TeachersPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", specialty: "", phone: "", degree: "" });
   const [submitting, setSubmitting] = useState(false);
   const { showToast, ToastComponent } = useToast();
+
+  // Bulk import state
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkInput, setBulkInput] = useState("");
+  const [parsedTeachers, setParsedTeachers] = useState<BulkTeacherInput[]>([]);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ count: number; errors: string[] } | null>(null);
+
+  const parseBulkText = (text: string) => {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lines.length === 0) {
+      setParsedTeachers([]);
+      return;
+    }
+
+    const results: BulkTeacherInput[] = [];
+    let startIndex = 0;
+
+    const firstLineLower = lines[0].toLowerCase();
+    if (firstLineLower.includes("họ tên") || firstLineLower.includes("tên") || firstLineLower.includes("email")) {
+      startIndex = 1;
+    }
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      let cols: string[] = [];
+      if (line.includes("\t")) {
+        cols = line.split("\t").map((c) => c.trim());
+      } else if (line.includes(",")) {
+        cols = line.split(",").map((c) => c.trim().replace(/^["']|["']$/g, ""));
+      } else {
+        cols = [line];
+      }
+
+      if (cols.length > 0 && cols[0]) {
+        results.push({
+          name: cols[0] || "",
+          email: cols[1] || undefined,
+          specialty: cols[2] || undefined,
+          degree: cols[3] || undefined,
+          phone: cols[4] || undefined,
+        });
+      }
+    }
+    setParsedTeachers(results);
+  };
+
+  const handleBulkTextChange = (text: string) => {
+    setBulkInput(text);
+    parseBulkText(text);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const content = evt.target?.result as string;
+      if (content) {
+        setBulkInput(content);
+        parseBulkText(content);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const downloadTemplate = () => {
+    const csvContent =
+      "\uFEFF" +
+      "Họ tên,Email,Chuyên môn,Bằng cấp,Số điện thoại\n" +
+      "Nguyễn Văn A,nguyenvana@school.edu.vn,Toán,Thạc sĩ,0912345678\n" +
+      "Trần Thị B,,Ngữ văn,Cử nhân,0987654321";
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mau_nhap_giao_vien.csv";
+    link.click();
+  };
+
+  const handleBulkSubmit = async () => {
+    if (parsedTeachers.length === 0) {
+      showToast("Chưa có dữ liệu hợp lệ để nhập", "error");
+      return;
+    }
+    setBulkSubmitting(true);
+    const res = await createBulkTeachers(parsedTeachers);
+    setBulkSubmitting(false);
+
+    if (res.success) {
+      showToast(`Đã nhập thành công ${res.count} giáo viên!`);
+      setBulkResult({ count: res.count, errors: res.errors || [] });
+      loadData();
+    } else {
+      showToast(res.error || "Nhập hàng loạt thất bại", "error");
+      if (res.errors && res.errors.length > 0) {
+        setBulkResult({ count: res.count || 0, errors: res.errors });
+      }
+    }
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -229,6 +331,122 @@ export default function TeachersPage() {
         <div className="flex justify-end gap-3">
           <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
           <button onClick={() => deleteConfirm && handleDelete(deleteConfirm)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Xóa</button>
+        </div>
+      </Modal>
+
+      {/* Bulk Import Modal */}
+      <Modal
+        isOpen={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        title="Nhập danh sách giáo viên hàng loạt"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-900 space-y-1">
+            <p className="font-semibold mb-1">💡 Hướng dẫn nhập dữ liệu:</p>
+            <p>1. Copy hàng loạt từ Excel / Google Sheets hoặc tải file CSV mẫu.</p>
+            <p>2. Thứ tự cột: <b>Họ tên | Email | Chuyên môn | Bằng cấp | SĐT</b></p>
+            <p>3. Nếu bỏ trống Email, hệ thống sẽ tự tạo email <b>gv.[ten]@school.edu.vn</b> với mật khẩu mặc định là <b>123456</b>.</p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={downloadTemplate}
+              className="text-xs bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-50 flex items-center gap-1 font-medium"
+            >
+              📄 Tải mẫu CSV
+            </button>
+            <label className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded cursor-pointer hover:bg-indigo-100 font-medium">
+              📁 Tải file CSV lên
+              <input type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Dán nội dung từ Excel / CSV vào đây:
+            </label>
+            <textarea
+              rows={4}
+              value={bulkInput}
+              onChange={(e) => handleBulkTextChange(e.target.value)}
+              placeholder={`Nguyễn Văn A\tnguyenvana@school.edu.vn\tToán\tThạc sĩ\t0912345678\nTrần Thị B\t\tNgữ văn\tCử nhân\t0987654321`}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-xs font-mono"
+            />
+          </div>
+
+          {parsedTeachers.length > 0 && (
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-medium text-gray-700">
+                  Xem trước dữ liệu sẽ nhập ({parsedTeachers.length} giáo viên):
+                </span>
+              </div>
+              <div className="max-h-48 overflow-y-auto border rounded-lg bg-gray-50 text-xs">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-100 sticky top-0 border-b text-gray-700">
+                    <tr>
+                      <th className="p-2">STT</th>
+                      <th className="p-2">Họ tên</th>
+                      <th className="p-2">Email</th>
+                      <th className="p-2">Chuyên môn</th>
+                      <th className="p-2">Bằng cấp</th>
+                      <th className="p-2">SĐT</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {parsedTeachers.map((t, idx) => (
+                      <tr key={idx} className="hover:bg-white">
+                        <td className="p-2 text-gray-400">{idx + 1}</td>
+                        <td className="p-2 font-medium text-gray-900">{t.name}</td>
+                        <td className="p-2 text-gray-600">{t.email || "(Tự động tạo)"}</td>
+                        <td className="p-2 text-gray-600">{t.specialty || "—"}</td>
+                        <td className="p-2 text-gray-600">{t.degree || "—"}</td>
+                        <td className="p-2 text-gray-600">{t.phone || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {bulkResult && (
+            <div
+              className={`p-3 rounded-lg text-sm border ${
+                bulkResult.count > 0 ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
+              }`}
+            >
+              <p className="font-semibold">Kết quả: Đã thêm thành công {bulkResult.count} giáo viên.</p>
+              {bulkResult.errors.length > 0 && (
+                <div className="mt-2 text-xs text-red-700 max-h-28 overflow-y-auto space-y-1">
+                  <p className="font-semibold">Ghi chú / Cảnh báo:</p>
+                  {bulkResult.errors.map((err, idx) => (
+                    <p key={idx}>• {err}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-3 border-t">
+            <button
+              type="button"
+              onClick={() => setBulkModalOpen(false)}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm"
+            >
+              Đóng
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkSubmit}
+              disabled={bulkSubmitting || parsedTeachers.length === 0}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+            >
+              {bulkSubmitting ? "Đang tiến hành nhập..." : `Lưu tất cả ${parsedTeachers.length} giáo viên`}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

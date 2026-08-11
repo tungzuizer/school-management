@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getClasses, getSchoolsForSelect, getTeachersForSelect, createClass, updateClass, deleteClass } from "./actions";
+import { getClasses, getSchoolsForSelect, getTeachersForSelect, createClass, updateClass, deleteClass, createBulkClasses, BulkClassInput } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
@@ -35,6 +35,112 @@ export default function ClassesPage() {
   const [form, setForm] = useState({ name: "", gradeLevel: "6", schoolId: "", campusId: "", homeroomTeacherId: "" });
   const [submitting, setSubmitting] = useState(false);
   const { showToast, ToastComponent } = useToast();
+
+  // Bulk import state
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkSchoolId, setBulkSchoolId] = useState("");
+  const [bulkInput, setBulkInput] = useState("");
+  const [parsedClasses, setParsedClasses] = useState<BulkClassInput[]>([]);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ count: number; errors: string[] } | null>(null);
+
+  const parseBulkText = (text: string) => {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lines.length === 0) {
+      setParsedClasses([]);
+      return;
+    }
+
+    const results: BulkClassInput[] = [];
+    let startIndex = 0;
+
+    const firstLineLower = lines[0].toLowerCase();
+    if (firstLineLower.includes("lớp") || firstLineLower.includes("tên") || firstLineLower.includes("khối")) {
+      startIndex = 1;
+    }
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      let cols: string[] = [];
+      if (line.includes("\t")) {
+        cols = line.split("\t").map((c) => c.trim());
+      } else if (line.includes(",")) {
+        cols = line.split(",").map((c) => c.trim().replace(/^["']|["']$/g, ""));
+      } else {
+        cols = [line];
+      }
+
+      if (cols.length > 0 && cols[0]) {
+        const name = cols[0];
+        const gradeVal = cols[1] ? parseInt(cols[1]) : undefined;
+
+        results.push({
+          name,
+          gradeLevel: gradeVal && !isNaN(gradeVal) ? gradeVal : undefined,
+          schoolName: cols[2] || undefined,
+          campusName: cols[3] || undefined,
+          homeroomTeacherName: cols[4] || undefined,
+        });
+      }
+    }
+    setParsedClasses(results);
+  };
+
+  const handleBulkTextChange = (text: string) => {
+    setBulkInput(text);
+    parseBulkText(text);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const content = evt.target?.result as string;
+      if (content) {
+        setBulkInput(content);
+        parseBulkText(content);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const downloadTemplate = () => {
+    const csvContent =
+      "\uFEFF" +
+      "Tên lớp,Khối,Trường,Cơ sở,GV Chủ nhiệm\n" +
+      "10A1,10,Trường THPT Chuyên,Cơ sở 1,Nguyễn Văn A\n" +
+      "11B2,11,Trường THPT Chuyên,,Trần Thị B";
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mau_nhap_lop_hoc.csv";
+    link.click();
+  };
+
+  const handleBulkSubmit = async () => {
+    if (parsedClasses.length === 0) {
+      showToast("Chưa có dữ liệu hợp lệ để nhập", "error");
+      return;
+    }
+    setBulkSubmitting(true);
+    const res = await createBulkClasses(parsedClasses, bulkSchoolId || undefined);
+    setBulkSubmitting(false);
+
+    if (res.success) {
+      showToast(`Đã nhập thành công ${res.count} lớp học!`);
+      setBulkResult({ count: res.count, errors: res.errors || [] });
+      loadData();
+    } else {
+      showToast(res.error || "Nhập hàng loạt thất bại", "error");
+      if (res.errors && res.errors.length > 0) {
+        setBulkResult({ count: res.count || 0, errors: res.errors });
+      }
+    }
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -207,6 +313,140 @@ export default function ClassesPage() {
         <div className="flex justify-end gap-3">
           <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
           <button onClick={() => deleteConfirm && handleDelete(deleteConfirm)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Xóa</button>
+        </div>
+      </Modal>
+
+      {/* Bulk Import Modal */}
+      <Modal
+        isOpen={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        title="Nhập danh sách lớp học hàng loạt"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-900 space-y-1">
+            <p className="font-semibold mb-1">💡 Hướng dẫn nhập dữ liệu:</p>
+            <p>1. Copy hàng loạt từ Excel / Google Sheets hoặc tải file CSV mẫu.</p>
+            <p>2. Thứ tự cột: <b>Tên lớp | Khối | Trường | Cơ sở | GV Chủ nhiệm</b></p>
+            <p>3. Nếu bỏ trống Khối, hệ thống tự tách từ tên lớp (vd: 10A1 ➔ Khối 10).</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Trường học mặc định (dùng nếu không ghi rõ trong CSV/Excel):
+            </label>
+            <select
+              value={bulkSchoolId}
+              onChange={(e) => setBulkSchoolId(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+            >
+              <option value="">-- Chọn trường mặc định --</option>
+              {schools.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={downloadTemplate}
+              className="text-xs bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-50 flex items-center gap-1 font-medium"
+            >
+              📄 Tải mẫu CSV
+            </button>
+            <label className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded cursor-pointer hover:bg-indigo-100 font-medium">
+              📁 Tải file CSV lên
+              <input type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Dán nội dung từ Excel / CSV vào đây:
+            </label>
+            <textarea
+              rows={4}
+              value={bulkInput}
+              onChange={(e) => handleBulkTextChange(e.target.value)}
+              placeholder={`10A1\t10\tTrường THPT Chuyên\tCơ sở 1\tNguyễn Văn A\n11B2\t11\t\t\tTrần Thị B`}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-xs font-mono"
+            />
+          </div>
+
+          {parsedClasses.length > 0 && (
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-medium text-gray-700">
+                  Xem trước dữ liệu sẽ nhập ({parsedClasses.length} lớp):
+                </span>
+              </div>
+              <div className="max-h-48 overflow-y-auto border rounded-lg bg-gray-50 text-xs">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-100 sticky top-0 border-b text-gray-700">
+                    <tr>
+                      <th className="p-2">STT</th>
+                      <th className="p-2">Tên lớp</th>
+                      <th className="p-2">Khối</th>
+                      <th className="p-2">Trường</th>
+                      <th className="p-2">Cơ sở</th>
+                      <th className="p-2">GV Chủ nhiệm</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {parsedClasses.map((c, idx) => (
+                      <tr key={idx} className="hover:bg-white">
+                        <td className="p-2 text-gray-400">{idx + 1}</td>
+                        <td className="p-2 font-medium text-gray-900">{c.name}</td>
+                        <td className="p-2 text-gray-600">{c.gradeLevel ? `Khối ${c.gradeLevel}` : "(Tự động)"}</td>
+                        <td className="p-2 text-gray-600">{c.schoolName || "(Mặc định)"}</td>
+                        <td className="p-2 text-gray-600">{c.campusName || "—"}</td>
+                        <td className="p-2 text-gray-600">{c.homeroomTeacherName || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {bulkResult && (
+            <div
+              className={`p-3 rounded-lg text-sm border ${
+                bulkResult.count > 0 ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
+              }`}
+            >
+              <p className="font-semibold">Kết quả: Đã thêm thành công {bulkResult.count} lớp học.</p>
+              {bulkResult.errors.length > 0 && (
+                <div className="mt-2 text-xs text-red-700 max-h-28 overflow-y-auto space-y-1">
+                  <p className="font-semibold">Ghi chú / Cảnh báo:</p>
+                  {bulkResult.errors.map((err, idx) => (
+                    <p key={idx}>• {err}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-3 border-t">
+            <button
+              type="button"
+              onClick={() => setBulkModalOpen(false)}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm"
+            >
+              Đóng
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkSubmit}
+              disabled={bulkSubmitting || parsedClasses.length === 0}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+            >
+              {bulkSubmitting ? "Đang tiến hành nhập..." : `Lưu tất cả ${parsedClasses.length} lớp học`}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
