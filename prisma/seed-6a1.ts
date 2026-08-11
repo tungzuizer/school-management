@@ -55,7 +55,15 @@ const studentsData = [
 ];
 
 async function main() {
-  console.log("Đang khởi tạo Lớp 6A1 và 48 học sinh...");
+  console.log("Xóa toàn bộ học sinh cũ...");
+  
+  // Delete all users with role STUDENT (cascades student deletion)
+  const deletedUsers = await prisma.user.deleteMany({
+    where: { role: "STUDENT" },
+  });
+  console.log(`Đã xóa ${deletedUsers.count} tài khoản học sinh cũ.`);
+
+  console.log("Đang khởi tạo Lớp 6A1 và 48 học sinh mới...");
 
   let school = await prisma.school.findFirst();
   if (!school) {
@@ -77,67 +85,37 @@ async function main() {
 
   const defaultPasswordHash = await bcrypt.hash("123456", 10);
   let createdCount = 0;
-  let updatedCount = 0;
 
   for (const s of studentsData) {
     const email = `hs.${s.studentCode.toLowerCase()}@school.edu.vn`;
 
-    let user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: s.name,
-          email,
-          password: defaultPasswordHash,
-          role: "STUDENT",
+    await prisma.user.create({
+      data: {
+        name: s.name,
+        email,
+        password: defaultPasswordHash,
+        role: "STUDENT",
+        student: {
+          create: {
+            studentCode: s.studentCode,
+            classId: class6A1.id,
+            dob: new Date(s.dob),
+            gender: s.gender as any,
+            phone: s.phone,
+            ethnicity: "Kinh",
+            fatherName: s.fatherName,
+            fatherJob: s.fatherJob,
+            fatherBirthYear: s.fatherBirthYear,
+            motherName: s.motherName,
+            motherJob: s.motherJob,
+          },
         },
-      });
-    }
-
-    const existingStudent = await prisma.student.findFirst({
-      where: { OR: [{ userId: user.id }, { studentCode: s.studentCode }] },
+      },
     });
-
-    if (existingStudent) {
-      await prisma.student.update({
-        where: { id: existingStudent.id },
-        data: {
-          studentCode: s.studentCode,
-          classId: class6A1.id,
-          dob: new Date(s.dob),
-          gender: s.gender as any,
-          phone: s.phone,
-          ethnicity: "Kinh",
-          fatherName: s.fatherName,
-          fatherJob: s.fatherJob,
-          fatherBirthYear: s.fatherBirthYear,
-          motherName: s.motherName,
-          motherJob: s.motherJob,
-        },
-      });
-      updatedCount++;
-    } else {
-      await prisma.student.create({
-        data: {
-          userId: user.id,
-          studentCode: s.studentCode,
-          classId: class6A1.id,
-          dob: new Date(s.dob),
-          gender: s.gender as any,
-          phone: s.phone,
-          ethnicity: "Kinh",
-          fatherName: s.fatherName,
-          fatherJob: s.fatherJob,
-          fatherBirthYear: s.fatherBirthYear,
-          motherName: s.motherName,
-          motherJob: s.motherJob,
-        },
-      });
-      createdCount++;
-    }
+    createdCount++;
   }
 
-  console.log(`Hoàn tất: Đã tạo mới ${createdCount} và cập nhật ${updatedCount} học sinh cho Lớp 6A1!`);
+  console.log(`Hoàn tất: Đã khởi tạo sạch dữ liệu và thêm mới thành công ${createdCount} học sinh Lớp 6A1!`);
 }
 
 main()
