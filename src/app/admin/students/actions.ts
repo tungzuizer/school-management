@@ -155,3 +155,109 @@ export async function deleteStudent(studentId: string) {
     return { success: false, error: error.message || "Lỗi khi xóa" };
   }
 }
+
+export interface BulkStudentInput {
+  name: string;
+  email?: string;
+  studentCode?: string;
+  classId?: string;
+  dob?: string;
+  gender?: string;
+  phone?: string;
+  ethnicity?: string;
+  addressCurrent?: string;
+  fatherName?: string;
+  fatherJob?: string;
+  motherName?: string;
+  motherJob?: string;
+}
+
+export async function createBulkStudents(studentsData: BulkStudentInput[]) {
+  try {
+    if (!studentsData || studentsData.length === 0) {
+      return { success: false, error: "Danh sách nhập rỗng", count: 0 };
+    }
+
+    const defaultPasswordHash = await bcrypt.hash("123456", 10);
+
+    const existingUsers = await prisma.user.findMany({ select: { email: true } });
+    const existingEmails = new Set(existingUsers.map((u) => u.email.toLowerCase()));
+
+    const existingStudents = await prisma.student.findMany({ select: { studentCode: true } });
+    const existingCodes = new Set(
+      existingStudents.map((s) => (s.studentCode ? s.studentCode.toLowerCase() : ""))
+    );
+
+    let createdCount = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < studentsData.length; i++) {
+      const s = studentsData[i];
+      const rowNum = i + 1;
+
+      if (!s.name || !s.name.trim()) {
+        errors.push(`Dòng ${rowNum}: Bỏ qua do thiếu Họ tên`);
+        continue;
+      }
+
+      let email = s.email?.trim().toLowerCase();
+      let code = s.studentCode?.trim();
+
+      if (code && existingCodes.has(code.toLowerCase())) {
+        errors.push(`Dòng ${rowNum}: Mã HS "${code}" đã tồn tại trong hệ thống`);
+        continue;
+      }
+
+      if (!email) {
+        const cleanCode = code ? code.toLowerCase() : Math.random().toString(36).substring(2, 7);
+        email = `hs.${cleanCode}@school.edu.vn`;
+      }
+
+      if (existingEmails.has(email)) {
+        errors.push(`Dòng ${rowNum}: Email "${email}" đã tồn tại trong hệ thống`);
+        continue;
+      }
+
+      try {
+        await prisma.user.create({
+          data: {
+            name: s.name.trim(),
+            email,
+            password: defaultPasswordHash,
+            role: "STUDENT",
+            student: {
+              create: {
+                studentCode: code || undefined,
+                classId: s.classId || undefined,
+                dob: s.dob ? new Date(s.dob) : undefined,
+                gender: (s.gender as any) || undefined,
+                phone: s.phone || undefined,
+                ethnicity: s.ethnicity || undefined,
+                addressCurrent: s.addressCurrent || undefined,
+                fatherName: s.fatherName || undefined,
+                fatherJob: s.fatherJob || undefined,
+                motherName: s.motherName || undefined,
+                motherJob: s.motherJob || undefined,
+              },
+            },
+          },
+        });
+
+        existingEmails.add(email);
+        if (code) existingCodes.add(code.toLowerCase());
+        createdCount++;
+      } catch (err: any) {
+        errors.push(`Dòng ${rowNum} (${s.name}): Lỗi - ${err.message}`);
+      }
+    }
+
+    revalidatePath("/admin/students");
+    return {
+      success: createdCount > 0,
+      count: createdCount,
+      errors,
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Lỗi khi nhập hàng loạt", count: 0 };
+  }
+}
