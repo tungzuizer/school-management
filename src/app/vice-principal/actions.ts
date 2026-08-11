@@ -25,74 +25,10 @@ export async function getVPClasses(campusId: string) {
       orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
     });
 
-    if (classes.length > 0) return classes;
-
-    return [
-      {
-        id: "c1",
-        name: "10A1",
-        gradeLevel: 10,
-        schoolId: "s1",
-        campusId: effectiveCampusId,
-        homeroomTeacherId: "t1",
-        school: { id: "s1", name: "Trường THPT Chuyên Nguyễn Du" },
-        campus: { id: effectiveCampusId, name: "Phân hiệu 1 - Trung tâm" },
-        homeroomTeacher: { id: "t1", user: { name: "Thầy Nguyễn Văn An" } },
-        _count: { students: 35 },
-      },
-      {
-        id: "c2",
-        name: "10A2",
-        gradeLevel: 10,
-        schoolId: "s1",
-        campusId: effectiveCampusId,
-        homeroomTeacherId: "t2",
-        school: { id: "s1", name: "Trường THPT Chuyên Nguyễn Du" },
-        campus: { id: effectiveCampusId, name: "Phân hiệu 1 - Trung tâm" },
-        homeroomTeacher: { id: "t2", user: { name: "Cô Lê Thị Bình" } },
-        _count: { students: 36 },
-      },
-      {
-        id: "c3",
-        name: "11A1",
-        gradeLevel: 11,
-        schoolId: "s1",
-        campusId: effectiveCampusId,
-        homeroomTeacherId: "t3",
-        school: { id: "s1", name: "Trường THPT Chuyên Nguyễn Du" },
-        campus: { id: effectiveCampusId, name: "Phân hiệu 1 - Trung tâm" },
-        homeroomTeacher: { id: "t3", user: { name: "Thầy Trần Đức Minh" } },
-        _count: { students: 34 },
-      },
-      {
-        id: "c4",
-        name: "12A1",
-        gradeLevel: 12,
-        schoolId: "s1",
-        campusId: effectiveCampusId,
-        homeroomTeacherId: "t4",
-        school: { id: "s1", name: "Trường THPT Chuyên Nguyễn Du" },
-        campus: { id: effectiveCampusId, name: "Phân hiệu 1 - Trung tâm" },
-        homeroomTeacher: { id: "t4", user: { name: "Cô Hoàng Thị Thu" } },
-        _count: { students: 35 },
-      },
-    ];
+    return classes;
   } catch (err) {
     console.error("getVPClasses error:", err);
-    return [
-      {
-        id: "c1",
-        name: "10A1",
-        gradeLevel: 10,
-        schoolId: "s1",
-        campusId: campusId,
-        homeroomTeacherId: "t1",
-        school: { id: "s1", name: "Trường THPT Chuyên Nguyễn Du" },
-        campus: { id: campusId, name: "Phân hiệu 1 - Trung tâm" },
-        homeroomTeacher: { id: "t1", user: { name: "Thầy Nguyễn Văn An" } },
-        _count: { students: 35 },
-      },
-    ];
+    return [];
   }
 }
 
@@ -108,62 +44,10 @@ export async function getVPStudents(campusId: string) {
       orderBy: { user: { name: "asc" } },
     });
 
-    if (students.length > 0) return students;
-
-    return [
-      {
-        id: "st-1",
-        studentCode: "HS1001",
-        dob: "2008-05-12T00:00:00.000Z",
-        gender: "MALE",
-        phone: "0912345678",
-        status: "STUDYING",
-        ethnicity: "Kinh",
-        addressCurrent: "Quận 7, TP. Hồ Chí Minh",
-        fatherName: "Nguyễn Văn Hùng",
-        fatherJob: "Kỹ sư",
-        motherName: "Phạm Thị Lan",
-        motherJob: "Giáo viên",
-        user: { id: "u-1", name: "Nguyễn Văn Nam", email: "nam.nv@school.com" },
-        classRoom: { id: "c1", name: "10A1", gradeLevel: 10 },
-      },
-      {
-        id: "st-2",
-        studentCode: "HS1002",
-        dob: "2008-08-20T00:00:00.000Z",
-        gender: "FEMALE",
-        phone: "0923456789",
-        status: "STUDYING",
-        ethnicity: "Kinh",
-        addressCurrent: "Quận 4, TP. Hồ Chí Minh",
-        fatherName: "Trần Văn Bình",
-        fatherJob: "Bác sĩ",
-        motherName: "Lê Thị Mai",
-        motherJob: "Kế toán",
-        user: { id: "u-2", name: "Trần Thị Minh", email: "minh.tt@school.com" },
-        classRoom: { id: "c3", name: "11A1", gradeLevel: 11 },
-      },
-    ];
+    return students;
   } catch (err) {
     console.error("getVPStudents error:", err);
-    return [
-      {
-        id: "st-1",
-        studentCode: "HS1001",
-        dob: "2008-05-12T00:00:00.000Z",
-        gender: "MALE",
-        phone: "0912345678",
-        status: "STUDYING",
-        ethnicity: "Kinh",
-        addressCurrent: "Quận 7, TP. Hồ Chí Minh",
-        fatherName: "Nguyễn Văn Hùng",
-        fatherJob: "Kỹ sư",
-        motherName: "Phạm Thị Lan",
-        motherJob: "Giáo viên",
-        user: { id: "u-1", name: "Nguyễn Văn Nam", email: "nam.nv@school.com" },
-        classRoom: { id: "c1", name: "10A1", gradeLevel: 10 },
-      },
-    ];
+    return [];
   }
 }
 
@@ -196,37 +80,26 @@ export async function getVPAttendanceData(campusId: string) {
           }),
         ]);
 
-        const total = cls._count.students || 35;
-        const recorded = present + absent + late;
-        const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 96;
+        const total = cls._count.students || 0;
+        const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
         return {
           classId: cls.id,
           className: cls.name,
           gradeLevel: cls.gradeLevel,
           totalStudents: total,
-          presentCount: present || total - 1,
-          absentCount: absent || 1,
-          lateCount: late || 0,
-          rate: rate > 100 ? 98 : rate,
+          presentCount: present,
+          absentCount: absent,
+          lateCount: late,
+          rate: rate > 100 ? 100 : rate,
         };
       })
     );
 
-    if (classSummaries.length > 0) return classSummaries;
-
-    return [
-      { classId: "c1", className: "10A1", gradeLevel: 10, totalStudents: 35, presentCount: 34, absentCount: 1, lateCount: 0, rate: 97 },
-      { classId: "c2", className: "10A2", gradeLevel: 10, totalStudents: 36, presentCount: 34, absentCount: 1, lateCount: 1, rate: 94 },
-      { classId: "c3", className: "11A1", gradeLevel: 11, totalStudents: 34, presentCount: 34, absentCount: 0, lateCount: 0, rate: 100 },
-      { classId: "c4", className: "12A1", gradeLevel: 12, totalStudents: 35, presentCount: 35, absentCount: 0, lateCount: 0, rate: 100 },
-    ];
+    return classSummaries;
   } catch (err) {
     console.error("getVPAttendanceData error:", err);
-    return [
-      { classId: "c1", className: "10A1", gradeLevel: 10, totalStudents: 35, presentCount: 34, absentCount: 1, lateCount: 0, rate: 97 },
-      { classId: "c2", className: "10A2", gradeLevel: 10, totalStudents: 36, presentCount: 34, absentCount: 1, lateCount: 1, rate: 94 },
-    ];
+    return [];
   }
 }
 
@@ -244,55 +117,19 @@ export async function getVPJournals(campusId: string) {
       take: 20,
     });
 
-    if (entries.length > 0) {
-      return entries.map((e) => ({
-        id: e.id,
-        date: e.date.toISOString(),
-        className: e.classRoom.name,
-        teacherName: e.teacher.user.name,
-        subjectName: e.subject?.name || "Môn học",
-        period: e.period,
-        lessonTitle: e.lessonTitle || "Bài học",
-        content: e.content || "",
-      }));
-    }
-
-    return [
-      {
-        id: "j1",
-        date: new Date().toISOString(),
-        className: "10A1",
-        teacherName: "Nguyễn Văn An",
-        subjectName: "Toán học",
-        period: 1,
-        lessonTitle: "Hàm số bậc hai và đồ thị",
-        content: "Học sinh hăng hái phát biểu, hoàn thành bài tập tốt.",
-      },
-      {
-        id: "j2",
-        date: new Date().toISOString(),
-        className: "11A1",
-        teacherName: "Trần Đức Minh",
-        subjectName: "Vật lý",
-        period: 2,
-        lessonTitle: "Định luật Bảo toàn Năng lượng",
-        content: "Lớp trật tự, làm thí nghiệm nghiêm túc.",
-      },
-    ];
+    return entries.map((e) => ({
+      id: e.id,
+      date: e.date.toISOString(),
+      className: e.classRoom.name,
+      teacherName: e.teacher?.user?.name || "—",
+      subjectName: e.subject?.name || "Môn học",
+      period: e.period,
+      lessonTitle: e.lessonTitle || "",
+      content: e.content || "",
+    }));
   } catch (err) {
     console.error("getVPJournals error:", err);
-    return [
-      {
-        id: "j1",
-        date: new Date().toISOString(),
-        className: "10A1",
-        teacherName: "Nguyễn Văn An",
-        subjectName: "Toán học",
-        period: 1,
-        lessonTitle: "Hàm số bậc hai và đồ thị",
-        content: "Học sinh hăng hái phát biểu, hoàn thành bài tập tốt.",
-      },
-    ];
+    return [];
   }
 }
 
@@ -317,51 +154,18 @@ export async function getVPLessonPlans(campusId: string) {
       take: 20,
     });
 
-    if (plans.length > 0) {
-      return plans.map((p) => ({
-        id: p.id,
-        title: p.title,
-        status: p.status,
-        teacherName: p.teacher.user.name,
-        subjectName: p.subject?.name || "Môn học",
-        className: p.classRoom?.name || "Toàn khối",
-        updatedAt: p.updatedAt.toISOString(),
-      }));
-    }
-
-    return [
-      {
-        id: "lp-1",
-        title: "Kế hoạch bài dạy Tuần 24 - Đồ thị Hàm số",
-        status: "APPROVED",
-        teacherName: "Nguyễn Văn An",
-        subjectName: "Toán học",
-        className: "10A1",
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: "lp-2",
-        title: "Giáo án Thực hành Vật lý - Cảm ứng điện từ",
-        status: "SUBMITTED",
-        teacherName: "Trần Đức Minh",
-        subjectName: "Vật lý",
-        className: "11A1",
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    return plans.map((p) => ({
+      id: p.id,
+      title: p.title || "Kế hoạch bài dạy",
+      status: p.status || "DRAFT",
+      teacherName: p.teacher?.user?.name || "Giáo viên",
+      subjectName: p.subject?.name || "Môn học",
+      className: p.classRoom?.name || "Toàn khối",
+      updatedAt: p.updatedAt ? p.updatedAt.toISOString() : new Date().toISOString(),
+    }));
   } catch (err) {
     console.error("getVPLessonPlans error:", err);
-    return [
-      {
-        id: "lp-1",
-        title: "Kế hoạch bài dạy Tuần 24 - Đồ thị Hàm số",
-        status: "APPROVED",
-        teacherName: "Nguyễn Văn An",
-        subjectName: "Toán học",
-        className: "10A1",
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    return [];
   }
 }
 
@@ -372,50 +176,17 @@ export async function getVPWarnings(campusId: string) {
       take: 20,
     });
 
-    if (warnings.length > 0) {
-      return warnings.map((w) => ({
-        id: w.id,
-        title: w.title,
-        description: w.description,
-        level: w.level,
-        category: w.category,
-        resolved: w.isResolved,
-        createdAt: w.createdAt.toISOString(),
-      }));
-    }
-
-    return [
-      {
-        id: "w1",
-        title: "Cảnh báo chuyên cần lớp 10A2",
-        description: "Tỷ lệ chuyên cần tuần 23 giảm xuống dưới 85%. Cần GVCN làm việc với phụ huynh.",
-        level: "HIGH",
-        category: "ATTENDANCE",
-        resolved: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "w2",
-        title: "Cảnh báo vi phạm nề nếp",
-        description: "Phát hiện 2 học sinh đi muộn 3 lần trong tuần tại Điểm trường B.",
-        level: "MEDIUM",
-        category: "BEHAVIOR",
-        resolved: true,
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ];
+    return warnings.map((w) => ({
+      id: w.id,
+      title: w.title,
+      description: w.description,
+      level: w.level,
+      category: w.category,
+      resolved: w.isResolved,
+      createdAt: w.createdAt.toISOString(),
+    }));
   } catch (err) {
     console.error("getVPWarnings error:", err);
-    return [
-      {
-        id: "w1",
-        title: "Cảnh báo chuyên cần lớp 10A2",
-        description: "Tỷ lệ chuyên cần tuần 23 giảm xuống dưới 85%. Cần GVCN làm việc với phụ huynh.",
-        level: "HIGH",
-        category: "ATTENDANCE",
-        resolved: false,
-        createdAt: new Date().toISOString(),
-      },
-    ];
+    return [];
   }
 }

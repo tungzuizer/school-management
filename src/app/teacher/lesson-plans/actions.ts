@@ -15,68 +15,78 @@ async function getTeacherId(userId: string) {
 
 // Fetch subjects and classes for lesson plan metadata
 export async function getLessonPlanMetadata() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return { classes: [], subjects: [], teacherId: null };
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return { classes: [], subjects: [], teacherId: null };
 
-  const teacherId = await getTeacherId(session.user.id);
-  if (!teacherId) return { classes: [], subjects: [], teacherId: null };
+    const teacherId = await getTeacherId(session.user.id);
+    if (!teacherId) return { classes: [], subjects: [], teacherId: null };
 
-  const classes = await prisma.classRoom.findMany({
-    orderBy: { name: "asc" },
-  });
+    const classes = await prisma.classRoom.findMany({
+      orderBy: { name: "asc" },
+    });
 
-  const subjects = await prisma.subject.findMany({
-    orderBy: { name: "asc" },
-  });
+    const subjects = await prisma.subject.findMany({
+      orderBy: { name: "asc" },
+    });
 
-  return {
-    classes: classes.map(c => ({ id: c.id, name: c.name })),
-    subjects: subjects.map(s => ({ id: s.id, name: s.name })),
-    teacherId,
-  };
+    return {
+      classes: classes.map(c => ({ id: c.id, name: c.name })),
+      subjects: subjects.map(s => ({ id: s.id, name: s.name })),
+      teacherId,
+    };
+  } catch (error) {
+    console.error("Error fetching lesson plan metadata:", error);
+    return { classes: [], subjects: [], teacherId: null };
+  }
 }
 
 // Get all lesson plans for the current teacher
 export async function getLessonPlans() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return [];
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return [];
 
-  const teacherId = await getTeacherId(session.user.id);
-  if (!teacherId) return [];
+    const teacherId = await getTeacherId(session.user.id);
+    if (!teacherId) return [];
 
-  const plans = await prisma.lessonPlan.findMany({
-    where: { teacherId },
-    include: {
-      subject: { select: { name: true } },
-      classRoom: { select: { name: true } },
-    },
-    orderBy: [
-      { weekNumber: "desc" },
-      { createdAt: "desc" }
-    ],
-  });
+    const plans = await prisma.lessonPlan.findMany({
+      where: { teacherId },
+      include: {
+        subject: { select: { name: true } },
+        classRoom: { select: { name: true } },
+      },
+      orderBy: [
+        { weekNumber: "desc" },
+        { createdAt: "desc" }
+      ],
+    });
 
-  return plans.map(p => ({
-    id: p.id,
-    subjectId: p.subjectId,
-    subjectName: p.subject.name,
-    classId: p.classId,
-    className: p.classRoom.name,
-    weekNumber: p.weekNumber,
-    periodStart: p.periodStart,
-    periodEnd: p.periodEnd,
-    title: p.title,
-    objectives: p.objectives || "",
-    content: p.content || "",
-    activities: p.activities || "",
-    materials: p.materials || "",
-    assessment: p.assessment || "",
-    notes: p.notes || "",
-    status: p.status,
-    reviewNote: p.reviewNote || "",
-    reviewedAt: p.reviewedAt,
-    createdAt: p.createdAt,
-  }));
+    return plans.map(p => ({
+      id: p.id,
+      subjectId: p.subjectId,
+      subjectName: p.subject?.name || "Môn học",
+      classId: p.classId,
+      className: p.classRoom?.name || "Lớp học",
+      weekNumber: p.weekNumber,
+      periodStart: p.periodStart,
+      periodEnd: p.periodEnd,
+      title: p.title,
+      objectives: p.objectives || "",
+      content: p.content || "",
+      activities: p.activities || "",
+      materials: p.materials || "",
+      assessment: p.assessment || "",
+      notes: p.notes || "",
+      status: p.status,
+      reviewNote: p.reviewNote || "",
+      reviewedAt: p.reviewedAt,
+      createdAt: p.createdAt,
+    }));
+  } catch (error) {
+    console.error("Error fetching lesson plans:", error);
+    return [];
+  }
 }
 
 // Save or update lesson plan

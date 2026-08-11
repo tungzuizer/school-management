@@ -47,34 +47,55 @@ export default function AdminJournalsPage() {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const { isEasyMode } = useEasyMode();
   const { showToast, ToastComponent } = useToast();
 
   useEffect(() => {
-    getAdminJournalMetadata().then((data) => {
-      setClasses(data.classes);
-      if (data.classes.length > 0) {
-        setSelectedClass(data.classes[0].id);
-      }
-    });
+    let mounted = true;
+    getAdminJournalMetadata()
+      .then((data) => {
+        if (!mounted) return;
+        const fetchedClasses = data.classes || [];
+        setClasses(fetchedClasses);
+        if (fetchedClasses.length > 0) {
+          setSelectedClass(fetchedClasses[0].id);
+        }
+      })
+      .catch((err) => {
+        console.error("getAdminJournalMetadata error:", err);
+      })
+      .finally(() => {
+        if (mounted) setInitializing(false);
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const loadEntries = useCallback(async () => {
-    if (!selectedClass || !selectedDate) return;
+    if (!selectedClass || !selectedDate) {
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await getAdminJournalEntries(selectedClass, selectedDate);
       setEntries(data as any);
     } catch (e: any) {
-      showToast("Lỗi tải thông tin sổ đầu bài", "error");
+      console.error("loadEntries error:", e);
+      setEntries([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedClass, selectedDate, showToast]);
+  }, [selectedClass, selectedDate]);
 
   useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
+    if (!initializing) {
+      loadEntries();
+    }
+  }, [initializing, loadEntries]);
 
   const handleConfirm = async (entryId: string) => {
     try {
@@ -175,10 +196,15 @@ export default function AdminJournalsPage() {
           <span className="text-xs text-gray-400">Tiêu chuẩn: 8 tiết học/ngày</span>
         </div>
 
-        {loading ? (
+        {initializing || loading ? (
           <div className="py-12 flex flex-col items-center justify-center gap-2">
             <ListRestart className="w-8 h-8 text-blue-500 animate-spin" />
             <p className="text-sm text-gray-400">Đang tải sổ đầu bài...</p>
+          </div>
+        ) : classes.length === 0 ? (
+          <div className="py-12 text-center text-gray-500">
+            <p className="text-sm font-semibold">Chưa có lớp học nào trong hệ thống</p>
+            <p className="text-xs text-gray-400 mt-1">Vui lòng tạo lớp học trong trang Quản lý trường học trước.</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
