@@ -127,7 +127,21 @@ export async function getConductRecords(classId: string, period?: string) {
 
 export async function saveConductRecord(data: {
   studentId: string;
-  period: "MID_HK1" | "HK1" | "MID_HK2" | "HK2" | "FULL_YEAR";
+  period:
+    | "MONTH_9"
+    | "MONTH_10"
+    | "MONTH_11"
+    | "MONTH_12"
+    | "MONTH_1"
+    | "MONTH_2"
+    | "MONTH_3"
+    | "MONTH_4"
+    | "MONTH_5"
+    | "MID_HK1"
+    | "HK1"
+    | "MID_HK2"
+    | "HK2"
+    | "FULL_YEAR";
   conductRating?: "TOT" | "KHA" | "DAT" | "CHUA_DAT" | null;
   academicRating?: "GIOI" | "KHA" | "DAT" | "CHUA_DAT" | null;
   note?: string;
@@ -156,7 +170,22 @@ export async function saveConductRecord(data: {
 
 // ============ Sĩ số theo mốc thời gian ============
 export async function getClassSizeByPeriods(classId: string) {
-  const periods = ["MID_HK1", "HK1", "MID_HK2", "HK2", "FULL_YEAR"] as const;
+  const periods = [
+    "MONTH_9",
+    "MONTH_10",
+    "MONTH_11",
+    "MONTH_12",
+    "MONTH_1",
+    "MONTH_2",
+    "MONTH_3",
+    "MONTH_4",
+    "MONTH_5",
+    "MID_HK1",
+    "HK1",
+    "MID_HK2",
+    "HK2",
+    "FULL_YEAR",
+  ] as const;
   const results = [];
 
   for (const period of periods) {

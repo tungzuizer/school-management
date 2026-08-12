@@ -31,6 +31,7 @@ import {
   Home,
   Settings,
   User,
+  Landmark,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -57,9 +58,8 @@ const menuGroups: MenuGroup[] = [
       { label: "Ho so cho phe duyet", href: "/admin/strategy/approvals", icon: ShieldCheck },
       { label: "Tep minh chung", href: "/admin/strategy/evidences", icon: FileText },
       { label: "Bao cao & Xuat du lieu", href: "/admin/strategy/reports", icon: FileBarChart },
-      { label: "DanhMuc KPI Toan truong", href: "/admin/kpi/catalog", icon: Settings },
-      { label: "Nhap ket qua KPI", href: "/admin/kpi/entry", icon: FileBarChart },
-      { label: "Quy trinh Phe duyet KPI", href: "/admin/kpi/approval", icon: UserCheck },
+      { label: "Quan ly KPI", href: "/admin/kpi", icon: Target },
+      { label: "Chi tieu Tai chinh", href: "/admin/finance", icon: Landmark },
     ],
   },
   {
