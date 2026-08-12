@@ -40,6 +40,21 @@ import {
   QualityObjectiveInput,
 } from "./actions";
 
+const CATEGORY_NAME_MAP: Record<string, string> = {
+  "Chất lượng học tập": "ACADEMIC",
+  "Phẩm chất & Năng lực": "CONDUCT",
+  "Chuyên cần": "ATTENDANCE",
+  "Hoàn thành chương trình": "PROGRAM_COMPLETION",
+  "Học sinh giỏi": "EXCELLENT_STUDENTS",
+  "Học sinh cần hỗ trợ": "SUPPORT_STUDENTS",
+  "Chất lượng đội ngũ": "TEACHER_QUALITY",
+  "Chuyển đổi số": "DIGITAL_TRANSFORMATION",
+  "Cơ sở vật chất": "FACILITIES",
+  "An toàn trường học": "SCHOOL_SAFETY",
+  "Sự hài lòng của PHHS": "PARENT_SATISFACTION",
+  "Mục tiêu khác": "OTHER",
+};
+
 const CATEGORY_LABELS: Record<string, { name: string; bg: string; text: string }> = {
   ACADEMIC: { name: "Chất lượng học tập", bg: "bg-blue-50 hover:bg-blue-100", text: "text-blue-700 border-blue-200" },
   CONDUCT: { name: "Phẩm chất & Năng lực", bg: "bg-indigo-50 hover:bg-indigo-100", text: "text-indigo-700 border-indigo-200" },
