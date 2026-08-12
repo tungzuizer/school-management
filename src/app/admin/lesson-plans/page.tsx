@@ -60,7 +60,7 @@ export default function AdminLessonPlansPage() {
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [submittingIds, setSubmittingIds] = useState<Record<string, boolean>>({});
 
-  const fetchPlans = useCallback(async () => {
+  const fetchPlans = async () => {
     setLoading(true);
     try {
       const items = await getLessonPlansForAdmin();
@@ -70,11 +70,11 @@ export default function AdminLessonPlansPage() {
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  };
 
   useEffect(() => {
     fetchPlans();
-  }, [fetchPlans]);
+  }, []);
 
   // Handle Tab and Search filtering
   useEffect(() => {
