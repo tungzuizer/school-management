@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useTransition } from "react";
+import * as XLSX from "xlsx";
 import {
   Target,
   Plus,
@@ -96,6 +97,106 @@ export default function QualityGoalsPage() {
 
   const [showExcelImportModal, setShowExcelImportModal] = useState(false);
   const [importJsonText, setImportJsonText] = useState("");
+  const [parsedImportData, setParsedImportData] = useState<QualityObjectiveInput[]>([]);
+  const [activeImportTab, setActiveImportTab] = useState<"FILE" | "JSON">("FILE");
+  const [importFileName, setImportFileName] = useState<string>("");
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+        const parsed: QualityObjectiveInput[] = rawRows
+          .map((row, index) => {
+            const findVal = (...keys: string[]) => {
+              for (const key of keys) {
+                const foundKey = Object.keys(row).find(
+                  (k) => k.trim().toLowerCase() === key.toLowerCase()
+                );
+                if (foundKey && row[foundKey] !== undefined && row[foundKey] !== "") {
+                  return row[foundKey];
+                }
+              }
+              return null;
+            };
+
+            const codeVal = findVal("code", "mã", "mã mục tiêu", "ma") || `MTC-2026-IMP${index + 1}`;
+            const titleVal = findVal("title", "tên mục tiêu", "tên", "mục tiêu", "ten muc tieu") || "";
+            const catValRaw = String(findVal("category", "nhóm", "nhóm mục tiêu", "nhóm cốt lõi") || "ACADEMIC").trim();
+            const catVal = CATEGORY_NAME_MAP[catValRaw] || (CATEGORY_LABELS[catValRaw] ? catValRaw : "ACADEMIC");
+            const metricVal = findVal("metricName", "chỉ số", "chỉ số đo lường", "kpi") || titleVal;
+            const unitVal = String(findVal("unit", "đơn vị", "đơn vị tính") || "%");
+            const baseVal = findVal("baselineValue", "giá trị nền", "nền", "baseline");
+            const targetVal = findVal("targetValue", "mục tiêu", "chỉ tiêu", "target");
+            const actualVal = findVal("actualValue", "thực tế", "kết quả", "actual");
+            const respVal = findVal("responsiblePerson", "người chịu trách nhiệm", "phụ trách", "bộ phận");
+            const planVal = findVal("actionPlan", "kế hoạch", "giải pháp", "kế hoạch hành động");
+
+            return {
+              code: String(codeVal),
+              title: String(titleVal),
+              category: catVal as any,
+              metricName: String(metricVal),
+              unit: unitVal,
+              baselineValue: baseVal !== null ? Number(baseVal) : 0,
+              targetValue: targetVal !== null ? Number(targetVal) : 100,
+              actualValue: actualVal !== null && actualVal !== "" ? Number(actualVal) : null,
+              responsiblePerson: respVal ? String(respVal) : null,
+              actionPlan: planVal ? String(planVal) : null,
+            };
+          })
+          .filter((item) => item.title.trim() !== "");
+
+        setParsedImportData(parsed);
+        setImportJsonText(JSON.stringify(parsed, null, 2));
+      } catch (err) {
+        alert("Lỗi đọc tập tin Excel/CSV: " + (err as Error).message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const downloadSampleTemplate = () => {
+    const sampleData = [
+      {
+        "Mã": "MTC-2026-001",
+        "Tên mục tiêu": "Nâng tỷ lệ học sinh giỏi toàn trường lên 35%",
+        "Nhóm mục tiêu": "Chất lượng học tập",
+        "Chỉ số đo lường": "% Học sinh giỏi cuối năm",
+        "Đơn vị": "%",
+        "Giá trị nền": 30,
+        "Mục tiêu": 35,
+        "Thực tế": 32,
+        "Người chịu trách nhiệm": "Phòng BGH / Ban Chuyên Môn",
+        "Kế hoạch": "Tăng cường bồi dưỡng học sinh giỏi và phụ đạo học sinh yếu"
+      },
+      {
+        "Mã": "MTC-2026-002",
+        "Tên mục tiêu": "Tỷ lệ giáo viên ứng dụng CNTT và giáo án điện tử",
+        "Nhóm mục tiêu": "Chuyển đổi số",
+        "Chỉ số đo lường": "% Giáo viên đạt chuyển đổi số",
+        "Đơn vị": "%",
+        "Giá trị nền": 80,
+        "Mục tiêu": 100,
+        "Thực tế": 95,
+        "Người chịu trách nhiệm": "Tổ Công nghệ thông tin",
+        "Kế hoạch": "Tổ chức 2 buổi tập huấn phần mềm dạy học tích cực"
+      }
+    ];
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "KeHoachMucTieu");
+    XLSX.writeFile(wb, "KeHoachMucTieu_NamHoc_Mau.xlsx");
+  };
 
   // SMART Form State
   const [formData, setFormData] = useState<QualityObjectiveInput>({
@@ -1129,27 +1230,104 @@ export default function QualityGoalsPage() {
       {/* Excel Import Modal */}
       {showExcelImportModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-slate-800">Nhập Mục Tiêu Từ Excel / JSON</h3>
+                <h3 className="font-bold text-slate-800">Nhập Kế Hoạch Năm Học / Mục Tiêu Từ Excel & CSV</h3>
               </div>
               <button onClick={() => setShowExcelImportModal(false)}>
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <p className="text-xs text-slate-600">
-                Dán danh sách các mục tiêu theo định dạng JSON hoặc dữ liệu Excel chuẩn đổi ra mảng đối tượng:
-              </p>
+            <div className="p-6 space-y-5">
+              {/* Tab Switcher */}
+              <div className="flex border-b border-slate-200 gap-4">
+                <button
+                  onClick={() => setActiveImportTab("FILE")}
+                  className={`pb-2.5 text-sm font-semibold border-b-2 transition ${
+                    activeImportTab === "FILE"
+                      ? "border-emerald-600 text-emerald-700"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Tải lên File Excel / CSV (.xlsx, .xls, .csv)
+                </button>
+                <button
+                  onClick={() => setActiveImportTab("JSON")}
+                  className={`pb-2.5 text-sm font-semibold border-b-2 transition ${
+                    activeImportTab === "JSON"
+                      ? "border-emerald-600 text-emerald-700"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Nhập mã JSON trực tiếp
+                </button>
+              </div>
 
-              <textarea
-                rows={8}
-                value={importJsonText}
-                onChange={(e) => setImportJsonText(e.target.value)}
-                placeholder={`[
+              {activeImportTab === "FILE" ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500">Hỗ trợ các định dạng file: <strong>.xlsx, .xls, .csv</strong></span>
+                    <button
+                      onClick={downloadSampleTemplate}
+                      className="flex items-center gap-1 text-emerald-600 hover:underline font-semibold"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Tải File Excel Mẫu
+                    </button>
+                  </div>
+
+                  {/* File Upload Zone */}
+                  <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center bg-slate-50 hover:bg-emerald-50/30 cursor-pointer transition">
+                    <Upload className="w-8 h-8 text-emerald-600 mb-2" />
+                    <span className="text-sm font-semibold text-slate-700">
+                      {importFileName ? `File đã chọn: ${importFileName}` : "Nhấp hoặc kéo thả file Excel / CSV vào đây"}
+                    </span>
+                    <span className="text-xs text-slate-400 mt-1">Các cột chuẩn: Mã, Tên mục tiêu, Nhóm mục tiêu, Chỉ số, Đơn vị, Mục tiêu, Thực tế, Người chịu trách nhiệm...</span>
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls, .csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* Preview Parsed Items */}
+                  {parsedImportData.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                        <span>Danh Sách Đã Trích Xuất ({parsedImportData.length} mục tiêu)</span>
+                        <span className="text-emerald-600">Sẵn sàng nhập vào cơ sở dữ liệu</span>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-white">
+                        {parsedImportData.map((item, idx) => (
+                          <div key={idx} className="p-2.5 text-xs flex justify-between items-center hover:bg-slate-50">
+                            <div>
+                              <span className="font-mono font-bold text-blue-600 mr-2">{item.code}</span>
+                              <span className="font-semibold text-slate-800">{item.title}</span>
+                              {item.metricName && <span className="text-slate-400 ml-2">({item.metricName})</span>}
+                            </div>
+                            <div className="text-right">
+                              <span className="font-bold text-slate-700">{item.targetValue}{item.unit}</span>
+                              {item.responsiblePerson && <div className="text-[11px] text-slate-400">{item.responsiblePerson}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-600">
+                    Dán danh sách các mục tiêu theo mảng JSON:
+                  </p>
+                  <textarea
+                    rows={8}
+                    value={importJsonText}
+                    onChange={(e) => setImportJsonText(e.target.value)}
+                    placeholder={`[
   {
     "code": "MTC-2026-EX1",
     "title": "Chỉ số hoàn thành chương trình môn học",
@@ -1161,8 +1339,10 @@ export default function QualityGoalsPage() {
     "responsiblePerson": "Phòng Đào Tạo"
   }
 ]`}
-                className="w-full font-mono text-xs p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50"
-              ></textarea>
+                    className="w-full font-mono text-xs p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50"
+                  ></textarea>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
@@ -1174,8 +1354,8 @@ export default function QualityGoalsPage() {
               </button>
               <button
                 onClick={handleImportExcelJson}
-                disabled={isPending}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm"
+                disabled={isPending || (activeImportTab === "FILE" && parsedImportData.length === 0)}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm disabled:opacity-50"
               >
                 {isPending ? "Đang xử lý..." : "Bắt Đầu Nhập Dữ Liệu"}
               </button>

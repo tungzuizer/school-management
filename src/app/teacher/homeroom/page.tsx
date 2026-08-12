@@ -118,6 +118,15 @@ const TAB_ICONS: Record<string, React.ElementType> = {
 };
 
 const PERIODS = [
+  { value: "MONTH_9", label: "Tháng 9" },
+  { value: "MONTH_10", label: "Tháng 10" },
+  { value: "MONTH_11", label: "Tháng 11" },
+  { value: "MONTH_12", label: "Tháng 12" },
+  { value: "MONTH_1", label: "Tháng 1" },
+  { value: "MONTH_2", label: "Tháng 2" },
+  { value: "MONTH_3", label: "Tháng 3" },
+  { value: "MONTH_4", label: "Tháng 4" },
+  { value: "MONTH_5", label: "Tháng 5" },
   { value: "MID_HK1", label: "Giữa HKI" },
   { value: "HK1", label: "Cuối HKI" },
   { value: "MID_HK2", label: "Giữa HKII" },
@@ -659,7 +668,7 @@ function ConductTab({
   classId: string;
   showToast: (m: string) => void;
 }) {
-  const [period, setPeriod] = useState("MID_HK1");
+  const [period, setPeriod] = useState("MONTH_9");
   const [records, setRecords] = useState<Array<{
     id: string;
     studentId: string;
@@ -693,7 +702,7 @@ function ConductTab({
     setSaving(true);
     await saveConductRecord({
       studentId,
-      period: period as "MID_HK1" | "HK1" | "MID_HK2" | "HK2" | "FULL_YEAR",
+      period: period as any,
       conductRating: conduct as "TOT" | "KHA" | "DAT" | "CHUA_DAT" | null,
       academicRating: academic as "GIOI" | "KHA" | "DAT" | "CHUA_DAT" | null,
       note: note || undefined,

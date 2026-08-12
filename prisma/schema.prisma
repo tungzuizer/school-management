@@ -61,6 +61,15 @@ enum AcademicRating {
 }
 
 enum AcademicPeriod {
+  MONTH_9
+  MONTH_10
+  MONTH_11
+  MONTH_12
+  MONTH_1
+  MONTH_2
+  MONTH_3
+  MONTH_4
+  MONTH_5
   MID_HK1
   HK1
   MID_HK2
