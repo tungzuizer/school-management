@@ -9,6 +9,8 @@ import {
   reviewVpKpiPeriod,
   approvePrincipalKpiPeriod,
   approveUnlockKpiPeriod,
+  createKpiPeriod,
+  seedDefaultKpiCatalog,
 } from "../actions";
 import { STATUS_LABELS } from "../entry/page";
 import { KpiPeriodStatus } from "@prisma/client";
@@ -187,11 +189,15 @@ export default function KpiApprovalPage() {
             onChange={(e) => setSelectedPeriodId(e.target.value)}
             className="p-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white min-w-[300px]"
           >
-            {periods.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title} ({p.year}) - {STATUS_LABELS[p.status as KpiPeriodStatus]?.label}
-              </option>
-            ))}
+            {periods.length === 0 ? (
+              <option value="">-- Chưa có kỳ KPI nào --</option>
+            ) : (
+              periods.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title} ({p.year}) - {STATUS_LABELS[p.status as KpiPeriodStatus]?.label}
+                </option>
+              ))
+            )}
           </select>
         </div>
 
@@ -213,6 +219,35 @@ export default function KpiApprovalPage() {
           </div>
         )}
       </div>
+
+      {/* Empty State Banner if no periods exist */}
+      {periods.length === 0 && !loading && (
+        <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm text-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto" />
+          <h3 className="text-lg font-bold text-slate-800">Chưa có dữ liệu kỳ đánh giá KPI</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Hệ thống chưa tìm thấy kỳ KPI nào trong cơ sở dữ liệu. Nhấn nút bên dưới để khởi tạo dữ liệu kỳ KPI mẫu cho năm học 2026.
+          </p>
+          <button
+            onClick={async () => {
+              setProcessing(true);
+              await seedDefaultKpiCatalog();
+              const res = await createKpiPeriod("Kỳ Đánh Giá KPI Học Kỳ 1", 2026, "SEMESTER");
+              if (res.success) {
+                setMessage({ type: "success", text: "Đã tạo kỳ KPI mẫu thành công!" });
+                await loadPeriods();
+              } else {
+                setMessage({ type: "error", text: res.error || "Không thể tạo kỳ KPI." });
+              }
+              setProcessing(false);
+            }}
+            disabled={processing}
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition shadow-sm disabled:opacity-50"
+          >
+            {processing ? "Đang khởi tạo..." : "Khởi Tạo Kỳ Đánh Giá KPI Mẫu 2026"}
+          </button>
+        </div>
+      )}
 
       {/* 4-TIER APPROVAL PIPELINE VISUALIZATION */}
       {periodDetails && (
