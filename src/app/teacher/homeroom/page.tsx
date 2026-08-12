@@ -14,6 +14,7 @@ import {
   Calendar,
   Sparkles,
   FileText,
+  Upload,
 } from "lucide-react";
 import {
   getHomeroomClass,
@@ -93,6 +94,7 @@ type GradeItem = {
 
 // Tab definitions
 const TABS = [
+  { key: "ai_reminder", label: "Trợ lý AI Nhắc việc" },
   { key: "overview", label: "Tổng quan lớp" },
   { key: "groups", label: "Tổ chức tổ" },
   { key: "seating", label: "Sơ đồ chỗ ngồi" },
@@ -100,7 +102,6 @@ const TABS = [
   { key: "grades", label: "Bảng điểm lớp" },
   { key: "incidents", label: "Vi phạm / Khen thưởng" },
   { key: "feedback", label: "Phối hợp phụ huynh" },
-  { key: "ai_reminder", label: "Trợ lý AI Nhắc việc" },
   { key: "monthly_plan", label: "Kế hoạch tháng & Sinh hoạt tuần" },
 ] as const;
 
@@ -140,7 +141,7 @@ const ACADEMIC_OPTIONS = [
 
 export default function HomeroomPage() {
   const { data: session } = useSession();
-  const [tab, setTab] = useState<string>("overview");
+  const [tab, setTab] = useState<string>("ai_reminder");
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1045,6 +1046,22 @@ function AIReminderTab({
     showToast("Đã lưu kế hoạch năm học");
   }
 
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setCalendarContent((prev) => (prev ? `${prev}\n\n${text}` : text));
+        showToast(`Đã tải nội dung từ file "${file.name}"`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
   async function handleGenerateAI() {
     setLoadingAI(true);
     setAiReminder("");
@@ -1152,12 +1169,24 @@ function AIReminderTab({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1">Nội dung kế hoạch / Các sự kiện chính trong năm</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-medium">Nội dung kế hoạch / Các sự kiện chính trong năm</label>
+                <label className="cursor-pointer text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2.5 py-1 rounded-md hover:bg-blue-100 font-medium flex items-center gap-1 transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  Tải file kế hoạch (.txt, .docx, .csv)
+                  <input
+                    type="file"
+                    accept=".txt,.csv,.md,.docx,.doc"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
               <textarea
                 value={calendarContent}
                 onChange={(e) => setCalendarContent(e.target.value)}
                 rows={6}
-                placeholder="Dán nội dung kế hoạch năm học của nhà trường vào đây (VD: Tháng 9 khai giảng, Tháng 10 thi giữa kỳ 1, Tháng 11 chào mừng ngày 20/11...)"
+                placeholder="Dán nội dung kế hoạch năm học của nhà trường vào đây hoặc bấm nút tải file ở trên..."
                 className="w-full border rounded px-3 py-2 text-sm font-mono"
               />
             </div>
