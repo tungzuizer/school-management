@@ -59,10 +59,8 @@ const menuGroups: MenuGroup[] = [
     title: "Tro ly AI Hieu Truong",
     icon: Bot,
     items: [
-      { label: "Tu van ra quyet dinh", href: "/admin/principal-ai", icon: Bot },
+      { label: "Tu van & Canh bao AI", href: "/admin/principal-ai", icon: Bot },
       { label: "Bo tri day thay", href: "/admin/substitute-dispatch", icon: UserCheck },
-      { label: "Canh bao som", href: "/admin/early-warnings", icon: AlertTriangle },
-      { label: "Tong hop bao cao ngay", href: "/admin/daily-summary", icon: Sparkles },
     ],
   },
   {
