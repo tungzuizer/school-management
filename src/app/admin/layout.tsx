@@ -56,14 +56,6 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    title: "Tro ly AI Hieu Truong",
-    icon: Bot,
-    items: [
-      { label: "Tu van & Canh bao AI", href: "/admin/principal-ai", icon: Bot },
-      { label: "Bo tri day thay", href: "/admin/substitute-dispatch", icon: UserCheck },
-    ],
-  },
-  {
     title: "Tong quan",
     icon: Home,
     items: [
@@ -97,6 +89,14 @@ const menuGroups: MenuGroup[] = [
     items: [
       { label: "So dau bai", href: "/admin/journals", icon: FileBarChart },
       { label: "Giao an phe duyet", href: "/admin/lesson-plans", icon: BookOpen },
+    ],
+  },
+  {
+    title: "Tro ly AI Hieu Truong",
+    icon: Bot,
+    items: [
+      { label: "Tu van & Canh bao AI", href: "/admin/principal-ai", icon: Bot },
+      { label: "Bo tri day thay", href: "/admin/substitute-dispatch", icon: UserCheck },
     ],
   },
 ];
