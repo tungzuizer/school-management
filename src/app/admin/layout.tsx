@@ -52,14 +52,7 @@ const menuGroups: MenuGroup[] = [
     title: "Phan he I: Quan tri chien luoc",
     icon: Sparkles,
     items: [
-      { label: "Dashboard Chien luoc", href: "/admin/strategy/dashboard", icon: BarChart3 },
-      { label: "Tong quan Chien luoc", href: "/admin/strategy", icon: LayoutDashboard },
-      { label: "Muc tieu chat luong", href: "/admin/strategy/quality-goals", icon: Target },
-      { label: "Ho so cho phe duyet", href: "/admin/strategy/approvals", icon: ShieldCheck },
-      { label: "Tep minh chung", href: "/admin/strategy/evidences", icon: FileText },
-      { label: "Bao cao & Xuat du lieu", href: "/admin/strategy/reports", icon: FileBarChart },
-      { label: "Quan ly KPI", href: "/admin/kpi", icon: Target },
-      { label: "Chi tieu Tai chinh", href: "/admin/finance", icon: Landmark },
+      { label: "Quan tri chien luoc", href: "/admin/strategy", icon: Sparkles },
     ],
   },
   {
