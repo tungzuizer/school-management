@@ -55,6 +55,15 @@ export async function getDashboardStats() {
 
 export async function getAttendanceByWeek() {
   try {
+    const eightWeeksAgo = new Date();
+    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+    eightWeeksAgo.setHours(0, 0, 0, 0);
+
+    const records = await prisma.attendance.findMany({
+      where: { date: { gte: eightWeeksAgo } },
+      select: { date: true, status: true },
+    });
+
     const weeks: {
       week: string;
       present: number;
@@ -69,38 +78,28 @@ export async function getAttendanceByWeek() {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      const [present, absentExcused, absentUnexcused, late] = await Promise.all([
-        prisma.attendance.count({
-          where: {
-            date: { gte: weekStart, lt: weekEnd },
-            status: AttendanceStatus.PRESENT,
-          },
-        }),
-        prisma.attendance.count({
-          where: {
-            date: { gte: weekStart, lt: weekEnd },
-            status: AttendanceStatus.ABSENT_EXCUSED,
-          },
-        }),
-        prisma.attendance.count({
-          where: {
-            date: { gte: weekStart, lt: weekEnd },
-            status: AttendanceStatus.ABSENT_UNEXCUSED,
-          },
-        }),
-        prisma.attendance.count({
-          where: {
-            date: { gte: weekStart, lt: weekEnd },
-            status: AttendanceStatus.LATE,
-          },
-        }),
-      ]);
+      let present = 0;
+      let absent = 0;
+      let late = 0;
+
+      records.forEach((r) => {
+        const d = new Date(r.date);
+        if (d >= weekStart && d < weekEnd) {
+          if (r.status === AttendanceStatus.PRESENT) present++;
+          else if (
+            r.status === AttendanceStatus.ABSENT_EXCUSED ||
+            r.status === AttendanceStatus.ABSENT_UNEXCUSED
+          )
+            absent++;
+          else if (r.status === AttendanceStatus.LATE) late++;
+        }
+      });
 
       const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
       weeks.push({
         week: weekLabel,
         present,
-        absent: absentExcused + absentUnexcused,
+        absent,
         late,
       });
     }
@@ -168,34 +167,36 @@ export async function getClassAttendanceRanking() {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const results = await Promise.all(
-      classes.map(async (cls) => {
-        const [total, present] = await Promise.all([
-          prisma.attendance.count({
-            where: { classId: cls.id, date: { gte: sevenDaysAgo } },
-          }),
-          prisma.attendance.count({
-            where: {
-              classId: cls.id,
-              date: { gte: sevenDaysAgo },
-              status: AttendanceStatus.PRESENT,
-            },
-          }),
-        ]);
+    const attendanceRecords = await prisma.attendance.findMany({
+      where: { date: { gte: sevenDaysAgo } },
+      select: { classId: true, status: true },
+    });
 
-        const rate =
-          total > 0
-            ? Math.round((present / total) * 100 * 10) / 10
-            : 100;
+    const attendanceMap = new Map<string, { total: number; present: number }>();
+    attendanceRecords.forEach((rec) => {
+      if (!rec.classId) return;
+      const current = attendanceMap.get(rec.classId) || { total: 0, present: 0 };
+      current.total++;
+      if (rec.status === AttendanceStatus.PRESENT) {
+        current.present++;
+      }
+      attendanceMap.set(rec.classId, current);
+    });
 
-        return {
-          className: cls.name,
-          gradeLevel: cls.gradeLevel,
-          studentCount: cls._count.students,
-          attendanceRate: rate,
-        };
-      })
-    );
+    const results = classes.map((cls) => {
+      const stats = attendanceMap.get(cls.id) || { total: 0, present: 0 };
+      const rate =
+        stats.total > 0
+          ? Math.round((stats.present / stats.total) * 100 * 10) / 10
+          : 100;
+
+      return {
+        className: cls.name,
+        gradeLevel: cls.gradeLevel,
+        studentCount: cls._count.students,
+        attendanceRate: rate,
+      };
+    });
 
     return results.sort((a, b) => b.attendanceRate - a.attendanceRate);
   } catch (error) {
@@ -285,4 +286,25 @@ export async function getTodaySummary() {
       reportsSubmitted: 0,
     };
   }
+}
+
+export async function getAdminDashboardData() {
+  const [stats, weekData, classGrades, classAttendance, incidents, today] =
+    await Promise.all([
+      getDashboardStats(),
+      getAttendanceByWeek(),
+      getGradesByClass(),
+      getClassAttendanceRanking(),
+      getRecentIncidents(),
+      getTodaySummary(),
+    ]);
+
+  return {
+    stats,
+    weekData,
+    classGrades,
+    classAttendance,
+    incidents,
+    today,
+  };
 }

@@ -57,20 +57,13 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [s, w, g, a, i, t] = await Promise.all([
-          getDashboardStats(),
-          getAttendanceByWeek(),
-          getGradesByClass(),
-          getClassAttendanceRanking(),
-          getRecentIncidents(),
-          getTodaySummary(),
-        ]);
-        setStats(s);
-        setWeekData(w);
-        setClassGrades(g);
-        setClassAttendance(a);
-        setIncidents(i);
-        setToday(t);
+        const data = await getAdminDashboardData();
+        setStats(data.stats);
+        setWeekData(data.weekData);
+        setClassGrades(data.classGrades);
+        setClassAttendance(data.classAttendance);
+        setIncidents(data.incidents);
+        setToday(data.today);
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       } finally {
