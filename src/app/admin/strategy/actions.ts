@@ -149,11 +149,27 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
       },
     ];
 
+    // Filter feature cards by status filter if selected
+    let filteredFeatureCards = featureCards;
+    if (filters.status && filters.status !== "ALL") {
+      const statusMap: Record<string, string> = {
+        CHUA_BAT_DAU: "Chưa bắt đầu",
+        DANG_THUC_HIEN: "Đang thực hiện",
+        CHO_PHE_DUYET: "Chờ phê duyệt",
+        DA_PHE_DUYET: "Đã phê duyệt",
+      };
+      const targetStatus = statusMap[filters.status];
+      if (targetStatus) {
+        filteredFeatureCards = featureCards.filter((card) => card.status === targetStatus);
+      }
+    }
+
     // 5. Action Items Required ("Công việc cần xử lý")
     // A. Plans Pending Approval
     const pendingPeriods = await prisma.kpiPeriod.findMany({
       where: {
         status: { in: [KpiPeriodStatus.SUBMITTED, KpiPeriodStatus.CAMPUS_CHECKED, KpiPeriodStatus.VP_REVIEWED, KpiPeriodStatus.UNLOCK_REQUESTED] },
+        ...(filteredCampusId ? { campusId: filteredCampusId } : {}),
       },
       include: {
         approvalLogs: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -174,7 +190,10 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
 
     // B. KPIs Not Updated (Draft or low value)
     const unupdatedKpis = await prisma.kpiPeriod.findMany({
-      where: { status: KpiPeriodStatus.DRAFT },
+      where: {
+        status: KpiPeriodStatus.DRAFT,
+        ...(filteredCampusId ? { campusId: filteredCampusId } : {}),
+      },
       take: 5,
     });
 
@@ -191,6 +210,10 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
     const lowValues = await prisma.kpiValue.findMany({
       where: {
         completionRate: { lt: 80 },
+        ...(filteredCampusId ? { period: { campusId: filteredCampusId } } : {}),
+        ...(filters.responsiblePerson && filters.responsiblePerson !== "ALL"
+          ? { kpi: { responsiblePerson: { contains: filters.responsiblePerson } } }
+          : {}),
       },
       include: {
         kpi: true,
@@ -212,7 +235,11 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
     }));
 
     // D. Campuses missing reports
-    const missingReports = campuses.map((c) => {
+    const targetCampuses = filteredCampusId
+      ? campuses.filter((c) => c.id === filteredCampusId)
+      : campuses;
+
+    const missingReports = targetCampuses.map((c) => {
       const hasSubmitted = kpiPeriods.some((p) => p.campusId === c.id && p.status !== KpiPeriodStatus.DRAFT);
       return {
         id: c.id,
@@ -243,7 +270,7 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
           pendingPrincipalApprovals,
         },
         overallProgress,
-        featureCards,
+        featureCards: filteredFeatureCards,
         actionRequired: {
           pendingPlans,
           kpiNotUpdatedList,
