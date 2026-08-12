@@ -157,7 +157,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Navigation Menu */}
         <nav className="flex-1 overflow-auto py-3 px-2 space-y-0.5">
           {menuGroups.map((group) => {
-            const isCollapsed = collapsedGroups[group.title];
+            const isCollapsed = collapsedGroups[group.title] ?? true;
             const GroupIcon = group.icon;
             const hasActiveItem = group.items.some(
               item => pathname === item.href || pathname.startsWith(item.href + "/")
