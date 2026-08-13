@@ -106,8 +106,8 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
         {/* Logo & Brand */}
         <div className="p-5 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className={`${config.bg} rounded-xl p-2.5 shrink-0`}>
-              <GraduationCap className="w-6 h-6 text-white" />
+            <div className="shrink-0 bg-white/10 p-1 rounded-xl border border-slate-700/50 flex items-center justify-center">
+              <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain rounded-lg" />
             </div>
             <div className="min-w-0">
               <h2 className="font-bold text-base truncate">{title}</h2>

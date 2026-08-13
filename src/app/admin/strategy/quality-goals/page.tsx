@@ -41,17 +41,30 @@ import {
 } from "./actions";
 
 const CATEGORY_NAME_MAP: Record<string, string> = {
+  ACADEMIC: "ACADEMIC",
   "Chất lượng học tập": "ACADEMIC",
+  CONDUCT: "CONDUCT",
   "Phẩm chất & Năng lực": "CONDUCT",
+  "Phẩm chất": "CONDUCT",
+  ATTENDANCE: "ATTENDANCE",
   "Chuyên cần": "ATTENDANCE",
+  PROGRAM_COMPLETION: "PROGRAM_COMPLETION",
   "Hoàn thành chương trình": "PROGRAM_COMPLETION",
+  EXCELLENT_STUDENTS: "EXCELLENT_STUDENTS",
   "Học sinh giỏi": "EXCELLENT_STUDENTS",
+  SUPPORT_STUDENTS: "SUPPORT_STUDENTS",
   "Học sinh cần hỗ trợ": "SUPPORT_STUDENTS",
+  TEACHER_QUALITY: "TEACHER_QUALITY",
   "Chất lượng đội ngũ": "TEACHER_QUALITY",
+  DIGITAL_TRANSFORMATION: "DIGITAL_TRANSFORMATION",
   "Chuyển đổi số": "DIGITAL_TRANSFORMATION",
+  FACILITIES: "FACILITIES",
   "Cơ sở vật chất": "FACILITIES",
+  SCHOOL_SAFETY: "SCHOOL_SAFETY",
   "An toàn trường học": "SCHOOL_SAFETY",
+  PARENT_SATISFACTION: "PARENT_SATISFACTION",
   "Sự hài lòng của PHHS": "PARENT_SATISFACTION",
+  OTHER: "OTHER",
   "Mục tiêu khác": "OTHER",
 };
 

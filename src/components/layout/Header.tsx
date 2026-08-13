@@ -53,8 +53,9 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 shrink-0">
-      {/* Left: Page title */}
+      {/* Left: Page title + Logo */}
       <div className="flex items-center gap-3">
+        <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain rounded-lg" />
         <h1 className="text-lg md:text-xl font-bold text-gray-800">{pageTitle}</h1>
       </div>
 
