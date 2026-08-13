@@ -115,8 +115,8 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-8 sm:px-8 sm:py-10 text-center">
-            <div className="mx-auto w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4 ring-2 ring-white/30">
-              <GraduationCap className="w-8 h-8 text-white" />
+            <div className="mx-auto w-16 h-16 bg-white p-2 rounded-2xl flex items-center justify-center mb-4 ring-4 ring-white/30 shadow-lg">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-white">
               Quản lý Trường học
