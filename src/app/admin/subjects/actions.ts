@@ -10,16 +10,42 @@ export async function getSubjects(search?: string) {
   }
   return prisma.subject.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      name: true,
+      gradeLevel: true,
+      headTeacherId: true,
+      headTeacher: {
+        select: {
+          id: true,
+          user: { select: { name: true } }
+        }
+      },
       _count: { select: { teachingAssignments: true, grades: true } },
     },
     orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
   });
 }
 
-export async function createSubject(data: { name: string; gradeLevel?: number }) {
+export async function getTeachersList() {
+  return prisma.teacher.findMany({
+    select: {
+      id: true,
+      user: { select: { name: true } }
+    },
+    orderBy: { user: { name: "asc" } }
+  });
+}
+
+export async function createSubject(data: { name: string; gradeLevel?: number; headTeacherId?: string | null }) {
   try {
-    await prisma.subject.create({ data: { name: data.name, gradeLevel: data.gradeLevel } });
+    await prisma.subject.create({
+      data: {
+        name: data.name,
+        gradeLevel: data.gradeLevel,
+        headTeacherId: data.headTeacherId || null,
+      }
+    });
     revalidatePath("/admin/subjects");
     return { success: true };
   } catch (error: any) {
@@ -27,9 +53,16 @@ export async function createSubject(data: { name: string; gradeLevel?: number })
   }
 }
 
-export async function updateSubject(id: string, data: { name: string; gradeLevel?: number }) {
+export async function updateSubject(id: string, data: { name: string; gradeLevel?: number; headTeacherId?: string | null }) {
   try {
-    await prisma.subject.update({ where: { id }, data: { name: data.name, gradeLevel: data.gradeLevel } });
+    await prisma.subject.update({
+      where: { id },
+      data: {
+        name: data.name,
+        gradeLevel: data.gradeLevel,
+        headTeacherId: data.headTeacherId || null,
+      }
+    });
     revalidatePath("/admin/subjects");
     return { success: true };
   } catch (error: any) {

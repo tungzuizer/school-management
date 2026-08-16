@@ -127,6 +127,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-150 relative ${
                   isActive
                     ? "bg-white/15 text-white shadow-sm"
@@ -171,6 +172,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 className={`flex flex-col items-center justify-center py-2 px-2 min-w-[64px] relative ${
                   isActive ? config.mobileAccent : "text-gray-400"
                 }`}
@@ -242,6 +244,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={true}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-4 px-4 py-4 rounded-xl text-base font-medium transition-colors ${
                       isActive
