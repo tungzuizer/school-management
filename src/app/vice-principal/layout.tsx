@@ -152,6 +152,7 @@ export default function VicePrincipalLayout({ children }: { children: React.Reac
                         <Link
                           key={item.href}
                           href={item.href}
+                          prefetch={true}
                           className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
                             isActive
                               ? "bg-white text-[#004d40] font-semibold shadow-md"
@@ -257,6 +258,7 @@ export default function VicePrincipalLayout({ children }: { children: React.Reac
                             <Link
                               key={item.href}
                               href={item.href}
+                              prefetch={true}
                               onClick={() => setMobileMenuOpen(false)}
                               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                                 isActive
@@ -301,6 +303,7 @@ export default function VicePrincipalLayout({ children }: { children: React.Reac
                 <Link
                   key={tab.href}
                   href={tab.href}
+                  prefetch={true}
                   className={`flex flex-col items-center justify-center py-2.5 px-4 min-w-[68px] relative transition-colors ${
                     isActive ? "text-[#004d40]" : "text-gray-400 active:text-gray-600"
                   }`}

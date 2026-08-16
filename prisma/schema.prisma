@@ -214,6 +214,7 @@ model ClassRoom {
   lessonPlans         LessonPlan[]
   journalEntries      ClassJournalEntry[]
   monthlyPlans        MonthlyPlan[]
+  teacherChangeRequests TeacherChangeRequest[]
 
   @@index([schoolId])
   @@index([campusId])
@@ -318,33 +319,68 @@ model Teacher {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  homeroomClasses     ClassRoom[]         @relation("HomeroomTeacher")
-  teachingAssignments TeachingAssignment[]
-  schedules           Schedule[]
-  lessonPlans         LessonPlan[]
-  journalEntries      ClassJournalEntry[]
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  homeroomClasses        ClassRoom[]            @relation("HomeroomTeacher")
+  headSubjects           Subject[]              @relation("SubjectHead")
+  teachingAssignments    TeachingAssignment[]
+  schedules              Schedule[]
+  lessonPlans            LessonPlan[]
+  journalEntries         ClassJournalEntry[]
+  requestedChanges       TeacherChangeRequest[] @relation("RequestedByTeacher")
+  currentTeacherChanges  TeacherChangeRequest[] @relation("CurrentTeacherRel")
+  assignedChanges        TeacherChangeRequest[] @relation("NewTeacherTarget")
+  approvedChanges        TeacherChangeRequest[] @relation("HeadApprovedBy")
 
   @@index([userId])
 }
 
 model Subject {
-  id         String   @id @default(cuid())
-  name       String
-  gradeLevel Int?     // Khối lớp áp dụng (null = tất cả)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  gradeLevel    Int?     // Khối lớp áp dụng (null = tất cả)
+  headTeacherId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
+  headTeacher         Teacher?               @relation("SubjectHead", fields: [headTeacherId], references: [id], onDelete: SetNull)
   curricula           Curriculum[]
   teachingAssignments TeachingAssignment[]
   grades              Grade[]
   schedules           Schedule[]
   lessonPlans         LessonPlan[]
   journalEntries      ClassJournalEntry[]
+  changeRequests      TeacherChangeRequest[]
 
   @@index([name])
   @@index([gradeLevel])
+  @@index([headTeacherId])
+}
+
+model TeacherChangeRequest {
+  id               String           @id @default(cuid())
+  subjectId        String
+  classId          String
+  currentTeacherId String
+  newTeacherId     String
+  requestedById    String
+  reason           String?          @db.Text
+  status           SubstituteStatus @default(PENDING) // PENDING, APPROVED, CANCELLED
+  approvedById     String?
+  reviewNote       String?          @db.Text
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  subject        Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  classRoom      ClassRoom @relation(fields: [classId], references: [id], onDelete: Cascade)
+  currentTeacher Teacher   @relation("CurrentTeacherRel", fields: [currentTeacherId], references: [id])
+  newTeacher     Teacher   @relation("NewTeacherTarget", fields: [newTeacherId], references: [id])
+  requestedBy    Teacher   @relation("RequestedByTeacher", fields: [requestedById], references: [id])
+  approvedBy     Teacher?  @relation("HeadApprovedBy", fields: [approvedById], references: [id])
+
+  @@index([subjectId])
+  @@index([classId])
+  @@index([status])
 }
 
 model Curriculum {
