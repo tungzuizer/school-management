@@ -26,6 +26,7 @@ import {
   Settings,
   Bell,
   Mail,
+  UserCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -65,6 +66,13 @@ const menuGroups: MenuGroup[] = [
       { label: "So dau bai", href: "/teacher/journal", icon: FileSpreadsheet },
       { label: "Giao an", href: "/teacher/lesson-plans", icon: BookOpen },
       { label: "Nhap diem", href: "/teacher/grades", icon: Calculator },
+    ],
+  },
+  {
+    title: "To chuyen mon",
+    icon: UserCheck,
+    items: [
+      { label: "Duyet giao an", href: "/teacher/subject-head", icon: UserCheck },
     ],
   },
   {
