@@ -3,19 +3,25 @@
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { LessonPlanStatus } from "@prisma/client";
+import { LessonPlanStatus, Role } from "@prisma/client";
 import { recordAuditLog } from "@/lib/audit-logger";
 
-// Phó Hiệu trưởng lấy giáo án đã được Tổ trưởng duyệt (HEAD_APPROVED) + đã duyệt trước đó
+// Phó Hiệu trưởng (hoặc Hiệu trưởng) lấy danh sách giáo án
 export async function getVPLessonPlans() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id || session.user.role !== "VICE_PRINCIPAL") return [];
+  if (!session?.user?.id) return [];
+
+  const isAllowedRole =
+    session.user.role === "VICE_PRINCIPAL" || session.user.role === Role.ADMIN;
+
+  if (!isAllowedRole) return [];
 
   try {
     const plans = await prisma.lessonPlan.findMany({
       where: {
         status: {
           in: [
+            LessonPlanStatus.SUBMITTED,
             LessonPlanStatus.HEAD_APPROVED,
             LessonPlanStatus.VP_APPROVED,
             LessonPlanStatus.VP_REJECTED,
@@ -33,7 +39,7 @@ export async function getVPLessonPlans() {
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     });
 
-    return plans.map(p => ({
+    return plans.map((p) => ({
       id: p.id,
       teacherName: p.teacher?.user?.name || "Giáo viên",
       subjectName: p.subject?.name || "Môn học",
@@ -49,10 +55,11 @@ export async function getVPLessonPlans() {
       assessment: p.assessment || "",
       notes: p.notes || "",
       status: p.status,
+      driveFileUrl: p.driveFileUrl || null,
       reviewNote: p.reviewNote || "",
       reviewedAt: p.reviewedAt,
       reviewedBy: p.reviewedBy,
-      reviews: p.reviews.map(r => ({
+      reviews: p.reviews.map((r) => ({
         id: r.id,
         reviewerName: r.reviewerName,
         reviewerRole: r.reviewerRole,
@@ -67,14 +74,21 @@ export async function getVPLessonPlans() {
   }
 }
 
-// Phó Hiệu trưởng duyệt giáo án (HEAD_APPROVED → VP_APPROVED / VP_REJECTED)
+// Phó Hiệu trưởng (hoặc Hiệu trưởng) duyệt giáo án (HEAD_APPROVED / SUBMITTED → VP_APPROVED / VP_REJECTED)
 export async function vpReviewLessonPlan(data: {
   planId: string;
   approved: boolean;
   reviewNote: string;
 }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id || session.user.role !== "VICE_PRINCIPAL") {
+  if (!session?.user?.id) {
+    return { success: false, error: "Chưa đăng nhập" };
+  }
+
+  const isAllowedRole =
+    session.user.role === "VICE_PRINCIPAL" || session.user.role === Role.ADMIN;
+
+  if (!isAllowedRole) {
     return { success: false, error: "Không có quyền thực hiện chức năng này" };
   }
 
@@ -82,8 +96,8 @@ export async function vpReviewLessonPlan(data: {
     const existing = await prisma.lessonPlan.findUnique({ where: { id: data.planId } });
     if (!existing) return { success: false, error: "Không tìm thấy giáo án" };
 
-    if (existing.status !== LessonPlanStatus.HEAD_APPROVED) {
-      return { success: false, error: "Giáo án chưa được Tổ trưởng chuyên môn duyệt" };
+    if (existing.status === LessonPlanStatus.DRAFT) {
+      return { success: false, error: "Giáo án đang ở bản nháp, chưa thể duyệt" };
     }
 
     const newStatus = data.approved ? LessonPlanStatus.VP_APPROVED : LessonPlanStatus.VP_REJECTED;
@@ -102,7 +116,7 @@ export async function vpReviewLessonPlan(data: {
         data: {
           lessonPlanId: data.planId,
           reviewerName: session.user.name || "Phó Hiệu trưởng",
-          reviewerRole: "VICE_PRINCIPAL",
+          reviewerRole: session.user.role === Role.ADMIN ? "ADMIN" : "VICE_PRINCIPAL",
           action: newStatus,
           comment: data.reviewNote,
         },
@@ -112,7 +126,7 @@ export async function vpReviewLessonPlan(data: {
     await recordAuditLog({
       userId: session.user.id,
       userName: session.user.name || "",
-      userRole: "VICE_PRINCIPAL",
+      userRole: session.user.role === Role.ADMIN ? "ADMIN" : "VICE_PRINCIPAL",
       action: data.approved ? "APPROVE" : "REJECT",
       entityName: "LessonPlan",
       entityId: data.planId,
