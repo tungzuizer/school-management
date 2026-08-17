@@ -34,6 +34,7 @@ import {
   Landmark,
   Lock,
   ScrollText,
+  HardDrive,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -75,6 +76,7 @@ const menuGroups: MenuGroup[] = [
       { label: "Giao vien", href: "/admin/teachers", icon: UserCog },
       { label: "Hoc sinh", href: "/admin/students", icon: Users },
       { label: "Mon hoc", href: "/admin/subjects", icon: BookOpen },
+      { label: "To chuyen mon", href: "/admin/subject-groups", icon: Users },
     ],
   },
   {
@@ -91,6 +93,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { label: "So dau bai", href: "/admin/journals", icon: FileBarChart },
       { label: "Giao an phe duyet", href: "/admin/lesson-plans", icon: BookOpen },
+      { label: "Cau hinh Drive & Ky nop", href: "/admin/drive-config", icon: HardDrive },
     ],
   },
   {

@@ -41,6 +41,7 @@ interface LessonPlanItem {
   subjectName: string;
   classId: string;
   className: string;
+  periodId?: string;
   weekNumber: number;
   periodStart: number;
   periodEnd: number;
@@ -51,15 +52,24 @@ interface LessonPlanItem {
   materials: string;
   assessment: string;
   notes: string;
-  status: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
+  driveFileUrl?: string;
+  status: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "HEAD_APPROVED" | "HEAD_REJECTED" | "VP_APPROVED" | "VP_REJECTED";
   reviewNote: string;
   reviewedAt: Date | null;
   createdAt: Date;
 }
 
+interface ActivePeriod {
+  id: string;
+  label: string;
+  deadline: string;
+}
+
 export default function TeacherLessonPlansPage() {
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
+  const [sharedDriveUrl, setSharedDriveUrl] = useState<string | null>(null);
+  const [activePeriods, setActivePeriods] = useState<ActivePeriod[]>([]);
   const [plans, setPlans] = useState<LessonPlanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { isEasyMode } = useEasyMode();
@@ -70,6 +80,7 @@ export default function TeacherLessonPlansPage() {
   const [editingPlan, setEditingPlan] = useState<Partial<LessonPlanItem> | null>(null);
   const [formSubjectId, setFormSubjectId] = useState("");
   const [formClassId, setFormClassId] = useState("");
+  const [formPeriodId, setFormPeriodId] = useState("");
   const [formWeekNumber, setFormWeekNumber] = useState<number>(1);
   const [formPeriodStart, setFormPeriodStart] = useState<number>(1);
   const [formPeriodEnd, setFormPeriodEnd] = useState<number>(1);
@@ -80,6 +91,7 @@ export default function TeacherLessonPlansPage() {
   const [formMaterials, setFormMaterials] = useState("");
   const [formAssessment, setFormAssessment] = useState("");
   const [formNotes, setFormNotes] = useState("");
+  const [formDriveFileUrl, setFormDriveFileUrl] = useState("");
   const [formSaving, setFormSaving] = useState(false);
 
   // Detail viewer states
@@ -91,9 +103,12 @@ export default function TeacherLessonPlansPage() {
       const meta = await getLessonPlanMetadata();
       setClasses(meta.classes || []);
       setSubjects(meta.subjects || []);
+      setSharedDriveUrl(meta.sharedDriveUrl || null);
+      setActivePeriods(meta.activePeriods || []);
 
       if (meta.classes && meta.classes.length > 0) setFormClassId(meta.classes[0].id);
       if (meta.subjects && meta.subjects.length > 0) setFormSubjectId(meta.subjects[0].id);
+      if (meta.activePeriods && meta.activePeriods.length > 0) setFormPeriodId(meta.activePeriods[0].id);
 
       const items = await getLessonPlans();
       setPlans((items as any) || []);
@@ -112,6 +127,7 @@ export default function TeacherLessonPlansPage() {
     setEditingPlan(null);
     if (classes.length > 0) setFormClassId(classes[0].id);
     if (subjects.length > 0) setFormSubjectId(subjects[0].id);
+    if (activePeriods.length > 0) setFormPeriodId(activePeriods[0].id);
     setFormWeekNumber(1);
     setFormPeriodStart(1);
     setFormPeriodEnd(1);
@@ -122,6 +138,7 @@ export default function TeacherLessonPlansPage() {
     setFormMaterials("");
     setFormAssessment("");
     setFormNotes("");
+    setFormDriveFileUrl("");
     setIsModalOpen(true);
   };
 
@@ -129,6 +146,7 @@ export default function TeacherLessonPlansPage() {
     setEditingPlan(plan);
     setFormSubjectId(plan.subjectId);
     setFormClassId(plan.classId);
+    setFormPeriodId(plan.periodId || (activePeriods[0]?.id || ""));
     setFormWeekNumber(plan.weekNumber);
     setFormPeriodStart(plan.periodStart);
     setFormPeriodEnd(plan.periodEnd);
@@ -139,6 +157,7 @@ export default function TeacherLessonPlansPage() {
     setFormMaterials(plan.materials);
     setFormAssessment(plan.assessment);
     setFormNotes(plan.notes);
+    setFormDriveFileUrl(plan.driveFileUrl || "");
     setIsModalOpen(true);
   };
 
@@ -160,6 +179,7 @@ export default function TeacherLessonPlansPage() {
         id: editingPlan?.id,
         subjectId: formSubjectId,
         classId: formClassId,
+        periodId: formPeriodId || undefined,
         weekNumber: formWeekNumber,
         periodStart: formPeriodStart,
         periodEnd: formPeriodEnd,
@@ -170,6 +190,7 @@ export default function TeacherLessonPlansPage() {
         materials: formMaterials,
         assessment: formAssessment,
         notes: formNotes,
+        driveFileUrl: formDriveFileUrl,
       });
 
       if (res.success) {
@@ -249,7 +270,7 @@ export default function TeacherLessonPlansPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">Kế Hoạch Bài Dạy (Giáo Án)</h1>
-          <p className="text-xs text-gray-500 mt-1">Soạn thảo giáo án và gửi ban giám hiệu duyệt trước khi lên lớp</p>
+          <p className="text-xs text-gray-500 mt-1">Soạn thảo giáo án và nộp qua Google Drive để Ban Giám Hiệu phê duyệt</p>
         </div>
         <button
           onClick={handleOpenAddModal}
@@ -259,6 +280,26 @@ export default function TeacherLessonPlansPage() {
           <Plus className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Shared Google Drive Link Banner */}
+      {sharedDriveUrl && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 flex items-center justify-between text-xs text-blue-900 shadow-sm">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              <strong>Thư mục Google Drive trường:</strong> Hãy tải file bài dạy lên Drive trường trước khi nộp.
+            </span>
+          </div>
+          <a
+            href={sharedDriveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shrink-0"
+          >
+            Mở Drive Trường ↗
+          </a>
+        </div>
+      )}
 
       {/* Easy mode tips */}
       {isEasyMode && (
@@ -430,6 +471,36 @@ export default function TeacherLessonPlansPage() {
             </div>
 
             <form onSubmit={handleSave} className="p-4 space-y-4 flex-1 text-xs text-gray-700 leading-relaxed">
+              {activePeriods.length > 0 && (
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-600">Kỳ nộp giáo án *</label>
+                  <select
+                    value={formPeriodId}
+                    onChange={(e) => setFormPeriodId(e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    required
+                  >
+                    {activePeriods.map((period) => (
+                      <option key={period.id} value={period.id}>
+                        {period.label} (Hạn nộp: {new Date(period.deadline).toLocaleDateString("vi-VN")})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="font-bold text-gray-600">Link Google Drive file giáo án (Word / Docs / PDF)</label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/file/d/..."
+                  value={formDriveFileUrl}
+                  onChange={(e) => setFormDriveFileUrl(e.target.value)}
+                  className="w-full bg-white border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                />
+                <p className="text-[10px] text-gray-400">Dán đường dẫn chia sẻ file trên Google Drive trường để BGH kiểm tra trực tiếp.</p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-bold text-gray-600">Lớp học *</label>

@@ -308,3 +308,99 @@ export async function getAdminDashboardData() {
     today,
   };
 }
+
+// ==================== AI CẢNH BÁO GIÁO ÁN ====================
+
+export async function getLessonPlanAlerts() {
+  try {
+    // Tìm kỳ nộp đang active
+    const activePeriods = await prisma.lessonPlanPeriod.findMany({
+      where: { isActive: true },
+      orderBy: { deadline: "desc" },
+      take: 1 // Lấy kỳ gần nhất
+    });
+
+    if (activePeriods.length === 0) return { alerts: [], periodLabel: null, deadline: null };
+
+    const period = activePeriods[0];
+    const now = new Date();
+
+    // Lấy tất cả GV đang có phân công dạy
+    const assignments = await prisma.teachingAssignment.findMany({
+      include: {
+        teacher: { include: { user: { select: { name: true } } } },
+        subject: {
+          select: {
+            id: true, name: true,
+            subjectGroup: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    // Lấy giáo án đã nộp cho kỳ này
+    const submittedPlans = await prisma.lessonPlan.findMany({
+      where: {
+        periodId: period.id,
+        status: { not: "DRAFT" as any }, // Đã nộp (không ở DRAFT)
+      },
+      select: { teacherId: true, subjectId: true, createdAt: true, status: true },
+    });
+
+    // Map: teacherId::subjectId → plan info
+    const submittedMap = new Map<string, { createdAt: Date; status: string }>();
+    for (const p of submittedPlans) {
+      submittedMap.set(`${p.teacherId}::${p.subjectId}`, { createdAt: p.createdAt, status: p.status });
+    }
+
+    // So sánh
+    type Alert = {
+      teacherName: string;
+      subjectName: string;
+      groupName: string;
+      status: "NOT_SUBMITTED" | "LATE" | "ON_TIME";
+      daysLate: number;
+      planStatus: string;
+    };
+
+    const alerts: Alert[] = [];
+    const seen = new Set<string>();
+
+    for (const a of assignments) {
+      const key = `${a.teacherId}::${a.subjectId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const plan = submittedMap.get(key);
+      const groupName = a.subject.subjectGroup?.name || "Chưa phân tổ";
+      const teacherName = a.teacher.user.name;
+      const subjectName = a.subject.name;
+
+      if (!plan) {
+        alerts.push({ teacherName, subjectName, groupName, status: "NOT_SUBMITTED", daysLate: 0, planStatus: "" });
+      } else if (plan.createdAt > period.deadline) {
+        const daysLate = Math.ceil((plan.createdAt.getTime() - period.deadline.getTime()) / (1000 * 60 * 60 * 24));
+        alerts.push({ teacherName, subjectName, groupName, status: "LATE", daysLate, planStatus: plan.status });
+      } else {
+        alerts.push({ teacherName, subjectName, groupName, status: "ON_TIME", daysLate: 0, planStatus: plan.status });
+      }
+    }
+
+    // Sắp xếp: chưa nộp trước, nộp muộn tiếp, nộp đúng hạn sau
+    const order = { NOT_SUBMITTED: 0, LATE: 1, ON_TIME: 2 };
+    alerts.sort((a, b) => {
+      const d = order[a.status] - order[b.status];
+      if (d !== 0) return d;
+      return a.groupName.localeCompare(b.groupName) || a.subjectName.localeCompare(b.subjectName);
+    });
+
+    return {
+      alerts,
+      periodLabel: period.label,
+      deadline: period.deadline,
+    };
+  } catch (error) {
+    console.error("Error fetching lesson plan alerts:", error);
+    return { alerts: [], periodLabel: null, deadline: null };
+  }
+}

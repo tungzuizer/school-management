@@ -12,6 +12,10 @@ import {
   Bell,
   Info,
   Lightbulb,
+  AlertTriangle,
+  FileText,
+  CheckCircle,
+  Clock,
 } from "lucide-react";
 import {
   getDashboardStats,
@@ -20,6 +24,7 @@ import {
   getClassAttendanceRanking,
   getRecentIncidents,
   getTodaySummary,
+  getLessonPlanAlerts,
 } from "./actions";
 import {
   BarChart,
@@ -41,6 +46,7 @@ type ClassGrade = Awaited<ReturnType<typeof getGradesByClass>>;
 type ClassAttendance = Awaited<ReturnType<typeof getClassAttendanceRanking>>;
 type IncidentData = Awaited<ReturnType<typeof getRecentIncidents>>;
 type TodaySummary = Awaited<ReturnType<typeof getTodaySummary>>;
+type LPAlertsData = Awaited<ReturnType<typeof getLessonPlanAlerts>>;
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
@@ -52,12 +58,13 @@ export default function AdminDashboardPage() {
   const [classAttendance, setClassAttendance] = useState<ClassAttendance>([]);
   const [incidents, setIncidents] = useState<IncidentData>([]);
   const [today, setToday] = useState<TodaySummary | null>(null);
+  const [lpAlerts, setLpAlerts] = useState<LPAlertsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [statsData, weekRes, gradesRes, attendanceRes, incidentsRes, todayRes] =
+        const [statsData, weekRes, gradesRes, attendanceRes, incidentsRes, todayRes, lpAlertsRes] =
           await Promise.all([
             getDashboardStats(),
             getAttendanceByWeek(),
@@ -65,6 +72,7 @@ export default function AdminDashboardPage() {
             getClassAttendanceRanking(),
             getRecentIncidents(),
             getTodaySummary(),
+            getLessonPlanAlerts(),
           ]);
 
         setStats(statsData);
@@ -73,6 +81,7 @@ export default function AdminDashboardPage() {
         setClassAttendance(attendanceRes);
         setIncidents(incidentsRes);
         setToday(todayRes);
+        setLpAlerts(lpAlertsRes);
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       } finally {
@@ -235,6 +244,82 @@ export default function AdminDashboardPage() {
               <p className="text-sm text-gray-400">Báo cáo đã gửi</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* AI Cảnh Báo Nộp Giáo Án */}
+      {lpAlerts && lpAlerts.periodLabel && (
+        <div className="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-amber-100 text-amber-800 rounded-lg">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">AI Cảnh Báo Tiến Độ Nộp Giáo Án</h2>
+                <p className="text-xs text-gray-500">
+                  Kỳ nộp: <span className="font-semibold text-gray-700">{lpAlerts.periodLabel}</span> — Hạn cuối:{" "}
+                  <span className="font-semibold text-red-600">
+                    {lpAlerts.deadline ? new Date(lpAlerts.deadline).toLocaleDateString("vi-VN") : "—"}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-2.5 py-1 bg-red-100 text-red-800 rounded-full font-semibold">
+                🔴 {lpAlerts.alerts.filter((a) => a.status === "NOT_SUBMITTED").length} Chưa nộp
+              </span>
+              <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full font-semibold">
+                🟡 {lpAlerts.alerts.filter((a) => a.status === "LATE").length} Nộp muộn
+              </span>
+              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-semibold">
+                🟢 {lpAlerts.alerts.filter((a) => a.status === "ON_TIME").length} Đã nộp
+              </span>
+            </div>
+          </div>
+
+          {lpAlerts.alerts.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-2">Không có phân công giảng dạy nào</p>
+          ) : (
+            <div className="overflow-x-auto max-h-64 overflow-y-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-gray-50 border-b text-gray-500 uppercase sticky top-0">
+                  <tr>
+                    <th className="px-4 py-2">Tổ Chuyên Môn</th>
+                    <th className="px-4 py-2">Môn Học</th>
+                    <th className="px-4 py-2">Giáo Viên</th>
+                    <th className="px-4 py-2 text-center">Trạng Thái Nộp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {lpAlerts.alerts.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-4 py-2.5 font-medium text-gray-800">{item.groupName}</td>
+                      <td className="px-4 py-2.5 text-gray-600">{item.subjectName}</td>
+                      <td className="px-4 py-2.5 font-semibold text-gray-900">{item.teacherName}</td>
+                      <td className="px-4 py-2.5 text-center">
+                        {item.status === "NOT_SUBMITTED" && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
+                            Chưa nộp
+                          </span>
+                        )}
+                        {item.status === "LATE" && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                            Nộp muộn ({item.daysLate} ngày)
+                          </span>
+                        )}
+                        {item.status === "ON_TIME" && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                            Đã nộp đúng hạn
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

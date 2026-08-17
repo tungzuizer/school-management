@@ -17,27 +17,32 @@ async function getTeacherId(userId: string) {
 export async function getLessonPlanMetadata() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return { classes: [], subjects: [], teacherId: null };
+    if (!session?.user?.id) return { classes: [], subjects: [], teacherId: null, sharedDriveUrl: null, activePeriods: [] };
 
     const teacherId = await getTeacherId(session.user.id);
-    if (!teacherId) return { classes: [], subjects: [], teacherId: null };
+    if (!teacherId) return { classes: [], subjects: [], teacherId: null, sharedDriveUrl: null, activePeriods: [] };
 
-    const classes = await prisma.classRoom.findMany({
-      orderBy: { name: "asc" },
-    });
-
-    const subjects = await prisma.subject.findMany({
-      orderBy: { name: "asc" },
-    });
+    const [classes, subjects, school, periods] = await Promise.all([
+      prisma.classRoom.findMany({ orderBy: { name: "asc" } }),
+      prisma.subject.findMany({ orderBy: { name: "asc" } }),
+      session.user.schoolId
+        ? prisma.school.findUnique({ where: { id: session.user.schoolId }, select: { sharedDriveUrl: true } })
+        : null,
+      session.user.schoolId
+        ? prisma.lessonPlanPeriod.findMany({ where: { schoolId: session.user.schoolId, isActive: true }, orderBy: { deadline: "asc" } })
+        : [],
+    ]);
 
     return {
       classes: classes.map(c => ({ id: c.id, name: c.name })),
       subjects: subjects.map(s => ({ id: s.id, name: s.name })),
       teacherId,
+      sharedDriveUrl: school?.sharedDriveUrl || null,
+      activePeriods: (periods as any[]).map((p: any) => ({ id: p.id, label: p.label, deadline: p.deadline })),
     };
   } catch (error) {
     console.error("Error fetching lesson plan metadata:", error);
-    return { classes: [], subjects: [], teacherId: null };
+    return { classes: [], subjects: [], teacherId: null, sharedDriveUrl: null, activePeriods: [] };
   }
 }
 
@@ -68,6 +73,7 @@ export async function getLessonPlans() {
       subjectName: p.subject?.name || "Môn học",
       classId: p.classId,
       className: p.classRoom?.name || "Lớp học",
+      periodId: p.periodId || "",
       weekNumber: p.weekNumber,
       periodStart: p.periodStart,
       periodEnd: p.periodEnd,
@@ -78,6 +84,7 @@ export async function getLessonPlans() {
       materials: p.materials || "",
       assessment: p.assessment || "",
       notes: p.notes || "",
+      driveFileUrl: p.driveFileUrl || "",
       status: p.status,
       reviewNote: p.reviewNote || "",
       reviewedAt: p.reviewedAt,
@@ -94,6 +101,7 @@ export async function saveLessonPlan(data: {
   id?: string;
   subjectId: string;
   classId: string;
+  periodId?: string;
   weekNumber: number;
   periodStart: number;
   periodEnd: number;
@@ -104,6 +112,7 @@ export async function saveLessonPlan(data: {
   materials: string;
   assessment: string;
   notes: string;
+  driveFileUrl?: string;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
@@ -140,6 +149,7 @@ export async function saveLessonPlan(data: {
         data: {
           subjectId: data.subjectId,
           classId: data.classId,
+          periodId: data.periodId || null,
           weekNumber: Number(data.weekNumber),
           periodStart: Number(data.periodStart),
           periodEnd: Number(data.periodEnd),
@@ -150,6 +160,7 @@ export async function saveLessonPlan(data: {
           materials: data.materials,
           assessment: data.assessment,
           notes: data.notes,
+          driveFileUrl: data.driveFileUrl || null,
           status: LessonPlanStatus.DRAFT, // Saved as DRAFT
         },
       });
@@ -162,6 +173,7 @@ export async function saveLessonPlan(data: {
           teacherId,
           subjectId: data.subjectId,
           classId: data.classId,
+          periodId: data.periodId || null,
           weekNumber: Number(data.weekNumber),
           periodStart: Number(data.periodStart),
           periodEnd: Number(data.periodEnd),
@@ -172,6 +184,7 @@ export async function saveLessonPlan(data: {
           materials: data.materials,
           assessment: data.assessment,
           notes: data.notes,
+          driveFileUrl: data.driveFileUrl || null,
           status: LessonPlanStatus.DRAFT,
         },
       });
