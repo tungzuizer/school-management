@@ -41,6 +41,7 @@ import {
   getClassCompetitionStats,
   getIncompleteRecords,
 } from "./actions";
+import { checkIsSubjectHead } from "../subject-head/actions";
 
 // ---- Types ----
 type DashboardData = {
@@ -125,6 +126,10 @@ export default function TeacherDashboard() {
   const [reportStatus, setReportStatus] = useState<ReportStatus | null>(null);
   const [competition, setCompetition] = useState<CompetitionStats | null>(null);
   const [incompleteRecords, setIncompleteRecords] = useState<IncompleteRecord[]>([]);
+  const [headInfo, setHeadInfo] = useState<{ isSubjectHead: boolean; pendingCount: number }>({
+    isSubjectHead: false,
+    pendingCount: 0,
+  });
 
   // Week navigation
   const [weekOffset, setWeekOffset] = useState(0);
@@ -144,13 +149,15 @@ export default function TeacherDashboard() {
       const targetDate = new Date(now);
       targetDate.setDate(now.getDate() + wOffset * 7);
 
-      // Load week schedule and courses
-      const [sched, crs] = await Promise.all([
+      // Load week schedule, courses, and subject head info
+      const [sched, crs, hInfo] = await Promise.all([
         getWeekSchedule(data.teacherId, targetDate.toISOString().split("T")[0]),
         getTeacherCourses(data.teacherId),
+        checkIsSubjectHead(),
       ]);
       setWeekSchedule(sched);
       setCourses(crs);
+      setHeadInfo(hInfo);
 
       // If teacher has homeroom class, load GVCN widgets
       if (data.homeroomClass) {
@@ -296,6 +303,31 @@ export default function TeacherDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Subject Head Privilege Banner */}
+      {headInfo.isSubjectHead && (
+        <div className="mx-4 md:mx-6 mt-4 bg-gradient-to-r from-indigo-900 to-indigo-700 text-white rounded-2xl p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-bold text-white shrink-0">
+              👑
+            </div>
+            <div>
+              <p className="text-sm font-bold">Bạn là Tổ Trưởng Chuyên Môn</p>
+              <p className="text-xs text-indigo-200">
+                {headInfo.pendingCount > 0
+                  ? `Có ${headInfo.pendingCount} giáo án mới gửi lên đang chờ bạn duyệt chuyên môn.`
+                  : "Hiện tại không có giáo án nào chờ duyệt."}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/teacher/subject-head"
+            className="px-4 py-2 bg-white text-indigo-900 font-bold text-xs rounded-xl hover:bg-indigo-50 transition-colors shrink-0 text-center shadow-xs"
+          >
+            Đến trang duyệt giáo án →
+          </Link>
+        </div>
+      )}
 
       {/* ===== Tabs (FPT-style) ===== */}
       <div className="bg-white border-b border-gray-200 px-4 md:px-6">

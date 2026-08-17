@@ -7,6 +7,39 @@ import { revalidatePath } from "next/cache";
 import { LessonPlanStatus } from "@prisma/client";
 import { recordAuditLog } from "@/lib/audit-logger";
 
+export async function checkIsSubjectHead() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { isSubjectHead: false, pendingCount: 0 };
+
+  const teacher = await prisma.teacher.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true },
+  });
+  if (!teacher) return { isSubjectHead: false, pendingCount: 0 };
+
+  const headSubjects = await prisma.subject.findMany({
+    where: {
+      OR: [
+        { headTeacherId: teacher.id },
+        { subjectGroup: { headTeacherId: teacher.id } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (headSubjects.length === 0) return { isSubjectHead: false, pendingCount: 0 };
+  const subjectIds = headSubjects.map((s) => s.id);
+
+  const pendingCount = await prisma.lessonPlan.count({
+    where: {
+      subjectId: { in: subjectIds },
+      status: LessonPlanStatus.SUBMITTED,
+    },
+  });
+
+  return { isSubjectHead: true, pendingCount };
+}
+
 export async function getHeadSubjectsAndRequests() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -15,7 +48,7 @@ export async function getHeadSubjectsAndRequests() {
 
   const teacher = await prisma.teacher.findUnique({
     where: { userId: session.user.id },
-    select: { id: true }
+    select: { id: true },
   });
 
   if (!teacher) {
@@ -25,17 +58,25 @@ export async function getHeadSubjectsAndRequests() {
   // Fetch headSubjects and change requests concurrently in parallel
   const [headSubjects, requests] = await Promise.all([
     prisma.subject.findMany({
-      where: { headTeacherId: teacher.id },
+      where: {
+        OR: [
+          { headTeacherId: teacher.id },
+          { subjectGroup: { headTeacherId: teacher.id } },
+        ],
+      },
       select: {
         id: true,
         name: true,
         gradeLevel: true,
-        _count: { select: { teachingAssignments: true } }
-      }
+        _count: { select: { teachingAssignments: true } },
+      },
     }),
     prisma.teacherChangeRequest.findMany({
       where: {
-        subject: { headTeacherId: teacher.id }
+        OR: [
+          { subject: { headTeacherId: teacher.id } },
+          { subject: { subjectGroup: { headTeacherId: teacher.id } } },
+        ],
       },
       select: {
         id: true,
@@ -50,8 +91,8 @@ export async function getHeadSubjectsAndRequests() {
         requestedBy: { select: { id: true, user: { select: { name: true } } } },
         approvedBy: { select: { id: true, user: { select: { name: true } } } },
       },
-      orderBy: { createdAt: "desc" }
-    })
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   return { headSubjects, requests };
@@ -69,7 +110,7 @@ export async function reviewTeacherChangeRequest(input: {
 
   const teacher = await prisma.teacher.findUnique({
     where: { userId: session.user.id },
-    select: { id: true }
+    select: { id: true },
   });
 
   if (!teacher) {
@@ -78,15 +119,26 @@ export async function reviewTeacherChangeRequest(input: {
 
   const changeRequest = await prisma.teacherChangeRequest.findUnique({
     where: { id: input.requestId },
-    include: { subject: true }
+    include: {
+      subject: {
+        select: {
+          headTeacherId: true,
+          subjectGroup: { select: { headTeacherId: true } },
+        },
+      },
+    },
   });
 
   if (!changeRequest) {
     return { success: false, error: "Không tìm thấy yêu cầu đổi giáo viên" };
   }
 
-  if (changeRequest.subject.headTeacherId !== teacher.id) {
-    return { success: false, error: "Bạn không phải Trưởng bộ môn của môn học này" };
+  const isHead =
+    changeRequest.subject.headTeacherId === teacher.id ||
+    changeRequest.subject.subjectGroup?.headTeacherId === teacher.id;
+
+  if (!isHead) {
+    return { success: false, error: "Bạn không phải Tổ trưởng chuyên môn của môn học này" };
   }
 
   const status = input.approved ? "APPROVED" : "CANCELLED";
@@ -98,88 +150,41 @@ export async function reviewTeacherChangeRequest(input: {
       where: { id: input.requestId },
       data: {
         status,
+        reviewNote: input.reviewNote,
         approvedById: teacher.id,
-        reviewNote: input.reviewNote || null,
-      }
+      },
     });
 
-    // 2. If approved, update teaching assignment
+    // 2. If approved, swap teaching assignment
     if (input.approved) {
-      const assignment = await tx.teachingAssignment.findFirst({
+      await tx.teachingAssignment.updateMany({
         where: {
           subjectId: changeRequest.subjectId,
           classId: changeRequest.classId,
           teacherId: changeRequest.currentTeacherId,
-        }
+        },
+        data: {
+          teacherId: changeRequest.newTeacherId,
+        },
       });
-
-      if (assignment) {
-        await tx.teachingAssignment.update({
-          where: { id: assignment.id },
-          data: { teacherId: changeRequest.newTeacherId }
-        });
-      } else {
-        await tx.teachingAssignment.create({
-          data: {
-            subjectId: changeRequest.subjectId,
-            classId: changeRequest.classId,
-            teacherId: changeRequest.newTeacherId
-          }
-        });
-      }
     }
   });
 
-  revalidatePath("/teacher/subject-head");
-  revalidatePath("/admin/subjects");
+  await recordAuditLog({
+    userId: session.user.id,
+    userName: session.user.name || "",
+    userRole: "SUBJECT_HEAD",
+    action: input.approved ? "APPROVE" : "REJECT",
+    entityName: "TeacherChangeRequest",
+    entityId: input.requestId,
+    description: `Tổ trưởng CM ${input.approved ? "duyệt" : "từ chối"} đổi GV`,
+  });
 
+  revalidatePath("/teacher/subject-head");
   return { success: true };
 }
 
-export async function createTeacherChangeRequest(input: {
-  subjectId: string;
-  classId: string;
-  currentTeacherId: string;
-  newTeacherId: string;
-  reason?: string;
-}) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, error: "Bạn chưa đăng nhập" };
-  }
-
-  const teacher = await prisma.teacher.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true }
-  });
-
-  if (!teacher) {
-    return { success: false, error: "Không tìm thấy hồ sơ giáo viên" };
-  }
-
-  try {
-    await prisma.teacherChangeRequest.create({
-      data: {
-        subjectId: input.subjectId,
-        classId: input.classId,
-        currentTeacherId: input.currentTeacherId,
-        newTeacherId: input.newTeacherId,
-        requestedById: teacher.id,
-        reason: input.reason || null,
-        status: "PENDING",
-      }
-    });
-
-    revalidatePath("/teacher/subject-head");
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message || "Lỗi khi gửi yêu cầu đổi giáo viên" };
-  }
-}
-
-// ==================== GIÁO ÁN: Tổ trưởng chuyên môn phê duyệt ====================
-
-// Lấy danh sách giáo án SUBMITTED thuộc các môn mà giáo viên này làm Tổ trưởng
+// Lấy danh sách giáo án gửi lên để Tổ trưởng chuyên môn duyệt
 export async function getHeadLessonPlans() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return [];
@@ -190,14 +195,19 @@ export async function getHeadLessonPlans() {
   });
   if (!teacher) return [];
 
-  // Tìm môn mà giáo viên này là headTeacher
+  // Tìm môn mà giáo viên này là headTeacher (qua Subject hoặc SubjectGroup)
   const headSubjects = await prisma.subject.findMany({
-    where: { headTeacherId: teacher.id },
+    where: {
+      OR: [
+        { headTeacherId: teacher.id },
+        { subjectGroup: { headTeacherId: teacher.id } },
+      ],
+    },
     select: { id: true },
   });
 
   if (headSubjects.length === 0) return [];
-  const subjectIds = headSubjects.map(s => s.id);
+  const subjectIds = headSubjects.map((s) => s.id);
 
   try {
     const plans = await prisma.lessonPlan.findMany({
@@ -220,7 +230,7 @@ export async function getHeadLessonPlans() {
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     });
 
-    return plans.map(p => ({
+    return plans.map((p) => ({
       id: p.id,
       teacherName: p.teacher?.user?.name || "Giáo viên",
       subjectName: p.subject?.name || "Môn học",
@@ -236,7 +246,8 @@ export async function getHeadLessonPlans() {
       assessment: p.assessment || "",
       notes: p.notes || "",
       status: p.status,
-      reviews: p.reviews.map(r => ({
+      driveFileUrl: p.driveFileUrl || null,
+      reviews: p.reviews.map((r) => ({
         id: r.id,
         reviewerName: r.reviewerName,
         reviewerRole: r.reviewerRole,
@@ -269,11 +280,22 @@ export async function headReviewLessonPlan(data: {
   try {
     const plan = await prisma.lessonPlan.findUnique({
       where: { id: data.planId },
-      include: { subject: { select: { headTeacherId: true } } },
+      include: {
+        subject: {
+          select: {
+            headTeacherId: true,
+            subjectGroup: { select: { headTeacherId: true } },
+          },
+        },
+      },
     });
     if (!plan) return { success: false, error: "Không tìm thấy giáo án" };
 
-    if (plan.subject.headTeacherId !== teacher.id) {
+    const isHead =
+      plan.subject.headTeacherId === teacher.id ||
+      plan.subject.subjectGroup?.headTeacherId === teacher.id;
+
+    if (!isHead) {
       return { success: false, error: "Bạn không phải Tổ trưởng chuyên môn của môn học này" };
     }
 
