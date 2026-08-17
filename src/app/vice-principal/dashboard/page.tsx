@@ -19,6 +19,7 @@ import {
   getVPTodaySummary,
   getVPCampusInfo,
 } from "./actions";
+import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
 import {
   BarChart,
   Bar,
@@ -361,32 +362,7 @@ export default function VPDashboardPage() {
 
       {/* Student Distribution */}
       {classGrades.length > 0 && classGrades.some((c) => c.studentCount > 0) && (
-        <div className="bg-white rounded-xl border p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">
-            Phan bo hoc sinh theo lop
-          </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={classGrades.filter((c) => c.studentCount > 0)}
-                dataKey="studentCount"
-                nameKey="className"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ name, value }) => `${name}: ${value}`}
-              >
-                {classGrades
-                  .filter((c) => c.studentCount > 0)
-                  .map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-              </Pie>
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+        <ClassDistributionWidget classes={classGrades} />
       )}
     </div>
   );

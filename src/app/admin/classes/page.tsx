@@ -29,6 +29,7 @@ export default function ClassesPage() {
   const [search, setSearch] = useState("");
   const [filterSchool, setFilterSchool] = useState("");
   const [filterGrade, setFilterGrade] = useState("");
+  const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ClassData | null>(null);
@@ -245,60 +246,154 @@ export default function ClassesPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <input type="text" placeholder="Tìm tên lớp..." value={search} onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-64" />
-        <select value={filterSchool} onChange={(e) => setFilterSchool(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-          <option value="">Tất cả trường</option>
-          {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-          <option value="">Tất cả khối</option>
-          {[6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Khối {g}</option>)}
-        </select>
+      {/* Filters & View Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <input type="text" placeholder="Tìm tên lớp..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-64 bg-white shadow-2xs" />
+          <select value={filterSchool} onChange={(e) => setFilterSchool(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs">
+            <option value="">Tất cả trường</option>
+            {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs">
+            <option value="">Tất cả khối</option>
+            {[6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Khối {g}</option>)}
+          </select>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
+          <button
+            onClick={() => setViewMode("GRID")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "GRID" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            🎴 Dạng Thẻ Lớp
+          </button>
+          <button
+            onClick={() => setViewMode("TABLE")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            📋 Dạng Bảng
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Lớp</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Khối</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Trường</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">GVCN</th>
-              <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Sĩ số</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {loading ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Đang tải...</td></tr>
-            ) : classes.length === 0 ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Chưa có lớp nào</td></tr>
-            ) : (
-              classes.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
-                  <td className="px-6 py-4"><span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-sm">Khối {c.gradeLevel}</span></td>
-                  <td className="px-6 py-4 text-gray-600">{c.school.name}</td>
-                  <td className="px-6 py-4 text-gray-600">{c.homeroomTeacher?.user.name || "—"}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">{c._count.students}</span>
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => openEdit(c)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Sửa</button>
-                    <button onClick={() => setDeleteConfirm(c.id)} className="text-red-600 hover:text-red-800 text-sm font-medium">Xóa</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Grid View */}
+      {viewMode === "GRID" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {loading ? (
+            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Đang tải danh sách lớp...</div>
+          ) : classes.length === 0 ? (
+            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Chưa có lớp học nào</div>
+          ) : (
+            classes.map((c) => {
+              const count = c._count.students;
+              const maxCap = 40;
+              const percent = Math.min(100, Math.round((count / maxCap) * 100));
+
+              return (
+                <div
+                  key={c.id}
+                  className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all space-y-3 flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-slate-900 text-base">{c.name}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                        Khối {c.gradeLevel}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-500">
+                      <span className="font-semibold text-slate-700">GVCN:</span>{" "}
+                      {c.homeroomTeacher?.user.name || "Chưa phân công"}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-medium truncate">{c.school.name}</p>
+
+                    {/* Progress Capacity Bar */}
+                    <div className="space-y-1 pt-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500 font-medium">Sĩ số học sinh:</span>
+                        <span className="font-bold text-slate-900">{count} / {maxCap} HS</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            percent >= 100 ? "bg-rose-500" : percent >= 85 ? "bg-amber-500" : "bg-emerald-500"
+                          }`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <button
+                      onClick={() => openEdit(c)}
+                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                    >
+                      Chỉnh sửa
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(c.id)}
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-800"
+                    >
+                      Xóa lớp
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Table View */}
+      {viewMode === "TABLE" && (
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase font-semibold">
+              <tr>
+                <th className="px-6 py-3">Lớp</th>
+                <th className="px-6 py-3">Khối</th>
+                <th className="px-6 py-3">Trường</th>
+                <th className="px-6 py-3">GVCN</th>
+                <th className="px-6 py-3 text-center">Sĩ số</th>
+                <th className="px-6 py-3 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400">Đang tải...</td></tr>
+              ) : classes.length === 0 ? (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400">Chưa có lớp nào</td></tr>
+              ) : (
+                classes.map((c) => (
+                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-6 py-3.5 font-bold text-slate-900">{c.name}</td>
+                    <td className="px-6 py-3.5"><span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold">Khối {c.gradeLevel}</span></td>
+                    <td className="px-6 py-3.5 text-slate-600">{c.school.name}</td>
+                    <td className="px-6 py-3.5 text-slate-600">{c.homeroomTeacher?.user.name || "—"}</td>
+                    <td className="px-6 py-3.5 text-center">
+                      <span className="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold">{c._count.students}</span>
+                    </td>
+                    <td className="px-6 py-3.5 text-right space-x-3">
+                      <button onClick={() => openEdit(c)} className="text-indigo-600 hover:text-indigo-800 font-semibold">Sửa</button>
+                      <button onClick={() => setDeleteConfirm(c.id)} className="text-rose-600 hover:text-rose-800 font-semibold">Xóa</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Sửa lớp" : "Thêm lớp mới"}>
