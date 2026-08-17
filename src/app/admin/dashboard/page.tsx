@@ -21,6 +21,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
+import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
 import {
   getDashboardStats,
   getAttendanceByWeek,
@@ -536,38 +537,7 @@ export default function AdminDashboardPage() {
 
       {/* Student Distribution */}
       {classGrades.length > 0 && classGrades.some((c) => c.studentCount > 0) && (
-        <div className="bg-white rounded-xl border p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-1">
-            Phân bố học sinh theo lớp
-          </h2>
-          {isEasyMode && (
-            <p className="text-xs text-blue-700 mb-3 bg-blue-50 p-2 rounded-lg flex items-start gap-1">
-              <Info className="w-4 h-4 shrink-0 text-blue-600 mt-0.5" />
-              <span><strong>Hướng dẫn:</strong> Biểu đồ biểu thị sĩ số/phân bố học sinh giữa các lớp. Rê chuột trên mỗi phần hình tròn để xem cụ thể.</span>
-            </p>
-          )}
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={classGrades.filter((c) => c.studentCount > 0)}
-                dataKey="studentCount"
-                nameKey="className"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ name, value }) => `${name}: ${value}`}
-              >
-                {classGrades
-                  .filter((c) => c.studentCount > 0)
-                  .map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-              </Pie>
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+        <ClassDistributionWidget classes={classGrades} />
       )}
     </div>
   );
