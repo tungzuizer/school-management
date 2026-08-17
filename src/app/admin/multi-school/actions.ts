@@ -4,10 +4,58 @@ import { prisma } from "@/lib/prisma";
 
 const ABSENT_STATUSES = ["ABSENT_EXCUSED", "ABSENT_UNEXCUSED"] as any[];
 
-// Lấy tổng hợp liên trường: sĩ số, giáo viên, chuyên cần, điểm TB
-export async function getMultiSchoolOverview(dateFrom?: string, dateTo?: string) {
-  const schools = await prisma.school.findMany({
+// Lấy danh sách Sở GD&ĐT và cấu trúc cây 5 cấp
+export async function get5TierHierarchy() {
+  const departments = await prisma.educationDepartment.findMany({
     include: {
+      districtWards: {
+        include: {
+          schools: {
+            where: { branchType: "WARD" },
+            include: {
+              campuses: {
+                include: {
+                  schoolPoints: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      schools: {
+        where: { branchType: "THPT" },
+        include: {
+          campuses: {
+            include: {
+              schoolPoints: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return departments;
+}
+
+// Lấy tổng hợp liên trường theo phân luồng 5 cấp
+export async function getMultiSchoolOverview(
+  dateFrom?: string,
+  dateTo?: string,
+  departmentId?: string,
+  districtWardId?: string,
+  branchType?: "WARD" | "THPT"
+) {
+  const whereFilter: any = {};
+  if (departmentId) whereFilter.departmentId = departmentId;
+  if (districtWardId) whereFilter.districtWardId = districtWardId;
+  if (branchType) whereFilter.branchType = branchType;
+
+  const schools = await prisma.school.findMany({
+    where: whereFilter,
+    include: {
+      department: true,
+      districtWard: true,
       classRooms: {
         include: {
           _count: { select: { students: true } },
@@ -103,6 +151,9 @@ export async function getMultiSchoolOverview(dateFrom?: string, dateTo?: string)
         id: school.id,
         name: school.name,
         address: school.address,
+        branchType: school.branchType,
+        departmentName: school.department?.name || "Sở GD&ĐT",
+        districtWardName: school.districtWard?.name || (school.branchType === "THPT" ? "Trực thuộc Sở (THPT)" : "Chưa gán Phường/Xã"),
         campusCount: school.campuses.length,
         schoolPointsCount,
         classCount: school.classRooms.length,
@@ -190,7 +241,7 @@ export async function getSchoolTrends(
 
 // Cảnh báo: trường/lớp có vấn đề
 export async function getAlerts() {
-  const ABSENCE_THRESHOLD = 15; // >15% vắng = cảnh báo
+  const ABSENCE_THRESHOLD = 15;
 
   const schools = await prisma.school.findMany({
     include: {
@@ -247,7 +298,6 @@ export async function getAlerts() {
       }
     }
 
-    // Kiểm tra điểm TB giảm (so sánh HK1 vs HK2 nếu có)
     const classIds = school.classRooms.map((c) => c.id);
     const studentIds = await prisma.student.findMany({
       where: { classId: { in: classIds } },

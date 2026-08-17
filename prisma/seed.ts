@@ -207,6 +207,9 @@ async function main() {
 
     const school = await prisma.school.create({
       data: {
+        departmentId: dept.id,
+        districtWardId: sConf.districtWardId,
+        branchType: sConf.branchType,
         name: sConf.name,
         address: sConf.address,
         phone: sConf.phone,
