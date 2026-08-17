@@ -3,9 +3,20 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
+import { getTenantContext } from "@/lib/tenant";
+import { recordAuditLog } from "@/lib/audit-logger";
 
 export async function getStudents(search?: string, classId?: string, gradeLevel?: number) {
   const where: any = {};
+
+  // Tenant Isolation: auto-scope to user's school
+  try {
+    const ctx = await getTenantContext();
+    if (ctx.schoolId) {
+      where.classRoom = { ...(where.classRoom || {}), schoolId: ctx.schoolId };
+    }
+  } catch { /* allow unauthenticated for demo */ }
+
   if (search) {
     where.user = { name: { contains: search, mode: "insensitive" } };
   }
@@ -84,6 +95,18 @@ export async function createStudent(data: {
       },
     });
     revalidatePath("/admin/students");
+
+    // Audit Log
+    try {
+      const ctx = await getTenantContext();
+      await recordAuditLog({
+        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
+        schoolId: ctx.schoolId,
+        action: "CREATE", entityName: "Student",
+        description: `Tạo học sinh: ${data.name} (${data.email})`,
+      });
+    } catch { /* skip audit if no session */ }
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi tạo học sinh" };
@@ -137,6 +160,17 @@ export async function updateStudent(
       }),
     ]);
     revalidatePath("/admin/students");
+
+    try {
+      const ctx = await getTenantContext();
+      await recordAuditLog({
+        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
+        schoolId: ctx.schoolId,
+        action: "UPDATE", entityName: "Student", entityId: studentId,
+        description: `Cập nhật học sinh: ${data.name}`,
+      });
+    } catch { /* skip */ }
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi cập nhật" };
@@ -153,6 +187,17 @@ export async function deleteStudent(studentId: string) {
 
     await prisma.user.delete({ where: { id: student.userId } });
     revalidatePath("/admin/students");
+
+    try {
+      const ctx = await getTenantContext();
+      await recordAuditLog({
+        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
+        schoolId: ctx.schoolId,
+        action: "DELETE", entityName: "Student", entityId: studentId,
+        description: `Xóa học sinh ID: ${studentId}`,
+      });
+    } catch { /* skip */ }
+
     return { success: true };
   } catch (error: any) {
     console.error("Lỗi khi xóa học sinh:", error);
