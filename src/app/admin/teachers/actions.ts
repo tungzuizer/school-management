@@ -3,11 +3,22 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
+import { getTenantContext } from "@/lib/tenant";
+import { recordAuditLog } from "@/lib/audit-logger";
 
 export async function getTeachers(search?: string) {
   const where: any = {};
+
+  // Tenant Isolation
+  try {
+    const ctx = await getTenantContext();
+    if (ctx.schoolId) {
+      where.user = { ...(where.user || {}), schoolId: ctx.schoolId };
+    }
+  } catch { /* allow */ }
+
   if (search) {
-    where.user = { name: { contains: search, mode: "insensitive" } };
+    where.user = { ...(where.user || {}), name: { contains: search, mode: "insensitive" } };
   }
   return prisma.teacher.findMany({
     where,

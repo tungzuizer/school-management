@@ -32,6 +32,8 @@ import {
   Settings,
   User,
   Landmark,
+  Lock,
+  ScrollText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -97,6 +99,14 @@ const menuGroups: MenuGroup[] = [
     items: [
       { label: "Tu van & Canh bao AI", href: "/admin/principal-ai", icon: Bot },
       { label: "Bo tri day thay", href: "/admin/substitute-dispatch", icon: UserCheck },
+    ],
+  },
+  {
+    title: "Bao mat & Kiem soat",
+    icon: ShieldCheck,
+    items: [
+      { label: "Nhat ky kiem toan", href: "/admin/audit-log", icon: ScrollText },
+      { label: "Khoa so du lieu", href: "/admin/data-lock", icon: Lock },
     ],
   },
 ];
