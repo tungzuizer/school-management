@@ -1240,3 +1240,83 @@ model QualityObjectiveHistory {
   @@index([objectiveId])
   @@index([createdAt])
 }
+
+// ==================== NHẬT KÝ KIỂM TOÁN & BẢO MẬT (AUDIT LOG) ====================
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+  APPROVE
+  REJECT
+  LOCK
+  UNLOCK
+  PASSWORD_CHANGE
+}
+
+model AuditLog {
+  id            String      @id @default(cuid())
+  userId        String?     // ID người thao tác
+  userName      String?     // Họ tên người thao tác
+  userRole      String?     // Vai trò (ADMIN, TEACHER, STUDENT...)
+  schoolId      String?     // Trường học liên quan
+  campusId      String?     // Phân hiệu liên quan
+  action        AuditAction // Loại hành động
+  entityName    String      // Tên bảng dữ liệu (e.g. "Student", "Grade", "LessonPlan")
+  entityId      String?     // ID bản ghi bị tác động
+  description   String?     @db.Text // Mô tả ngắn hành động
+  changesJson   String?     @db.Text // JSON dữ liệu trước/sau khi thay đổi
+  ipAddress     String?     // Địa chỉ IP người dùng
+  userAgent     String?     @db.Text // Trình duyệt / thiết bị
+  createdAt     DateTime    @default(now())
+
+  @@index([userId])
+  @@index([schoolId])
+  @@index([action])
+  @@index([entityName])
+  @@index([createdAt])
+}
+
+// ==================== KHÓA SỔ DỮ LIỆU (DATA LOCK) ====================
+
+model DataLock {
+  id          String   @id @default(cuid())
+  schoolId    String
+  campusId    String?
+  lockType    String   // "GRADE_HK1", "GRADE_HK2", "ATTENDANCE_MONTH_9", "JOURNAL_HK1", etc.
+  periodLabel String   // "Học kỳ 1 - 2026-2027", "Tháng 9/2026", etc.
+  isLocked    Boolean  @default(false)
+  lockedById  String?
+  lockedByName String?
+  lockedAt    DateTime?
+  unlockedById  String?
+  unlockedByName String?
+  unlockedAt  DateTime?
+  reason      String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([schoolId, lockType, periodLabel])
+  @@index([schoolId])
+  @@index([isLocked])
+  @@index([lockType])
+}
+
+// ==================== CÀI ĐẶT BẢO MẬT ĐĂNG NHẬP (LOGIN SECURITY) ====================
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ipAddress String?
+  success   Boolean  @default(false)
+  reason    String?  // "invalid_password", "user_not_found", "locked_account", etc.
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([ipAddress])
+  @@index([createdAt])
+}

@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 
+const isDemoAllowed = process.env.ALLOW_DEMO_LOGIN === "true" || process.env.NODE_ENV !== "production";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -24,10 +26,35 @@ export const authOptions: NextAuthOptions = {
             where: { email },
           });
         } catch (err) {
-          console.error("Auth DB Error:", err);
+          console.error("Auth DB Query Error:", err);
         }
 
-        if (!user) {
+        // Production Mode: Verify hashed password against Database user
+        if (user) {
+          try {
+            const isPasswordValid = await bcrypt.compare(
+              credentials.password,
+              user.password
+            );
+            if (isPasswordValid) {
+              return {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                departmentId: user.departmentId || undefined,
+                districtWardId: user.districtWardId || undefined,
+                schoolId: user.schoolId || undefined,
+                campusId: user.campusId || undefined,
+              };
+            }
+          } catch (err) {
+            console.error("Password compare error:", err);
+          }
+        }
+
+        // Demo Mode Fallback (Enabled only when ALLOW_DEMO_LOGIN === "true" or Development)
+        if (!user && isDemoAllowed) {
           if (
             credentials.password === "123456" &&
             (email.includes("admin") ||
@@ -48,6 +75,7 @@ export const authOptions: NextAuthOptions = {
               : email.includes("teacher")
               ? "TEACHER"
               : "STUDENT";
+
             const name = email.includes("dept")
               ? "Lãnh đạo Sở GD&ĐT"
               : email.includes("ward")
@@ -59,6 +87,7 @@ export const authOptions: NextAuthOptions = {
               : email.includes("teacher")
               ? "Trần Thị Hoa"
               : "Phạm Quang Huy";
+
             const hashedPassword = await bcrypt.hash("123456", 10);
             try {
               user = await prisma.user.create({
@@ -69,92 +98,25 @@ export const authOptions: NextAuthOptions = {
                   role: role as any,
                 },
               });
-            } catch (err) {
-              console.error("Auth create user error:", err);
-              try {
-                user = await prisma.user.findUnique({ where: { email } });
-              } catch {
-                // Ignore DB error
+              if (user) {
+                return {
+                  id: user.id,
+                  email: user.email,
+                  name: user.name,
+                  role: user.role,
+                };
               }
+            } catch {
+              // Ignore DB creation error
             }
 
-            // Fallback for live demo if DB is unreachable on Vercel
-            if (!user) {
-              return {
-                id: `demo-${role.toLowerCase()}`,
-                email,
-                name,
-                role,
-              };
-            }
+            return {
+              id: `demo-${role.toLowerCase()}`,
+              email,
+              name,
+              role,
+            };
           }
-        }
-
-        if (user) {
-          try {
-            const isPasswordValid = await bcrypt.compare(
-              credentials.password,
-              user.password
-            );
-            if (isPasswordValid) {
-              return {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-                departmentId: user.departmentId || undefined,
-                districtWardId: user.districtWardId || undefined,
-                schoolId: user.schoolId || undefined,
-                campusId: user.campusId || undefined,
-              };
-            }
-          } catch {
-            // Password compare failed or DB error
-          }
-        }
-
-        // Demo fallback if password matches 123456
-        if (
-          credentials.password === "123456" &&
-          (email.includes("admin") ||
-            email.includes("teacher") ||
-            email.includes("student") ||
-            email.includes("vp") ||
-            email.includes("dept") ||
-            email.includes("ward"))
-        ) {
-          const role = email.includes("dept")
-            ? "DEPARTMENT_ADMIN"
-            : email.includes("ward")
-            ? "WARD_ADMIN"
-            : email.includes("admin")
-            ? "ADMIN"
-            : email.includes("vp")
-            ? "VICE_PRINCIPAL"
-            : email.includes("teacher")
-            ? "TEACHER"
-            : "STUDENT";
-          const name = email.includes("dept")
-            ? "Lãnh đạo Sở GD&ĐT"
-            : email.includes("ward")
-            ? "Cán bộ Phòng GD&ĐT"
-            : email.includes("admin")
-            ? "Nguyễn Văn Admin"
-            : email.includes("vp")
-            ? "Phó Hiệu trưởng"
-            : email.includes("teacher")
-            ? "Trần Thị Hoa"
-            : "Phạm Quang Huy";
-          return {
-            id: user?.id || `demo-${role.toLowerCase()}`,
-            email,
-            name: user?.name || name,
-            role: user?.role || role,
-            departmentId: user?.departmentId || undefined,
-            districtWardId: user?.districtWardId || undefined,
-            schoolId: user?.schoolId || undefined,
-            campusId: user?.campusId || undefined,
-          };
         }
 
         return null;
@@ -192,5 +154,5 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 24 hours
   },
-  secret: process.env.NEXTAUTH_SECRET || "school_management_secret_key_2026",
+  secret: process.env.NEXTAUTH_SECRET || "school_management_production_secret_key_2026",
 };
