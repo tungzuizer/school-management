@@ -195,16 +195,19 @@ model School {
   address        String?
   phone          String?
   email          String?
+  sharedDriveUrl String?          // Link Google Drive dùng chung cho trường
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
   // Relations
-  department        EducationDepartment? @relation(fields: [departmentId], references: [id])
-  districtWard      DistrictWard?        @relation(fields: [districtWardId], references: [id])
-  users             User[]
-  campuses          Campus[]
-  classRooms        ClassRoom[]
-  academicCalendars AcademicCalendar[]
+  department          EducationDepartment? @relation(fields: [departmentId], references: [id])
+  districtWard        DistrictWard?        @relation(fields: [districtWardId], references: [id])
+  users               User[]
+  campuses            Campus[]
+  classRooms          ClassRoom[]
+  academicCalendars   AcademicCalendar[]
+  subjectGroups       SubjectGroup[]
+  lessonPlanPeriods   LessonPlanPeriod[]
 
   @@index([name])
   @@index([departmentId])
@@ -384,6 +387,7 @@ model Teacher {
   user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   homeroomClasses        ClassRoom[]            @relation("HomeroomTeacher")
   headSubjects           Subject[]              @relation("SubjectHead")
+  headSubjectGroups      SubjectGroup[]         @relation("SubjectGroupHead")
   teachingAssignments    TeachingAssignment[]
   schedules              Schedule[]
   lessonPlans            LessonPlan[]
@@ -397,15 +401,17 @@ model Teacher {
 }
 
 model Subject {
-  id            String   @id @default(cuid())
-  name          String
-  gradeLevel    Int?     // Khối lớp áp dụng (null = tất cả)
-  headTeacherId String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  gradeLevel     Int?     // Khối lớp áp dụng (null = tất cả)
+  headTeacherId  String?
+  subjectGroupId String?  // Thuộc tổ chuyên môn nào
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   headTeacher         Teacher?               @relation("SubjectHead", fields: [headTeacherId], references: [id], onDelete: SetNull)
+  subjectGroup        SubjectGroup?          @relation(fields: [subjectGroupId], references: [id], onDelete: SetNull)
   curricula           Curriculum[]
   teachingAssignments TeachingAssignment[]
   grades              Grade[]
@@ -417,6 +423,46 @@ model Subject {
   @@index([name])
   @@index([gradeLevel])
   @@index([headTeacherId])
+  @@index([subjectGroupId])
+}
+
+// Tổ Chuyên Môn (VD: Tổ Tự nhiên, Tổ Xã hội, Tổ Ngoại ngữ)
+model SubjectGroup {
+  id            String   @id @default(cuid())
+  schoolId      String
+  name          String       // "Tổ Tự nhiên", "Tổ Xã hội"...
+  headTeacherId String?      // Tổ trưởng chuyên môn
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  headTeacher Teacher?  @relation("SubjectGroupHead", fields: [headTeacherId], references: [id], onDelete: SetNull)
+  subjects    Subject[]
+
+  @@index([schoolId])
+  @@index([headTeacherId])
+}
+
+// Kỳ nộp giáo án (hàng tháng hoặc đầu kỳ)
+model LessonPlanPeriod {
+  id        String   @id @default(cuid())
+  schoolId  String
+  label     String       // "Tháng 9/2025", "HK1 2025-2026"
+  startDate DateTime
+  deadline  DateTime     // Hạn cuối nộp giáo án
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  school      School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  lessonPlans LessonPlan[]
+
+  @@index([schoolId])
+  @@index([deadline])
+  @@index([isActive])
 }
 
 model TeacherChangeRequest {
@@ -674,36 +720,40 @@ enum LessonPlanStatus {
 }
 
 model LessonPlan {
-  id          String           @id @default(cuid())
-  teacherId   String
-  subjectId   String
-  classId     String
-  weekNumber  Int              // Tuần thứ mấy trong năm học
-  periodStart Int              // Tiết bắt đầu
-  periodEnd   Int              // Tiết kết thúc
-  title       String           // Tên bài / chủ đề
-  objectives  String?          @db.Text // Mục tiêu bài học
-  content     String?          @db.Text // Nội dung chính
-  activities  String?          @db.Text // Hoạt động dạy-học
-  materials   String?          @db.Text // Đồ dùng / thiết bị
-  assessment  String?          @db.Text // Đánh giá
-  notes       String?          @db.Text // Ghi chú / rút kinh nghiệm
-  status      LessonPlanStatus @default(DRAFT)
-  reviewNote  String?          @db.Text // Nhận xét của ban giám hiệu
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id           String           @id @default(cuid())
+  teacherId    String
+  subjectId    String
+  classId      String
+  periodId     String?          // Kỳ nộp giáo án
+  weekNumber   Int              // Tuần thứ mấy trong năm học
+  periodStart  Int              // Tiết bắt đầu
+  periodEnd    Int              // Tiết kết thúc
+  title        String           // Tên bài / chủ đề
+  objectives   String?          @db.Text // Mục tiêu bài học
+  content      String?          @db.Text // Nội dung chính
+  activities   String?          @db.Text // Hoạt động dạy-học
+  materials    String?          @db.Text // Đồ dùng / thiết bị
+  assessment   String?          @db.Text // Đánh giá
+  notes        String?          @db.Text // Ghi chú / rút kinh nghiệm
+  driveFileUrl String?          // Link file giáo án trên Google Drive
+  status       LessonPlanStatus @default(DRAFT)
+  reviewNote   String?          @db.Text // Nhận xét của ban giám hiệu
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   // Relations
-  teacher   Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  classRoom ClassRoom @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher   Teacher            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject   Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  classRoom ClassRoom          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  period    LessonPlanPeriod?  @relation(fields: [periodId], references: [id], onDelete: SetNull)
   reviews   LessonPlanReview[]
 
   @@index([teacherId])
   @@index([subjectId])
   @@index([classId])
+  @@index([periodId])
   @@index([weekNumber])
   @@index([status])
 }
