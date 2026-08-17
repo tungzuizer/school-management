@@ -16,7 +16,11 @@ import {
   FileText,
   CheckCircle,
   Clock,
+  Activity,
+  TrendingUp,
+  ShieldCheck,
 } from "lucide-react";
+import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import {
   getDashboardStats,
   getAttendanceByWeek,
@@ -93,10 +97,21 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-800 mx-auto mb-4"></div>
-          <p className="text-gray-500">Đang tải dữ liệu...</p>
+      <div className="space-y-6 max-w-7xl">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <TableSkeleton rows={4} cols={4} />
+          <TableSkeleton rows={4} cols={4} />
         </div>
       </div>
     );
@@ -562,25 +577,32 @@ function MetricCard({
   label,
   value,
   highlight,
+  subtext = "Hoạt động ổn định",
 }: {
   label: string;
   value: number | string;
   highlight?: string;
+  subtext?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border p-4">
-      <p className="text-xs text-gray-500 font-medium mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${highlight || "text-gray-900"}`}>
-        {value}
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-slate-500 font-semibold">{label}</p>
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+      </div>
+      <p className={`text-2xl font-extrabold tracking-tight ${highlight || "text-slate-900"}`}>
+        {typeof value === "number" ? value.toLocaleString() : value}
       </p>
+      <p className="text-[11px] text-slate-400 font-medium mt-1">{subtext}</p>
     </div>
   );
 }
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex items-center justify-center h-[260px] text-gray-400">
-      <p className="text-sm">{message}</p>
+    <div className="flex flex-col items-center justify-center h-[260px] text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+      <Info className="w-8 h-8 text-slate-300 mb-2" />
+      <p className="text-xs font-semibold text-slate-500">{message}</p>
     </div>
   );
 }
