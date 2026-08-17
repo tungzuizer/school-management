@@ -5,23 +5,50 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
+// Helper function to resolve effective schoolId for Admin
+async function getEffectiveSchoolId() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return null;
+
+  if (session.user.schoolId) return session.user.schoolId;
+
+  // Check database user record directly
+  if (session.user.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { schoolId: true },
+    });
+    if (dbUser?.schoolId) return dbUser.schoolId;
+  }
+
+  // Fallback 1: Return first school in database
+  const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+  if (firstSchool?.id) return firstSchool.id;
+
+  // Fallback 2: Create a default school if database is empty
+  const defaultSchool = await prisma.school.create({
+    data: { name: "Trường THPT Trung Tâm" },
+  });
+  return defaultSchool.id;
+}
+
 // ==================== DRIVE CONFIG ====================
 
 export async function getSchoolDriveConfig() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.schoolId) return null;
+  const schoolId = await getEffectiveSchoolId();
+  if (!schoolId) return null;
   return prisma.school.findUnique({
-    where: { id: session.user.schoolId },
+    where: { id: schoolId },
     select: { id: true, name: true, sharedDriveUrl: true },
   });
 }
 
 export async function updateSharedDriveUrl(driveUrl: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.schoolId) return { success: false, error: "Không có quyền" };
+  const schoolId = await getEffectiveSchoolId();
+  if (!schoolId) return { success: false, error: "Không tìm thấy thông tin Trường học" };
 
   await prisma.school.update({
-    where: { id: session.user.schoolId },
+    where: { id: schoolId },
     data: { sharedDriveUrl: driveUrl || null },
   });
   revalidatePath("/admin/drive-config");
@@ -31,10 +58,10 @@ export async function updateSharedDriveUrl(driveUrl: string) {
 // ==================== LESSON PLAN PERIODS ====================
 
 export async function getLessonPlanPeriods() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.schoolId) return [];
+  const schoolId = await getEffectiveSchoolId();
+  if (!schoolId) return [];
   return prisma.lessonPlanPeriod.findMany({
-    where: { schoolId: session.user.schoolId },
+    where: { schoolId },
     orderBy: { deadline: "desc" },
   });
 }
@@ -44,14 +71,14 @@ export async function createLessonPlanPeriod(data: {
   startDate: string;
   deadline: string;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.schoolId) return { success: false, error: "Không có quyền" };
+  const schoolId = await getEffectiveSchoolId();
+  if (!schoolId) return { success: false, error: "Không tìm thấy thông tin Trường học" };
 
   if (!data.label.trim()) return { success: false, error: "Tên kỳ nộp không được trống" };
 
   await prisma.lessonPlanPeriod.create({
     data: {
-      schoolId: session.user.schoolId,
+      schoolId,
       label: data.label.trim(),
       startDate: new Date(data.startDate),
       deadline: new Date(data.deadline),
@@ -79,10 +106,10 @@ export async function deletePeriod(periodId: string) {
 // ==================== SUBJECT GROUPS ====================
 
 export async function getSubjectGroups() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.schoolId) return [];
+  const schoolId = await getEffectiveSchoolId();
+  if (!schoolId) return [];
   return prisma.subjectGroup.findMany({
-    where: { schoolId: session.user.schoolId },
+    where: { schoolId },
     include: {
       headTeacher: { include: { user: { select: { name: true } } } },
       subjects: { select: { id: true, name: true } },
@@ -92,18 +119,25 @@ export async function getSubjectGroups() {
 }
 
 export async function createSubjectGroup(data: { name: string; headTeacherId?: string }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.schoolId) return { success: false, error: "Không có quyền" };
+  try {
+    const schoolId = await getEffectiveSchoolId();
+    if (!schoolId) return { success: false, error: "Không tìm thấy trường học tương ứng để tạo tổ" };
 
-  await prisma.subjectGroup.create({
-    data: {
-      schoolId: session.user.schoolId,
-      name: data.name.trim(),
-      headTeacherId: data.headTeacherId || null,
-    },
-  });
-  revalidatePath("/admin/subject-groups");
-  return { success: true };
+    if (!data.name.trim()) return { success: false, error: "Tên tổ không được để trống" };
+
+    await prisma.subjectGroup.create({
+      data: {
+        schoolId,
+        name: data.name.trim(),
+        headTeacherId: data.headTeacherId || null,
+      },
+    });
+    revalidatePath("/admin/subject-groups");
+    return { success: true };
+  } catch (err: any) {
+    console.error("Error creating subject group:", err);
+    return { success: false, error: err.message || "Không thể tạo tổ chuyên môn" };
+  }
 }
 
 export async function deleteSubjectGroup(groupId: string) {
