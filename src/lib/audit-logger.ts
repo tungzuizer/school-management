@@ -1,5 +1,3 @@
-"use server";
-
 import prisma from "./prisma";
 import { AuditAction } from "@prisma/client";
 
