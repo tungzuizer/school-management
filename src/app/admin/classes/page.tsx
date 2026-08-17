@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import { getClasses, getSchoolsForSelect, getTeachersForSelect, createClass, updateClass, deleteClass, createBulkClasses, BulkClassInput } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -37,6 +38,7 @@ export default function ClassesPage() {
   const { showToast, ToastComponent } = useToast();
 
   // Bulk import state
+  const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkSchoolId, setBulkSchoolId] = useState("");
   const [bulkInput, setBulkInput] = useState("");
@@ -204,14 +206,43 @@ export default function ClassesPage() {
     else showToast(result.error || "Không thể xóa", "error");
   };
 
+  const handleDriveImportClasses = async (validData: any[]) => {
+    const res = await createBulkClasses(validData);
+    if (res.success) {
+      showToast(`Đã nhập thành công ${res.count} lớp học từ Google Drive!`, "success");
+      loadData();
+    } else {
+      showToast(res.error || "Nhập từ Google Drive thất bại", "error");
+    }
+  };
+
   return (
     <div>
       {ToastComponent}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý Lớp học</h1>
-        <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2">
-          <span>+</span> Thêm lớp
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setDriveModalOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium transition"
+          >
+            <span>☁️</span> Google Drive
+          </button>
+          <button
+            onClick={() => {
+              setBulkModalOpen(true);
+              setBulkInput("");
+              setParsedClasses([]);
+              setBulkResult(null);
+            }}
+            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 text-sm font-medium"
+          >
+            <span>📥</span> Nhập CSV/Text
+          </button>
+          <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium">
+            <span>+</span> Thêm lớp
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -449,6 +480,15 @@ export default function ClassesPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Google Drive Import Modal */}
+      <GoogleDriveImportModal
+        isOpen={driveModalOpen}
+        onClose={() => setDriveModalOpen(false)}
+        targetType="CLASSES"
+        onConfirmImport={handleDriveImportClasses}
+        title="Nhập danh sách Lớp học từ Google Drive"
+      />
     </div>
   );
 }

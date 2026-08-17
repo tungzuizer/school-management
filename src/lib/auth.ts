@@ -28,9 +28,37 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user) {
-          if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student") || email.includes("vp"))) {
-            const role = email.includes("admin") ? "ADMIN" : email.includes("vp") ? "VICE_PRINCIPAL" : email.includes("teacher") ? "TEACHER" : "STUDENT";
-            const name = email.includes("admin") ? "Nguyễn Văn Admin" : email.includes("vp") ? "Phó Hiệu trưởng" : email.includes("teacher") ? "Trần Thị Hoa" : "Phạm Quang Huy";
+          if (
+            credentials.password === "123456" &&
+            (email.includes("admin") ||
+              email.includes("teacher") ||
+              email.includes("student") ||
+              email.includes("vp") ||
+              email.includes("dept") ||
+              email.includes("ward"))
+          ) {
+            const role = email.includes("dept")
+              ? "DEPARTMENT_ADMIN"
+              : email.includes("ward")
+              ? "WARD_ADMIN"
+              : email.includes("admin")
+              ? "ADMIN"
+              : email.includes("vp")
+              ? "VICE_PRINCIPAL"
+              : email.includes("teacher")
+              ? "TEACHER"
+              : "STUDENT";
+            const name = email.includes("dept")
+              ? "Lãnh đạo Sở GD&ĐT"
+              : email.includes("ward")
+              ? "Cán bộ Phòng GD&ĐT"
+              : email.includes("admin")
+              ? "Nguyễn Văn Admin"
+              : email.includes("vp")
+              ? "Phó Hiệu trưởng"
+              : email.includes("teacher")
+              ? "Trần Thị Hoa"
+              : "Phạm Quang Huy";
             const hashedPassword = await bcrypt.hash("123456", 10);
             try {
               user = await prisma.user.create({
@@ -74,6 +102,9 @@ export const authOptions: NextAuthOptions = {
                 email: user.email,
                 name: user.name,
                 role: user.role,
+                departmentId: user.departmentId || undefined,
+                districtWardId: user.districtWardId || undefined,
+                schoolId: user.schoolId || undefined,
                 campusId: user.campusId || undefined,
               };
             }
@@ -83,14 +114,45 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Demo fallback if password matches 123456
-        if (credentials.password === "123456" && (email.includes("admin") || email.includes("teacher") || email.includes("student") || email.includes("vp"))) {
-          const role = email.includes("admin") ? "ADMIN" : email.includes("vp") ? "VICE_PRINCIPAL" : email.includes("teacher") ? "TEACHER" : "STUDENT";
-          const name = email.includes("admin") ? "Nguyễn Văn Admin" : email.includes("vp") ? "Phó Hiệu trưởng" : email.includes("teacher") ? "Trần Thị Hoa" : "Phạm Quang Huy";
+        if (
+          credentials.password === "123456" &&
+          (email.includes("admin") ||
+            email.includes("teacher") ||
+            email.includes("student") ||
+            email.includes("vp") ||
+            email.includes("dept") ||
+            email.includes("ward"))
+        ) {
+          const role = email.includes("dept")
+            ? "DEPARTMENT_ADMIN"
+            : email.includes("ward")
+            ? "WARD_ADMIN"
+            : email.includes("admin")
+            ? "ADMIN"
+            : email.includes("vp")
+            ? "VICE_PRINCIPAL"
+            : email.includes("teacher")
+            ? "TEACHER"
+            : "STUDENT";
+          const name = email.includes("dept")
+            ? "Lãnh đạo Sở GD&ĐT"
+            : email.includes("ward")
+            ? "Cán bộ Phòng GD&ĐT"
+            : email.includes("admin")
+            ? "Nguyễn Văn Admin"
+            : email.includes("vp")
+            ? "Phó Hiệu trưởng"
+            : email.includes("teacher")
+            ? "Trần Thị Hoa"
+            : "Phạm Quang Huy";
           return {
             id: user?.id || `demo-${role.toLowerCase()}`,
             email,
             name: user?.name || name,
             role: user?.role || role,
+            departmentId: user?.departmentId || undefined,
+            districtWardId: user?.districtWardId || undefined,
+            schoolId: user?.schoolId || undefined,
             campusId: user?.campusId || undefined,
           };
         }
@@ -104,6 +166,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.departmentId = user.departmentId;
+        token.districtWardId = user.districtWardId;
+        token.schoolId = user.schoolId;
         token.campusId = user.campusId;
       }
       return token;
@@ -112,6 +177,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
+        session.user.departmentId = token.departmentId as string | undefined;
+        session.user.districtWardId = token.districtWardId as string | undefined;
+        session.user.schoolId = token.schoolId as string | undefined;
         session.user.campusId = token.campusId as string | undefined;
       }
       return session;

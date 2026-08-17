@@ -13,10 +13,17 @@ datasource db {
 // ==================== ENUMS ====================
 
 enum Role {
+  DEPARTMENT_ADMIN
+  WARD_ADMIN
   ADMIN
   VICE_PRINCIPAL
   TEACHER
   STUDENT
+}
+
+enum ManagementBranch {
+  WARD
+  THPT
 }
 
 enum AttendanceStatus {
@@ -110,32 +117,10 @@ enum WarningCategory {
 
 // ==================== MODELS ====================
 
-model User {
+model EducationDepartment {
   id        String   @id @default(cuid())
   name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(STUDENT)
-  image     String?
-  campusId  String?  // Phan hieu phu trach (cho Hieu pho)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  teacher               Teacher?
-  student               Student?
-  campus                Campus?  @relation(fields: [campusId], references: [id])
-  sentNotifications     Notification[] @relation("SentNotifications")
-  receivedNotifications Notification[] @relation("ReceivedNotifications")
-
-  @@index([email])
-  @@index([role])
-  @@index([campusId])
-}
-
-model School {
-  id        String   @id @default(cuid())
-  name      String
+  code      String   @unique
   address   String?
   phone     String?
   email     String?
@@ -143,11 +128,88 @@ model School {
   updatedAt DateTime @updatedAt
 
   // Relations
+  districtWards DistrictWard[]
+  schools       School[]
+  users         User[]
+
+  @@index([name])
+}
+
+model DistrictWard {
+  id           String   @id @default(cuid())
+  departmentId String
+  name         String
+  code         String?
+  address      String?
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  department EducationDepartment @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  schools    School[]
+  users      User[]
+
+  @@index([departmentId])
+  @@index([name])
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  password       String
+  role           Role     @default(STUDENT)
+  image          String?
+  departmentId   String?
+  districtWardId String?
+  schoolId       String?
+  campusId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  department            EducationDepartment? @relation(fields: [departmentId], references: [id])
+  districtWard          DistrictWard?        @relation(fields: [districtWardId], references: [id])
+  school                School?              @relation(fields: [schoolId], references: [id])
+  teacher               Teacher?
+  student               Student?
+  campus                Campus?              @relation(fields: [campusId], references: [id])
+  sentNotifications     Notification[]       @relation("SentNotifications")
+  receivedNotifications Notification[]       @relation("ReceivedNotifications")
+
+  @@index([email])
+  @@index([role])
+  @@index([departmentId])
+  @@index([districtWardId])
+  @@index([schoolId])
+  @@index([campusId])
+}
+
+model School {
+  id             String           @id @default(cuid())
+  departmentId   String?
+  districtWardId String?
+  branchType     ManagementBranch @default(WARD)
+  name           String
+  address        String?
+  phone          String?
+  email          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  department        EducationDepartment? @relation(fields: [departmentId], references: [id])
+  districtWard      DistrictWard?        @relation(fields: [districtWardId], references: [id])
+  users             User[]
   campuses          Campus[]
   classRooms        ClassRoom[]
   academicCalendars AcademicCalendar[]
 
   @@index([name])
+  @@index([departmentId])
+  @@index([districtWardId])
+  @@index([branchType])
 }
 
 model Campus {

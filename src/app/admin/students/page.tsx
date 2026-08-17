@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import {
   getStudents,
   getClassesForSelect,
@@ -69,6 +70,7 @@ export default function StudentsPage() {
   const { showToast, ToastComponent } = useToast();
 
   // Bulk import state
+  const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkClassId, setBulkClassId] = useState("");
   const [bulkInput, setBulkInput] = useState("");
@@ -338,12 +340,28 @@ export default function StudentsPage() {
     DROPPED_OUT: "bg-red-100 text-red-800",
   };
 
+  const handleDriveImportStudents = async (validData: any[]) => {
+    const res = await createBulkStudents(validData);
+    if (res.success) {
+      showToast(`Đã nhập thành công ${res.count} học sinh từ Google Drive!`, "success");
+      loadData();
+    } else {
+      showToast(res.error || "Nhập từ Google Drive thất bại", "error");
+    }
+  };
+
   return (
     <div>
       {ToastComponent}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý Học sinh</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => setDriveModalOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium transition"
+          >
+            <span>☁️</span> Google Drive
+          </button>
           <button
             onClick={() => {
               setBulkModalOpen(true);
@@ -353,7 +371,7 @@ export default function StudentsPage() {
             }}
             className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 text-sm font-medium"
           >
-            <span>📥</span> Nhập hàng loạt
+            <span>📥</span> Nhập CSV/Text
           </button>
           <button
             onClick={openCreate}
@@ -843,6 +861,15 @@ export default function StudentsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Google Drive Import Modal */}
+      <GoogleDriveImportModal
+        isOpen={driveModalOpen}
+        onClose={() => setDriveModalOpen(false)}
+        targetType="STUDENTS"
+        onConfirmImport={handleDriveImportStudents}
+        title="Nhập danh sách Học sinh từ Google Drive"
+      />
     </div>
   );
 }
