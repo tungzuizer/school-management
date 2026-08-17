@@ -4,16 +4,19 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { LessonPlanStatus, Role } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit-logger";
 
 // Get all lesson plans for the admin (Hiệu trưởng) approval portal
-// Hiệu trưởng có quyền xem tất cả giáo án ở các trạng thái
 export async function getLessonPlansForAdmin() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id || session.user.role !== Role.ADMIN) {
-      return [];
-    }
+    if (!session?.user?.id) return [];
+
+    const isAllowed =
+      session.user.role === Role.ADMIN || session.user.role === "VICE_PRINCIPAL";
+
+    if (!isAllowed) return [];
 
     const plans = await prisma.lessonPlan.findMany({
       where: {
@@ -78,7 +81,14 @@ export async function reviewLessonPlan(data: {
   reviewNote: string;
 }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id || session.user.role !== Role.ADMIN) {
+  if (!session?.user?.id) {
+    return { success: false, error: "Chưa đăng nhập" };
+  }
+
+  const isAllowed =
+    session.user.role === Role.ADMIN || session.user.role === "VICE_PRINCIPAL";
+
+  if (!isAllowed) {
     return { success: false, error: "Không có quyền thực hiện chức năng này" };
   }
 
@@ -108,7 +118,7 @@ export async function reviewLessonPlan(data: {
         data: {
           lessonPlanId: data.planId,
           reviewerName: session.user.name || "Hiệu trưởng",
-          reviewerRole: "ADMIN",
+          reviewerRole: session.user.role === Role.ADMIN ? "ADMIN" : "VICE_PRINCIPAL",
           action: newStatus,
           comment: data.reviewNote,
         },
@@ -118,12 +128,19 @@ export async function reviewLessonPlan(data: {
     await recordAuditLog({
       userId: session.user.id,
       userName: session.user.name || "",
-      userRole: "ADMIN",
+      userRole: session.user.role === Role.ADMIN ? "ADMIN" : "VICE_PRINCIPAL",
       action: data.status === "APPROVED" ? "APPROVE" : "REJECT",
       entityName: "LessonPlan",
       entityId: data.planId,
       description: `Hiệu trưởng ${data.status === "APPROVED" ? "phê duyệt" : "từ chối"} giáo án: ${existing.title}`,
     });
+
+    // Revalidate paths for instant UI cache update across all roles
+    revalidatePath("/admin/lesson-plans");
+    revalidatePath("/vice-principal/lesson-plans");
+    revalidatePath("/teacher/subject-head");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/teacher/lesson-plans");
 
     return { success: true };
   } catch (error: any) {
