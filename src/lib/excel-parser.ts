@@ -55,10 +55,20 @@ function normalizeKey(key: string): string {
 }
 
 /**
- * Parses raw buffer (CSV/XLSX) to generic JSON object array
+ * Parses raw buffer (CSV/XLSX) to generic JSON object array with proper UTF-8 decoding
  */
 export function parseSpreadsheetBuffer(buffer: Buffer): Record<string, any>[] {
-  const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
+  let workbook: XLSX.WorkBook;
+
+  try {
+    // Try reading as UTF-8 text string (for CSV / TSV from Google Sheets)
+    const textContent = buffer.toString("utf-8");
+    workbook = XLSX.read(textContent, { type: "string", raw: true });
+  } catch {
+    // Fallback to binary buffer (for native .xlsx / .xls files)
+    workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
+  }
+
   const firstSheetName = workbook.SheetNames[0];
   if (!firstSheetName) {
     return [];
@@ -91,14 +101,14 @@ export function mapRowsToStudents(rawRows: Record<string, any>[]): ParsedStudent
     const email = getVal("email", "thu dien tu", "gmail");
     const genderRaw = getVal("gender", "gioi tinh", "sex");
     const dob = getVal("dob", "ngay sinh", "birthday", "birthdate");
-    const phone = getVal("phone", "sdt", "so dien thoai", "sdt phu huynh", "parentphone");
+    const phone = getVal("phone", "so dien thoai", "sdt", "sdt phu huynh", "parentphone", "dien thoai");
     const ethnicity = getVal("ethnicity", "dan toc");
-    const addressCurrent = getVal("addresscurrent", "dia chi", "dia chi hien tai", "noi o", "address");
+    const addressCurrent = getVal("addresscurrent", "cho o hien nay", "dia chi", "dia chi hien tai", "noi o", "address");
     const fatherName = getVal("fathername", "ho ten cha", "ten cha", "cha");
     const fatherJob = getVal("fatherjob", "nghe nghiep cha");
     const motherName = getVal("mothername", "ho ten me", "ten me", "me");
     const motherJob = getVal("motherjob", "nghe nghiep me");
-    const className = getVal("classname", "lop", "lop hoc", "class");
+    const className = getVal("classname", "ma lop", "ten lop", "lop", "lop hoc", "class");
 
     // Standardize gender
     let gender: string | undefined = undefined;
@@ -157,7 +167,7 @@ export function mapRowsToTeachers(rawRows: Record<string, any>[]): ParsedTeacher
 
     const name = getVal("name", "ho ten", "ho va ten", "ten giao vien", "fullname", "giao vien");
     const email = getVal("email", "thu dien tu", "gmail");
-    const phone = getVal("phone", "sdt", "so dien thoai", "dien thoai");
+    const phone = getVal("phone", "so dien thoai", "sdt", "dien thoai");
     const specialty = getVal("specialty", "chuyen mon", "bo mon", "mon giang day");
     const degree = getVal("degree", "bang cap", "trinh do");
 
@@ -201,7 +211,7 @@ export function mapRowsToClasses(rawRows: Record<string, any>[]): ParsedClassRow
       return "";
     };
 
-    const name = getVal("name", "ten lop", "lop", "classname");
+    const name = getVal("name", "ten lop", "ma lop", "lop", "classname");
     const gradeLevelRaw = getVal("gradelevel", "khoi", "khoi lop", "grade");
     const schoolName = getVal("schoolname", "truong", "ten truong");
     const campusName = getVal("campusname", "phan hieu", "diem truong");
