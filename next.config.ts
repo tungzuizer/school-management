@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "25mb",
     },
+    optimizePackageImports: ["lucide-react", "recharts"],
   },
   async headers() {
     return [
