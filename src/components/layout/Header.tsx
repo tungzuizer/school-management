@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, Lightbulb, Search, LogOut, ChevronDown, User, ShieldCheck } from "lucide-react";
+import { Bell, Lightbulb, Search, LogOut, ChevronDown, ShieldCheck } from "lucide-react";
 import { useEasyMode } from "@/lib/useEasyMode";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import CommandPalette from "@/components/ui/CommandPalette";
@@ -45,23 +45,23 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
 
   return (
     <>
-      <header className="h-16 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 sticky top-0 backdrop-blur-md bg-white/90">
+      <header className="h-16 glass-header flex items-center justify-between px-4 md:px-6 shrink-0 z-30 sticky top-0 transition-all duration-300">
         {/* Left: Breadcrumbs & Page Context */}
-        <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain rounded-lg shadow-xs" />
+        <div className="flex items-center gap-3.5">
+          <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain rounded-xl shadow-xs transition-transform duration-300 hover:scale-105" />
           <Breadcrumb />
         </div>
 
         {/* Right: Search + Notifications + Easy Mode + User Menu */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           {/* Quick Search Button (Ctrl + K) */}
           <button
             onClick={() => setCommandPaletteOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-xs hover:bg-slate-100 hover:border-slate-300 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/80 bg-slate-50/80 text-slate-500 text-xs hover:bg-white hover:border-indigo-300 hover:text-indigo-600 hover:shadow-xs transition-all active-press cursor-pointer"
           >
             <Search className="w-3.5 h-3.5 text-indigo-500" />
             <span className="hidden md:inline font-medium">Tìm nhanh...</span>
-            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-bold text-slate-400 bg-white rounded border border-slate-200 shadow-2xs">
+            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-bold text-slate-400 bg-white rounded-md border border-slate-200 shadow-2xs">
               Ctrl K
             </kbd>
           </button>
@@ -69,40 +69,40 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
           {/* Easy Mode Toggle */}
           <button
             onClick={toggleEasyMode}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all active-press ${
               isEasyMode
-                ? "bg-amber-100 border-amber-400 text-amber-900 shadow-xs"
+                ? "bg-gradient-to-r from-amber-100 to-amber-200 border-amber-400 text-amber-900 shadow-xs"
                 : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
             }`}
             title="Bật/Tắt hướng dẫn tiếng Việt chi tiết và phím to dễ bấm"
           >
-            <Lightbulb className={`w-3.5 h-3.5 ${isEasyMode ? "text-amber-700 animate-pulse" : "text-slate-400"}`} />
+            <Lightbulb className={`w-3.5 h-3.5 ${isEasyMode ? "text-amber-700 pulse-dot" : "text-slate-400"}`} />
             <span className="hidden sm:inline">Dễ dùng:</span>
-            <span className={`font-bold ${isEasyMode ? "text-amber-700" : "text-slate-500"}`}>
+            <span className={`font-extrabold ${isEasyMode ? "text-amber-800" : "text-slate-500"}`}>
               {isEasyMode ? "BẬT" : "TẮT"}
             </span>
           </button>
 
           {/* Notification Bell */}
           <button
-            className="relative p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+            className="relative p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-all bell-swing active-press"
             title="Thông báo"
           >
             <Bell className="w-4 h-4" />
             {notificationCount > 0 && (
-              <span className="absolute top-1 right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
+              <span className="absolute top-1 right-1 bg-rose-500 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white animate-pulse">
                 {notificationCount > 9 ? "9+" : notificationCount}
               </span>
             )}
           </button>
 
           {/* User Profile Dropdown */}
-          <div className="relative border-l border-slate-200 pl-2.5">
+          <div className="relative border-l border-slate-200/80 pl-2.5">
             <button
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100/80 transition-all active-press"
             >
-              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center font-extrabold text-xs shadow-xs ring-2 ring-indigo-100">
                 {userName.charAt(0).toUpperCase()}
               </div>
               <div className="hidden md:block text-left">
@@ -116,7 +116,7 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
             {userDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setUserDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-20 animate-in fade-in zoom-in-95">
+                <div className="absolute right-0 mt-2 w-56 glass-card rounded-2xl shadow-2xl border border-slate-200/80 p-2 z-20 animate-in fade-in zoom-in-95 duration-200">
                   <div className="px-3 py-2 border-b border-slate-100">
                     <p className="text-xs font-bold text-slate-800">{userName}</p>
                     <p className="text-[10px] text-slate-400">{session?.user?.email || "Account"}</p>
@@ -130,7 +130,7 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
                   <div className="border-t border-slate-100 pt-1">
                     <button
                       onClick={() => signOut({ callbackUrl: "/login" })}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 font-semibold rounded-xl hover:bg-rose-50 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 font-bold rounded-xl hover:bg-rose-50 transition-colors"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Đăng xuất</span>
