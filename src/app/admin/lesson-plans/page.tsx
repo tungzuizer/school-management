@@ -14,12 +14,22 @@ import {
   ChevronUp,
   Search,
   User,
-  Calendar,
   AlertCircle,
   FileCheck,
   FileX,
   RefreshCw,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
+
+interface LessonPlanReview {
+  id: string;
+  reviewerName: string;
+  reviewerRole: string;
+  action: string;
+  comment: string;
+  createdAt: Date;
+}
 
 interface LessonPlanItem {
   id: string;
@@ -36,10 +46,12 @@ interface LessonPlanItem {
   materials: string;
   assessment: string;
   notes: string;
-  status: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
+  status: string;
+  driveFileUrl: string | null;
   reviewNote: string;
   reviewedAt: Date | null;
   reviewedBy: string | null;
+  reviews: LessonPlanReview[];
 }
 
 export default function AdminLessonPlansPage() {
@@ -50,7 +62,7 @@ export default function AdminLessonPlansPage() {
   const { showToast, ToastComponent } = useToast();
 
   // Filters & Search
-  const [activeTab, setActiveTab] = useState<"ALL" | "SUBMITTED" | "APPROVED" | "REJECTED">("SUBMITTED");
+  const [activeTab, setActiveTab] = useState<"PENDING" | "APPROVED" | "REJECTED" | "ALL">("PENDING");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
@@ -60,7 +72,7 @@ export default function AdminLessonPlansPage() {
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [submittingIds, setSubmittingIds] = useState<Record<string, boolean>>({});
 
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     setLoading(true);
     try {
       const items = await getLessonPlansForAdmin();
@@ -70,22 +82,36 @@ export default function AdminLessonPlansPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchPlans();
-  }, []);
+  }, [fetchPlans]);
 
   // Handle Tab and Search filtering
   useEffect(() => {
     let result = plans;
 
     // Filter by Tab status
-    if (activeTab !== "ALL") {
-      result = result.filter((p) => p.status === activeTab);
+    if (activeTab === "PENDING") {
+      result = result.filter(
+        (p) =>
+          p.status === "VP_APPROVED" ||
+          p.status === "HEAD_APPROVED" ||
+          p.status === "SUBMITTED"
+      );
+    } else if (activeTab === "APPROVED") {
+      result = result.filter((p) => p.status === "APPROVED");
+    } else if (activeTab === "REJECTED") {
+      result = result.filter(
+        (p) =>
+          p.status === "REJECTED" ||
+          p.status === "VP_REJECTED" ||
+          p.status === "HEAD_REJECTED"
+      );
     }
 
-    // Filter by Search text (teacher name, title)
+    // Filter by Search text
     if (searchTerm.trim() !== "") {
       const searchLower = searchTerm.toLowerCase();
       result = result.filter(
@@ -130,12 +156,10 @@ export default function AdminLessonPlansPage() {
 
       if (res.success) {
         showToast(
-          status === "APPROVED" ? "Đã phê duyệt giáo án thành công" : "Đã từ chối phê duyệt giáo án",
+          status === "APPROVED" ? "Đã phê duyệt giáo án chính thức" : "Đã từ chối giáo án",
           "success"
         );
-        // Refresh
-        const items = await getLessonPlansForAdmin();
-        setPlans(items as any);
+        fetchPlans();
       } else {
         showToast(res.error || "Không thể thực hiện phê duyệt", "error");
       }
@@ -146,34 +170,55 @@ export default function AdminLessonPlansPage() {
     }
   };
 
-  const getStatusBadge = (status: LessonPlanItem["status"]) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "APPROVED":
         return (
-          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
-            <Check className="w-3 h-3" /> Đã duyệt
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+            <Check className="w-3 h-3" /> Hiệu trưởng đã duyệt
           </span>
         );
-      case "REJECTED":
+      case "VP_APPROVED":
         return (
-          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-800 flex items-center gap-1">
-            <X className="w-3 h-3" /> Từ chối
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-sky-100 text-sky-800 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" /> Phó HT đã duyệt
+          </span>
+        );
+      case "HEAD_APPROVED":
+        return (
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-cyan-100 text-cyan-800 flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Tổ trưởng đã duyệt
           </span>
         );
       case "SUBMITTED":
         return (
-          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> Chờ duyệt
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Mới nộp (Chờ duyệt)
+          </span>
+        );
+      case "REJECTED":
+      case "VP_REJECTED":
+      case "HEAD_REJECTED":
+        return (
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-800 flex items-center gap-1">
+            <X className="w-3 h-3" /> Từ chối
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700">
             Bản nháp
           </span>
         );
     }
   };
+
+  const pendingCount = plans.filter(
+    (p) =>
+      p.status === "VP_APPROVED" ||
+      p.status === "HEAD_APPROVED" ||
+      p.status === "SUBMITTED"
+  ).length;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -184,69 +229,53 @@ export default function AdminLessonPlansPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Ban Giám Hiệu Phê Duyệt Giáo Án</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Kiểm tra và duyệt kế hoạch bài dạy của giáo viên trước khi giảng dạy
+            Phê duyệt chính thức giáo án của toàn bộ giáo viên nhà trường
           </p>
         </div>
         <button
           onClick={fetchPlans}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition duration-150 shadow-sm"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition duration-150 shadow-2xs"
           title="Tải lại danh sách"
         >
           <RefreshCw className="w-4 h-4" /> Tải lại
         </button>
       </div>
 
-      {/* Easy mode hints */}
-      {isEasyMode && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-amber-900 text-xs shadow-sm">
-          <Info className="w-5 h-5 shrink-0 text-amber-600" />
-          <div className="space-y-1">
-            <p className="font-bold">Trợ giúp Duyệt Giáo Án:</p>
-            <p>1. Chọn các tab bên dưới để chuyển giữa danh sách giáo án <strong>Chờ duyệt</strong>, <strong>Đã duyệt</strong> hoặc <strong>Từ chối</strong>.</p>
-            <p>2. Nhập tên giáo viên hoặc môn học vào ô Tìm kiếm để tìm nhanh.</p>
-            <p>3. Ấn vào một dòng giáo án để xem chi tiết nội dung, mục tiêu giảng dạy.</p>
-            <p>4. Điền ý kiến nhận xét (nếu cần), sau đó nhấn nút <strong>Duyệt giáo án</strong> (Màu xanh) hoặc <strong>Không duyệt</strong> (Màu đỏ).</p>
-          </div>
-        </div>
-      )}
-
       {/* Statistics board */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white border rounded-xl p-4">
-          <p className="text-xs text-gray-500 font-medium">Tổng giáo án nhận được</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{plans.length}</p>
+        <div className="bg-white border rounded-2xl p-4 shadow-2xs">
+          <p className="text-xs text-slate-500 font-semibold">Tổng giáo án nhận được</p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-1">{plans.length}</p>
         </div>
-        <div className="bg-white border rounded-xl p-4">
-          <p className="text-xs text-gray-500 font-medium font-semibold text-blue-700">Đang chờ phê duyệt</p>
-          <p className="text-xl font-bold text-blue-800 mt-1">
-            {plans.filter((p) => p.status === "SUBMITTED").length}
-          </p>
+        <div className="bg-white border rounded-2xl p-4 shadow-2xs">
+          <p className="text-xs font-semibold text-amber-700">Chờ Hiệu trưởng duyệt</p>
+          <p className="text-2xl font-extrabold text-amber-800 mt-1">{pendingCount}</p>
         </div>
-        <div className="bg-white border rounded-xl p-4">
-          <p className="text-xs text-gray-500 font-medium font-semibold text-emerald-700">Đã phê duyệt</p>
-          <p className="text-xl font-bold text-emerald-800 mt-1">
+        <div className="bg-white border rounded-2xl p-4 shadow-2xs">
+          <p className="text-xs font-semibold text-emerald-700">Đã phê duyệt hoàn tất</p>
+          <p className="text-2xl font-extrabold text-emerald-800 mt-1">
             {plans.filter((p) => p.status === "APPROVED").length}
           </p>
         </div>
-        <div className="bg-white border rounded-xl p-4">
-          <p className="text-xs text-gray-500 font-medium font-semibold text-rose-700">Đã từ chối</p>
-          <p className="text-xl font-bold text-rose-800 mt-1">
+        <div className="bg-white border rounded-2xl p-4 shadow-2xs">
+          <p className="text-xs font-semibold text-rose-700">Đã từ chối</p>
+          <p className="text-2xl font-extrabold text-rose-800 mt-1">
             {plans.filter((p) => p.status === "REJECTED").length}
           </p>
         </div>
       </div>
 
       {/* Tabs and Filters Row */}
-      <div className="bg-white border rounded-xl p-4 space-y-4">
+      <div className="bg-white border rounded-2xl p-4 space-y-4 shadow-2xs">
         {/* Status Tabs */}
-        <div className="flex border-b border-gray-100">
-          {(["SUBMITTED", "APPROVED", "REJECTED", "ALL"] as const).map((tab) => {
+        <div className="flex border-b border-slate-100">
+          {(["PENDING", "APPROVED", "REJECTED", "ALL"] as const).map((tab) => {
             let label = "";
             let count = 0;
             switch (tab) {
-              case "SUBMITTED":
+              case "PENDING":
                 label = "Chờ duyệt";
-                count = plans.filter((p) => p.status === "SUBMITTED").length;
+                count = pendingCount;
                 break;
               case "APPROVED":
                 label = "Đã duyệt";
@@ -254,7 +283,7 @@ export default function AdminLessonPlansPage() {
                 break;
               case "REJECTED":
                 label = "Từ chối";
-                count = plans.filter((p) => p.status === "REJECTED").length;
+                count = plans.filter((p) => p.status === "REJECTED" || p.status === "VP_REJECTED" || p.status === "HEAD_REJECTED").length;
                 break;
               case "ALL":
                 label = "Tất cả";
@@ -267,16 +296,16 @@ export default function AdminLessonPlansPage() {
                 key={tab}
                 onClick={() => {
                   setActiveTab(tab);
-                  setExpandedPlanId(null); // Clear expansion when switching tabs
+                  setExpandedPlanId(null);
                 }}
-                className={`pb-2.5 px-4 text-sm font-semibold transition-all relative ${
+                className={`pb-2.5 px-4 text-xs font-bold transition-all relative ${
                   activeTab === tab
-                    ? "text-blue-700 font-bold"
-                    : "text-gray-400 hover:text-gray-700"
+                    ? "text-indigo-700 font-extrabold"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
                 )}
                 {label} ({count})
               </button>
@@ -287,7 +316,7 @@ export default function AdminLessonPlansPage() {
         {/* Search and Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
               <Search className="w-4 h-4" />
             </span>
             <input
@@ -295,7 +324,7 @@ export default function AdminLessonPlansPage() {
               placeholder="Tìm theo tên giáo viên, chủ đề..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
             />
           </div>
 
@@ -303,7 +332,7 @@ export default function AdminLessonPlansPage() {
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
             >
               <option value="">Lọc theo Môn Học (Tất cả)</option>
               {uniqueSubjects.map((sub) => (
@@ -318,7 +347,7 @@ export default function AdminLessonPlansPage() {
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
             >
               <option value="">Lọc theo Lớp Học (Tất cả)</option>
               {uniqueClasses.map((cls) => (
@@ -334,178 +363,155 @@ export default function AdminLessonPlansPage() {
       {/* Main List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-12 bg-white rounded-xl border">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-xs text-gray-400 mt-2 font-medium">Đang tải danh sách giáo án...</p>
+          <div className="text-center py-12 bg-white rounded-2xl border">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="text-xs text-slate-400 mt-2 font-semibold">Đang tải danh sách giáo án...</p>
           </div>
         ) : filteredPlans.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl border p-6">
-            <BookOpen className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-            <p className="text-sm font-semibold text-gray-500">Không có giáo án nào thuộc mục này</p>
-            <p className="text-xs text-gray-400 mt-1">
-              {searchTerm || selectedSubject || selectedClass
-                ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm."
-                : "Giáo án gửi lên của các giáo viên sẽ được liệt kê ở đây."}
-            </p>
+          <div className="text-center py-16 bg-white rounded-2xl border p-6">
+            <BookOpen className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+            <p className="text-sm font-semibold text-slate-600">Không có giáo án nào thuộc mục này</p>
           </div>
         ) : (
           filteredPlans.map((p) => {
             const isExpanded = expandedPlanId === p.id;
             const isSubmitting = submittingIds[p.id] || false;
+            const canReview = p.status !== "APPROVED" && p.status !== "REJECTED";
+
             return (
               <div
                 key={p.id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-sm"
+                className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden transition-all duration-200 shadow-2xs hover:shadow-md"
               >
                 {/* Header card info */}
                 <div
                   onClick={() => setExpandedPlanId(isExpanded ? null : p.id)}
-                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50/80 transition-colors"
                 >
                   <div className="space-y-1 flex-1 pr-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md">
                         Tuần {p.weekNumber}
                       </span>
-                      <span className="text-xs text-gray-500 font-medium">
+                      <span className="text-xs text-slate-600 font-semibold">
                         Lớp {p.className} • Tiết {p.periodStart === p.periodEnd ? p.periodStart : `${p.periodStart}-${p.periodEnd}`}
                       </span>
-                      <span className="text-xs text-gray-400 font-semibold flex items-center gap-1">
-                        <User className="w-3 h-3 text-gray-300" /> GV: {p.teacherName}
+                      <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 text-slate-400" /> GV: <strong className="text-slate-800">{p.teacherName}</strong>
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-800 text-sm leading-tight mt-1">
+                    <h3 className="font-bold text-slate-900 text-sm leading-tight mt-1">
                       {p.title}
                     </h3>
-                    <p className="text-xs text-gray-400 font-medium">Môn học: {p.subjectName}</p>
+                    <p className="text-xs text-slate-500 font-medium">Môn học: {p.subjectName}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
                     {getStatusBadge(p.status)}
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                   </div>
                 </div>
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-4 text-xs text-gray-700">
+                  <div className="border-t border-slate-100 bg-slate-50/60 p-4 space-y-4 text-xs text-slate-700">
+                    {/* Google Drive Link if present */}
+                    {p.driveFileUrl && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                        <span className="font-semibold text-blue-900">File giáo án đính kèm Google Drive:</span>
+                        <a
+                          href={p.driveFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Mở Thư Mục Drive ↗</span>
+                        </a>
+                      </div>
+                    )}
+
                     {/* Lesson Plan Information blocks */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <span className="font-bold text-gray-500 block mb-1">Mục tiêu bài dạy (Objectives):</span>
-                        <p className="bg-white rounded-lg p-2.5 border border-gray-200 whitespace-pre-line leading-relaxed min-h-[40px]">
+                        <span className="font-bold text-slate-500 block mb-1">Mục tiêu bài dạy (Objectives):</span>
+                        <p className="bg-white rounded-xl p-3 border border-slate-200 whitespace-pre-line leading-relaxed min-h-[40px]">
                           {p.objectives || "Chưa nhập mục tiêu"}
                         </p>
                       </div>
 
                       <div>
-                        <span className="font-bold text-gray-500 block mb-1">Nội dung bài học (Content):</span>
-                        <p className="bg-white rounded-lg p-2.5 border border-gray-200 whitespace-pre-line leading-relaxed min-h-[40px]">
+                        <span className="font-bold text-slate-500 block mb-1">Nội dung bài học (Content):</span>
+                        <p className="bg-white rounded-xl p-3 border border-slate-200 whitespace-pre-line leading-relaxed min-h-[40px]">
                           {p.content || "Chưa nhập nội dung"}
                         </p>
                       </div>
-
-                      <div>
-                        <span className="font-bold text-gray-500 block mb-1">Hoạt động dạy học (Activities):</span>
-                        <p className="bg-white rounded-lg p-2.5 border border-gray-200 whitespace-pre-line leading-relaxed min-h-[40px]">
-                          {p.activities || "Chưa nhập hoạt động"}
-                        </p>
-                      </div>
-
-                      <div>
-                        <span className="font-bold text-gray-500 block mb-1">Thiết bị dạy học (Materials):</span>
-                        <p className="bg-white rounded-lg p-2.5 border border-gray-200 whitespace-pre-line leading-relaxed min-h-[40px]">
-                          {p.materials || "Chưa có danh sách thiết bị"}
-                        </p>
-                      </div>
-
-                      <div>
-                        <span className="font-bold text-gray-500 block mb-1">Đánh giá (Assessment):</span>
-                        <p className="bg-white rounded-lg p-2.5 border border-gray-200 whitespace-pre-line leading-relaxed min-h-[40px]">
-                          {p.assessment || "Chưa nhập tiêu chí đánh giá"}
-                        </p>
-                      </div>
-
-                      {p.notes && (
-                        <div>
-                          <span className="font-bold text-gray-500 block mb-1">Ghi chú bổ sung:</span>
-                          <p className="bg-white rounded-lg p-2.5 border border-gray-200 whitespace-pre-line leading-relaxed">
-                            {p.notes}
-                          </p>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Show existing review or provide review actions */}
-                    {p.status !== "SUBMITTED" ? (
-                      <div className="bg-white border border-gray-200 rounded-xl p-3 mt-2">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <Check className="w-4 h-4 text-gray-400" />
-                          <span className="font-bold text-gray-700">Thông tin phê duyệt:</span>
-                        </div>
-                        <div className="space-y-1 text-gray-600">
-                          <p>
-                            Trạng thái:{" "}
-                            <span
-                              className={`font-semibold ${
-                                p.status === "APPROVED" ? "text-emerald-700" : "text-rose-600"
-                              }`}
-                            >
-                              {p.status === "APPROVED" ? "Đã duyệt" : "Không phê duyệt"}
-                            </span>
-                          </p>
-                          <p>Người duyệt: {p.reviewedBy || "Ban Giám Hiệu"}</p>
-                          {p.reviewedAt && (
-                            <p>Thời gian: {new Date(p.reviewedAt).toLocaleString("vi-VN")}</p>
-                          )}
-                          {p.reviewNote && (
-                            <div className="mt-2 bg-gray-50 border rounded-lg p-2.5 text-gray-700">
-                              <p className="font-bold text-gray-500 text-[10px] uppercase mb-0.5">Nhận xét / Ý kiến chỉ đạo:</p>
-                              <p className="whitespace-pre-line">{p.reviewNote}</p>
+                    {/* Review History Trail */}
+                    {p.reviews && p.reviews.length > 0 && (
+                      <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
+                        <p className="font-bold text-slate-800 text-xs">Lịch sử duyệt các cấp:</p>
+                        <div className="space-y-2">
+                          {p.reviews.map((rev) => (
+                            <div key={rev.id} className="p-2.5 bg-slate-50 rounded-lg text-xs border border-slate-100 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-800">{rev.reviewerName} ({rev.reviewerRole})</span>
+                                <span className="text-[10px] text-slate-400">{new Date(rev.createdAt).toLocaleString("vi-VN")}</span>
+                              </div>
+                              <p className="text-slate-600">Hành động: <strong className="text-indigo-700">{rev.action}</strong></p>
+                              {rev.comment && <p className="text-slate-500 italic">&quot;{rev.comment}&quot;</p>}
                             </div>
-                          )}
+                          ))}
                         </div>
                       </div>
-                    ) : (
-                      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 mt-2 space-y-3">
-                        <div className="flex items-center gap-1.5 text-blue-800 font-bold">
-                          <AlertCircle className="w-4 h-4 shrink-0 text-blue-600" />
-                          <span>Ban giám hiệu đánh giá & đưa ý kiến:</span>
+                    )}
+
+                    {/* Review actions if pending */}
+                    {canReview ? (
+                      <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center gap-1.5 text-indigo-900 font-bold text-xs">
+                          <AlertCircle className="w-4 h-4 text-indigo-600" />
+                          <span>Hiệu Trưởng Đánh Giá & Phê Duyệt:</span>
                         </div>
 
                         <div>
-                          <label className="block font-bold text-gray-600 mb-1">
-                            Ý kiến chỉ đạo / Nhận xét phê duyệt (Bắt buộc nếu từ chối):
+                          <label className="block font-semibold text-slate-600 mb-1">
+                            Nhận xét phê duyệt / Ý kiến chỉ đạo (Bắt buộc nếu từ chối):
                           </label>
                           <textarea
                             rows={2}
-                            placeholder="Nhập nhận xét về nội dung, phương pháp hoặc lý do từ chối giáo án..."
+                            placeholder="Nhập nhận xét hoặc chỉ đạo phê duyệt..."
                             value={reviewNotes[p.id] || ""}
                             onChange={(e) =>
                               setReviewNotes((prev) => ({ ...prev, [p.id]: e.target.value }))
                             }
-                            className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                            className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         </div>
 
-                        <div className="flex items-center gap-2 pt-2">
+                        <div className="flex items-center gap-2 pt-1">
                           <button
                             onClick={() => handleReview(p.id, "APPROVED")}
                             disabled={isSubmitting}
-                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
                           >
                             <FileCheck className="w-4 h-4" />
-                            Phê duyệt giáo án
+                            Phê Duyệt Giáo Án (Hoàn tất)
                           </button>
 
                           <button
                             onClick={() => handleReview(p.id, "REJECTED")}
                             disabled={isSubmitting}
-                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
+                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
                           >
                             <FileX className="w-4 h-4" />
-                            Từ chối / Yêu cầu sửa lại
+                            Từ Chối / Yêu Cầu Sửa Lại
                           </button>
                         </div>
+                      </div>
+                    ) : (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 font-semibold">
+                        ✅ Giáo án này đã được hoàn tất phê duyệt ({p.reviewedBy || "Ban Giám Hiệu"}).
                       </div>
                     )}
                   </div>

@@ -3,14 +3,15 @@
 import { useEffect, useState, useCallback } from "react";
 import { getVPLessonPlans, vpReviewLessonPlan } from "./actions";
 import { useToast } from "@/components/ui/Toast";
-import { BookOpen, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
+import { BookOpen, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, MessageSquare, ExternalLink } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  SUBMITTED: { label: "Mới nộp (Chờ duyệt)", color: "bg-amber-100 text-amber-800" },
   HEAD_APPROVED: { label: "Tổ trưởng đã duyệt", color: "bg-cyan-100 text-cyan-800" },
-  VP_APPROVED: { label: "Phó HT đã duyệt", color: "bg-green-100 text-green-800" },
-  VP_REJECTED: { label: "Phó HT từ chối", color: "bg-red-100 text-red-800" },
-  APPROVED: { label: "Đã phê duyệt", color: "bg-emerald-100 text-emerald-800" },
-  REJECTED: { label: "Bị từ chối", color: "bg-red-100 text-red-700" },
+  VP_APPROVED: { label: "Phó HT đã duyệt", color: "bg-emerald-100 text-emerald-800" },
+  VP_REJECTED: { label: "Phó HT từ chối", color: "bg-rose-100 text-rose-800" },
+  APPROVED: { label: "Đã duyệt hoàn tất", color: "bg-emerald-100 text-emerald-800" },
+  REJECTED: { label: "Bị từ chối", color: "bg-rose-100 text-rose-700" },
 };
 
 interface Review {
@@ -32,6 +33,7 @@ interface Plan {
   objectives: string;
   content: string;
   status: string;
+  driveFileUrl: string | null;
   reviews: Review[];
 }
 
@@ -72,7 +74,7 @@ export default function VPLessonPlansPage() {
     }
   };
 
-  const pendingCount = plans.filter(p => p.status === "HEAD_APPROVED").length;
+  const pendingCount = plans.filter(p => p.status === "HEAD_APPROVED" || p.status === "SUBMITTED").length;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -80,12 +82,12 @@ export default function VPLessonPlansPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Phê duyệt Giáo án (Phó Hiệu trưởng)</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Duyệt giáo án đã được Tổ trưởng chuyên môn phê duyệt • {pendingCount > 0 && <span className="text-amber-600 font-semibold">{pendingCount} giáo án chờ duyệt</span>}
+          Duyệt giáo án của các môn học phụ trách • {pendingCount > 0 && <span className="text-amber-600 font-semibold">{pendingCount} giáo án chờ duyệt</span>}
         </p>
       </div>
 
       {/* Flow Indicator */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-800">
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-xs text-indigo-800">
         <strong>Quy trình:</strong> GV nộp → <span className="font-semibold">Tổ trưởng CM duyệt</span> → <span className="font-semibold text-indigo-600 underline">Phó HT duyệt (Bước này)</span> → Hiệu trưởng phê duyệt cuối
       </div>
 
@@ -97,11 +99,11 @@ export default function VPLessonPlansPage() {
         <div className="space-y-3">
           {plans.map(p => {
             const isExpanded = expanded === p.id;
-            const canReview = p.status === "HEAD_APPROVED";
+            const canReview = p.status === "HEAD_APPROVED" || p.status === "SUBMITTED";
             const statusInfo = STATUS_MAP[p.status] || { label: p.status, color: "bg-gray-100 text-gray-800" };
 
             return (
-              <div key={p.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
+              <div key={p.id} className="bg-white rounded-xl border shadow-2xs overflow-hidden">
                 {/* Header */}
                 <button onClick={() => setExpanded(isExpanded ? null : p.id)} className="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-gray-50">
                   <div className="space-y-1">
@@ -118,11 +120,27 @@ export default function VPLessonPlansPage() {
 
                 {/* Expanded details */}
                 {isExpanded && (
-                  <div className="px-5 pb-5 border-t space-y-4">
+                  <div className="px-5 pb-5 border-t space-y-4 pt-3">
+                    {/* Google Drive Link if present */}
+                    {p.driveFileUrl && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                        <span className="font-semibold text-blue-900 text-xs">File giáo án đính kèm Google Drive:</span>
+                        <a
+                          href={p.driveFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Mở File Drive ↗</span>
+                        </a>
+                      </div>
+                    )}
+
                     {/* Content preview */}
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div><span className="text-xs text-gray-500 block mb-1">Mục tiêu:</span><p className="text-gray-700 text-xs whitespace-pre-wrap">{p.objectives || "—"}</p></div>
-                      <div><span className="text-xs text-gray-500 block mb-1">Nội dung:</span><p className="text-gray-700 text-xs whitespace-pre-wrap">{p.content || "—"}</p></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div><span className="text-xs text-gray-500 block mb-1">Mục tiêu:</span><p className="text-gray-700 text-xs whitespace-pre-wrap bg-slate-50 p-2.5 rounded-lg border border-slate-100">{p.objectives || "—"}</p></div>
+                      <div><span className="text-xs text-gray-500 block mb-1">Nội dung:</span><p className="text-gray-700 text-xs whitespace-pre-wrap bg-slate-50 p-2.5 rounded-lg border border-slate-100">{p.content || "—"}</p></div>
                     </div>
 
                     {/* Review history */}
@@ -146,7 +164,7 @@ export default function VPLessonPlansPage() {
                       <div className="pt-3 border-t space-y-3">
                         <textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} rows={2}
                           placeholder="Nhận xét của Phó Hiệu trưởng..."
-                          className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" />
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
                         <div className="flex gap-3">
                           <button onClick={() => handleReview(p.id, true)} disabled={reviewing === p.id}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50">

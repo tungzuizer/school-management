@@ -7,7 +7,7 @@ import { LessonPlanStatus, Role } from "@prisma/client";
 import { recordAuditLog } from "@/lib/audit-logger";
 
 // Get all lesson plans for the admin (Hiệu trưởng) approval portal
-// Hiệu trưởng chỉ thấy giáo án đã được Phó Hiệu trưởng duyệt (VP_APPROVED) + đã duyệt/từ chối
+// Hiệu trưởng có quyền xem tất cả giáo án ở các trạng thái
 export async function getLessonPlansForAdmin() {
   try {
     const session = await getServerSession(authOptions);
@@ -19,6 +19,8 @@ export async function getLessonPlansForAdmin() {
       where: {
         status: {
           in: [
+            LessonPlanStatus.SUBMITTED,
+            LessonPlanStatus.HEAD_APPROVED,
             LessonPlanStatus.VP_APPROVED,
             LessonPlanStatus.APPROVED,
             LessonPlanStatus.REJECTED,
@@ -34,7 +36,7 @@ export async function getLessonPlansForAdmin() {
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     });
 
-    return plans.map(p => ({
+    return plans.map((p) => ({
       id: p.id,
       teacherName: p.teacher?.user?.name || "Giáo viên",
       subjectName: p.subject?.name || "Môn học",
@@ -50,10 +52,11 @@ export async function getLessonPlansForAdmin() {
       assessment: p.assessment || "",
       notes: p.notes || "",
       status: p.status,
+      driveFileUrl: p.driveFileUrl || null,
       reviewNote: p.reviewNote || "",
       reviewedAt: p.reviewedAt,
       reviewedBy: p.reviewedBy,
-      reviews: p.reviews.map(r => ({
+      reviews: p.reviews.map((r) => ({
         id: r.id,
         reviewerName: r.reviewerName,
         reviewerRole: r.reviewerRole,
@@ -68,7 +71,7 @@ export async function getLessonPlansForAdmin() {
   }
 }
 
-// Hiệu trưởng phê duyệt cuối cùng (VP_APPROVED → APPROVED / REJECTED)
+// Hiệu trưởng phê duyệt cuối cùng (Cho phép duyệt từ VP_APPROVED, HEAD_APPROVED hoặc SUBMITTED)
 export async function reviewLessonPlan(data: {
   planId: string;
   status: "APPROVED" | "REJECTED";
@@ -85,8 +88,8 @@ export async function reviewLessonPlan(data: {
     });
     if (!existing) return { success: false, error: "Không tìm thấy giáo án" };
 
-    if (existing.status !== LessonPlanStatus.VP_APPROVED) {
-      return { success: false, error: "Giáo án chưa được Phó Hiệu trưởng duyệt. Không thể phê duyệt." };
+    if (existing.status === LessonPlanStatus.DRAFT) {
+      return { success: false, error: "Giáo án đang ở bản nháp, giáo viên chưa gửi nộp." };
     }
 
     const newStatus = data.status === "APPROVED" ? LessonPlanStatus.APPROVED : LessonPlanStatus.REJECTED;
