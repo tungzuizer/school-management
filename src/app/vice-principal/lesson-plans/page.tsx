@@ -6,12 +6,12 @@ import { useToast } from "@/components/ui/Toast";
 import { BookOpen, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, MessageSquare, ExternalLink } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  SUBMITTED: { label: "Mới nộp (Chờ duyệt)", color: "bg-amber-100 text-amber-800" },
-  HEAD_APPROVED: { label: "Tổ trưởng đã duyệt", color: "bg-cyan-100 text-cyan-800" },
-  VP_APPROVED: { label: "Phó HT đã duyệt", color: "bg-emerald-100 text-emerald-800" },
-  VP_REJECTED: { label: "Phó HT từ chối", color: "bg-rose-100 text-rose-800" },
-  APPROVED: { label: "Đã duyệt hoàn tất", color: "bg-emerald-100 text-emerald-800" },
-  REJECTED: { label: "Bị từ chối", color: "bg-rose-100 text-rose-700" },
+  SUBMITTED: { label: "Mới nộp (Chờ duyệt)", color: "badge-glowing-amber font-extrabold" },
+  HEAD_APPROVED: { label: "Tổ trưởng đã duyệt", color: "bg-cyan-100 text-cyan-800 border border-cyan-300 font-extrabold" },
+  VP_APPROVED: { label: "Phó HT đã duyệt", color: "badge-glowing-sky font-extrabold" },
+  VP_REJECTED: { label: "Phó HT từ chối", color: "badge-glowing-rose font-extrabold" },
+  APPROVED: { label: "Đã duyệt hoàn tất", color: "badge-glowing-emerald font-extrabold" },
+  REJECTED: { label: "Bị từ chối", color: "badge-glowing-rose font-extrabold" },
 };
 
 interface Review {
@@ -106,7 +106,7 @@ export default function VPLessonPlansPage() {
             const statusInfo = STATUS_MAP[p.status] || { label: p.status, color: "bg-gray-100 text-gray-800" };
 
             return (
-              <div key={p.id} className="bg-white rounded-xl sm:rounded-2xl border shadow-2xs overflow-hidden">
+              <div key={p.id} className="bg-white rounded-xl sm:rounded-2xl border shadow-2xs overflow-hidden interactive-card">
                 {/* Header */}
                 <button onClick={() => setExpanded(isExpanded ? null : p.id)} className="w-full text-left p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-gray-50/80 transition-colors">
                   <div className="space-y-1">
