@@ -9,7 +9,6 @@ import {
   X,
   Clock,
   BookOpen,
-  Info,
   ChevronDown,
   ChevronUp,
   Search,
@@ -174,25 +173,25 @@ export default function AdminLessonPlansPage() {
     switch (status) {
       case "APPROVED":
         return (
-          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1 shrink-0">
             <Check className="w-3 h-3" /> Hiệu trưởng đã duyệt
           </span>
         );
       case "VP_APPROVED":
         return (
-          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-sky-100 text-sky-800 flex items-center gap-1">
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-sky-100 text-sky-800 flex items-center gap-1 shrink-0">
             <ShieldCheck className="w-3 h-3" /> Phó HT đã duyệt
           </span>
         );
       case "HEAD_APPROVED":
         return (
-          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-cyan-100 text-cyan-800 flex items-center gap-1">
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-cyan-100 text-cyan-800 flex items-center gap-1 shrink-0">
             <Clock className="w-3 h-3" /> Tổ trưởng đã duyệt
           </span>
         );
       case "SUBMITTED":
         return (
-          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 flex items-center gap-1">
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 flex items-center gap-1 shrink-0">
             <Clock className="w-3 h-3" /> Mới nộp (Chờ duyệt)
           </span>
         );
@@ -200,13 +199,13 @@ export default function AdminLessonPlansPage() {
       case "VP_REJECTED":
       case "HEAD_REJECTED":
         return (
-          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-800 flex items-center gap-1">
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-800 flex items-center gap-1 shrink-0">
             <X className="w-3 h-3" /> Từ chối
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700">
+          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700 shrink-0">
             Bản nháp
           </span>
         );
@@ -221,20 +220,20 @@ export default function AdminLessonPlansPage() {
   ).length;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto px-2 sm:px-4">
       {ToastComponent}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ban Giám Hiệu Phê Duyệt Giáo Án</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Ban Giám Hiệu Phê Duyệt Giáo Án</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
             Phê duyệt chính thức giáo án của toàn bộ giáo viên nhà trường
           </p>
         </div>
         <button
           onClick={fetchPlans}
-          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition duration-150 shadow-2xs"
+          className="self-start sm:self-auto flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition duration-150 shadow-2xs"
           title="Tải lại danh sách"
         >
           <RefreshCw className="w-4 h-4" /> Tải lại
@@ -242,33 +241,33 @@ export default function AdminLessonPlansPage() {
       </div>
 
       {/* Statistics board */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white border rounded-2xl p-4 shadow-2xs">
-          <p className="text-xs text-slate-500 font-semibold">Tổng giáo án nhận được</p>
-          <p className="text-2xl font-extrabold text-slate-900 mt-1">{plans.length}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
+          <p className="text-[11px] sm:text-xs text-slate-500 font-semibold">Tổng giáo án nhận được</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">{plans.length}</p>
         </div>
-        <div className="bg-white border rounded-2xl p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-amber-700">Chờ Hiệu trưởng duyệt</p>
-          <p className="text-2xl font-extrabold text-amber-800 mt-1">{pendingCount}</p>
+        <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
+          <p className="text-[11px] sm:text-xs font-semibold text-amber-700">Chờ Hiệu trưởng duyệt</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-amber-800 mt-1">{pendingCount}</p>
         </div>
-        <div className="bg-white border rounded-2xl p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-emerald-700">Đã phê duyệt hoàn tất</p>
-          <p className="text-2xl font-extrabold text-emerald-800 mt-1">
+        <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
+          <p className="text-[11px] sm:text-xs font-semibold text-emerald-700">Đã phê duyệt hoàn tất</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-emerald-800 mt-1">
             {plans.filter((p) => p.status === "APPROVED").length}
           </p>
         </div>
-        <div className="bg-white border rounded-2xl p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-rose-700">Đã từ chối</p>
-          <p className="text-2xl font-extrabold text-rose-800 mt-1">
+        <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
+          <p className="text-[11px] sm:text-xs font-semibold text-rose-700">Đã từ chối</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-rose-800 mt-1">
             {plans.filter((p) => p.status === "REJECTED").length}
           </p>
         </div>
       </div>
 
       {/* Tabs and Filters Row */}
-      <div className="bg-white border rounded-2xl p-4 space-y-4 shadow-2xs">
-        {/* Status Tabs */}
-        <div className="flex border-b border-slate-100">
+      <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-3 sm:space-y-4 shadow-2xs">
+        {/* Status Tabs with Horizontal Scroll for Mobile */}
+        <div className="flex overflow-x-auto whitespace-nowrap border-b border-slate-100 pb-0.5 no-scrollbar">
           {(["PENDING", "APPROVED", "REJECTED", "ALL"] as const).map((tab) => {
             let label = "";
             let count = 0;
@@ -298,7 +297,7 @@ export default function AdminLessonPlansPage() {
                   setActiveTab(tab);
                   setExpandedPlanId(null);
                 }}
-                className={`pb-2.5 px-4 text-xs font-bold transition-all relative ${
+                className={`pb-2.5 px-3.5 sm:px-4 text-xs font-bold transition-all relative shrink-0 ${
                   activeTab === tab
                     ? "text-indigo-700 font-extrabold"
                     : "text-slate-500 hover:text-slate-800"
@@ -314,7 +313,7 @@ export default function AdminLessonPlansPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
               <Search className="w-4 h-4" />
@@ -361,7 +360,7 @@ export default function AdminLessonPlansPage() {
       </div>
 
       {/* Main List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {loading ? (
           <div className="text-center py-12 bg-white rounded-2xl border">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
@@ -381,14 +380,14 @@ export default function AdminLessonPlansPage() {
             return (
               <div
                 key={p.id}
-                className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden transition-all duration-200 shadow-2xs hover:shadow-md"
+                className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 overflow-hidden transition-all duration-200 shadow-2xs hover:shadow-md"
               >
                 {/* Header card info */}
                 <div
                   onClick={() => setExpandedPlanId(isExpanded ? null : p.id)}
-                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50/80 transition-colors"
+                  className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/80 transition-colors"
                 >
-                  <div className="space-y-1 flex-1 pr-2">
+                  <div className="space-y-1 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[11px] font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md">
                         Tuần {p.weekNumber}
@@ -400,12 +399,12 @@ export default function AdminLessonPlansPage() {
                         <User className="w-3.5 h-3.5 text-slate-400" /> GV: <strong className="text-slate-800">{p.teacherName}</strong>
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-900 text-sm leading-tight mt-1">
+                    <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-tight mt-1">
                       {p.title}
                     </h3>
                     <p className="text-xs text-slate-500 font-medium">Môn học: {p.subjectName}</p>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                     {getStatusBadge(p.status)}
                     {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                   </div>
@@ -413,16 +412,16 @@ export default function AdminLessonPlansPage() {
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50/60 p-4 space-y-4 text-xs text-slate-700">
+                  <div className="border-t border-slate-100 bg-slate-50/60 p-3.5 sm:p-4 space-y-3.5 text-xs text-slate-700">
                     {/* Google Drive Link if present */}
                     {p.driveFileUrl && (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
-                        <span className="font-semibold text-blue-900">File giáo án đính kèm Google Drive:</span>
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                        <span className="font-semibold text-blue-900 text-xs">File giáo án đính kèm Google Drive:</span>
                         <a
                           href={p.driveFileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-colors"
+                          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors shrink-0"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                           <span>Mở Thư Mục Drive ↗</span>
@@ -431,7 +430,7 @@ export default function AdminLessonPlansPage() {
                     )}
 
                     {/* Lesson Plan Information blocks */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <span className="font-bold text-slate-500 block mb-1">Mục tiêu bài dạy (Objectives):</span>
                         <p className="bg-white rounded-xl p-3 border border-slate-200 whitespace-pre-line leading-relaxed min-h-[40px]">
@@ -468,7 +467,7 @@ export default function AdminLessonPlansPage() {
 
                     {/* Review actions if pending */}
                     {canReview ? (
-                      <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 space-y-3">
+                      <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl sm:rounded-2xl p-3.5 sm:p-4 space-y-3">
                         <div className="flex items-center gap-1.5 text-indigo-900 font-bold text-xs">
                           <AlertCircle className="w-4 h-4 text-indigo-600" />
                           <span>Hiệu Trưởng Đánh Giá & Phê Duyệt:</span>
@@ -489,11 +488,11 @@ export default function AdminLessonPlansPage() {
                           />
                         </div>
 
-                        <div className="flex items-center gap-2 pt-1">
+                        <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
                           <button
                             onClick={() => handleReview(p.id, "APPROVED")}
                             disabled={isSubmitting}
-                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
+                            className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50 min-h-[44px]"
                           >
                             <FileCheck className="w-4 h-4" />
                             Phê Duyệt Giáo Án (Hoàn tất)
@@ -502,7 +501,7 @@ export default function AdminLessonPlansPage() {
                           <button
                             onClick={() => handleReview(p.id, "REJECTED")}
                             disabled={isSubmitting}
-                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
+                            className="w-full sm:flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50 min-h-[44px]"
                           >
                             <FileX className="w-4 h-4" />
                             Từ Chối / Yêu Cầu Sửa Lại
