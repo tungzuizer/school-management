@@ -86,7 +86,7 @@ export default function AdminLessonPlansPage() {
 
   useEffect(() => {
     fetchPlans();
-  }, [fetchPlans]);
+  }, []);
 
   // Handle Tab and Search filtering
   useEffect(() => {

@@ -58,7 +58,7 @@ export default function VPLessonPlansPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); }, []);
 
   const handleReview = async (planId: string, approved: boolean) => {
     setReviewing(planId);
