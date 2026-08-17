@@ -19,7 +19,13 @@ export default function LoginPage() {
       session = await getSession();
     }
     const role = session?.user?.role;
-    if (role === "ADMIN") {
+    if (role === "DEPARTMENT_ADMIN") {
+      window.location.href = "/department/dashboard";
+      return;
+    } else if (role === "WARD_ADMIN") {
+      window.location.href = "/ward/dashboard";
+      return;
+    } else if (role === "ADMIN") {
       window.location.href = "/admin/dashboard";
       return;
     } else if (role === "TEACHER") {
@@ -34,7 +40,11 @@ export default function LoginPage() {
     }
 
     const checkEmail = (targetEmail || email).toLowerCase();
-    if (checkEmail.includes("admin")) {
+    if (checkEmail.includes("department") || checkEmail.includes("sogd")) {
+      window.location.href = "/department/dashboard";
+    } else if (checkEmail.includes("ward") || checkEmail.includes("phonggd")) {
+      window.location.href = "/ward/dashboard";
+    } else if (checkEmail.includes("admin")) {
       window.location.href = "/admin/dashboard";
     } else if (checkEmail.includes("vp")) {
       window.location.href = "/vice-principal/dashboard";

@@ -665,8 +665,12 @@ model Notification {
 enum LessonPlanStatus {
   DRAFT
   SUBMITTED
-  APPROVED
-  REJECTED
+  HEAD_APPROVED    // Tổ trưởng chuyên môn đã duyệt
+  HEAD_REJECTED    // Tổ trưởng chuyên môn từ chối
+  VP_APPROVED      // Phó Hiệu trưởng đã duyệt
+  VP_REJECTED      // Phó Hiệu trưởng từ chối
+  APPROVED         // Hiệu trưởng phê duyệt cuối cùng
+  REJECTED         // Hiệu trưởng từ chối
 }
 
 model LessonPlan {
@@ -695,12 +699,30 @@ model LessonPlan {
   teacher   Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   classRoom ClassRoom @relation(fields: [classId], references: [id], onDelete: Cascade)
+  reviews   LessonPlanReview[]
 
   @@index([teacherId])
   @@index([subjectId])
   @@index([classId])
   @@index([weekNumber])
   @@index([status])
+}
+
+// Lịch sử phê duyệt giáo án (mỗi bước duyệt tạo 1 bản ghi)
+model LessonPlanReview {
+  id           String           @id @default(cuid())
+  lessonPlanId String
+  reviewerName String           // Họ tên người duyệt
+  reviewerRole String           // "SUBJECT_HEAD", "VICE_PRINCIPAL", "ADMIN"
+  action       LessonPlanStatus // Trạng thái sau khi duyệt
+  comment      String?          @db.Text // Nhận xét
+  createdAt    DateTime         @default(now())
+
+  // Relations
+  lessonPlan LessonPlan @relation(fields: [lessonPlanId], references: [id], onDelete: Cascade)
+
+  @@index([lessonPlanId])
+  @@index([createdAt])
 }
 
 // ==================== SỔ ĐẦU BÀI ====================

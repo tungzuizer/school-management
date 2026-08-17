@@ -6,12 +6,22 @@ export default withAuth(
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
 
-    const adminRoles = ["ADMIN", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
+    // Khu vực Sở GD&ĐT: chỉ DEPARTMENT_ADMIN
+    if (path.startsWith("/department") && token?.role !== "DEPARTMENT_ADMIN") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
 
-    // Redirect based on role
+    // Khu vực Phòng GD&ĐT: chỉ WARD_ADMIN
+    if (path.startsWith("/ward") && token?.role !== "WARD_ADMIN") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    // Khu vực Admin (Hiệu trưởng trường): ADMIN, DEPARTMENT_ADMIN, WARD_ADMIN
+    const adminRoles = ["ADMIN", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
     if (path.startsWith("/admin") && !adminRoles.includes(token?.role as string)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
+
     if (path.startsWith("/vice-principal") && token?.role !== "VICE_PRINCIPAL") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
@@ -32,5 +42,12 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*", "/vice-principal/:path*", "/teacher/:path*", "/student/:path*"],
+  matcher: [
+    "/department/:path*",
+    "/ward/:path*",
+    "/admin/:path*",
+    "/vice-principal/:path*",
+    "/teacher/:path*",
+    "/student/:path*",
+  ],
 };
