@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getSubjectGroups, createSubjectGroup, deleteSubjectGroup, assignSubjectToGroup, getUnassignedSubjects, getAllTeachersList } from "../drive-config/actions";
 import { useToast } from "@/components/ui/Toast";
-import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2 } from "lucide-react";
+import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2, Check } from "lucide-react";
 
 interface SubjectGroupRow {
   id: string;
@@ -215,40 +215,44 @@ export default function SubjectGroupsPage() {
       )}
 
       {/* Assign Subject */}
-      {unassigned.length > 0 && (
-        <form onSubmit={handleAssign} className="bg-amber-50/80 rounded-xl border border-amber-200 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-amber-900 mb-2">Môn học chưa thuộc tổ nào ({unassigned.length})</h3>
+      <form onSubmit={handleAssign} className="bg-amber-50/80 rounded-xl border border-amber-200 p-4 shadow-sm transition-all min-h-[100px]">
+        <h3 className="text-sm font-semibold text-amber-900 mb-2">Môn học chưa thuộc tổ nào {initialLoading ? "..." : `(${unassigned.length})`}</h3>
+        {(!initialLoading && unassigned.length === 0) ? (
+          <div className="text-xs text-amber-700 mt-3 flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5" /> Tất cả môn học hiện tại đã được gán vào các tổ chuyên môn.
+          </div>
+        ) : (
           <div className="flex gap-3 items-end flex-wrap">
             <select
               value={assignSubjectId}
               onChange={e => setAssignSubjectId(e.target.value)}
-              disabled={submitting}
+              disabled={submitting || initialLoading}
               className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
             >
-              <option value="">— Chọn môn —</option>
+              <option value="">{initialLoading ? "Đang tải dữ liệu..." : "— Chọn môn —"}</option>
               {unassigned.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            <ArrowRight className="w-4 h-4 text-amber-500 self-center" />
+            <ArrowRight className="w-4 h-4 text-amber-500 self-center mb-2" />
             <select
               value={assignGroupId}
               onChange={e => setAssignGroupId(e.target.value)}
-              disabled={submitting}
+              disabled={submitting || initialLoading}
               className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
             >
-              <option value="">— Chọn tổ —</option>
+              <option value="">{initialLoading ? "Đang tải dữ liệu..." : "— Chọn tổ —"}</option>
               {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || initialLoading || !assignSubjectId || !assignGroupId}
               className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5 transition"
             >
-              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {(submitting || initialLoading) && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>Gán vào Tổ</span>
             </button>
           </div>
-        </form>
-      )}
+        )}
+      </form>
 
       {/* Groups List */}
       <div className="space-y-4">
