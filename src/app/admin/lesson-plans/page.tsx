@@ -19,6 +19,7 @@ import {
   RefreshCw,
   ExternalLink,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 
 interface LessonPlanReview {
@@ -57,6 +58,7 @@ export default function AdminLessonPlansPage() {
   const [plans, setPlans] = useState<LessonPlanItem[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<LessonPlanItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { isEasyMode } = useEasyMode();
   const { showToast, ToastComponent } = useToast();
 
@@ -71,8 +73,9 @@ export default function AdminLessonPlansPage() {
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [submittingIds, setSubmittingIds] = useState<Record<string, boolean>>({});
 
-  const fetchPlans = useCallback(async () => {
-    setLoading(true);
+  const fetchPlans = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setIsRefreshing(true);
     try {
       const items = await getLessonPlansForAdmin();
       setPlans(items as any);
@@ -80,12 +83,13 @@ export default function AdminLessonPlansPage() {
       showToast("Lỗi khi tải thông tin giáo án: " + (e.message || ""), "error");
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   }, [showToast]);
 
   useEffect(() => {
     fetchPlans();
-  }, []);
+  }, [fetchPlans]);
 
   // Handle Tab and Search filtering
   useEffect(() => {
@@ -158,7 +162,7 @@ export default function AdminLessonPlansPage() {
           status === "APPROVED" ? "Đã phê duyệt giáo án chính thức" : "Đã từ chối giáo án",
           "success"
         );
-        fetchPlans();
+        fetchPlans(true);
       } else {
         showToast(res.error || "Không thể thực hiện phê duyệt", "error");
       }
@@ -231,13 +235,16 @@ export default function AdminLessonPlansPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Ban Giám Hiệu Phê Duyệt Giáo Án</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            Ban Giám Hiệu Phê Duyệt Giáo Án
+            {isRefreshing && !loading && <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin" />}
+          </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
             Phê duyệt chính thức giáo án của toàn bộ giáo viên nhà trường
           </p>
         </div>
         <button
-          onClick={fetchPlans}
+          onClick={() => fetchPlans(false)}
           className="self-start sm:self-auto flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition duration-150 shadow-2xs"
           title="Tải lại danh sách"
         >
@@ -463,7 +470,7 @@ export default function AdminLessonPlansPage() {
                                 <span className="text-[10px] text-slate-400">{new Date(rev.createdAt).toLocaleString("vi-VN")}</span>
                               </div>
                               <p className="text-slate-600">Hành động: <strong className="text-indigo-700">{rev.action}</strong></p>
-                              {rev.comment && <p className="text-slate-500 italic">&quot;{rev.comment}&quot;</p>}
+                              {rev.comment && <p className="text-slate-500 italic">"{rev.comment}"</p>}
                             </div>
                           ))}
                         </div>
@@ -499,8 +506,8 @@ export default function AdminLessonPlansPage() {
                             disabled={isSubmitting}
                             className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50 min-h-[44px]"
                           >
-                            <FileCheck className="w-4 h-4" />
-                            Phê Duyệt Giáo Án (Hoàn tất)
+                            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCheck className="w-4 h-4" />}
+                            <span>{isSubmitting ? "Đang xử lý..." : "Phê Duyệt Giáo Án (Hoàn tất)"}</span>
                           </button>
 
                           <button
@@ -508,8 +515,8 @@ export default function AdminLessonPlansPage() {
                             disabled={isSubmitting}
                             className="w-full sm:flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50 min-h-[44px]"
                           >
-                            <FileX className="w-4 h-4" />
-                            Từ Chối / Yêu Cầu Sửa Lại
+                            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileX className="w-4 h-4" />}
+                            <span>{isSubmitting ? "Đang xử lý..." : "Từ Chối / Yêu Cầu Sửa Lại"}</span>
                           </button>
                         </div>
                       </div>

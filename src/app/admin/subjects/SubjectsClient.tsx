@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { getSubjects, createSubject, updateSubject, deleteSubject } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { Loader2 } from "lucide-react";
 
 interface TeacherData {
   id: string;
@@ -30,6 +31,7 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialMount, setIsInitialMount] = useState(true);
 
   useEffect(() => {
@@ -42,15 +44,23 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SubjectData | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", gradeLevel: "", headTeacherId: "" });
   const [submitting, setSubmitting] = useState(false);
   const { showToast, ToastComponent } = useToast();
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    const data = await getSubjects(debouncedSearch || undefined);
-    setSubjects(data as SubjectData[]);
-    setLoading(false);
+    setIsRefreshing(true);
+    try {
+      const data = await getSubjects(debouncedSearch || undefined);
+      setSubjects(data as SubjectData[]);
+    } catch (e) {
+      console.error("Failed to load subjects:", e);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
   }, [debouncedSearch]);
 
   useEffect(() => {
@@ -88,7 +98,9 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
   };
 
   const handleDelete = async (id: string) => {
+    setDeletingId(id);
     const result = await deleteSubject(id);
+    setDeletingId(null);
     setDeleteConfirm(null);
     if (result.success) { showToast("Xóa thành công"); loadData(true); }
     else showToast(result.error || "Không thể xóa", "error");
@@ -98,7 +110,10 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
     <div>
       {ToastComponent}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý Môn học</h1>
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          Quản lý Môn học
+          {(loading || isRefreshing) && <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />}
+        </h1>
         <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2">
           <span>+</span> Thêm môn học
         </button>
@@ -122,9 +137,7 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
             </tr>
           </thead>
           <tbody className="divide-y">
-            {loading ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Đang tải...</td></tr>
-            ) : subjects.length === 0 ? (
+            {subjects.length === 0 ? (
               <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Chưa có môn học nào</td></tr>
             ) : (
               subjects.map((s) => (
@@ -179,19 +192,23 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-              {submitting ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm mới"}
+            <button type="button" onClick={() => setModalOpen(false)} disabled={submitting} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5">
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>{submitting ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm mới"}</span>
             </button>
           </div>
         </form>
       </Modal>
 
-      <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Xác nhận xóa" size="sm">
+      <Modal isOpen={!!deleteConfirm} onClose={() => !deletingId && setDeleteConfirm(null)} title="Xác nhận xóa" size="sm">
         <p className="text-gray-600 mb-6">Bạn có chắc muốn xóa môn học này?</p>
         <div className="flex justify-end gap-3">
-          <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
-          <button onClick={() => deleteConfirm && handleDelete(deleteConfirm)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Xóa</button>
+          <button onClick={() => setDeleteConfirm(null)} disabled={!!deletingId} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
+          <button onClick={() => deleteConfirm && handleDelete(deleteConfirm)} disabled={!!deletingId} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1.5">
+            {deletingId && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{deletingId ? "Đang xóa..." : "Xóa"}</span>
+          </button>
         </div>
       </Modal>
     </div>
