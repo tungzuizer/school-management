@@ -47,7 +47,7 @@ export default function SubjectGroupsPage() {
       console.error("Failed to load subject groups data:", err);
     } finally {
       if (!silent) setInitialLoading(false);
-      else setIsRefreshing(false);
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -66,7 +66,6 @@ export default function SubjectGroupsPage() {
         setShowForm(false);
         setNewName("");
         setNewHead("");
-        // Reload silently, do not set submitting=false until it's done
         await loadData(true);
       } else {
         showToast(res.error || "Lỗi khi tạo tổ chuyên môn", "error");
