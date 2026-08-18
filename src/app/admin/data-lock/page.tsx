@@ -40,15 +40,15 @@ export default function DataLockPage() {
   const [newLockType, setNewLockType] = useState("");
   const [newPeriod, setNewPeriod] = useState("2026-2027");
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const data = await getDataLocks();
     setLocks(data as unknown as DataLockRow[]);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    loadData();
+    loadData(true);
   }, [loadData]);
 
   const handleToggle = async (lockType: string, periodLabel: string, lock: boolean) => {
@@ -61,7 +61,7 @@ export default function DataLockPage() {
     setToggling(null);
     if (res.success) {
       showToast(lock ? "Đã khóa sổ thành công" : "Đã mở khóa thành công", "success");
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Có lỗi xảy ra", "error");
     }
@@ -78,7 +78,7 @@ export default function DataLockPage() {
       showToast("Đã tạo và khóa sổ thành công", "success");
       setShowForm(false);
       setNewLockType("");
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Có lỗi xảy ra", "error");
     }
@@ -222,3 +222,4 @@ export default function DataLockPage() {
     </div>
   );
 }
+

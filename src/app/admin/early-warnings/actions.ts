@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+
 
 // Get all early warnings with optional filters
 export async function getWarnings(filters?: {
@@ -52,7 +52,7 @@ export async function resolveWarning(id: string) {
         resolvedAt: new Date(),
       },
     });
-    revalidatePath("/admin/early-warnings");
+    
     return { success: true };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Lỗi không xác định";
@@ -201,7 +201,7 @@ export async function scanAndGenerateWarningsAI() {
       }
     }
 
-    revalidatePath("/admin/early-warnings");
+    
     return { success: true, count: newCreatedCount };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Lỗi không xác định";

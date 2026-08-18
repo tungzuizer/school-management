@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+
 
 export async function getClasses(search?: string, schoolId?: string, gradeLevel?: number) {
   try {
@@ -60,7 +60,7 @@ export async function getTeachersForSelect() {
 export async function createClass(data: { name: string; gradeLevel: number; schoolId: string; campusId?: string; homeroomTeacherId?: string }) {
   try {
     await prisma.classRoom.create({ data });
-    revalidatePath("/admin/classes");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi tạo lớp" };
@@ -70,7 +70,7 @@ export async function createClass(data: { name: string; gradeLevel: number; scho
 export async function updateClass(id: string, data: { name: string; gradeLevel: number; schoolId: string; campusId?: string; homeroomTeacherId?: string }) {
   try {
     await prisma.classRoom.update({ where: { id }, data });
-    revalidatePath("/admin/classes");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi cập nhật" };
@@ -80,7 +80,7 @@ export async function updateClass(id: string, data: { name: string; gradeLevel: 
 export async function deleteClass(id: string) {
   try {
     await prisma.classRoom.delete({ where: { id } });
-    revalidatePath("/admin/classes");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi xóa lớp" };
@@ -182,7 +182,7 @@ export async function createBulkClasses(classesData: BulkClassInput[], defaultSc
       }
     }
 
-    revalidatePath("/admin/classes");
+    
     return {
       success: createdCount > 0,
       count: createdCount,

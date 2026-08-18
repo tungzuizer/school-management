@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+
 import bcrypt from "bcryptjs";
 import { getTenantContext } from "@/lib/tenant";
 import { recordAuditLog } from "@/lib/audit-logger";
@@ -65,7 +65,7 @@ export async function createTeacher(data: {
         },
       },
     });
-    revalidatePath("/admin/teachers");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi tạo giáo viên" };
@@ -90,7 +90,7 @@ export async function updateTeacher(
         data: { specialty: data.specialty, phone: data.phone, degree: data.degree },
       }),
     ]);
-    revalidatePath("/admin/teachers");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi cập nhật" };
@@ -103,7 +103,7 @@ export async function deleteTeacher(teacherId: string) {
     if (!teacher) return { success: false, error: "Không tìm thấy giáo viên" };
 
     await prisma.user.delete({ where: { id: teacher.userId } });
-    revalidatePath("/admin/teachers");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi xóa" };
@@ -201,7 +201,7 @@ export async function createBulkTeachers(teachersData: BulkTeacherInput[]) {
       }
     }
 
-    revalidatePath("/admin/teachers");
+    
     return {
       success: createdCount > 0,
       count: createdCount,

@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+
 
 // Helper function to resolve effective schoolId for Admin
 async function getEffectiveSchoolId() {
@@ -51,7 +51,7 @@ export async function updateSharedDriveUrl(driveUrl: string) {
     where: { id: schoolId },
     data: { sharedDriveUrl: driveUrl || null },
   });
-  revalidatePath("/admin/drive-config");
+  
   return { success: true };
 }
 
@@ -84,7 +84,7 @@ export async function createLessonPlanPeriod(data: {
       deadline: new Date(data.deadline),
     },
   });
-  revalidatePath("/admin/drive-config");
+  
   return { success: true };
 }
 
@@ -93,13 +93,13 @@ export async function togglePeriodActive(periodId: string, isActive: boolean) {
     where: { id: periodId },
     data: { isActive },
   });
-  revalidatePath("/admin/drive-config");
+  
   return { success: true };
 }
 
 export async function deletePeriod(periodId: string) {
   await prisma.lessonPlanPeriod.delete({ where: { id: periodId } });
-  revalidatePath("/admin/drive-config");
+  
   return { success: true };
 }
 
@@ -142,7 +142,7 @@ export async function createSubjectGroup(data: { name: string; headTeacherId?: s
         headTeacherId: data.headTeacherId || null,
       },
     });
-    revalidatePath("/admin/subject-groups");
+    
     return { success: true };
   } catch (err: any) {
     console.error("Error creating subject group:", err);
@@ -154,7 +154,7 @@ export async function deleteSubjectGroup(groupId: string) {
   // Unlink subjects first
   await prisma.subject.updateMany({ where: { subjectGroupId: groupId }, data: { subjectGroupId: null } });
   await prisma.subjectGroup.delete({ where: { id: groupId } });
-  revalidatePath("/admin/subject-groups");
+  
   return { success: true };
 }
 
@@ -163,7 +163,7 @@ export async function assignSubjectToGroup(subjectId: string, groupId: string | 
     where: { id: subjectId },
     data: { subjectGroupId: groupId },
   });
-  revalidatePath("/admin/subject-groups");
+  
   return { success: true };
 }
 

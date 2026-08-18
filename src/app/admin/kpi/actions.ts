@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { KpiCategory, MeasurementDirection, ReportingFrequency, KpiPeriodStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+
 import { calculateKpiScore } from "./utils";
 
 export async function getKpiCatalogs(search?: string, category?: string, isActive?: boolean) {
@@ -81,7 +81,7 @@ export async function createKpiCatalog(data: {
       },
     });
 
-    revalidatePath("/admin/kpi/catalog");
+    
     return { success: true, data: catalog };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi tạo chỉ số KPI" };
@@ -115,7 +115,7 @@ export async function updateKpiCatalog(
       data,
     });
 
-    revalidatePath("/admin/kpi/catalog");
+    
     return { success: true, data: catalog };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi cập nhật KPI" };
@@ -150,7 +150,7 @@ export async function duplicateKpiCatalog(id: string) {
       },
     });
 
-    revalidatePath("/admin/kpi/catalog");
+    
     return { success: true, data: duplicate };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi sao chép KPI" };
@@ -167,7 +167,7 @@ export async function toggleKpiStatus(id: string) {
       data: { isActive: !item.isActive },
     });
 
-    revalidatePath("/admin/kpi/catalog");
+    
     return { success: true, data: updated };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi đổi trạng thái KPI" };
@@ -384,7 +384,7 @@ export async function seedDefaultKpiCatalog() {
       skipDuplicates: true,
     });
 
-    revalidatePath("/admin/kpi/catalog");
+    
     return { success: true, message: "Đã khởi tạo 12 chỉ số KPI mẫu thành công." };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khởi tạo KPI mẫu" };
@@ -456,8 +456,8 @@ export async function createKpiPeriod(title: string, year: number, periodType: R
       });
     }
 
-    revalidatePath("/admin/kpi/entry");
-    revalidatePath("/admin/kpi/approval");
+    
+    
     return { success: true, data: period };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi tạo kỳ đánh giá KPI" };
@@ -549,8 +549,8 @@ export async function saveKpiValues(
       data: { overallScore: Number(overallScoreSum.toFixed(2)) },
     });
 
-    revalidatePath("/admin/kpi/entry");
-    revalidatePath("/admin/kpi/approval");
+    
+    
     return { success: true, message: "Đã lưu kết quả KPI thành công!" };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi lưu dữ liệu KPI" };
@@ -568,7 +568,7 @@ export async function addKpiEvidence(kpiValueId: string, title: string, fileUrl?
       },
     });
 
-    revalidatePath("/admin/kpi/entry");
+    
     return { success: true, data: evidence };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi đính kèm minh chứng" };
@@ -638,8 +638,8 @@ export async function submitKpiPeriod(periodId: string, reviewerName?: string, c
       },
     });
 
-    revalidatePath("/admin/kpi/entry");
-    revalidatePath("/admin/kpi/approval");
+    
+    
     return { success: true, data: updated, message: "Đã gửi dữ liệu KPI lên Phân hiệu/Quản lý kiểm tra." };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi gửi duyệt KPI" };
@@ -664,7 +664,7 @@ export async function checkCampusKpiPeriod(periodId: string, reviewerName?: stri
       },
     });
 
-    revalidatePath("/admin/kpi/approval");
+    
     return { success: true, data: updated, message: "Phân hiệu đã thẩm định dữ liệu thành công." };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi thẩm định Phân hiệu" };
@@ -689,7 +689,7 @@ export async function reviewVpKpiPeriod(periodId: string, reviewerName?: string,
       },
     });
 
-    revalidatePath("/admin/kpi/approval");
+    
     return { success: true, data: updated, message: "Phó Hiệu trưởng đã thẩm định thành công." };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi thẩm định Phó Hiệu trưởng" };
@@ -714,8 +714,8 @@ export async function approvePrincipalKpiPeriod(periodId: string, reviewerName?:
       },
     });
 
-    revalidatePath("/admin/kpi/approval");
-    revalidatePath("/admin/kpi/entry");
+    
+    
     return { success: true, data: updated, message: "Hiệu trưởng đã phê duyệt kỳ KPI. Dữ liệu đã khóa." };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi Hiệu trưởng phê duyệt KPI" };
@@ -752,7 +752,7 @@ export async function requestUnlockKpiPeriod(periodId: string, requestedByName: 
       },
     });
 
-    revalidatePath("/admin/kpi/approval");
+    
     return { success: true, data: unlockLog, message: "Đã gửi yêu cầu mở khóa kỳ KPI lên Hiệu trưởng." };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi yêu cầu mở khóa" };
@@ -792,8 +792,8 @@ export async function approveUnlockKpiPeriod(unlockLogId: string, approvedByName
       },
     });
 
-    revalidatePath("/admin/kpi/approval");
-    revalidatePath("/admin/kpi/entry");
+    
+    
     return { success: true, message: "Đã phê duyệt mở khóa kỳ KPI. Hiện tại có thể chỉnh sửa lại dữ liệu." };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi chấp thuận mở khóa" };

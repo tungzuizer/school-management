@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+
 
 // Get all substitute assignments with optional school point filter
 export async function getAssignments(filterPoint?: string) {
@@ -39,7 +39,7 @@ export async function approveAssignment(id: string) {
       where: { id },
       data: { status: "APPROVED" },
     });
-    revalidatePath("/admin/substitute-dispatch");
+    
     return { success: true };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Loi khong xac dinh";
@@ -95,7 +95,7 @@ export async function createAssignment(input: {
       },
     });
 
-    revalidatePath("/admin/substitute-dispatch");
+    
     return { success: true, data: assignment };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Loi khong xac dinh";
@@ -251,7 +251,7 @@ KHUYEN_NGHI: [phan tich chi tiet]`;
       },
     });
 
-    revalidatePath("/admin/substitute-dispatch");
+    
     return {
       success: true,
       data: {

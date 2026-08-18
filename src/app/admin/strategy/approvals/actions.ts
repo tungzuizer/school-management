@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+
 
 export type WorkflowFilter = {
   status?: string;
@@ -298,7 +298,7 @@ export async function submitForApproval(data: {
       });
     }
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: "Đã trình gửi hồ sơ phê duyệt thành công!", data: workflow };
   } catch (error: any) {
     console.error("submitForApproval error:", error);
@@ -334,7 +334,7 @@ export async function confirmCampusStep(workflowId: string, comment?: string) {
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: "Phân hiệu đã xác nhận hồ sơ thành công!", data: workflow };
   } catch (error: any) {
     console.error("confirmCampusStep error:", error);
@@ -370,7 +370,7 @@ export async function reviewVicePrincipalStep(workflowId: string, comment?: stri
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: "Phó Hiệu trưởng đã thẩm định hồ sơ!", data: workflow };
   } catch (error: any) {
     console.error("reviewVicePrincipalStep error:", error);
@@ -408,7 +408,7 @@ export async function approvePrincipalStep(workflowId: string, comment?: string)
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: "Hiệu trưởng đã phê duyệt & Khóa dữ liệu thành công!", data: workflow };
   } catch (error: any) {
     console.error("approvePrincipalStep error:", error);
@@ -445,7 +445,7 @@ export async function requestEditWorkflow(workflowId: string, reason: string) {
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: "Đã chuyển yêu cầu bổ sung/chỉnh sửa đến người lập!", data: workflow };
   } catch (error: any) {
     console.error("requestEditWorkflow error:", error);
@@ -482,7 +482,7 @@ export async function rejectWorkflow(workflowId: string, reason: string) {
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: "Đã từ chối / trả lại hồ sơ!", data: workflow };
   } catch (error: any) {
     console.error("rejectWorkflow error:", error);
@@ -520,7 +520,7 @@ export async function recallWorkflow(workflowId: string) {
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: "Đã rút lại hồ sơ thành công!", data: updated };
   } catch (error: any) {
     console.error("recallWorkflow error:", error);
@@ -556,7 +556,7 @@ export async function requestUnlockWorkflow(workflowId: string, reason: string) 
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: "Đã trình gửi yêu cầu mở khóa dữ liệu tới Hiệu trưởng!", data: workflow };
   } catch (error: any) {
     console.error("requestUnlockWorkflow error:", error);
@@ -595,7 +595,7 @@ export async function approveUnlockWorkflow(workflowId: string) {
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, message: `Đã mở khóa dữ liệu thành công! Phiên bản mới: v${newVersion}.0`, data: updated };
   } catch (error: any) {
     console.error("approveUnlockWorkflow error:", error);
@@ -625,7 +625,7 @@ export async function addWorkflowComment(workflowId: string, commentContent: str
       },
     });
 
-    revalidatePath("/admin/strategy/approvals");
+    
     return { success: true, data: comment };
   } catch (error: any) {
     console.error("addWorkflowComment error:", error);

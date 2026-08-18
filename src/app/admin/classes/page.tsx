@@ -136,7 +136,7 @@ export default function ClassesPage() {
     if (res.success) {
       showToast(`Đã nhập thành công ${res.count} lớp học!`);
       setBulkResult({ count: res.count, errors: res.errors || [] });
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Nhập hàng loạt thất bại", "error");
       if (res.errors && res.errors.length > 0) {
@@ -145,8 +145,8 @@ export default function ClassesPage() {
     }
   };
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const [classData, schoolData, teacherData] = await Promise.all([
       getClasses(search || undefined, filterSchool || undefined, filterGrade ? parseInt(filterGrade) : undefined),
       getSchoolsForSelect(),
@@ -194,7 +194,7 @@ export default function ClassesPage() {
     if (result.success) {
       showToast(editing ? "Cập nhật thành công" : "Thêm lớp thành công");
       setModalOpen(false);
-      loadData();
+      loadData(true);
     } else {
       showToast(result.error || "Có lỗi xảy ra", "error");
     }
@@ -211,7 +211,7 @@ export default function ClassesPage() {
     const res = await createBulkClasses(validData);
     if (res.success) {
       showToast(`Đã nhập thành công ${res.count} lớp học từ Google Drive!`, "success");
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Nhập từ Google Drive thất bại", "error");
     }

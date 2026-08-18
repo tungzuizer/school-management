@@ -18,8 +18,8 @@ export default function AllSchoolsPage() {
   const [loading, setLoading] = useState(true);
   const [branchFilter, setBranchFilter] = useState("");
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const res = await getAllDepartmentSchools(branchFilter || undefined);
     setSchools(res as unknown as SchoolRow[]);
     setLoading(false);
@@ -86,3 +86,4 @@ export default function AllSchoolsPage() {
     </div>
   );
 }
+

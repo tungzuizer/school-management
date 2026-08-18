@@ -51,8 +51,8 @@ export default function VPLessonPlansPage() {
   const [reviewing, setReviewing] = useState<string | null>(null);
   const { showToast, ToastComponent } = useToast();
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const res = await getVPLessonPlans();
     setPlans(res as unknown as Plan[]);
     setLoading(false);
@@ -68,7 +68,7 @@ export default function VPLessonPlansPage() {
       showToast(approved ? "Đã duyệt giáo án" : "Đã từ chối giáo án", "success");
       setReviewNote("");
       setExpanded(null);
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Có lỗi xảy ra", "error");
     }
@@ -193,3 +193,4 @@ export default function VPLessonPlansPage() {
     </div>
   );
 }
+

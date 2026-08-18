@@ -78,8 +78,8 @@ export default function StudentsPage() {
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ count: number; errors: string[] } | null>(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const [studentsData, classesData] = await Promise.all([
       getStudents(search || undefined, filterClass || undefined),
       getClassesForSelect(),
@@ -90,7 +90,7 @@ export default function StudentsPage() {
   }, [search, filterClass]);
 
   useEffect(() => {
-    loadData();
+    loadData(true);
   }, [loadData]);
 
   const openCreate = () => {
@@ -173,7 +173,7 @@ export default function StudentsPage() {
     if (result.success) {
       showToast(editing ? "Cập nhật thành công" : "Thêm học sinh thành công");
       setModalOpen(false);
-      loadData();
+      loadData(true);
     } else {
       showToast(result.error || "Có lỗi xảy ra", "error");
     }
@@ -184,7 +184,7 @@ export default function StudentsPage() {
     setDeleteConfirm(null);
     if (result.success) {
       showToast("Xóa học sinh thành công");
-      loadData();
+      loadData(true);
     } else showToast(result.error || "Không thể xóa", "error");
   };
 
@@ -320,7 +320,7 @@ export default function StudentsPage() {
     if (res.success) {
       showToast(`Đã nhập thành công ${res.count} học sinh!`);
       setBulkResult({ count: res.count, errors: res.errors || [] });
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Nhập thất bại", "error");
       if (res.errors && res.errors.length > 0) {
@@ -344,7 +344,7 @@ export default function StudentsPage() {
     const res = await createBulkStudents(validData);
     if (res.success) {
       showToast(`Đã nhập thành công ${res.count} học sinh từ Google Drive!`, "success");
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Nhập từ Google Drive thất bại", "error");
     }
@@ -873,3 +873,4 @@ export default function StudentsPage() {
     </div>
   );
 }
+

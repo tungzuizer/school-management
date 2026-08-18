@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+
 import bcrypt from "bcryptjs";
 import { getTenantContext } from "@/lib/tenant";
 import { recordAuditLog } from "@/lib/audit-logger";
@@ -94,7 +94,7 @@ export async function createStudent(data: {
         },
       },
     });
-    revalidatePath("/admin/students");
+    
 
     // Audit Log
     try {
@@ -159,7 +159,7 @@ export async function updateStudent(
         },
       }),
     ]);
-    revalidatePath("/admin/students");
+    
 
     try {
       const ctx = await getTenantContext();
@@ -186,7 +186,7 @@ export async function deleteStudent(studentId: string) {
     if (!student) return { success: false, error: "Không tìm thấy học sinh" };
 
     await prisma.user.delete({ where: { id: student.userId } });
-    revalidatePath("/admin/students");
+    
 
     try {
       const ctx = await getTenantContext();
@@ -300,7 +300,7 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
       }
     }
 
-    revalidatePath("/admin/students");
+    
     return {
       success: createdCount > 0,
       count: createdCount,

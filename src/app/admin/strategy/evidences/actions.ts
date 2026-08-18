@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+
 
 export type EvidenceFileFilter = {
   relatedModule?: string;
@@ -368,7 +368,7 @@ export async function uploadEvidenceFile(data: {
       },
     });
 
-    revalidatePath("/admin/strategy/evidences");
+    
     return { success: true, message: "Tải lên tệp minh chứng thành công!", data: newFile };
   } catch (error: any) {
     console.error("uploadEvidenceFile error:", error);
@@ -421,7 +421,7 @@ export async function replaceEvidenceFile(
       },
     });
 
-    revalidatePath("/admin/strategy/evidences");
+    
     return { success: true, message: `Đã cập nhật phiên bản mới v${newVersion}.0 thành công!`, data: updated };
   } catch (error: any) {
     console.error("replaceEvidenceFile error:", error);
@@ -453,7 +453,7 @@ export async function softDeleteEvidenceFile(fileId: string) {
       },
     });
 
-    revalidatePath("/admin/strategy/evidences");
+    
     return { success: true, message: "Đã chuyển tệp vào thùng rác (xóa mềm).", data: updated };
   } catch (error: any) {
     console.error("softDeleteEvidenceFile error:", error);
@@ -485,7 +485,7 @@ export async function restoreEvidenceFile(fileId: string) {
       },
     });
 
-    revalidatePath("/admin/strategy/evidences");
+    
     return { success: true, message: "Đã khôi phục tệp thành công!", data: updated };
   } catch (error: any) {
     console.error("restoreEvidenceFile error:", error);

@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+
 
 export async function getSubjects(search?: string) {
   const where: any = {};
@@ -46,7 +46,7 @@ export async function createSubject(data: { name: string; gradeLevel?: number; h
         headTeacherId: data.headTeacherId || null,
       }
     });
-    revalidatePath("/admin/subjects");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi tạo môn học" };
@@ -63,7 +63,7 @@ export async function updateSubject(id: string, data: { name: string; gradeLevel
         headTeacherId: data.headTeacherId || null,
       }
     });
-    revalidatePath("/admin/subjects");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi cập nhật" };
@@ -73,7 +73,7 @@ export async function updateSubject(id: string, data: { name: string; gradeLevel
 export async function deleteSubject(id: string) {
   try {
     await prisma.subject.delete({ where: { id } });
-    revalidatePath("/admin/subjects");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Không thể xóa (có thể đang được sử dụng)" };

@@ -59,8 +59,8 @@ export default function AuditLogPage() {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const filters: any = {};
     if (filterAction) filters.action = filterAction;
     if (filterEntity) filters.entityName = filterEntity;
@@ -75,7 +75,7 @@ export default function AuditLogPage() {
   }, [page, filterAction, filterEntity, filterUser, filterDateFrom, filterDateTo]);
 
   useEffect(() => {
-    loadData();
+    loadData(true);
   }, [loadData]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -89,7 +89,7 @@ export default function AuditLogPage() {
 
   const handleSearch = () => {
     setPage(1);
-    loadData();
+    loadData(true);
   };
 
   return (
@@ -198,3 +198,4 @@ export default function AuditLogPage() {
     </div>
   );
 }
+
