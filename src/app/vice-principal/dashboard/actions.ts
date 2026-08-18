@@ -15,31 +15,31 @@ export async function getVPDashboardStats(campusId: string) {
 
     const campusFilter = { classRoom: { campusId: effectiveCampusId } };
 
-    const [totalStudents, totalClasses] = await Promise.all([
+    const [totalStudents, totalClasses, totalTeachers, totalSchoolPoints, classRooms] = await Promise.all([
       prisma.student.count({
         where: { status: StudentStatus.STUDYING, ...campusFilter },
       }),
       prisma.classRoom.count({ where: { campusId: effectiveCampusId } }),
+      prisma.teacher.count({
+        where: {
+          OR: [
+            { homeroomClasses: { some: { campusId: effectiveCampusId } } },
+            { teachingAssignments: { some: { classRoom: { campusId: effectiveCampusId } } } },
+          ],
+        },
+      }),
+      prisma.schoolPoint.count({
+        where: { campusId: effectiveCampusId },
+      }),
+      prisma.classRoom.findMany({
+        where: { campusId: effectiveCampusId },
+        select: { id: true },
+      }),
     ]);
-
-    const totalTeachers = await prisma.teacher.count({
-      where: {
-        OR: [
-          { homeroomClasses: { some: { campusId: effectiveCampusId } } },
-          { teachingAssignments: { some: { classRoom: { campusId: effectiveCampusId } } } },
-        ],
-      },
-    });
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const classIds = (
-      await prisma.classRoom.findMany({
-        where: { campusId: effectiveCampusId },
-        select: { id: true },
-      })
-    ).map((c) => c.id);
+    const classIds = classRooms.map((c) => c.id);
 
     const [totalAttendance, presentAttendance] = await Promise.all([
       prisma.attendance.count({
@@ -58,10 +58,6 @@ export async function getVPDashboardStats(campusId: string) {
       totalAttendance > 0
         ? Math.round((presentAttendance / totalAttendance) * 100 * 10) / 10
         : 0;
-
-    const totalSchoolPoints = await prisma.schoolPoint.count({
-      where: { campusId: effectiveCampusId },
-    });
 
     return {
       totalStudents: totalStudents || 0,
@@ -97,6 +93,18 @@ export async function getVPAttendanceByWeek(campusId: string) {
       })
     ).map((c) => c.id);
 
+    const eightWeeksAgo = new Date();
+    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+    eightWeeksAgo.setHours(0, 0, 0, 0);
+
+    const records = await prisma.attendance.findMany({
+      where: {
+        date: { gte: eightWeeksAgo },
+        classId: { in: classIds },
+      },
+      select: { date: true, status: true },
+    });
+
     const weeks: {
       week: string;
       present: number;
@@ -111,32 +119,29 @@ export async function getVPAttendanceByWeek(campusId: string) {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      const baseWhere = {
-        date: { gte: weekStart, lt: weekEnd },
-        classId: { in: classIds },
-      };
+      let present = 0;
+      let absent = 0;
+      let late = 0;
 
-      const [present, absentExcused, absentUnexcused, late] = await Promise.all([
-        prisma.attendance.count({
-          where: { ...baseWhere, status: AttendanceStatus.PRESENT },
-        }),
-        prisma.attendance.count({
-          where: { ...baseWhere, status: AttendanceStatus.ABSENT_EXCUSED },
-        }),
-        prisma.attendance.count({
-          where: { ...baseWhere, status: AttendanceStatus.ABSENT_UNEXCUSED },
-        }),
-        prisma.attendance.count({
-          where: { ...baseWhere, status: AttendanceStatus.LATE },
-        }),
-      ]);
+      records.forEach((r) => {
+        const d = new Date(r.date);
+        if (d >= weekStart && d < weekEnd) {
+          if (r.status === AttendanceStatus.PRESENT) present++;
+          else if (
+            r.status === AttendanceStatus.ABSENT_EXCUSED ||
+            r.status === AttendanceStatus.ABSENT_UNEXCUSED
+          )
+            absent++;
+          else if (r.status === AttendanceStatus.LATE) late++;
+        }
+      });
 
       const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
       weeks.push({
         week: weekLabel,
-        present: present || 0,
-        absent: absentExcused + absentUnexcused || 0,
-        late: late || 0,
+        present,
+        absent,
+        late,
       });
     }
 
@@ -157,10 +162,13 @@ export async function getVPGradesByClass(campusId: string) {
 
     const classes = await prisma.classRoom.findMany({
       where: { campusId: effectiveCampusId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        gradeLevel: true,
         students: {
           where: { status: StudentStatus.STUDYING },
-          include: {
+          select: {
             grades: {
               select: { score: true },
             },
@@ -206,49 +214,60 @@ export async function getVPClassAttendanceRanking(campusId: string) {
       if (firstCampus) effectiveCampusId = firstCampus.id;
     }
 
-    const classes = await prisma.classRoom.findMany({
-      where: { campusId: effectiveCampusId },
-      include: {
-        _count: {
-          select: { students: true },
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [classes, attendanceRecords] = await Promise.all([
+      prisma.classRoom.findMany({
+        where: { campusId: effectiveCampusId },
+        select: {
+          id: true,
+          name: true,
+          gradeLevel: true,
+          _count: {
+            select: { students: true },
+          },
         },
-      },
-      orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
-    });
+        orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+      }),
+      prisma.attendance.findMany({
+        where: {
+          date: { gte: sevenDaysAgo },
+          classRoom: { campusId: effectiveCampusId },
+        },
+        select: { classId: true, status: true },
+      }),
+    ]);
 
     if (!classes || classes.length === 0) {
       return [];
     }
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const attendanceMap = new Map<string, { total: number; present: number }>();
+    attendanceRecords.forEach((rec) => {
+      if (!rec.classId) return;
+      const current = attendanceMap.get(rec.classId) || { total: 0, present: 0 };
+      current.total++;
+      if (rec.status === AttendanceStatus.PRESENT) {
+        current.present++;
+      }
+      attendanceMap.set(rec.classId, current);
+    });
 
-    const results = await Promise.all(
-      classes.map(async (cls) => {
-        const [total, present] = await Promise.all([
-          prisma.attendance.count({
-            where: { classId: cls.id, date: { gte: sevenDaysAgo } },
-          }),
-          prisma.attendance.count({
-            where: {
-              classId: cls.id,
-              date: { gte: sevenDaysAgo },
-              status: AttendanceStatus.PRESENT,
-            },
-          }),
-        ]);
+    const results = classes.map((cls) => {
+      const stats = attendanceMap.get(cls.id) || { total: 0, present: 0 };
+      const rate =
+        stats.total > 0
+          ? Math.round((stats.present / stats.total) * 100 * 10) / 10
+          : 100;
 
-        const rate =
-          total > 0 ? Math.round((present / total) * 100 * 10) / 10 : 0;
-
-        return {
-          className: cls.name,
-          gradeLevel: cls.gradeLevel,
-          studentCount: cls._count.students || 0,
-          attendanceRate: rate,
-        };
-      })
-    );
+      return {
+        className: cls.name,
+        gradeLevel: cls.gradeLevel,
+        studentCount: cls._count.students || 0,
+        attendanceRate: rate,
+      };
+    });
 
     return results.sort((a, b) => b.attendanceRate - a.attendanceRate);
   } catch (err) {
@@ -265,22 +284,19 @@ export async function getVPRecentIncidents(campusId: string, limit = 10) {
       if (firstCampus) effectiveCampusId = firstCampus.id;
     }
 
-    const classIds = (
-      await prisma.classRoom.findMany({
-        where: { campusId: effectiveCampusId },
-        select: { id: true },
-      })
-    ).map((c) => c.id);
-
     const incidents = await prisma.incident.findMany({
       take: limit,
       orderBy: { date: "desc" },
       where: {
-        student: { classId: { in: classIds } },
+        student: { classRoom: { campusId: effectiveCampusId } },
       },
-      include: {
+      select: {
+        id: true,
+        date: true,
+        type: true,
+        description: true,
         student: {
-          include: {
+          select: {
             user: { select: { name: true } },
             classRoom: { select: { name: true } },
           },
@@ -292,8 +308,8 @@ export async function getVPRecentIncidents(campusId: string, limit = 10) {
       id: inc.id,
       date: inc.date.toISOString(),
       type: inc.type,
-      studentName: inc.student.user.name,
-      className: inc.student.classRoom?.name || "—",
+      studentName: inc.student?.user?.name || "Học sinh",
+      className: inc.student?.classRoom?.name || "—",
       description: inc.description,
     }));
   } catch (err) {
@@ -315,16 +331,9 @@ export async function getVPTodaySummary(campusId: string) {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    const classIds = (
-      await prisma.classRoom.findMany({
-        where: { campusId: effectiveCampusId },
-        select: { id: true },
-      })
-    ).map((c) => c.id);
-
     const baseWhere = {
       date: { gte: todayStart, lte: todayEnd },
-      classId: { in: classIds },
+      classRoom: { campusId: effectiveCampusId },
     };
 
     const [absentToday, lateToday, incidentsToday, totalClasses, reportsSubmitted] =
@@ -346,7 +355,7 @@ export async function getVPTodaySummary(campusId: string) {
         prisma.incident.count({
           where: {
             date: { gte: todayStart, lte: todayEnd },
-            student: { classId: { in: classIds } },
+            student: { classRoom: { campusId: effectiveCampusId } },
           },
         }),
         prisma.classRoom.count({ where: { campusId: effectiveCampusId } }),
@@ -383,7 +392,10 @@ export async function getVPCampusInfo(campusId: string) {
     let effectiveCampusId = campusId;
     if (!effectiveCampusId || effectiveCampusId.startsWith("demo")) {
       const firstCampus = await prisma.campus.findFirst({
-        include: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
           school: { select: { name: true } },
           schoolPoints: {
             select: { id: true, name: true, address: true, distanceKm: true, managerName: true },
@@ -396,7 +408,10 @@ export async function getVPCampusInfo(campusId: string) {
 
     const campus = await prisma.campus.findUnique({
       where: { id: effectiveCampusId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        address: true,
         school: { select: { name: true } },
         schoolPoints: {
           select: { id: true, name: true, address: true, distanceKm: true, managerName: true },

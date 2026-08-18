@@ -40,19 +40,23 @@ export async function getTodayAttendance(classId: string) {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const totalStudents = await prisma.student.count({
-    where: { classId, status: "STUDYING" },
-  });
-
-  const records = await prisma.attendance.findMany({
-    where: {
-      classId,
-      date: { gte: today, lt: tomorrow },
-    },
-    include: {
-      student: { include: { user: { select: { name: true } } } },
-    },
-  });
+  const [totalStudents, records] = await Promise.all([
+    prisma.student.count({
+      where: { classId, status: "STUDYING" },
+    }),
+    prisma.attendance.findMany({
+      where: {
+        classId,
+        date: { gte: today, lt: tomorrow },
+      },
+      select: {
+        studentId: true,
+        status: true,
+        note: true,
+        student: { select: { user: { select: { name: true } } } },
+      },
+    }),
+  ]);
 
   // Deduplicate by student (take worst status if multiple periods)
   const studentMap = new Map<string, { name: string; status: string; note: string | null }>();
@@ -165,9 +169,10 @@ export async function getAtRiskAcademic(classId: string) {
   // Students with average FINAL grade < 5.0 across subjects
   const students = await prisma.student.findMany({
     where: { classId, status: "STUDYING" },
-    include: {
+    select: {
+      id: true,
       user: { select: { name: true } },
-      grades: { where: { type: "FINAL" } },
+      grades: { where: { type: "FINAL" }, select: { score: true } },
     },
   });
 
@@ -202,8 +207,11 @@ export async function getAtRiskViolations(classId: string) {
       type: "VIOLATION",
       date: { gte: thirtyDaysAgo },
     },
-    include: {
-      student: { include: { user: { select: { name: true } } } },
+    select: {
+      studentId: true,
+      date: true,
+      description: true,
+      student: { select: { user: { select: { name: true } } } },
     },
   });
 
