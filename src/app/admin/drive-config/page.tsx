@@ -16,7 +16,7 @@ export default function DriveConfigPage() {
   const [driveUrl, setDriveUrl] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [periods, setPeriods] = useState<Period[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast, ToastComponent } = useToast();
 
@@ -26,12 +26,12 @@ export default function DriveConfigPage() {
   const [newStart, setNewStart] = useState("");
   const [newDeadline, setNewDeadline] = useState("");
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setInitialLoading(true);
     const [config, ps] = await Promise.all([getSchoolDriveConfig(), getLessonPlanPeriods()]);
     if (config) { setDriveUrl(config.sharedDriveUrl || ""); setSchoolName(config.name); }
     setPeriods(ps as unknown as Period[]);
-    setLoading(false);
+    setInitialLoading(false);
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -48,13 +48,13 @@ export default function DriveConfigPage() {
       showToast("Vui lòng điền đầy đủ thông tin", "error"); return;
     }
     const res = await createLessonPlanPeriod({ label: newLabel, startDate: newStart, deadline: newDeadline });
-    if (res.success) { showToast("Đã tạo kỳ nộp", "success"); setShowForm(false); setNewLabel(""); loadData(); }
+    if (res.success) { showToast("Đã tạo kỳ nộp", "success"); setShowForm(false); setNewLabel(""); loadData(true); }
     else showToast(res.error || "Lỗi", "error");
   };
 
   const fmt = (d: string) => new Date(d).toLocaleDateString("vi-VN");
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Đang tải...</div>;
+  if (initialLoading) return <div className="p-8 text-center text-gray-500">Đang tải...</div>;
 
   return (
     <div className="space-y-6 max-w-4xl">
