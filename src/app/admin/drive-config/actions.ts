@@ -123,27 +123,30 @@ export async function createSubjectGroup(data: { name: string; headTeacherId?: s
     const schoolId = await getEffectiveSchoolId();
     if (!schoolId) return { success: false, error: "Không tìm thấy trường học tương ứng để tạo tổ" };
 
-    if (!data.name.trim()) return { success: false, error: "Tên tổ không được để trống" };
+    const trimmedName = data.name.trim();
+    if (!trimmedName) return { success: false, error: "Tên tổ không được để trống" };
 
-    const existing = await prisma.subjectGroup.findFirst({
-      where: {
-        schoolId,
-        name: { equals: data.name.trim(), mode: "insensitive" },
-      },
-    });
-    if (existing) {
-      return { success: false, error: `Tổ chuyên môn "${data.name.trim()}" đã tồn tại.` };
-    }
+    return await prisma.$transaction(async (tx) => {
+      const existing = await tx.subjectGroup.findFirst({
+        where: {
+          schoolId,
+          name: { equals: trimmedName, mode: "insensitive" },
+        },
+      });
+      if (existing) {
+        return { success: false, error: `Tổ chuyên môn "${trimmedName}" đã tồn tại.` };
+      }
 
-    await prisma.subjectGroup.create({
-      data: {
-        schoolId,
-        name: data.name.trim(),
-        headTeacherId: data.headTeacherId || null,
-      },
+      await tx.subjectGroup.create({
+        data: {
+          schoolId,
+          name: trimmedName,
+          headTeacherId: data.headTeacherId || null,
+        },
+      });
+      
+      return { success: true };
     });
-    
-    return { success: true };
   } catch (err: any) {
     console.error("Error creating subject group:", err);
     return { success: false, error: err.message || "Không thể tạo tổ chuyên môn" };
