@@ -116,6 +116,22 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("123456", 10);
 
+  // ==================== 0. EDUCATION DEPARTMENT & DISTRICT WARD ====================
+  const dept = await prisma.educationDepartment.create({
+    data: {
+      name: "Sở GD&ĐT Hà Nội",
+      code: "HN_DOET",
+    },
+  });
+
+  const ward = await prisma.districtWard.create({
+    data: {
+      departmentId: dept.id,
+      name: "Phòng GD&ĐT Thạch Thất",
+      code: "THACH_THAT",
+    },
+  });
+
   // ==================== 1. SYSTEM BASE USERS ====================
   const adminUser = await prisma.user.create({
     data: {
@@ -166,6 +182,8 @@ async function main() {
     {
       code: "TX",
       name: "Trường THCS Tân Xã",
+      districtWardId: ward.id,
+      branchType: "WARD" as const,
       address: "Xã Tân Xã, Huyện Thạch Thất, Hà Nội",
       phone: "024-3383-1111",
       email: "thcs.tanxa@hanoi.edu.vn",
@@ -174,6 +192,8 @@ async function main() {
     {
       code: "HB",
       name: "Trường THCS Hạ Bằng",
+      districtWardId: ward.id,
+      branchType: "WARD" as const,
       address: "Xã Hạ Bằng, Huyện Thạch Thất, Hà Nội",
       phone: "024-3383-2222",
       email: "thcs.habang@hanoi.edu.vn",
@@ -182,6 +202,8 @@ async function main() {
     {
       code: "FPT",
       name: "Trường THCS FPT",
+      districtWardId: ward.id,
+      branchType: "WARD" as const,
       address: "Khu Khu CN Hi-Tech FPT, Huyện Thạch Thất, Hà Nội",
       phone: "024-3383-3333",
       email: "thcs.fpt@fpt.edu.vn",
