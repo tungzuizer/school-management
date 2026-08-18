@@ -56,11 +56,25 @@ export default function SubjectGroupsPage() {
   const handleCreate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (submitting) return;
-    if (!newName.trim()) { showToast("Tên tổ không được trống", "error"); return; }
+    
+    const trimmedName = newName.trim();
+    if (!trimmedName) { 
+      showToast("Tên tổ không được trống", "error"); 
+      return; 
+    }
+
+    // Kiểm tra trùng tên tổ chuyên môn ở phía client
+    const isDuplicate = groups.some(
+      (g) => g.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      showToast(`Tổ chuyên môn "${trimmedName}" đã tồn tại. Vui lòng nhập tên khác!`, "error");
+      return;
+    }
     
     setSubmitting(true);
     try {
-      const res = await createSubjectGroup({ name: newName, headTeacherId: newHead || undefined });
+      const res = await createSubjectGroup({ name: trimmedName, headTeacherId: newHead || undefined });
       if (res.success) {
         showToast("Đã tạo tổ chuyên môn thành công", "success");
         setShowForm(false);
@@ -189,8 +203,8 @@ export default function SubjectGroupsPage() {
             </div>
             <button
               type="submit"
-              disabled={submitting}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 transition"
+              disabled={submitting || !newName.trim()}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 transition cursor-pointer disabled:cursor-not-allowed"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>{submitting ? "Đang xử lý..." : "Tạo Tổ"}</span>
