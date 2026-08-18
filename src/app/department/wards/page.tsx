@@ -17,8 +17,8 @@ export default function DepartmentWardsPage() {
   const [wards, setWards] = useState<WardRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const res = await getDepartmentWards();
     setWards(res as unknown as WardRow[]);
     setLoading(false);
@@ -68,3 +68,4 @@ export default function DepartmentWardsPage() {
     </div>
   );
 }
+

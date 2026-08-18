@@ -46,8 +46,8 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
   const [submitting, setSubmitting] = useState(false);
   const { showToast, ToastComponent } = useToast();
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const data = await getSubjects(debouncedSearch || undefined);
     setSubjects(data as SubjectData[]);
     setLoading(false);
@@ -83,14 +83,14 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
     };
     const result = editing ? await updateSubject(editing.id, payload) : await createSubject(payload);
     setSubmitting(false);
-    if (result.success) { showToast(editing ? "Cập nhật thành công" : "Thêm môn học thành công"); setModalOpen(false); loadData(); }
+    if (result.success) { showToast(editing ? "Cập nhật thành công" : "Thêm môn học thành công"); setModalOpen(false); loadData(true); }
     else showToast(result.error || "Có lỗi xảy ra", "error");
   };
 
   const handleDelete = async (id: string) => {
     const result = await deleteSubject(id);
     setDeleteConfirm(null);
-    if (result.success) { showToast("Xóa thành công"); loadData(); }
+    if (result.success) { showToast("Xóa thành công"); loadData(true); }
     else showToast(result.error || "Không thể xóa", "error");
   };
 

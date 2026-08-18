@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { QualityCategory, QualityObjectiveStatus, MeasurementDirection, ReportingFrequency } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+
 
 export interface QualityObjectiveInput {
   code: string;
@@ -186,7 +186,7 @@ export async function createQualityObjective(data: QualityObjectiveInput) {
       });
     }
 
-    revalidatePath("/admin/strategy/quality-goals");
+    
     return { success: true, data: newObj };
   } catch (error: any) {
     console.error("Error creating quality objective:", error);
@@ -264,7 +264,7 @@ export async function updateQualityObjective(id: string, data: Partial<QualityOb
       });
     }
 
-    revalidatePath("/admin/strategy/quality-goals");
+    
     return { success: true, data: updated };
   } catch (error: any) {
     console.error("Error updating quality objective:", error);
@@ -277,7 +277,7 @@ export async function deleteQualityObjective(id: string) {
     await prisma.qualityObjective.delete({
       where: { id },
     });
-    revalidatePath("/admin/strategy/quality-goals");
+    
     return { success: true };
   } catch (error: any) {
     console.error("Error deleting quality objective:", error);
@@ -299,7 +299,7 @@ export async function addObjectiveEvidence(
         uploadedBy: evidenceData.uploadedBy || "Quản trị viên",
       },
     });
-    revalidatePath("/admin/strategy/quality-goals");
+    
     return { success: true, data: evidence };
   } catch (error: any) {
     console.error("Error adding objective evidence:", error);
@@ -385,7 +385,7 @@ export async function importQualityObjectivesFromExcel(items: QualityObjectiveIn
       }
     }
 
-    revalidatePath("/admin/strategy/quality-goals");
+    
     return { success: true, createdCount, updatedCount };
   } catch (error: any) {
     console.error("Error importing quality objectives:", error);

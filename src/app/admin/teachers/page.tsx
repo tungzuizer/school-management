@@ -122,7 +122,7 @@ export default function TeachersPage() {
     if (res.success) {
       showToast(`Đã nhập thành công ${res.count} giáo viên!`);
       setBulkResult({ count: res.count, errors: res.errors || [] });
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Nhập hàng loạt thất bại", "error");
       if (res.errors && res.errors.length > 0) {
@@ -131,8 +131,8 @@ export default function TeachersPage() {
     }
   };
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const data = await getTeachers(search || undefined);
     setTeachers(data as TeacherData[]);
     setLoading(false);
@@ -188,7 +188,7 @@ export default function TeachersPage() {
     if (result.success) {
       showToast(editing ? "Cập nhật thành công" : "Thêm giáo viên thành công");
       setModalOpen(false);
-      loadData();
+      loadData(true);
     } else {
       showToast(result.error || "Có lỗi xảy ra", "error");
     }
@@ -197,7 +197,7 @@ export default function TeachersPage() {
   const handleDelete = async (id: string) => {
     const result = await deleteTeacher(id);
     setDeleteConfirm(null);
-    if (result.success) { showToast("Xóa giáo viên thành công"); loadData(); }
+    if (result.success) { showToast("Xóa giáo viên thành công"); loadData(true); }
     else showToast(result.error || "Không thể xóa", "error");
   };
 
@@ -205,7 +205,7 @@ export default function TeachersPage() {
     const res = await createBulkTeachers(validData);
     if (res.success) {
       showToast(`Đã nhập thành công ${res.count} giáo viên từ Google Drive!`, "success");
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Nhập từ Google Drive thất bại", "error");
     }
@@ -492,3 +492,4 @@ export default function TeachersPage() {
     </div>
   );
 }
+

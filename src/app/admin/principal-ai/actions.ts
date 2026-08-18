@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+
 
 // Ask Principal AI for decision support
 export async function askPrincipalAI(query: string) {
@@ -203,7 +203,7 @@ export async function saveDecision(input: {
         decisionTaken: input.decisionTaken || null,
       },
     });
-    revalidatePath("/admin/principal-ai");
+    
     return {
       success: true,
       data: {

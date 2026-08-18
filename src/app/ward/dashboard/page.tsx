@@ -18,8 +18,8 @@ export default function WardDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const res = await getWardDashboard();
     setData(res as DashboardData | null);
     setLoading(false);
@@ -116,3 +116,4 @@ export default function WardDashboardPage() {
     </div>
   );
 }
+

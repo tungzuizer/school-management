@@ -67,8 +67,8 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
   const [lpReviewing, setLpReviewing] = useState<string | null>(null);
   const { showToast, ToastComponent } = useToast();
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const [res, lp] = await Promise.all([getHeadSubjectsAndRequests(), getHeadLessonPlans()]);
     setHeadSubjects(res.headSubjects as any);
     setRequests(res.requests as any);
@@ -89,7 +89,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
       showToast(approved ? "Đã duyệt đổi giáo viên thành công!" : "Đã từ chối yêu cầu đổi giáo viên");
       setSelectedReq(null);
       setReviewNote("");
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Có lỗi xảy ra", "error");
     }
@@ -103,7 +103,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
       showToast(approved ? "Đã duyệt giáo án" : "Đã từ chối giáo án", "success");
       setLpReviewNote("");
       setExpandedLP(null);
-      loadData();
+      loadData(true);
     } else {
       showToast(res.error || "Có lỗi xảy ra", "error");
     }

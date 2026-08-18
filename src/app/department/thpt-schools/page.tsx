@@ -17,8 +17,8 @@ export default function ThptSchoolsPage() {
   const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const res = await getDepartmentThptSchools();
     setSchools(res as unknown as SchoolRow[]);
     setLoading(false);
@@ -68,3 +68,4 @@ export default function ThptSchoolsPage() {
     </div>
   );
 }
+

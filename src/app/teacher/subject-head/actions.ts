@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+
 import { LessonPlanStatus } from "@prisma/client";
 import { recordAuditLog } from "@/lib/audit-logger";
 
@@ -180,7 +180,7 @@ export async function reviewTeacherChangeRequest(input: {
     description: `Tổ trưởng CM ${input.approved ? "duyệt" : "từ chối"} đổi GV`,
   });
 
-  revalidatePath("/teacher/subject-head");
+  
   return { success: true };
 }
 
@@ -336,7 +336,7 @@ export async function headReviewLessonPlan(data: {
       description: `Tổ trưởng CM ${data.approved ? "duyệt" : "từ chối"} giáo án: ${plan.title}`,
     });
 
-    revalidatePath("/teacher/subject-head");
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: "Lỗi hệ thống: " + error.message };

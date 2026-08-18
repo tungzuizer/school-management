@@ -77,8 +77,8 @@ export default function AdminDailyReportsPage() {
   }, []);
 
   // Load data when date or school changes
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [reps, st] = await Promise.all([
         getAdminDailyReports(selectedDate, selectedSchool || undefined),
@@ -93,7 +93,7 @@ export default function AdminDailyReportsPage() {
   }, [selectedDate, selectedSchool]);
 
   useEffect(() => {
-    loadData();
+    loadData(true);
   }, [loadData]);
 
   // Open detail view
@@ -438,3 +438,4 @@ export default function AdminDailyReportsPage() {
     </div>
   );
 }
+

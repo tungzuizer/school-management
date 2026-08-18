@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { LessonPlanStatus, Role } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+
 import { recordAuditLog } from "@/lib/audit-logger";
 
 // Phó Hiệu trưởng (hoặc Hiệu trưởng) lấy danh sách giáo án
@@ -135,11 +135,11 @@ export async function vpReviewLessonPlan(data: {
     });
 
     // Revalidate paths for instant UI cache update across all roles
-    revalidatePath("/admin/lesson-plans");
-    revalidatePath("/vice-principal/lesson-plans");
-    revalidatePath("/teacher/subject-head");
-    revalidatePath("/admin/dashboard");
-    revalidatePath("/teacher/lesson-plans");
+    
+    
+    
+    
+    
 
     return { success: true };
   } catch (error: any) {
