@@ -252,7 +252,12 @@ export default function SubjectGroupsPage() {
 
       {/* Groups List */}
       <div className="space-y-4">
-        {groups.length === 0 ? (
+        {initialLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
+            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
+            <span className="text-gray-500 font-medium text-sm">Đang tải dữ liệu tổ chuyên môn...</span>
+          </div>
+        ) : groups.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300 text-gray-400">
             Chưa có tổ chuyên môn nào. Bấm "Tạo Tổ mới" để bắt đầu.
           </div>
