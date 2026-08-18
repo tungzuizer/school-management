@@ -37,15 +37,17 @@ export default function SubjectGroupsPage() {
     else setIsRefreshing(true);
 
     try {
-      const [g, u, t] = await Promise.all([getSubjectGroups(), getUnassignedSubjects(), getAllTeachersList()]);
+      const g = await getSubjectGroups();
+      const u = await getUnassignedSubjects();
+      const t = await getAllTeachersList();
       setGroups(g as unknown as SubjectGroupRow[]);
       setUnassigned(u as { id: string; name: string }[]);
       setTeachers(t as unknown as TeacherOption[]);
     } catch (err) {
       console.error("Failed to load subject groups data:", err);
     } finally {
-      setInitialLoading(false);
-      setIsRefreshing(false);
+      if (!silent) setInitialLoading(false);
+      else setIsRefreshing(false);
     }
   }, []);
 
@@ -64,6 +66,7 @@ export default function SubjectGroupsPage() {
         setShowForm(false);
         setNewName("");
         setNewHead("");
+        // Reload silently, do not set submitting=false until it's done
         await loadData(true);
       } else {
         showToast(res.error || "Lỗi khi tạo tổ chuyên môn", "error");
