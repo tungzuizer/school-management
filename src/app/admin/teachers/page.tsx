@@ -263,7 +263,14 @@ export default function TeachersPage() {
           </thead>
           <tbody className="divide-y">
             {loading ? (
-              <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Đang tải...</td></tr>
+              <tr>
+                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+                    <span>Đang tải danh sách giáo viên...</span>
+                  </div>
+                </td>
+              </tr>
             ) : teachers.length === 0 ? (
               <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Chưa có giáo viên nào</td></tr>
             ) : (

@@ -54,7 +54,16 @@ export default function DriveConfigPage() {
 
   const fmt = (d: string) => new Date(d).toLocaleDateString("vi-VN");
 
-  if (initialLoading) return <div className="p-8 text-center text-gray-500">Đang tải...</div>;
+  if (initialLoading) {
+    return (
+      <div className="space-y-6 max-w-5xl relative">
+        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-500 font-medium flex flex-col items-center justify-center gap-3 shadow-sm">
+          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+          <span>Đang tải...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">

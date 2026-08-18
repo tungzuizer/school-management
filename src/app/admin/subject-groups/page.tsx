@@ -252,12 +252,7 @@ export default function SubjectGroupsPage() {
 
       {/* Groups List */}
       <div className="space-y-4">
-        {initialLoading ? (
-          <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-500 font-medium flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-            <span>Đang tải...</span>
-          </div>
-        ) : groups.length === 0 ? (
+        {groups.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300 text-gray-400">
             Chưa có tổ chuyên môn nào. Bấm "Tạo Tổ mới" để bắt đầu.
           </div>
