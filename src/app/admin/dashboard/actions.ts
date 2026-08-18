@@ -114,10 +114,13 @@ export async function getAttendanceByWeek() {
 export async function getGradesByClass() {
   try {
     const classes = await prisma.classRoom.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        gradeLevel: true,
         students: {
           where: { status: StudentStatus.STUDYING },
-          include: {
+          select: {
             grades: {
               select: { score: true },
             },
@@ -153,24 +156,26 @@ export async function getGradesByClass() {
 
 export async function getClassAttendanceRanking() {
   try {
-    const classes = await prisma.classRoom.findMany({
-      include: {
-        _count: {
-          select: {
-            students: true,
-          },
-        },
-      },
-      orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
-    });
-
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: { date: { gte: sevenDaysAgo } },
-      select: { classId: true, status: true },
-    });
+    const [classes, attendanceRecords] = await Promise.all([
+      prisma.classRoom.findMany({
+        select: {
+          id: true,
+          name: true,
+          gradeLevel: true,
+          _count: {
+            select: { students: true },
+          },
+        },
+        orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+      }),
+      prisma.attendance.findMany({
+        where: { date: { gte: sevenDaysAgo } },
+        select: { classId: true, status: true },
+      }),
+    ]);
 
     const attendanceMap = new Map<string, { total: number; present: number }>();
     attendanceRecords.forEach((rec) => {
@@ -210,9 +215,13 @@ export async function getRecentIncidents(limit = 10) {
     const incidents = await prisma.incident.findMany({
       take: limit,
       orderBy: { date: "desc" },
-      include: {
+      select: {
+        id: true,
+        date: true,
+        type: true,
+        description: true,
         student: {
-          include: {
+          select: {
             user: { select: { name: true } },
             classRoom: { select: { name: true } },
           },
@@ -317,35 +326,38 @@ export async function getLessonPlanAlerts() {
     const activePeriods = await prisma.lessonPlanPeriod.findMany({
       where: { isActive: true },
       orderBy: { deadline: "desc" },
-      take: 1 // Lấy kỳ gần nhất
+      select: { id: true, label: true, deadline: true },
+      take: 1
     });
 
     if (activePeriods.length === 0) return { alerts: [], periodLabel: null, deadline: null };
 
     const period = activePeriods[0];
-    const now = new Date();
 
-    // Lấy tất cả GV đang có phân công dạy
-    const assignments = await prisma.teachingAssignment.findMany({
-      include: {
-        teacher: { include: { user: { select: { name: true } } } },
-        subject: {
-          select: {
-            id: true, name: true,
-            subjectGroup: { select: { id: true, name: true } },
+    // Lấy tất cả GV đang có phân công dạy và giáo án đã nộp SONG SONG
+    const [assignments, submittedPlans] = await Promise.all([
+      prisma.teachingAssignment.findMany({
+        select: {
+          teacherId: true,
+          subjectId: true,
+          teacher: { select: { user: { select: { name: true } } } },
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              subjectGroup: { select: { id: true, name: true } },
+            },
           },
         },
-      },
-    });
-
-    // Lấy giáo án đã nộp cho kỳ này
-    const submittedPlans = await prisma.lessonPlan.findMany({
-      where: {
-        periodId: period.id,
-        status: { not: "DRAFT" as any }, // Đã nộp (không ở DRAFT)
-      },
-      select: { teacherId: true, subjectId: true, createdAt: true, status: true },
-    });
+      }),
+      prisma.lessonPlan.findMany({
+        where: {
+          periodId: period.id,
+          status: { not: "DRAFT" as any },
+        },
+        select: { teacherId: true, subjectId: true, createdAt: true, status: true },
+      }),
+    ]);
 
     // Map: teacherId::subjectId → plan info
     const submittedMap = new Map<string, { createdAt: Date; status: string }>();
@@ -373,7 +385,7 @@ export async function getLessonPlanAlerts() {
 
       const plan = submittedMap.get(key);
       const groupName = a.subject.subjectGroup?.name || "Chưa phân tổ";
-      const teacherName = a.teacher.user.name;
+      const teacherName = a.teacher?.user?.name || "Giáo viên";
       const subjectName = a.subject.name;
 
       if (!plan) {
@@ -400,7 +412,7 @@ export async function getLessonPlanAlerts() {
       deadline: period.deadline,
     };
   } catch (error) {
-    console.error("Error fetching lesson plan alerts:", error);
+    console.error("Error in getLessonPlanAlerts:", error);
     return { alerts: [], periodLabel: null, deadline: null };
   }
 }

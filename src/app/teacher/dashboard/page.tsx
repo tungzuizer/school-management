@@ -149,38 +149,33 @@ export default function TeacherDashboard() {
       const targetDate = new Date(now);
       targetDate.setDate(now.getDate() + wOffset * 7);
 
-      // Load week schedule, courses, and subject head info
-      const [sched, crs, hInfo] = await Promise.all([
+      // Load week schedule, courses, subject head info and all homeroom widgets IN PARALLEL
+      const classId = data.homeroomClass?.id;
+      const [sched, crs, hInfo, att, risk, viol, couns, fb, rpt, comp, inc] = await Promise.all([
         getWeekSchedule(data.teacherId, targetDate.toISOString().split("T")[0]),
         getTeacherCourses(data.teacherId),
         checkIsSubjectHead(),
+        classId ? getTodayAttendance(classId) : null,
+        classId ? getAtRiskAcademic(classId) : [],
+        classId ? getAtRiskViolations(classId) : [],
+        classId ? getStudentsNeedingCounseling(classId) : [],
+        classId ? getUnreadParentFeedbacks(classId) : [],
+        classId ? getDailyReportStatus(classId) : null,
+        classId ? getClassCompetitionStats(classId) : null,
+        classId ? getIncompleteRecords(classId) : [],
       ]);
+
       setWeekSchedule(sched);
       setCourses(crs);
       setHeadInfo(hInfo);
-
-      // If teacher has homeroom class, load GVCN widgets
-      if (data.homeroomClass) {
-        const classId = data.homeroomClass.id;
-        const [att, risk, viol, couns, fb, rpt, comp, inc] = await Promise.all([
-          getTodayAttendance(classId),
-          getAtRiskAcademic(classId),
-          getAtRiskViolations(classId),
-          getStudentsNeedingCounseling(classId),
-          getUnreadParentFeedbacks(classId),
-          getDailyReportStatus(classId),
-          getClassCompetitionStats(classId),
-          getIncompleteRecords(classId),
-        ]);
-        setAttendance(att);
-        setAtRiskAcademic(risk);
-        setAtRiskViolations(viol);
-        setCounseling(couns);
-        setParentFeedbacks(fb);
-        setReportStatus(rpt);
-        setCompetition(comp);
-        setIncompleteRecords(inc);
-      }
+      setAttendance(att);
+      setAtRiskAcademic(risk);
+      setAtRiskViolations(viol);
+      setCounseling(couns);
+      setParentFeedbacks(fb);
+      setReportStatus(rpt);
+      setCompetition(comp);
+      setIncompleteRecords(inc);
     } catch (err) {
       console.error("Dashboard load error:", err);
     }
