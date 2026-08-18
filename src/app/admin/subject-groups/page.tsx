@@ -51,47 +51,75 @@ export default function SubjectGroupsPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const handleCreate = async () => {
+  const handleCreate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (submitting) return;
     if (!newName.trim()) { showToast("Tên tổ không được trống", "error"); return; }
+    
     setSubmitting(true);
-    const res = await createSubjectGroup({ name: newName, headTeacherId: newHead || undefined });
-    setSubmitting(false);
-    if (res.success) {
-      showToast("Đã tạo tổ chuyên môn", "success");
-      setShowForm(false);
-      setNewName("");
-      setNewHead("");
-      loadData(true);
-    } else {
-      showToast(res.error || "Lỗi", "error");
+    try {
+      const res = await createSubjectGroup({ name: newName, headTeacherId: newHead || undefined });
+      if (res.success) {
+        showToast("Đã tạo tổ chuyên môn thành công", "success");
+        setShowForm(false);
+        setNewName("");
+        setNewHead("");
+        await loadData(true);
+      } else {
+        showToast(res.error || "Lỗi khi tạo tổ chuyên môn", "error");
+      }
+    } catch (err: any) {
+      showToast("Lỗi hệ thống: " + (err.message || "Không thể kết nối"), "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleAssign = async () => {
-    if (!assignSubjectId || !assignGroupId) { showToast("Chọn môn và tổ", "error"); return; }
+  const handleAssign = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (submitting) return;
+    if (!assignSubjectId || !assignGroupId) { showToast("Vui lòng chọn cả môn học và tổ chuyên môn", "error"); return; }
+    
     setSubmitting(true);
-    await assignSubjectToGroup(assignSubjectId, assignGroupId);
-    setSubmitting(false);
-    showToast("Đã gán môn vào tổ", "success");
-    setAssignSubjectId("");
-    setAssignGroupId("");
-    loadData(true);
+    try {
+      await assignSubjectToGroup(assignSubjectId, assignGroupId);
+      showToast("Đã gán môn vào tổ thành công", "success");
+      setAssignSubjectId("");
+      setAssignGroupId("");
+      await loadData(true);
+    } catch (err: any) {
+      showToast("Lỗi khi gán môn vào tổ", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleRemoveSubject = async (subjectId: string) => {
+    if (submitting) return;
     setSubmitting(true);
-    await assignSubjectToGroup(subjectId, null as any);
-    setSubmitting(false);
-    showToast("Đã gỡ môn khỏi tổ", "success");
-    loadData(true);
+    try {
+      await assignSubjectToGroup(subjectId, null as any);
+      showToast("Đã gỡ môn khỏi tổ", "success");
+      await loadData(true);
+    } catch (err: any) {
+      showToast("Lỗi khi gỡ môn khỏi tổ", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDeleteGroup = async (groupId: string) => {
+    if (submitting) return;
     setSubmitting(true);
-    await deleteSubjectGroup(groupId);
-    setSubmitting(false);
-    showToast("Đã xóa tổ", "success");
-    loadData(true);
+    try {
+      await deleteSubjectGroup(groupId);
+      showToast("Đã xóa tổ chuyên môn", "success");
+      await loadData(true);
+    } catch (err: any) {
+      showToast("Lỗi khi xóa tổ", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (initialLoading) {
@@ -123,7 +151,7 @@ export default function SubjectGroupsPage() {
         <button
           onClick={() => setShowForm(!showForm)}
           disabled={submitting}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50 transition"
         >
           <Plus className="w-4 h-4" /> Tạo Tổ mới
         </button>
@@ -131,7 +159,7 @@ export default function SubjectGroupsPage() {
 
       {/* Create Form */}
       {showForm && (
-        <div className="bg-indigo-50/80 rounded-xl border border-indigo-200 p-4 space-y-3 shadow-sm transition">
+        <form onSubmit={handleCreate} className="bg-indigo-50/80 rounded-xl border border-indigo-200 p-4 space-y-3 shadow-sm transition">
           <h3 className="text-sm font-semibold text-gray-800">Tạo Tổ Chuyên Môn Mới</h3>
           <div className="flex gap-3 items-end flex-wrap">
             <div>
@@ -141,7 +169,8 @@ export default function SubjectGroupsPage() {
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 placeholder="VD: Tổ Tự nhiên"
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-56 focus:ring-2 focus:ring-indigo-500 bg-white"
+                disabled={submitting}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-56 focus:ring-2 focus:ring-indigo-500 bg-white disabled:bg-gray-100"
               />
             </div>
             <div>
@@ -149,33 +178,35 @@ export default function SubjectGroupsPage() {
               <select
                 value={newHead}
                 onChange={e => setNewHead(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-56 focus:ring-2 focus:ring-indigo-500 bg-white"
+                disabled={submitting}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-56 focus:ring-2 focus:ring-indigo-500 bg-white disabled:bg-gray-100"
               >
                 <option value="">— Chọn tổ trưởng —</option>
                 {teachers.map(t => <option key={t.id} value={t.id}>{t.user.name}</option>)}
               </select>
             </div>
             <button
-              onClick={handleCreate}
+              type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 transition"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>{submitting ? "Đang tạo..." : "Tạo"}</span>
+              <span>{submitting ? "Đang xử lý..." : "Tạo Tổ"}</span>
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* Assign Subject */}
       {unassigned.length > 0 && (
-        <div className="bg-amber-50/80 rounded-xl border border-amber-200 p-4 shadow-sm">
+        <form onSubmit={handleAssign} className="bg-amber-50/80 rounded-xl border border-amber-200 p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-amber-900 mb-2">Môn học chưa thuộc tổ nào ({unassigned.length})</h3>
           <div className="flex gap-3 items-end flex-wrap">
             <select
               value={assignSubjectId}
               onChange={e => setAssignSubjectId(e.target.value)}
-              className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white"
+              disabled={submitting}
+              className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
             >
               <option value="">— Chọn môn —</option>
               {unassigned.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -184,21 +215,22 @@ export default function SubjectGroupsPage() {
             <select
               value={assignGroupId}
               onChange={e => setAssignGroupId(e.target.value)}
-              className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white"
+              disabled={submitting}
+              className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
             >
               <option value="">— Chọn tổ —</option>
               {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
             <button
-              onClick={handleAssign}
+              type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5"
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5 transition"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>Gán vào Tổ</span>
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* Groups List */}
@@ -235,7 +267,7 @@ export default function SubjectGroupsPage() {
                   <button
                     onClick={() => handleRemoveSubject(s.id)}
                     disabled={submitting}
-                    className="hover:bg-indigo-200 hover:text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center ml-1 transition"
+                    className="hover:bg-indigo-200 hover:text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center ml-1 transition disabled:opacity-50"
                     title="Gỡ khỏi tổ"
                   >
                     ×

@@ -125,6 +125,16 @@ export async function createSubjectGroup(data: { name: string; headTeacherId?: s
 
     if (!data.name.trim()) return { success: false, error: "Tên tổ không được để trống" };
 
+    const existing = await prisma.subjectGroup.findFirst({
+      where: {
+        schoolId,
+        name: { equals: data.name.trim(), mode: "insensitive" },
+      },
+    });
+    if (existing) {
+      return { success: false, error: `Tổ chuyên môn "${data.name.trim()}" đã tồn tại.` };
+    }
+
     await prisma.subjectGroup.create({
       data: {
         schoolId,
