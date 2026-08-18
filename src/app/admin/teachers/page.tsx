@@ -5,6 +5,7 @@ import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import { getTeachers, createTeacher, updateTeacher, deleteTeacher, createBulkTeachers, BulkTeacherInput } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { Loader2 } from "lucide-react";
 
 interface TeacherData {
   id: string;
