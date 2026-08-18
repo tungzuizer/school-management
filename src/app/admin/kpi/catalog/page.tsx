@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   getKpiCatalogs,
   createKpiCatalog,
@@ -55,6 +55,8 @@ export const FREQUENCY_LABELS: Record<ReportingFrequency, string> = {
 export default function KpiCatalogPage() {
   const [catalogs, setCatalogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -83,13 +85,18 @@ export default function KpiCatalogPage() {
 
   const loadData = async () => {
     setLoading(true);
-    const res = await getKpiCatalogs(search, selectedCategory);
-    if (res.success && res.data) {
-      setCatalogs(res.data);
-    } else if (res.error) {
-      setMessage({ type: "error", text: res.error });
+    try {
+      const res = await getKpiCatalogs(search, selectedCategory);
+      if (res.success && res.data) {
+        setCatalogs(res.data);
+      } else if (res.error) {
+        setMessage({ type: "error", text: res.error });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Lỗi tải dữ liệu danh mục KPI." });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -97,15 +104,25 @@ export default function KpiCatalogPage() {
   }, [search, selectedCategory]);
 
   const handleSeedDefaults = async () => {
+    if (isSubmittingRef.current || submitting || loading) return;
+    isSubmittingRef.current = true;
+    setSubmitting(true);
     setLoading(true);
-    const res = await seedDefaultKpiCatalog();
-    if (res.success) {
-      setMessage({ type: "success", text: res.message || "Khởi tạo dữ liệu mẫu thành công!" });
-      loadData();
-    } else {
-      setMessage({ type: "error", text: res.error || "Khởi tạo thất bại." });
+    try {
+      const res = await seedDefaultKpiCatalog();
+      if (res.success) {
+        setMessage({ type: "success", text: res.message || "Khởi tạo dữ liệu mẫu thành công!" });
+        await loadData();
+      } else {
+        setMessage({ type: "error", text: res.error || "Khởi tạo thất bại." });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Khởi tạo dữ liệu mẫu thất bại." });
+    } finally {
+      isSubmittingRef.current = false;
+      setSubmitting(false);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleOpenAdd = () => {
@@ -156,49 +173,83 @@ export default function KpiCatalogPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current || submitting) return;
+
     if (!formData.code || !formData.name) {
       setMessage({ type: "error", text: "Vui lòng nhập Mã và Tên KPI." });
       return;
     }
 
-    if (editingItem) {
-      const res = await updateKpiCatalog(editingItem.id, formData);
-      if (res.success) {
-        setMessage({ type: "success", text: "Cập nhật KPI thành công!" });
-        setShowModal(false);
-        loadData();
+    isSubmittingRef.current = true;
+    setSubmitting(true);
+
+    try {
+      if (editingItem) {
+        const res = await updateKpiCatalog(editingItem.id, formData);
+        if (res.success) {
+          setMessage({ type: "success", text: "Cập nhật KPI thành công!" });
+          setShowModal(false);
+          await loadData();
+        } else {
+          setMessage({ type: "error", text: res.error || "Lỗi cập nhật." });
+        }
       } else {
-        setMessage({ type: "error", text: res.error || "Lỗi cập nhật." });
+        const res = await createKpiCatalog(formData);
+        if (res.success) {
+          setMessage({ type: "success", text: "Thêm chỉ số KPI thành công!" });
+          setShowModal(false);
+          await loadData();
+        } else {
+          setMessage({ type: "error", text: res.error || "Lỗi tạo mới." });
+        }
       }
-    } else {
-      const res = await createKpiCatalog(formData);
-      if (res.success) {
-        setMessage({ type: "success", text: "Thêm chỉ số KPI thành công!" });
-        setShowModal(false);
-        loadData();
-      } else {
-        setMessage({ type: "error", text: res.error || "Lỗi tạo mới." });
-      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Đã xảy ra lỗi khi lưu KPI." });
+    } finally {
+      isSubmittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
   const handleDuplicate = async (id: string) => {
-    const res = await duplicateKpiCatalog(id);
-    if (res.success) {
-      setMessage({ type: "success", text: "Đã sao chép KPI thành công!" });
-      loadData();
-    } else {
-      setMessage({ type: "error", text: res.error || "Không thể sao chép." });
+    if (isSubmittingRef.current || submitting) return;
+    isSubmittingRef.current = true;
+    setSubmitting(true);
+
+    try {
+      const res = await duplicateKpiCatalog(id);
+      if (res.success) {
+        setMessage({ type: "success", text: "Đã sao chép KPI thành công!" });
+        await loadData();
+      } else {
+        setMessage({ type: "error", text: res.error || "Không thể sao chép." });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Lỗi sao chép KPI." });
+    } finally {
+      isSubmittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
   const handleToggleStatus = async (id: string) => {
-    const res = await toggleKpiStatus(id);
-    if (res.success) {
-      setMessage({ type: "success", text: "Đã thay đổi trạng thái KPI." });
-      loadData();
-    } else {
-      setMessage({ type: "error", text: res.error || "Lỗi thay đổi trạng thái." });
+    if (isSubmittingRef.current || submitting) return;
+    isSubmittingRef.current = true;
+    setSubmitting(true);
+
+    try {
+      const res = await toggleKpiStatus(id);
+      if (res.success) {
+        setMessage({ type: "success", text: "Đã thay đổi trạng thái KPI." });
+        await loadData();
+      } else {
+        setMessage({ type: "error", text: res.error || "Lỗi thay đổi trạng thái." });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Lỗi khi đổi trạng thái KPI." });
+    } finally {
+      isSubmittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -250,21 +301,24 @@ export default function KpiCatalogPage() {
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleSeedDefaults}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition text-sm"
+            disabled={submitting || loading}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition text-sm disabled:opacity-50"
           >
             <Database className="w-4 h-4" />
-            Tạo KPI mẫu (12 Nhóm)
+            {submitting ? "Đang tạo..." : "Tạo KPI mẫu (12 Nhóm)"}
           </button>
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium rounded-xl hover:bg-emerald-100 transition text-sm"
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium rounded-xl hover:bg-emerald-100 transition text-sm disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
             Xuất Excel/CSV
           </button>
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 shadow-sm transition text-sm"
+            disabled={submitting}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 shadow-sm transition text-sm disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             Thêm KPI Mới
@@ -676,9 +730,10 @@ export default function KpiCatalogPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm hover:bg-indigo-700 shadow-sm transition"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm hover:bg-indigo-700 shadow-sm transition disabled:opacity-50"
                 >
-                  {editingItem ? "Lưu Cập Nhật" : "Thêm KPI"}
+                  {submitting ? "Đang lưu..." : editingItem ? "Lưu Cập Nhật" : "Thêm KPI"}
                 </button>
               </div>
             </form>

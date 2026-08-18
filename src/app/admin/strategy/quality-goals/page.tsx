@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useRef } from "react";
 import * as XLSX from "xlsx";
 import {
   Target,
@@ -95,6 +95,8 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; i
 export default function QualityGoalsPage() {
   const [objectives, setObjectives] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [isPending, startTransition] = useTransition();
 
   // Filters
@@ -252,15 +254,20 @@ export default function QualityGoalsPage() {
 
   const loadData = async () => {
     setLoading(true);
-    const res = await getQualityObjectives({
-      category: selectedCategory,
-      status: selectedStatus,
-      search: searchQuery,
-    });
-    if (res.success && res.data) {
-      setObjectives(res.data);
+    try {
+      const res = await getQualityObjectives({
+        category: selectedCategory,
+        status: selectedStatus,
+        search: searchQuery,
+      });
+      if (res.success && res.data) {
+        setObjectives(res.data);
+      }
+    } catch (err: any) {
+      console.error("Lỗi tải dữ liệu mục tiêu chất lượng:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -322,40 +329,61 @@ export default function QualityGoalsPage() {
   };
 
   const handleSaveObjective = () => {
+    if (isSubmittingRef.current || submitting) return;
     if (!formData.code || !formData.title || !formData.metricName || !formData.targetValue) {
       alert("Vui lòng điền đầy đủ các thông tin SMART bắt buộc (Mã, Tên, Chỉ số đo lường, Giá trị mục tiêu)");
       return;
     }
 
+    isSubmittingRef.current = true;
+    setSubmitting(true);
+
     startTransition(async () => {
-      if (editingObjective) {
-        const res = await updateQualityObjective(editingObjective.id, formData);
-        if (res.success) {
-          setShowSmartModal(false);
-          loadData();
+      try {
+        if (editingObjective) {
+          const res = await updateQualityObjective(editingObjective.id, formData);
+          if (res.success) {
+            setShowSmartModal(false);
+            await loadData();
+          } else {
+            alert(res.error || "Không thể cập nhật mục tiêu");
+          }
         } else {
-          alert(res.error || "Không thể cập nhật mục tiêu");
+          const res = await createQualityObjective(formData);
+          if (res.success) {
+            setShowSmartModal(false);
+            await loadData();
+          } else {
+            alert(res.error || "Không thể tạo mục tiêu");
+          }
         }
-      } else {
-        const res = await createQualityObjective(formData);
-        if (res.success) {
-          setShowSmartModal(false);
-          loadData();
-        } else {
-          alert(res.error || "Không thể tạo mục tiêu");
-        }
+      } catch (err: any) {
+        alert("Đã xảy ra lỗi khi lưu mục tiêu.");
+      } finally {
+        isSubmittingRef.current = false;
+        setSubmitting(false);
       }
     });
   };
 
   const handleDelete = (id: string) => {
+    if (isSubmittingRef.current || submitting) return;
     if (confirm("Bạn có chắc chắn muốn xóa mục tiêu chất lượng này không?")) {
+      isSubmittingRef.current = true;
+      setSubmitting(true);
       startTransition(async () => {
-        const res = await deleteQualityObjective(id);
-        if (res.success) {
-          loadData();
-        } else {
-          alert(res.error || "Không thể xóa mục tiêu");
+        try {
+          const res = await deleteQualityObjective(id);
+          if (res.success) {
+            await loadData();
+          } else {
+            alert(res.error || "Không thể xóa mục tiêu");
+          }
+        } catch (err: any) {
+          alert("Lỗi khi xóa mục tiêu.");
+        } finally {
+          isSubmittingRef.current = false;
+          setSubmitting(false);
         }
       });
     }
@@ -363,14 +391,25 @@ export default function QualityGoalsPage() {
 
   const handleQuickUpdate = async () => {
     if (!quickUpdateObj) return;
+    if (isSubmittingRef.current || submitting) return;
+    isSubmittingRef.current = true;
+    setSubmitting(true);
+
     const val = quickActualVal === "" ? null : Number(quickActualVal);
     startTransition(async () => {
-      const res = await updateQualityObjective(quickUpdateObj.id, { actualValue: val });
-      if (res.success) {
-        setShowQuickUpdateModal(false);
-        loadData();
-      } else {
-        alert(res.error || "Cập nhật thất bại");
+      try {
+        const res = await updateQualityObjective(quickUpdateObj.id, { actualValue: val });
+        if (res.success) {
+          setShowQuickUpdateModal(false);
+          await loadData();
+        } else {
+          alert(res.error || "Cập nhật thất bại");
+        }
+      } catch (err: any) {
+        alert("Lỗi khi cập nhật kết quả.");
+      } finally {
+        isSubmittingRef.current = false;
+        setSubmitting(false);
       }
     });
   };
@@ -380,20 +419,31 @@ export default function QualityGoalsPage() {
       alert("Vui lòng nhập tên minh chứng");
       return;
     }
+    if (isSubmittingRef.current || submitting) return;
+    isSubmittingRef.current = true;
+    setSubmitting(true);
+
     startTransition(async () => {
-      const res = await addObjectiveEvidence(selectedObjForEvidence.id, {
-        title: evidenceTitle,
-        fileUrl: evidenceUrl,
-        description: evidenceDesc,
-      });
-      if (res.success) {
-        setEvidenceTitle("");
-        setEvidenceUrl("");
-        setEvidenceDesc("");
-        setShowEvidenceModal(false);
-        loadData();
-      } else {
-        alert(res.error || "Thêm minh chứng thất bại");
+      try {
+        const res = await addObjectiveEvidence(selectedObjForEvidence.id, {
+          title: evidenceTitle,
+          fileUrl: evidenceUrl,
+          description: evidenceDesc,
+        });
+        if (res.success) {
+          setEvidenceTitle("");
+          setEvidenceUrl("");
+          setEvidenceDesc("");
+          setShowEvidenceModal(false);
+          await loadData();
+        } else {
+          alert(res.error || "Thêm minh chứng thất bại");
+        }
+      } catch (err: any) {
+        alert("Lỗi khi thêm minh chứng.");
+      } finally {
+        isSubmittingRef.current = false;
+        setSubmitting(false);
       }
     });
   };
@@ -401,28 +451,42 @@ export default function QualityGoalsPage() {
   const openHistory = async (obj: any) => {
     setHistoryObjTitle(obj.title);
     setShowHistoryDrawer(true);
-    const res = await getObjectiveHistory(obj.id);
-    if (res.success && res.data) {
-      setHistoryList(res.data);
+    try {
+      const res = await getObjectiveHistory(obj.id);
+      if (res.success && res.data) {
+        setHistoryList(res.data);
+      }
+    } catch (err: any) {
+      console.error("Lỗi khi lấy lịch sử mục tiêu:", err);
     }
   };
 
   const handleImportExcelJson = async () => {
+    if (isSubmittingRef.current || submitting) return;
     try {
       const parsed = JSON.parse(importJsonText);
       if (!Array.isArray(parsed)) {
         alert("Dữ liệu phải là danh sách (array)");
         return;
       }
+      isSubmittingRef.current = true;
+      setSubmitting(true);
       startTransition(async () => {
-        const res = await importQualityObjectivesFromExcel(parsed);
-        if (res.success) {
-          alert(`Đã nhập thành công! Tạo mới: ${res.createdCount}, Cập nhật: ${res.updatedCount}`);
-          setShowExcelImportModal(false);
-          setImportJsonText("");
-          loadData();
-        } else {
-          alert(res.error || "Lỗi nhập dữ liệu Excel");
+        try {
+          const res = await importQualityObjectivesFromExcel(parsed);
+          if (res.success) {
+            alert(`Đã nhập thành công! Tạo mới: ${res.createdCount}, Cập nhật: ${res.updatedCount}`);
+            setShowExcelImportModal(false);
+            setImportJsonText("");
+            await loadData();
+          } else {
+            alert(res.error || "Lỗi nhập dữ liệu Excel");
+          }
+        } catch (e: any) {
+          alert("Lỗi nhập dữ liệu Excel: " + (e?.message || e));
+        } finally {
+          isSubmittingRef.current = false;
+          setSubmitting(false);
         }
       });
     } catch (e) {
@@ -469,7 +533,8 @@ export default function QualityGoalsPage() {
 
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-sm text-sm transition"
+            disabled={submitting}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-sm text-sm transition disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             Thêm Mục Tiêu SMART
@@ -1048,10 +1113,10 @@ export default function QualityGoalsPage() {
               <button
                 type="button"
                 onClick={handleSaveObjective}
-                disabled={isPending}
+                disabled={isPending || submitting}
                 className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition disabled:opacity-50"
               >
-                {isPending ? "Đang lưu..." : editingObjective ? "Cập Nhật Mục Tiêu" : "Lưu Mục Tiêu SMART"}
+                {isPending || submitting ? "Đang lưu..." : editingObjective ? "Cập Nhật Mục Tiêu" : "Lưu Mục Tiêu SMART"}
               </button>
             </div>
           </div>
@@ -1105,10 +1170,10 @@ export default function QualityGoalsPage() {
               </button>
               <button
                 onClick={handleQuickUpdate}
-                disabled={isPending}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm"
+                disabled={isPending || submitting}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm disabled:opacity-50"
               >
-                {isPending ? "Đang lưu..." : "Cập Nhật Ngay"}
+                {isPending || submitting ? "Đang lưu..." : "Cập Nhật Ngay"}
               </button>
             </div>
           </div>
@@ -1166,10 +1231,10 @@ export default function QualityGoalsPage() {
                 </div>
                 <button
                   onClick={handleAddEvidence}
-                  disabled={isPending}
-                  className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                  disabled={isPending || submitting}
+                  className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold shadow-sm disabled:opacity-50"
                 >
-                  Lưu Minh Chứng
+                  {isPending || submitting ? "Đang lưu..." : "Lưu Minh Chứng"}
                 </button>
               </div>
 
@@ -1382,10 +1447,10 @@ export default function QualityGoalsPage() {
               </button>
               <button
                 onClick={handleImportExcelJson}
-                disabled={isPending || (activeImportTab === "FILE" && parsedImportData.length === 0)}
+                disabled={isPending || submitting || (activeImportTab === "FILE" && parsedImportData.length === 0)}
                 className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm disabled:opacity-50"
               >
-                {isPending ? "Đang xử lý..." : "Bắt Đầu Nhập Dữ Liệu"}
+                {isPending || submitting ? "Đang xử lý..." : "Bắt Đầu Nhập Dữ Liệu"}
               </button>
             </div>
           </div>

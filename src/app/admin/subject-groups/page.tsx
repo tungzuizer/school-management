@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { getSubjectGroups, createSubjectGroup, deleteSubjectGroup, assignSubjectToGroup, getUnassignedSubjects, getAllTeachersList } from "../drive-config/actions";
 import { useToast } from "@/components/ui/Toast";
 import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2 } from "lucide-react";
@@ -21,6 +21,9 @@ export default function SubjectGroupsPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+  const [removingSubjectId, setRemovingSubjectId] = useState<string | null>(null);
+  const isSubmittingRef = useRef(false);
   const { showToast, ToastComponent } = useToast();
 
   // New group form
@@ -34,7 +37,7 @@ export default function SubjectGroupsPage() {
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setInitialLoading(true);
-    else setIsRefreshing(true);
+    setIsRefreshing(true);
 
     try {
       const g = await getSubjectGroups();
@@ -46,7 +49,7 @@ export default function SubjectGroupsPage() {
     } catch (err) {
       console.error("Failed to load subject groups data:", err);
     } finally {
-      if (!silent) setInitialLoading(false);
+      setInitialLoading(false);
       setIsRefreshing(false);
     }
   }, []);
@@ -55,11 +58,16 @@ export default function SubjectGroupsPage() {
 
   const handleCreate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (submitting) return;
+    if (isSubmittingRef.current || submitting) return;
     
+    isSubmittingRef.current = true;
+    setSubmitting(true);
+
     const trimmedName = newName.trim();
     if (!trimmedName) { 
       showToast("Tên tổ không được trống", "error"); 
+      isSubmittingRef.current = false;
+      setSubmitting(false);
       return; 
     }
 
@@ -69,10 +77,11 @@ export default function SubjectGroupsPage() {
     );
     if (isDuplicate) {
       showToast(`Tổ chuyên môn "${trimmedName}" đã tồn tại. Vui lòng nhập tên khác!`, "error");
+      isSubmittingRef.current = false;
+      setSubmitting(false);
       return;
     }
     
-    setSubmitting(true);
     try {
       const res = await createSubjectGroup({ name: trimmedName, headTeacherId: newHead || undefined });
       if (res.success) {
@@ -87,15 +96,17 @@ export default function SubjectGroupsPage() {
     } catch (err: any) {
       showToast("Lỗi hệ thống: " + (err.message || "Không thể kết nối"), "error");
     } finally {
+      isSubmittingRef.current = false;
       setSubmitting(false);
     }
   };
 
   const handleAssign = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (submitting) return;
+    if (isSubmittingRef.current || submitting) return;
     if (!assignSubjectId || !assignGroupId) { showToast("Vui lòng chọn cả môn học và tổ chuyên môn", "error"); return; }
     
+    isSubmittingRef.current = true;
     setSubmitting(true);
     try {
       await assignSubjectToGroup(assignSubjectId, assignGroupId);
@@ -106,13 +117,14 @@ export default function SubjectGroupsPage() {
     } catch (err: any) {
       showToast("Lỗi khi gán môn vào tổ", "error");
     } finally {
+      isSubmittingRef.current = false;
       setSubmitting(false);
     }
   };
 
   const handleRemoveSubject = async (subjectId: string) => {
-    if (submitting) return;
-    setSubmitting(true);
+    if (removingSubjectId) return;
+    setRemovingSubjectId(subjectId);
     try {
       await assignSubjectToGroup(subjectId, null as any);
       showToast("Đã gỡ môn khỏi tổ", "success");
@@ -120,13 +132,13 @@ export default function SubjectGroupsPage() {
     } catch (err: any) {
       showToast("Lỗi khi gỡ môn khỏi tổ", "error");
     } finally {
-      setSubmitting(false);
+      setRemovingSubjectId(null);
     }
   };
 
   const handleDeleteGroup = async (groupId: string) => {
-    if (submitting) return;
-    setSubmitting(true);
+    if (deletingGroupId) return;
+    setDeletingGroupId(groupId);
     try {
       await deleteSubjectGroup(groupId);
       showToast("Đã xóa tổ chuyên môn", "success");
@@ -134,20 +146,9 @@ export default function SubjectGroupsPage() {
     } catch (err: any) {
       showToast("Lỗi khi xóa tổ", "error");
     } finally {
-      setSubmitting(false);
+      setDeletingGroupId(null);
     }
   };
-
-  if (initialLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <div className="flex items-center gap-3 text-indigo-600 font-medium text-base">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span>Đang tải dữ liệu tổ chuyên môn...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-5xl relative">
@@ -159,7 +160,7 @@ export default function SubjectGroupsPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               Quản lý Tổ Chuyên Môn
-              {isRefreshing && <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />}
+              {(initialLoading || isRefreshing) && <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />}
             </h1>
             <p className="text-xs text-gray-500">Tổ chuyên môn gom các môn học lại (VD: Tổ Tự nhiên = Toán, Lý, Hóa, Sinh). Mỗi tổ có 1 Tổ trưởng.</p>
           </div>
@@ -267,11 +268,15 @@ export default function SubjectGroupsPage() {
               </div>
               <button
                 onClick={() => handleDeleteGroup(g.id)}
-                disabled={submitting}
+                disabled={deletingGroupId === g.id || submitting}
                 className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition disabled:opacity-50"
                 title="Xóa tổ"
               >
-                <Trash2 className="w-4.5 h-4.5" />
+                {deletingGroupId === g.id ? (
+                  <Loader2 className="w-4 h-4 text-red-500 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -282,11 +287,15 @@ export default function SubjectGroupsPage() {
                   <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> {s.name}
                   <button
                     onClick={() => handleRemoveSubject(s.id)}
-                    disabled={submitting}
+                    disabled={removingSubjectId === s.id || submitting}
                     className="hover:bg-indigo-200 hover:text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center ml-1 transition disabled:opacity-50"
                     title="Gỡ khỏi tổ"
                   >
-                    ×
+                    {removingSubjectId === s.id ? (
+                      <Loader2 className="w-3 h-3 text-red-500 animate-spin" />
+                    ) : (
+                      "×"
+                    )}
                   </button>
                 </span>
               ))}
