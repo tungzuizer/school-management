@@ -6,7 +6,7 @@ import {
   getLessonPlanPeriods, createLessonPlanPeriod, togglePeriodActive, deletePeriod,
 } from "./actions";
 import { useToast } from "@/components/ui/Toast";
-import { HardDrive, Plus, Calendar, Trash2, Power, ExternalLink } from "lucide-react";
+import { HardDrive, Plus, Calendar, Trash2, Power, ExternalLink, Loader2 } from "lucide-react";
 
 interface Period {
   id: string; label: string; startDate: string; deadline: string; isActive: boolean;

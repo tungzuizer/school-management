@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getSubjectGroups, createSubjectGroup, deleteSubjectGroup, assignSubjectToGroup, getUnassignedSubjects, getAllTeachersList } from "../drive-config/actions";
 import { useToast } from "@/components/ui/Toast";
-import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2, Check } from "lucide-react";
+import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2 } from "lucide-react";
 
 interface SubjectGroupRow {
   id: string;
@@ -18,8 +18,7 @@ export default function SubjectGroupsPage() {
   const [groups, setGroups] = useState<SubjectGroupRow[]>([]);
   const [unassigned, setUnassigned] = useState<{ id: string; name: string }[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [removingSubjectId, setRemovingSubjectId] = useState<string | null>(null);
@@ -36,21 +35,20 @@ export default function SubjectGroupsPage() {
   const [assignGroupId, setAssignGroupId] = useState("");
 
   const loadData = useCallback(async (silent = false) => {
-    if (!silent) setInitialLoading(true);
-    setIsRefreshing(true);
-
+    if (!silent) setLoading(true);
     try {
-      const g = await getSubjectGroups();
-      const u = await getUnassignedSubjects();
-      const t = await getAllTeachersList();
+      const [g, u, t] = await Promise.all([
+        getSubjectGroups(),
+        getUnassignedSubjects(),
+        getAllTeachersList(),
+      ]);
       setGroups(g as unknown as SubjectGroupRow[]);
       setUnassigned(u as { id: string; name: string }[]);
       setTeachers(t as unknown as TeacherOption[]);
     } catch (err) {
       console.error("Failed to load subject groups data:", err);
     } finally {
-      setInitialLoading(false);
-      setIsRefreshing(false);
+      setLoading(false);
     }
   }, []);
 
@@ -59,19 +57,18 @@ export default function SubjectGroupsPage() {
   const handleCreate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (isSubmittingRef.current || submitting) return;
-    
+
     isSubmittingRef.current = true;
     setSubmitting(true);
 
     const trimmedName = newName.trim();
-    if (!trimmedName) { 
-      showToast("Tên tổ không được trống", "error"); 
+    if (!trimmedName) {
+      showToast("Tên tổ không được trống", "error");
       isSubmittingRef.current = false;
       setSubmitting(false);
-      return; 
+      return;
     }
 
-    // Kiểm tra trùng tên tổ chuyên môn ở phía client
     const isDuplicate = groups.some(
       (g) => g.name.toLowerCase() === trimmedName.toLowerCase()
     );
@@ -81,7 +78,7 @@ export default function SubjectGroupsPage() {
       setSubmitting(false);
       return;
     }
-    
+
     try {
       const res = await createSubjectGroup({ name: trimmedName, headTeacherId: newHead || undefined });
       if (res.success) {
@@ -105,7 +102,7 @@ export default function SubjectGroupsPage() {
     if (e) e.preventDefault();
     if (isSubmittingRef.current || submitting) return;
     if (!assignSubjectId || !assignGroupId) { showToast("Vui lòng chọn cả môn học và tổ chuyên môn", "error"); return; }
-    
+
     isSubmittingRef.current = true;
     setSubmitting(true);
     try {
@@ -154,14 +151,12 @@ export default function SubjectGroupsPage() {
     <div className="space-y-6 max-w-5xl relative">
       {ToastComponent}
 
+      {/* ===== HEADER - luôn hiển thị ===== */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users className="w-7 h-7 text-indigo-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              Quản lý Tổ Chuyên Môn
-              {(initialLoading || isRefreshing) && <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />}
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">Quản lý Tổ Chuyên Môn</h1>
             <p className="text-xs text-gray-500">Tổ chuyên môn gom các môn học lại (VD: Tổ Tự nhiên = Toán, Lý, Hóa, Sinh). Mỗi tổ có 1 Tổ trưởng.</p>
           </div>
         </div>
@@ -174,7 +169,7 @@ export default function SubjectGroupsPage() {
         </button>
       </div>
 
-      {/* Create Form */}
+      {/* ===== CREATE FORM - luôn hiển thị khi mở ===== */}
       {showForm && (
         <form onSubmit={handleCreate} className="bg-indigo-50/80 rounded-xl border border-indigo-200 p-4 space-y-3 shadow-sm transition">
           <h3 className="text-sm font-semibold text-gray-800">Tạo Tổ Chuyên Môn Mới</h3>
@@ -214,103 +209,124 @@ export default function SubjectGroupsPage() {
         </form>
       )}
 
-      {/* Assign Subject */}
-      <form onSubmit={handleAssign} className="bg-amber-50/80 rounded-xl border border-amber-200 p-4 shadow-sm transition-all min-h-[100px]">
-        <h3 className="text-sm font-semibold text-amber-900 mb-2">Môn học chưa thuộc tổ nào {initialLoading ? "..." : `(${unassigned.length})`}</h3>
-        {(!initialLoading && unassigned.length === 0) ? (
-          <div className="text-xs text-amber-700 mt-3 flex items-center gap-1.5">
-            <Check className="w-3.5 h-3.5" /> Tất cả môn học hiện tại đã được gán vào các tổ chuyên môn.
-          </div>
-        ) : (
-          <div className="flex gap-3 items-end flex-wrap">
-            <select
-              value={assignSubjectId}
-              onChange={e => setAssignSubjectId(e.target.value)}
-              disabled={submitting || initialLoading}
-              className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
-            >
-              <option value="">{initialLoading ? "Đang tải dữ liệu..." : "— Chọn môn —"}</option>
-              {unassigned.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <ArrowRight className="w-4 h-4 text-amber-500 self-center mb-2" />
-            <select
-              value={assignGroupId}
-              onChange={e => setAssignGroupId(e.target.value)}
-              disabled={submitting || initialLoading}
-              className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
-            >
-              <option value="">{initialLoading ? "Đang tải dữ liệu..." : "— Chọn tổ —"}</option>
-              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-            </select>
-            <button
-              type="submit"
-              disabled={submitting || initialLoading || !assignSubjectId || !assignGroupId}
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5 transition"
-            >
-              {(submitting || initialLoading) && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>Gán vào Tổ</span>
-            </button>
-          </div>
-        )}
+      {/* ===== ASSIGN SUBJECT - luôn hiển thị ===== */}
+      <form onSubmit={handleAssign} className="bg-amber-50/80 rounded-xl border border-amber-200 p-4 shadow-sm">
+        <h3 className="text-sm font-semibold text-amber-900 mb-2">Gán môn học vào tổ</h3>
+        <div className="flex gap-3 items-end flex-wrap">
+          <select
+            value={assignSubjectId}
+            onChange={e => setAssignSubjectId(e.target.value)}
+            disabled={submitting || loading}
+            className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
+          >
+            <option value="">— Chọn môn —</option>
+            {unassigned.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <ArrowRight className="w-4 h-4 text-amber-500 self-center" />
+          <select
+            value={assignGroupId}
+            onChange={e => setAssignGroupId(e.target.value)}
+            disabled={submitting || loading}
+            className="px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white disabled:bg-gray-100"
+          >
+            <option value="">— Chọn tổ —</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+          <button
+            type="submit"
+            disabled={submitting || loading || !assignSubjectId || !assignGroupId}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5 transition"
+          >
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>Gán vào Tổ</span>
+          </button>
+        </div>
       </form>
 
-      {/* Groups List */}
-      <div className="space-y-4">
-        {initialLoading ? (
-          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
-            <span className="text-gray-500 font-medium text-sm">Đang tải dữ liệu tổ chuyên môn...</span>
-          </div>
-        ) : groups.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300 text-gray-400">
-            Chưa có tổ chuyên môn nào. Bấm "Tạo Tổ mới" để bắt đầu.
-          </div>
-        ) : groups.map(g => (
-          <div key={g.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:border-indigo-200 transition">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">{g.name}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Tổ trưởng: <span className="font-semibold text-indigo-700">{g.headTeacher?.user?.name || "Chưa phân công"}</span>
-                  {" • "}{g.subjects.length} môn thuộc tổ
-                </p>
-              </div>
-              <button
-                onClick={() => handleDeleteGroup(g.id)}
-                disabled={deletingGroupId === g.id || submitting}
-                className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition disabled:opacity-50"
-                title="Xóa tổ"
-              >
-                {deletingGroupId === g.id ? (
-                  <Loader2 className="w-4 h-4 text-red-500 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {g.subjects.length === 0 ? (
-                <span className="text-xs text-gray-400 italic">Chưa có môn nào trong tổ</span>
-              ) : g.subjects.map(s => (
-                <span key={s.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-800 rounded-full text-xs font-medium border border-indigo-100">
-                  <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> {s.name}
-                  <button
-                    onClick={() => handleRemoveSubject(s.id)}
-                    disabled={removingSubjectId === s.id || submitting}
-                    className="hover:bg-indigo-200 hover:text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center ml-1 transition disabled:opacity-50"
-                    title="Gỡ khỏi tổ"
-                  >
-                    {removingSubjectId === s.id ? (
-                      <Loader2 className="w-3 h-3 text-red-500 animate-spin" />
+      {/* ===== GROUPS TABLE - bố cục luôn hiển thị, chỉ nội dung bên trong thay đổi ===== */}
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Tên Tổ Chuyên Môn</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Tổ trưởng</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Các môn thuộc tổ</th>
+              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+                    <span>Đang tải danh sách tổ chuyên môn...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : groups.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  Chưa có tổ chuyên môn nào. Bấm &quot;Tạo Tổ mới&quot; để bắt đầu.
+                </td>
+              </tr>
+            ) : (
+              groups.map(g => (
+                <tr key={g.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <span className="font-bold text-gray-900">{g.name}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {g.headTeacher?.user?.name ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        {g.headTeacher.user.name}
+                      </span>
                     ) : (
-                      "×"
+                      <span className="text-gray-400 text-sm">Chưa phân công</span>
                     )}
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1.5">
+                      {g.subjects.length === 0 ? (
+                        <span className="text-xs text-gray-400 italic">Chưa có môn nào</span>
+                      ) : g.subjects.map(s => (
+                        <span key={s.id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-800 rounded-full text-xs font-medium border border-indigo-100">
+                          <BookOpen className="w-3 h-3 text-indigo-600" /> {s.name}
+                          <button
+                            onClick={() => handleRemoveSubject(s.id)}
+                            disabled={removingSubjectId === s.id || submitting}
+                            className="hover:bg-indigo-200 hover:text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center ml-0.5 transition disabled:opacity-50"
+                            title="Gỡ khỏi tổ"
+                          >
+                            {removingSubjectId === s.id ? (
+                              <Loader2 className="w-3 h-3 text-red-500 animate-spin" />
+                            ) : (
+                              "×"
+                            )}
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      onClick={() => handleDeleteGroup(g.id)}
+                      disabled={deletingGroupId === g.id || submitting}
+                      className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition disabled:opacity-50"
+                      title="Xóa tổ"
+                    >
+                      {deletingGroupId === g.id ? (
+                        <Loader2 className="w-4 h-4 text-red-500 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
