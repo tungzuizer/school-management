@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { checkIsSubjectHead } from "./subject-head/actions";
 import {
   CalendarDays,
   NotebookPen,
@@ -42,7 +43,7 @@ type MenuGroup = {
   items: MenuItem[];
 };
 
-const menuGroups: MenuGroup[] = [
+const baseMenuGroups: MenuGroup[] = [
   {
     title: "Tong quan",
     icon: Home,
@@ -69,13 +70,6 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    title: "To chuyen mon",
-    icon: UserCheck,
-    items: [
-      { label: "Duyet giao an", href: "/teacher/subject-head", icon: UserCheck },
-    ],
-  },
-  {
     title: "Ca nhan",
     icon: User,
     items: [
@@ -83,6 +77,14 @@ const menuGroups: MenuGroup[] = [
     ],
   },
 ];
+
+const subjectHeadMenuGroup: MenuGroup = {
+  title: "To chuyen mon",
+  icon: UserCheck,
+  items: [
+    { label: "Duyet giao an", href: "/teacher/subject-head", icon: UserCheck },
+  ],
+};
 
 // Mobile bottom tabs
 const mobileMainTabs = [
@@ -100,8 +102,21 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [isSubjectHead, setIsSubjectHead] = useState(false);
   const userName = session?.user?.name || "Giao vien";
   const userEmail = session?.user?.email || "";
+
+  // Check dynamically if this teacher is a subject head
+  useEffect(() => {
+    checkIsSubjectHead().then((res) => {
+      setIsSubjectHead(res.isSubjectHead);
+    }).catch(() => setIsSubjectHead(false));
+  }, []);
+
+  // Build menu groups: only include "To chuyen mon" if teacher is subject head
+  const menuGroups = isSubjectHead
+    ? [...baseMenuGroups.slice(0, 3), subjectHeadMenuGroup, baseMenuGroups[3]]
+    : baseMenuGroups;
 
   const toggleGroup = (title: string) => {
     setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
