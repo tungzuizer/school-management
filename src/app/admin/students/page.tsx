@@ -5,6 +5,7 @@ import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import {
   getStudents,
   getClassesForSelect,
+  getSchoolsForSelect,
   createStudent,
   updateStudent,
   deleteStudent,
@@ -28,7 +29,7 @@ interface StudentData {
   motherName: string | null;
   motherJob: string | null;
   user: { id: string; name: string; email: string };
-  classRoom: { id: string; name: string; gradeLevel: number } | null;
+  classRoom: { id: string; name: string; gradeLevel: number; school?: { id: string; name: string } | null } | null;
   group: { id: string; name: string } | null;
 }
 
@@ -59,7 +60,10 @@ const defaultForm = {
 export default function StudentsPage() {
   const [students, setStudents] = useState<StudentData[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
+  const [filterSchool, setFilterSchool] = useState("");
+  const [filterGrade, setFilterGrade] = useState("");
   const [filterClass, setFilterClass] = useState("");
   const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
   const [loading, setLoading] = useState(true);
@@ -81,14 +85,17 @@ export default function StudentsPage() {
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    const [studentsData, classesData] = await Promise.all([
-      getStudents(search || undefined, filterClass || undefined),
-      getClassesForSelect(),
+    const gradeNum = filterGrade ? Number(filterGrade) : undefined;
+    const [studentsData, classesData, schoolsData] = await Promise.all([
+      getStudents(search || undefined, filterClass || undefined, gradeNum, filterSchool || undefined),
+      getClassesForSelect(filterSchool || undefined),
+      getSchoolsForSelect(),
     ]);
     setStudents(studentsData as unknown as StudentData[]);
     setClasses(classesData);
+    setSchools(schoolsData);
     setLoading(false);
-  }, [search, filterClass]);
+  }, [search, filterClass, filterGrade, filterSchool]);
 
   useEffect(() => {
     loadData(true);
@@ -410,22 +417,60 @@ export default function StudentsPage() {
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="text"
-            placeholder="Tìm theo tên học sinh..."
+            placeholder="Tìm theo tên, mã HS..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-64 bg-white shadow-2xs"
+            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-52 sm:w-64 bg-white shadow-2xs"
           />
+
+          {/* Lọc theo Trường */}
+          {schools.length > 0 && (
+            <select
+              value={filterSchool}
+              onChange={(e) => {
+                setFilterSchool(e.target.value);
+                setFilterClass("");
+              }}
+              className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs max-w-[200px]"
+            >
+              <option value="">🏫 Tất cả các trường</option>
+              {schools.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Lọc theo Khối */}
+          <select
+            value={filterGrade}
+            onChange={(e) => {
+              setFilterGrade(e.target.value);
+              setFilterClass("");
+            }}
+            className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
+          >
+            <option value="">📚 Tất cả khối</option>
+            <option value="10">Khối 10</option>
+            <option value="11">Khối 11</option>
+            <option value="12">Khối 12</option>
+          </select>
+
+          {/* Lọc theo Lớp */}
           <select
             value={filterClass}
             onChange={(e) => setFilterClass(e.target.value)}
-            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
+            className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
           >
-            <option value="">Tất cả lớp</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                Lớp {c.name} (Khối {c.gradeLevel})
-              </option>
-            ))}
+            <option value="">👥 Tất cả lớp</option>
+            {classes
+              .filter((c) => !filterGrade || c.gradeLevel === Number(filterGrade))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  Lớp {c.name} (Khối {c.gradeLevel})
+                </option>
+              ))}
           </select>
         </div>
 
@@ -476,6 +521,11 @@ export default function StudentsPage() {
                   <p className="text-xs text-slate-500">
                     <span className="font-semibold text-slate-700">Mã HS:</span> {s.studentCode || "—"} |{" "}
                     <span className="font-semibold text-slate-700">Lớp:</span> {s.classRoom?.name || "Chưa xếp lớp"}
+                    {s.classRoom?.school?.name && (
+                      <span className="ml-1.5 inline-block text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 font-medium">
+                        🏫 {s.classRoom.school.name}
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-slate-500">
                     <span className="font-semibold text-slate-700">Ngày sinh:</span> {safeFormatDisplayDate(s.dob)} |{" "}
@@ -537,9 +587,16 @@ export default function StudentsPage() {
                       <td className="px-4 py-3 font-medium text-gray-900">{s.user?.name || "Học sinh"}</td>
                       <td className="px-4 py-3 text-sm">
                         {s.classRoom ? (
-                          <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                            {s.classRoom.name}
-                          </span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs w-fit font-medium">
+                              Lớp {s.classRoom.name}
+                            </span>
+                            {s.classRoom.school?.name && (
+                              <span className="text-[10px] text-slate-500 font-medium">
+                                🏫 {s.classRoom.school.name}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           "—"
                         )}
