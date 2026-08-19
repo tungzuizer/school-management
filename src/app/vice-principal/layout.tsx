@@ -59,6 +59,7 @@ const menuGroups: MenuGroup[] = [
     icon: FileBarChart,
     items: [
       { label: "Sổ đầu bài", href: "/vice-principal/journals", icon: FileBarChart },
+      { label: "Trung tâm Phê duyệt & Từ chối", href: "/admin/approvals", icon: ClipboardCheck },
       { label: "Duyệt giáo án", href: "/vice-principal/lesson-plans", icon: BookOpen },
       { label: "Cảnh báo", href: "/vice-principal/warnings", icon: AlertTriangle },
     ],
