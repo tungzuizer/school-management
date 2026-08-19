@@ -554,7 +554,6 @@ export default function StudentsPage() {
           </table>
         </div>
       </div>
-      )}
 
       {/* Create/Edit Modal */}
       <Modal

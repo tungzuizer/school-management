@@ -249,7 +249,6 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
           </tbody>
         </table>
       </div>
-      )}
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Sửa môn học" : "Thêm môn học mới"} size="sm">
         <form onSubmit={handleSubmit} className="space-y-4">
