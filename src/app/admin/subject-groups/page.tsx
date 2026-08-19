@@ -176,25 +176,30 @@ export default function SubjectGroupsPage() {
     }
     setSubmitting(true);
 
-    const payload = {
-      name: form.name.trim(),
-      schoolId: form.schoolId || undefined,
-      headTeacherId: form.headTeacherId || null,
-      description: form.description.trim() || null,
-      subjectIds: form.selectedSubjectIds,
-    };
+    try {
+      const payload = {
+        name: form.name.trim(),
+        schoolId: form.schoolId || undefined,
+        headTeacherId: form.headTeacherId || null,
+        description: form.description.trim() || null,
+        subjectIds: form.selectedSubjectIds,
+      };
 
-    const result = editing
-      ? await updateSubjectGroup(editing.id, payload)
-      : await createSubjectGroup(payload);
+      const result = editing
+        ? await updateSubjectGroup(editing.id, payload)
+        : await createSubjectGroup(payload);
 
-    setSubmitting(false);
-    if (result.success) {
-      showToast(editing ? "Cập nhật tổ chuyên môn thành công" : "Thêm tổ chuyên môn thành công");
-      setModalOpen(false);
-      loadData(true);
-    } else {
-      showToast(result.error || "Có lỗi xảy ra", "error");
+      setSubmitting(false);
+      if (result.success) {
+        showToast(editing ? "Cập nhật tổ chuyên môn thành công" : "Thêm tổ chuyên môn thành công", "success");
+        setModalOpen(false);
+        await loadData(true);
+      } else {
+        showToast(result.error || "Có lỗi xảy ra", "error");
+      }
+    } catch (err: any) {
+      setSubmitting(false);
+      showToast(err?.message || "Lỗi hệ thống", "error");
     }
   };
 
