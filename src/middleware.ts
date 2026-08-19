@@ -34,8 +34,9 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Học sinh: STUDENT, TEACHER, ADMIN
-    if (path.startsWith("/student") && token?.role !== "STUDENT" && !adminRoles.includes(token?.role as string)) {
+    // Khu vực Học sinh: STUDENT, TEACHER, ADMIN, VICE_PRINCIPAL
+    const studentRoles = ["STUDENT", "TEACHER", "ADMIN", "VICE_PRINCIPAL", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
+    if (path.startsWith("/student") && !studentRoles.includes(token?.role as string)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
