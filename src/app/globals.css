@@ -26,25 +26,88 @@ input, select, textarea {
   font-size: 16px !important;
 }
 
-/* Make all buttons easier to tap on mobile and add global active/hover transition effects */
-button, a[role="button"], input[type="button"], input[type="submit"] {
+/* ==========================================================================
+   SUPERIOR INTERACTIVE ELEMENTS (Pro Hover/Active Effects)
+   ========================================================================== */
+
+/* 1. Global Buttons & Action Links */
+button, 
+a[role="button"], 
+input[type="button"], 
+input[type="submit"],
+.interactive-btn {
   min-height: 44px;
   touch-action: manipulation;
-  transition: all 0.2s ease-in-out;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              filter 0.2s ease, 
+              box-shadow 0.2s ease, 
+              background-color 0.2s ease,
+              border-color 0.2s ease !important;
 }
 
-button:not(:disabled):active, a[role="button"]:not(:disabled):active {
-  transform: scale(0.96);
+/* Hover: Lift slightly & Illuminate */
+button:not(:disabled):hover, 
+a[role="button"]:not(:disabled):hover, 
+input[type="button"]:not(:disabled):hover, 
+input[type="submit"]:not(:disabled):hover,
+.interactive-btn:not(:disabled):hover {
+  transform: translateY(-1.5px);
+  filter: brightness(1.08); /* Glowing effect */
+  /* Remove global generic shadow so it doesn't conflict with custom painted shadows */
 }
 
-button:not(:disabled):hover {
-  filter: brightness(1.05);
+/* Active: Press down physically */
+button:not(:disabled):active, 
+a[role="button"]:not(:disabled):active, 
+input[type="button"]:not(:disabled):active, 
+input[type="submit"]:not(:disabled):active,
+.interactive-btn:not(:disabled):active {
+  transform: translateY(0.5px) scale(0.96) !important;
+  filter: brightness(0.92);
 }
 
 /* Base anchor styling so it doesn't break normal links but still has some padding */
 a, [role="button"]:not(a) {
   min-height: 44px;
   touch-action: manipulation;
+}
+
+/* 2. Text Links */
+a:not([role="button"]):not(.interactive-btn) {
+  transition: all 0.2s ease-in-out;
+}
+a:not([role="button"]):not(.interactive-btn):hover {
+  opacity: 0.8;
+}
+a:not([role="button"]):not(.interactive-btn):active {
+  transform: scale(0.98);
+  opacity: 0.6;
+}
+
+/* 3. Inputs & Selects : Focus ring and slight elevation */
+input, select, textarea {
+  transition: all 0.25s ease-in-out !important;
+}
+input:not(:disabled):hover, select:not(:disabled):hover, textarea:not(:disabled):hover {
+  border-color: rgba(99, 102, 241, 0.5);
+}
+input:not(:focus):active, select:active {
+  transform: scale(0.99);
+}
+input:focus, select:focus, textarea:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px -4px rgba(99, 102, 241, 0.15) !important;
+}
+
+/* 4. Table Rows and interactive structural elements */
+tbody tr:not(.no-hover) {
+  transition: background-color 0.2s ease, filter 0.2s ease;
+}
+tbody tr:not(.no-hover):hover {
+  filter: brightness(0.98);
+}
+tbody tr:not(.no-hover):active {
+  filter: brightness(0.94);
 }
 
 /* Smooth scrolling */
