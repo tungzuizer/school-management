@@ -209,46 +209,48 @@ export default function SubjectsClient({ initialSubjects, initialTeachers }: Sub
 
       {/* Table View */}
       {viewMode === "TABLE" && (
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Tên môn học</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Khối lớp</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Trưởng bộ môn</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Số phân công</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Số điểm đã nhập</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {subjects.length === 0 ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Chưa có môn học nào</td></tr>
-            ) : (
-              subjects.map((s) => (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900">{s.name}</td>
-                  <td className="px-6 py-4 text-gray-600">{s.gradeLevel ? `Khối ${s.gradeLevel}` : "Tất cả"}</td>
-                  <td className="px-6 py-4 text-indigo-700 font-medium">
-                    {s.headTeacher?.user?.name ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        👑 {s.headTeacher.user.name}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs italic">Chưa phân công</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{s._count.teachingAssignments}</td>
-                  <td className="px-6 py-4 text-gray-600">{s._count.grades}</td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => openEdit(s)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Sửa</button>
-                    <button onClick={() => setDeleteConfirm(s.id)} className="text-red-600 hover:text-red-800 text-sm font-medium">Xóa</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Tên môn học</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Khối lớp</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Trưởng bộ môn</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Số phân công</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Số điểm đã nhập</th>
+                <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {subjects.length === 0 ? (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Chưa có môn học nào</td></tr>
+              ) : (
+                subjects.map((s) => (
+                  <tr key={s.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 font-medium text-gray-900">{s.name}</td>
+                    <td className="px-6 py-4 text-gray-600">{s.gradeLevel ? `Khối ${s.gradeLevel}` : "Tất cả"}</td>
+                    <td className="px-6 py-4 text-indigo-700 font-medium">
+                      {s.headTeacher?.user?.name ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          👑 {s.headTeacher.user.name}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs italic">Chưa phân công</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{s._count.teachingAssignments}</td>
+                    <td className="px-6 py-4 text-gray-600">{s._count.grades}</td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button onClick={() => openEdit(s)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Sửa</button>
+                      <button onClick={() => setDeleteConfirm(s.id)} className="text-red-600 hover:text-red-800 text-sm font-medium">Xóa</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Sửa môn học" : "Thêm môn học mới"} size="sm">
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -342,72 +342,74 @@ export default function TeachersPage() {
 
       {/* Table View */}
       {viewMode === "TABLE" && (
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Chuyên môn</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Bằng cấp</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">SĐT</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Chủ nhiệm</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Phân công</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {loading ? (
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
-                    <span>Đang tải danh sách giáo viên...</span>
-                  </div>
-                </td>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Chuyên môn</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Bằng cấp</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">SĐT</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Chủ nhiệm</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Phân công</th>
+                <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
               </tr>
-            ) : teachers.length === 0 ? (
-              <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Chưa có giáo viên nào</td></tr>
-            ) : (
-              teachers.map((t) => (
-                <tr key={t.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900">{t.user.name}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{t.user.email}</td>
-                  <td className="px-6 py-4 text-gray-600">{t.specialty || "—"}</td>
-                  <td className="px-6 py-4 text-gray-600">{t.degree || "—"}</td>
-                  <td className="px-6 py-4 text-gray-600">{t.phone || "—"}</td>
-                  <td className="px-6 py-4">
-                    {t.homeroomClasses.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {t.homeroomClasses.map(c => (
-                          <span key={c.id} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">{c.name}</span>
-                        ))}
-                      </div>
-                    ) : "—"}
-                  </td>
-                  <td className="px-6 py-4">
-                    {t.teachingAssignments.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {t.teachingAssignments.slice(0, 3).map(a => (
-                          <span key={a.id} className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
-                            {a.subject.name} - {a.classRoom.name}
-                          </span>
-                        ))}
-                        {t.teachingAssignments.length > 3 && (
-                          <span className="text-gray-500 text-xs">+{t.teachingAssignments.length - 3}</span>
-                        )}
-                      </div>
-                    ) : "—"}
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => openEdit(t)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Sửa</button>
-                    <button onClick={() => setDeleteConfirm(t.id)} className="text-red-600 hover:text-red-800 text-sm font-medium">Xóa</button>
+            </thead>
+            <tbody className="divide-y">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+                      <span>Đang tải danh sách giáo viên...</span>
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : teachers.length === 0 ? (
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Chưa có giáo viên nào</td></tr>
+              ) : (
+                teachers.map((t) => (
+                  <tr key={t.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 font-medium text-gray-900">{t.user.name}</td>
+                    <td className="px-6 py-4 text-gray-600 text-sm">{t.user.email}</td>
+                    <td className="px-6 py-4 text-gray-600">{t.specialty || "—"}</td>
+                    <td className="px-6 py-4 text-gray-600">{t.degree || "—"}</td>
+                    <td className="px-6 py-4 text-gray-600">{t.phone || "—"}</td>
+                    <td className="px-6 py-4">
+                      {t.homeroomClasses.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {t.homeroomClasses.map(c => (
+                            <span key={c.id} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">{c.name}</span>
+                          ))}
+                        </div>
+                      ) : "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      {t.teachingAssignments.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {t.teachingAssignments.slice(0, 3).map(a => (
+                            <span key={a.id} className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
+                              {a.subject.name} - {a.classRoom.name}
+                            </span>
+                          ))}
+                          {t.teachingAssignments.length > 3 && (
+                            <span className="text-gray-500 text-xs">+{t.teachingAssignments.length - 3}</span>
+                          )}
+                        </div>
+                      ) : "—"}
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button onClick={() => openEdit(t)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Sửa</button>
+                      <button onClick={() => setDeleteConfirm(t.id)} className="text-red-600 hover:text-red-800 text-sm font-medium">Xóa</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Sửa giáo viên" : "Thêm giáo viên mới"}>
