@@ -7,6 +7,7 @@ import {
   mapRowsToStudents,
   mapRowsToTeachers,
   mapRowsToClasses,
+  mapRowsToSubjectGroups,
 } from "@/lib/excel-parser";
 
 export async function POST(req: NextRequest) {
@@ -70,6 +71,8 @@ export async function POST(req: NextRequest) {
       parsedData = mapRowsToTeachers(rawRows);
     } else if (targetType === "CLASSES") {
       parsedData = mapRowsToClasses(rawRows);
+    } else if (targetType === "SUBJECT_GROUPS") {
+      parsedData = mapRowsToSubjectGroups(rawRows);
     } else {
       // Default: STUDENTS
       parsedData = mapRowsToStudents(rawRows);
