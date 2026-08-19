@@ -38,37 +38,38 @@ type MenuGroup = {
 
 const menuGroups: MenuGroup[] = [
   {
-    title: "Tong quan",
+    title: "Tổng quan",
     icon: Home,
     items: [
-      { label: "Dashboard", href: "/vice-principal/dashboard", icon: LayoutDashboard },
+      { label: "Bảng điều khiển", href: "/vice-principal/dashboard", icon: LayoutDashboard },
     ],
   },
   {
-    title: "Quan ly phan hieu",
+    title: "Quản lý phân hiệu",
     icon: Building2,
     items: [
-      { label: "Lop hoc", href: "/vice-principal/classes", icon: School },
-      { label: "Hoc sinh", href: "/vice-principal/students", icon: Users },
-      { label: "Diem danh", href: "/vice-principal/attendance", icon: ClipboardCheck },
+      { label: "Lớp học", href: "/vice-principal/classes", icon: School },
+      { label: "Học sinh", href: "/vice-principal/students", icon: Users },
+      { label: "Điểm danh", href: "/vice-principal/attendance", icon: ClipboardCheck },
+      { label: "Tổ chuyên môn", href: "/admin/subject-groups", icon: Users },
     ],
   },
   {
-    title: "Ho so so sach",
+    title: "Hồ sơ sổ sách",
     icon: FileBarChart,
     items: [
-      { label: "So dau bai", href: "/vice-principal/journals", icon: FileBarChart },
-      { label: "Giao an", href: "/vice-principal/lesson-plans", icon: BookOpen },
-      { label: "Canh bao", href: "/vice-principal/warnings", icon: AlertTriangle },
+      { label: "Sổ đầu bài", href: "/vice-principal/journals", icon: FileBarChart },
+      { label: "Duyệt giáo án", href: "/vice-principal/lesson-plans", icon: BookOpen },
+      { label: "Cảnh báo", href: "/vice-principal/warnings", icon: AlertTriangle },
     ],
   },
 ];
 
 const mobileMainTabs = [
-  { label: "Home", href: "/vice-principal/dashboard", icon: Home },
-  { label: "Lop hoc", href: "/vice-principal/classes", icon: School },
-  { label: "Hoc sinh", href: "/vice-principal/students", icon: Users },
-  { label: "Ho so", href: "/vice-principal/journals", icon: FileBarChart },
+  { label: "Tổng quan", href: "/vice-principal/dashboard", icon: Home },
+  { label: "Tổ CM", href: "/admin/subject-groups", icon: Users },
+  { label: "Lớp học", href: "/vice-principal/classes", icon: School },
+  { label: "Duyệt giáo án", href: "/vice-principal/lesson-plans", icon: BookOpen },
 ];
 
 export default function VicePrincipalLayout({ children }: { children: React.ReactNode }) {
@@ -118,11 +119,11 @@ export default function VicePrincipalLayout({ children }: { children: React.Reac
         {/* Navigation Menu */}
         <nav className="flex-1 overflow-auto py-3 px-2 space-y-0.5">
           {menuGroups.map((group) => {
-            const isCollapsed = collapsedGroups[group.title];
-            const GroupIcon = group.icon;
             const hasActiveItem = group.items.some(
               item => pathname === item.href || pathname.startsWith(item.href + "/")
             );
+            const isCollapsed = collapsedGroups[group.title] ?? !hasActiveItem;
+            const GroupIcon = group.icon;
 
             return (
               <div key={group.title} className="mb-1">

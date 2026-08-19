@@ -16,8 +16,8 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Admin (Hiệu trưởng): ADMIN, DEPARTMENT_ADMIN, WARD_ADMIN
-    const adminRoles = ["ADMIN", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
+    // Khu vực Admin (Hiệu trưởng & Phó Hiệu trưởng): ADMIN, VICE_PRINCIPAL, DEPARTMENT_ADMIN, WARD_ADMIN
+    const adminRoles = ["ADMIN", "VICE_PRINCIPAL", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
     if (path.startsWith("/admin") && !adminRoles.includes(token?.role as string)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
