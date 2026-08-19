@@ -184,3 +184,17 @@ export async function getAllTeachersList() {
     orderBy: { user: { name: "asc" } },
   });
 }
+
+// Cập nhật hoặc gỡ quyền Tổ trưởng chuyên môn
+export async function updateGroupHead(groupId: string, headTeacherId: string | null) {
+  try {
+    await prisma.subjectGroup.update({
+      where: { id: groupId },
+      data: { headTeacherId: headTeacherId || null },
+    });
+    return { success: true };
+  } catch (err: any) {
+    console.error("Error updating group head:", err);
+    return { success: false, error: err.message || "Không thể cập nhật tổ trưởng" };
+  }
+}
