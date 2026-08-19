@@ -158,10 +158,6 @@ BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
       },
       error: null,
     };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Lỗi không xác định";
-    return { success: false, data: null, error: `Không thể kết nối AI: ${msg}` };
-  }
 }
 
 // Save a decision to the log

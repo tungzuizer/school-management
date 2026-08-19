@@ -401,10 +401,6 @@ Yêu cầu output:
       success: true,
       reminder: aiRes.text,
     };
-
-    const data = await res.json();
-    const reminder = data.choices?.[0]?.message?.content || "Không nhận được phản hồi từ AI.";
-    return { success: true, reminder };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("AI Fetch Error:", message);
