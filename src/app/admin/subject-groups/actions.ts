@@ -248,6 +248,12 @@ export async function updateSubjectGroup(
 
 export async function deleteSubjectGroup(id: string) {
   try {
+    // Check if group exists before trying to delete
+    const existing = await prisma.subjectGroup.findUnique({ where: { id } });
+    if (!existing) {
+      return { success: true }; // Already deleted or doesn't exist
+    }
+
     // Disconnect all subjects first
     await prisma.subject.updateMany({
       where: { subjectGroupId: id },
@@ -257,6 +263,9 @@ export async function deleteSubjectGroup(id: string) {
     await prisma.subjectGroup.delete({ where: { id } });
     return { success: true };
   } catch (error: any) {
+    if (error.code === "P2025") {
+      return { success: true };
+    }
     console.error("deleteSubjectGroup error:", error);
     return { success: false, error: error.message || "Lỗi khi xóa tổ chuyên môn" };
   }
