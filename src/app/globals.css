@@ -26,8 +26,23 @@ input, select, textarea {
   font-size: 16px !important;
 }
 
-/* Make all buttons easier to tap on mobile */
-button, a, [role="button"] {
+/* Make all buttons easier to tap on mobile and add global active/hover transition effects */
+button, a[role="button"], input[type="button"], input[type="submit"] {
+  min-height: 44px;
+  touch-action: manipulation;
+  transition: all 0.2s ease-in-out;
+}
+
+button:not(:disabled):active, a[role="button"]:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+button:not(:disabled):hover {
+  filter: brightness(1.05);
+}
+
+/* Base anchor styling so it doesn't break normal links but still has some padding */
+a, [role="button"]:not(a) {
   min-height: 44px;
   touch-action: manipulation;
 }
