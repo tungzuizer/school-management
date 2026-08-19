@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   getSubjectGroups,
   createSubjectGroup,
@@ -10,8 +10,9 @@ import {
   getAllTeachersList,
   updateGroupHead,
 } from "../drive-config/actions";
+import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2, UserCheck, ShieldCheck, Sparkles, X } from "lucide-react";
+import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2, Search, Edit2, ShieldCheck, Check } from "lucide-react";
 
 interface SubjectGroupRow {
   id: string;
@@ -30,23 +31,30 @@ export default function SubjectGroupsPage() {
   const [groups, setGroups] = useState<SubjectGroupRow[]>([]);
   const [unassigned, setUnassigned] = useState<{ id: string; name: string }[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
   const [loading, setLoading] = useState(true);
+
+  // Modal Create/Edit state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<SubjectGroupRow | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formHeadTeacherId, setFormHeadTeacherId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Modal Assign Subject state
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignSubjectId, setAssignSubjectId] = useState("");
+  const [assignGroupId, setAssignGroupId] = useState("");
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+
+  // Action states
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [removingSubjectId, setRemovingSubjectId] = useState<string | null>(null);
   const [updatingHeadGroupId, setUpdatingHeadGroupId] = useState<string | null>(null);
 
-  const isSubmittingRef = useRef(false);
   const { showToast, ToastComponent } = useToast();
-
-  // New group form
-  const [showForm, setShowForm] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newHead, setNewHead] = useState("");
-
-  // Assign subject
-  const [assignSubjectId, setAssignSubjectId] = useState("");
-  const [assignGroupId, setAssignGroupId] = useState("");
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -60,7 +68,7 @@ export default function SubjectGroupsPage() {
       setUnassigned(u as { id: string; name: string }[]);
       setTeachers(t as unknown as TeacherOption[]);
     } catch (err) {
-      console.error("Failed to load subject groups data:", err);
+      console.error("Lỗi khi tải danh sách tổ chuyên môn:", err);
     } finally {
       setLoading(false);
     }
@@ -70,112 +78,138 @@ export default function SubjectGroupsPage() {
     loadData();
   }, [loadData]);
 
-  const handleCreate = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (isSubmittingRef.current || submitting) return;
+  // Open Create Modal
+  const openCreateModal = () => {
+    setEditingGroup(null);
+    setFormName("");
+    setFormHeadTeacherId("");
+    setModalOpen(true);
+  };
 
-    const trimmedName = newName.trim();
+  // Open Edit Modal
+  const openEditModal = (g: SubjectGroupRow) => {
+    setEditingGroup(g);
+    setFormName(g.name);
+    setFormHeadTeacherId(g.headTeacherId || g.headTeacher?.id || "");
+    setModalOpen(true);
+  };
+
+  // Submit Create / Edit Form
+  const handleSubmitForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = formName.trim();
     if (!trimmedName) {
-      showToast("Tên tổ không được trống", "error");
+      showToast("Vui lòng nhập tên Tổ chuyên môn", "error");
       return;
     }
 
-    const isDuplicate = groups.some(
-      (g) => g.name.toLowerCase() === trimmedName.toLowerCase()
-    );
-    if (isDuplicate) {
-      showToast(`Tổ chuyên môn "${trimmedName}" đã tồn tại. Vui lòng nhập tên khác!`, "error");
-      return;
-    }
-
-    isSubmittingRef.current = true;
     setSubmitting(true);
-
     try {
-      const res = await createSubjectGroup({ name: trimmedName, headTeacherId: newHead || undefined });
-      if (res.success) {
-        showToast("Đã tạo tổ chuyên môn thành công", "success");
-        setShowForm(false);
-        setNewName("");
-        setNewHead("");
-        await loadData(true);
+      if (editingGroup) {
+        // Update name or head teacher
+        const resHead = await updateGroupHead(editingGroup.id, formHeadTeacherId || null);
+        if (resHead.success) {
+          showToast("Cập nhật thông tin Tổ thành công", "success");
+          setModalOpen(false);
+          loadData(true);
+        } else {
+          showToast(resHead.error || "Không thể cập nhật Tổ", "error");
+        }
       } else {
-        showToast(res.error || "Lỗi khi tạo tổ chuyên môn", "error");
+        // Create new group
+        const res = await createSubjectGroup({ name: trimmedName, headTeacherId: formHeadTeacherId || undefined });
+        if (res.success) {
+          showToast("Thêm Tổ chuyên môn thành công", "success");
+          setModalOpen(false);
+          loadData(true);
+        } else {
+          showToast(res.error || "Lỗi khi tạo Tổ chuyên môn", "error");
+        }
       }
     } catch (err: any) {
-      showToast("Lỗi hệ thống: " + (err.message || "Không thể kết nối"), "error");
+      showToast("Lỗi hệ thống: " + (err.message || ""), "error");
     } finally {
-      isSubmittingRef.current = false;
       setSubmitting(false);
     }
   };
 
-  const handleAssign = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (isSubmittingRef.current || submitting) return;
+  // Submit Assign Subject
+  const handleAssignSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!assignSubjectId || !assignGroupId) {
-      showToast("Vui lòng chọn cả môn học và tổ chuyên môn", "error");
+      showToast("Vui lòng chọn cả môn học và tổ chuyên môn tiếp nhận", "error");
       return;
     }
-
-    isSubmittingRef.current = true;
-    setSubmitting(true);
+    setAssignSubmitting(true);
     try {
-      await assignSubjectToGroup(assignSubjectId, assignGroupId);
-      showToast("Đã gán môn vào tổ thành công", "success");
-      setAssignSubjectId("");
-      setAssignGroupId("");
-      await loadData(true);
+      const res = await assignSubjectToGroup(assignSubjectId, assignGroupId);
+      if (res.success) {
+        showToast("Gán môn vào tổ thành công", "success");
+        setAssignModalOpen(false);
+        setAssignSubjectId("");
+        setAssignGroupId("");
+        loadData(true);
+      } else {
+        showToast(res.error || "Không thể gán môn vào tổ", "error");
+      }
     } catch (err: any) {
-      showToast("Lỗi khi gán môn vào tổ", "error");
+      showToast("Lỗi hệ thống", "error");
     } finally {
-      isSubmittingRef.current = false;
-      setSubmitting(false);
+      setAssignSubmitting(false);
     }
   };
 
+  // Quick Remove Subject from Group
   const handleRemoveSubject = async (subjectId: string) => {
     if (removingSubjectId) return;
     setRemovingSubjectId(subjectId);
     try {
-      await assignSubjectToGroup(subjectId, null as any);
-      showToast("Đã gỡ môn khỏi tổ", "success");
-      await loadData(true);
+      const res = await assignSubjectToGroup(subjectId, null);
+      if (res.success) {
+        showToast("Đã gỡ môn khỏi tổ", "success");
+        loadData(true);
+      } else {
+        showToast(res.error || "Không thể gỡ môn", "error");
+      }
     } catch (err: any) {
-      showToast("Lỗi khi gỡ môn khỏi tổ", "error");
+      showToast("Lỗi khi gỡ môn", "error");
     } finally {
       setRemovingSubjectId(null);
     }
   };
 
+  // Delete Group
   const handleDeleteGroup = async (groupId: string) => {
-    if (deletingGroupId) return;
     setDeletingGroupId(groupId);
     try {
-      await deleteSubjectGroup(groupId);
-      showToast("Đã xóa tổ chuyên môn", "success");
-      await loadData(true);
+      const res = await deleteSubjectGroup(groupId);
+      setDeleteConfirm(null);
+      if (res.success) {
+        showToast("Đã xóa tổ chuyên môn thành công", "success");
+        loadData(true);
+      } else {
+        showToast(res.error || "Không thể xóa tổ chuyên môn", "error");
+      }
     } catch (err: any) {
-      showToast("Lỗi khi xóa tổ", "error");
+      showToast("Lỗi hệ thống khi xóa tổ", "error");
     } finally {
       setDeletingGroupId(null);
     }
   };
 
+  // Quick Head Teacher Select Change
   const handleHeadTeacherChange = async (groupId: string, newTeacherId: string) => {
     setUpdatingHeadGroupId(groupId);
     try {
       const res = await updateGroupHead(groupId, newTeacherId || null);
       if (res.success) {
         showToast(
-          newTeacherId
-            ? "Đã phân công Tổ trưởng chuyên môn mới"
-            : "Đã gỡ quyền Tổ trưởng chuyên môn",
+          newTeacherId ? "Đã chỉ định Tổ trưởng chuyên môn" : "Đã gỡ quyền Tổ trưởng chuyên môn",
           "success"
         );
-        await loadData(true);
+        loadData(true);
       } else {
-        showToast(res.error || "Không thể đổi Tổ trưởng", "error");
+        showToast(res.error || "Không thể cập nhật Tổ trưởng", "error");
       }
     } catch (err: any) {
       showToast("Lỗi hệ thống", "error");
@@ -184,113 +218,342 @@ export default function SubjectGroupsPage() {
     }
   };
 
+  // Filter groups by search
+  const filteredGroups = groups.filter((g) => {
+    if (!search.trim()) return true;
+    const sLower = search.toLowerCase();
+    return (
+      g.name.toLowerCase().includes(sLower) ||
+      (g.headTeacher?.user?.name && g.headTeacher.user.name.toLowerCase().includes(sLower)) ||
+      g.subjects.some((sub) => sub.name.toLowerCase().includes(sLower))
+    );
+  });
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto px-2 sm:px-4">
+    <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
       {ToastComponent}
 
-      {/* ===== HERO BANNER ===== */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 text-white p-6 sm:p-8 shadow-xl border border-indigo-700/50">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-60 h-60 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-indigo-200 text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" /> Cấu Hình Chuyên Môn Trường
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Quản Lý Tổ Chuyên Môn</h1>
-            <p className="text-xs sm:text-sm text-indigo-100 max-w-xl leading-relaxed">
-              Phân loại môn học thành từng Tổ chuyên môn & bổ nhiệm Tổ trưởng (có quyền duyệt giáo án chính thức).
-            </p>
-          </div>
+      {/* ===== TOP HEADER & ACTION BUTTONS ===== */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Users className="w-7 h-7 text-indigo-600" />
+            Quản Lý Tổ Chuyên Môn
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">
+            Gom nhóm môn học và chỉ định Tổ trưởng chuyên môn duyệt giáo án toàn trường
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setShowForm(!showForm)}
-            disabled={submitting}
-            className="self-start sm:self-auto px-4 py-2.5 bg-white text-indigo-900 hover:bg-indigo-50 rounded-xl text-xs font-extrabold flex items-center gap-2 disabled:opacity-50 transition-all shadow-md active-press shrink-0"
+            onClick={() => {
+              setAssignSubjectId(unassigned[0]?.id || "");
+              setAssignGroupId(groups[0]?.id || "");
+              setAssignModalOpen(true);
+            }}
+            className="bg-amber-600 text-white px-4 py-2 rounded-xl hover:bg-amber-700 flex items-center gap-2 text-xs font-bold transition shadow-2xs active-press min-h-[40px]"
           >
-            <Plus className="w-4 h-4 text-indigo-700" />
-            <span>Tạo Tổ Mới</span>
+            <span>📥</span> Gán Môn Vào Tổ {unassigned.length > 0 && `(${unassigned.length})`}
+          </button>
+
+          <button
+            onClick={openCreateModal}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 flex items-center gap-2 text-xs font-bold transition shadow-2xs active-press min-h-[40px]"
+          >
+            <Plus className="w-4 h-4" /> Thêm Tổ Mới
           </button>
         </div>
       </div>
 
-      {/* ===== CREATE FORM ===== */}
-      {showForm && (
-        <form
-          onSubmit={handleCreate}
-          className="bg-indigo-50/90 rounded-2xl border border-indigo-200 p-4 sm:p-5 space-y-4 shadow-sm transition-all animate-in fade-in zoom-in-95 duration-200"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-indigo-950 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
-              Tạo Tổ Chuyên Môn Mới
-            </h3>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+      {/* ===== FILTERS & VIEW SWITCHER (Y hệt Quản lý Lớp học) ===== */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="relative flex-1 max-w-md">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Search className="w-4 h-4" />
+          </span>
+          <input
+            type="text"
+            placeholder="Tìm theo tên tổ, tên môn, tên tổ trưởng..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+          />
+        </div>
+
+        {/* View Switcher: GRID vs TABLE */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold shrink-0 self-start sm:self-auto">
+          <button
+            onClick={() => setViewMode("GRID")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "GRID" ? "bg-white text-indigo-700 shadow-2xs font-extrabold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            🎴 Dạng Thẻ
+          </button>
+          <button
+            onClick={() => setViewMode("TABLE")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-2xs font-extrabold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            📋 Dạng Bảng
+          </button>
+        </div>
+      </div>
+
+      {/* ===== MAIN CONTENT: GRID OR TABLE ===== */}
+      {loading ? (
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-2" />
+          <p className="text-xs text-slate-400 font-semibold">Đang tải danh sách tổ chuyên môn...</p>
+        </div>
+      ) : filteredGroups.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
+          <Users className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+          <p className="text-sm font-bold text-slate-700">Chưa tìm thấy Tổ chuyên môn nào</p>
+          <p className="text-xs text-slate-400 mt-1">Bấm &quot;Thêm Tổ Mới&quot; ở trên để bắt đầu khởi tạo.</p>
+        </div>
+      ) : viewMode === "GRID" ? (
+        /* ===== GRID VIEW (Cards Y Hệt Lớp Học) ===== */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredGroups.map((g) => (
+            <div
+              key={g.id}
+              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:shadow-md transition-all space-y-4 flex flex-col justify-between hover-lift group"
             >
-              <X className="w-4 h-4" />
-            </button>
+              <div className="space-y-3">
+                {/* Header Card: Title & Count Badge */}
+                <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl font-bold shadow-2xs">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
+                        {g.name}
+                      </h3>
+                      <p className="text-[11px] text-slate-400 font-medium">
+                        {g.subjects.length} môn học phụ trách
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    Tổ CM
+                  </span>
+                </div>
+
+                {/* Head Teacher Selection */}
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-600 flex items-center justify-between">
+                    <span>👑 Tổ Trưởng Chuyên Môn (Quyền duyệt)</span>
+                    {updatingHeadGroupId === g.id && (
+                      <Loader2 className="w-3.5 h-3.5 text-indigo-600 animate-spin" />
+                    )}
+                  </label>
+                  <select
+                    value={g.headTeacherId || g.headTeacher?.id || ""}
+                    onChange={(e) => handleHeadTeacherChange(g.id, e.target.value)}
+                    disabled={updatingHeadGroupId === g.id || submitting}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
+                  >
+                    <option value="">— Gỡ quyền Tổ trưởng —</option>
+                    {teachers.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Subjects Badges */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Danh sách môn thuộc tổ:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 min-h-[32px]">
+                    {g.subjects.length === 0 ? (
+                      <span className="text-xs text-slate-400 italic">Chưa gán môn nào</span>
+                    ) : (
+                      g.subjects.map((s) => (
+                        <span
+                          key={s.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-900 rounded-full text-xs font-bold border border-indigo-100 shadow-2xs"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>{s.name}</span>
+                          <button
+                            onClick={() => handleRemoveSubject(s.id)}
+                            disabled={removingSubjectId === s.id || submitting}
+                            className="hover:bg-indigo-200 hover:text-rose-600 rounded-full w-4 h-4 inline-flex items-center justify-center ml-0.5 transition-colors disabled:opacity-50 font-extrabold"
+                            title="Gỡ khỏi tổ"
+                          >
+                            {removingSubjectId === s.id ? (
+                              <Loader2 className="w-3 h-3 text-rose-500 animate-spin" />
+                            ) : (
+                              "×"
+                            )}
+                          </button>
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Footer */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  onClick={() => openEditModal(g)}
+                  className="px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-xl transition flex items-center gap-1"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Sửa
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(g.id)}
+                  className="px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition flex items-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Xóa
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* ===== TABLE VIEW (Y Hệt Bảng Lớp Học) ===== */
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead className="bg-slate-50 border-b text-slate-500 uppercase font-bold text-[11px]">
+              <tr>
+                <th className="px-5 py-3.5">Tên Tổ Chuyên Môn</th>
+                <th className="px-5 py-3.5">Tổ Trưởng (Quyền duyệt)</th>
+                <th className="px-5 py-3.5">Các Môn Trực Thuộc</th>
+                <th className="px-5 py-3.5 text-right">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs sm:text-sm">
+              {filteredGroups.map((g) => (
+                <tr key={g.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="px-5 py-4 font-bold text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <span>{g.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <select
+                      value={g.headTeacherId || g.headTeacher?.id || ""}
+                      onChange={(e) => handleHeadTeacherChange(g.id, e.target.value)}
+                      disabled={updatingHeadGroupId === g.id || submitting}
+                      className="px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs bg-white font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
+                    >
+                      <option value="">— Gỡ quyền Tổ trưởng —</option>
+                      {teachers.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.user.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {g.subjects.map((s) => (
+                        <span key={s.id} className="px-2.5 py-0.5 bg-indigo-50 text-indigo-800 font-bold text-[11px] rounded-full border border-indigo-100">
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => openEditModal(g)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setDeleteConfirm(g.id)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ===== MODAL CREATE / EDIT GROUP ===== */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingGroup ? "Cập Nhật Tổ Chuyên Môn" : "Thêm Tổ Chuyên Môn Mới"}
+        size="md"
+      >
+        <form onSubmit={handleSubmitForm} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Tên Tổ Chuyên Môn (*)</label>
+            <input
+              type="text"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="VD: Tổ Tự Nhiên, Tổ Xã Hội, Tổ Ngoại Ngữ..."
+              disabled={submitting || !!editingGroup}
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-100"
+            />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Tên Tổ Chuyên Môn</label>
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="VD: Tổ Tự Nhiên, Tổ Xã Hội..."
-                disabled={submitting}
-                className="w-full px-3 py-2 border border-indigo-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 bg-white outline-none font-semibold disabled:bg-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Chỉ Định Tổ Trưởng CM</label>
-              <select
-                value={newHead}
-                onChange={(e) => setNewHead(e.target.value)}
-                disabled={submitting}
-                className="w-full px-3 py-2 border border-indigo-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 bg-white outline-none font-semibold disabled:bg-slate-100"
-              >
-                <option value="">— Chưa chỉ định —</option>
-                {teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Chỉ Định Tổ Trưởng Chuyên Môn</label>
+            <select
+              value={formHeadTeacherId}
+              onChange={(e) => setFormHeadTeacherId(e.target.value)}
+              disabled={submitting}
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+            >
+              <option value="">— Chưa phân công Tổ trưởng —</option>
+              {teachers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.user.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50"
+            >
+              Hủy
+            </button>
             <button
               type="submit"
-              disabled={submitting || !newName.trim()}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold py-2.5 px-4 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-all shadow-2xs active-press min-h-[40px]"
+              disabled={submitting || !formName.trim()}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>{submitting ? "Đang tạo..." : "Xác Nhận Tạo Tổ"}</span>
+              <span>{editingGroup ? "Lưu Cập Nhật" : "Tạo Tổ"}</span>
             </button>
           </div>
         </form>
-      )}
+      </Modal>
 
-      {/* ===== ASSIGN SUBJECT ===== */}
-      <form onSubmit={handleAssign} className="bg-amber-50/90 rounded-2xl border border-amber-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
-        <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wider flex items-center gap-2">
-          <span>Gán Môn Học Vào Tổ Chuyên Môn</span>
-          {unassigned.length > 0 && (
-            <span className="px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full text-[10px] font-extrabold">
-              {unassigned.length} môn chưa phân tổ
-            </span>
-          )}
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-7 gap-2.5 items-center">
-          <div className="sm:col-span-3">
+      {/* ===== MODAL ASSIGN SUBJECT ===== */}
+      <Modal
+        isOpen={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        title="Gán Môn Học Vào Tổ Chuyên Môn"
+        size="md"
+      >
+        <form onSubmit={handleAssignSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Chọn Môn Học (*)</label>
             <select
               value={assignSubjectId}
               onChange={(e) => setAssignSubjectId(e.target.value)}
-              disabled={submitting || loading}
-              className="w-full px-3 py-2 border border-amber-300/80 rounded-xl text-xs bg-white font-semibold outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100"
+              disabled={assignSubmitting}
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-amber-500 outline-none bg-white"
             >
               <option value="">— Chọn môn chưa thuộc tổ —</option>
               {unassigned.map((s) => (
@@ -301,16 +564,13 @@ export default function SubjectGroupsPage() {
             </select>
           </div>
 
-          <div className="hidden sm:flex justify-center text-amber-600">
-            <ArrowRight className="w-4 h-4" />
-          </div>
-
-          <div className="sm:col-span-2">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Tổ Chuyên Môn Tiếp Nhận (*)</label>
             <select
               value={assignGroupId}
               onChange={(e) => setAssignGroupId(e.target.value)}
-              disabled={submitting || loading}
-              className="w-full px-3 py-2 border border-amber-300/80 rounded-xl text-xs bg-white font-semibold outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100"
+              disabled={assignSubmitting}
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-amber-500 outline-none bg-white"
             >
               <option value="">— Chọn tổ tiếp nhận —</option>
               {groups.map((g) => (
@@ -321,132 +581,55 @@ export default function SubjectGroupsPage() {
             </select>
           </div>
 
-          <div className="sm:col-span-1">
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setAssignModalOpen(false)}
+              className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50"
+            >
+              Hủy
+            </button>
             <button
               type="submit"
-              disabled={submitting || loading || !assignSubjectId || !assignGroupId}
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold py-2 px-3 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-all shadow-2xs active-press min-h-[38px]"
+              disabled={assignSubmitting || !assignSubjectId || !assignGroupId}
+              className="px-4 py-2 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5"
             >
-              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>Gán Môn</span>
+              {assignSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>Gán Vào Tổ</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ===== CONFIRM DELETE MODAL ===== */}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Xác Nhận Xóa Tổ Chuyên Môn"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Bạn có chắc chắn muốn xóa Tổ chuyên môn này? Các môn học thuộc tổ sẽ tự động được gỡ khỏi tổ.
+          </p>
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={() => deleteConfirm && handleDeleteGroup(deleteConfirm)}
+              disabled={!!deletingGroupId}
+              className="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {deletingGroupId && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>Xóa Tổ</span>
             </button>
           </div>
         </div>
-      </form>
-
-      {/* ===== GROUPS GRID / CARDS ===== */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-2" />
-            <p className="text-xs text-slate-400 font-semibold">Đang tải danh sách tổ chuyên môn...</p>
-          </div>
-        ) : groups.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-6">
-            <Users className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-bold text-slate-700">Chưa có tổ chuyên môn nào</p>
-            <p className="text-xs text-slate-400 mt-1">Bấm nút &quot;Tạo Tổ Mới&quot; ở trên để bắt đầu thêm tổ chuyên môn.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {groups.map((g) => (
-              <div
-                key={g.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:shadow-md transition-all space-y-4 flex flex-col justify-between hover-lift group"
-              >
-                <div className="space-y-3">
-                  {/* Title & Delete button */}
-                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl font-bold shadow-2xs">
-                        <Users className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
-                          {g.name}
-                        </h3>
-                        <p className="text-[11px] text-slate-400 font-medium">
-                          {g.subjects.length} môn học trực thuộc
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleDeleteGroup(g.id)}
-                      disabled={deletingGroupId === g.id || submitting}
-                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors disabled:opacity-50 active-press"
-                      title="Xóa tổ chuyên môn"
-                    >
-                      {deletingGroupId === g.id ? (
-                        <Loader2 className="w-4 h-4 text-rose-500 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Head Teacher Selection */}
-                  <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 space-y-1.5">
-                    <label className="block text-[11px] font-extrabold text-slate-600 flex items-center justify-between">
-                      <span>👑 Tổ Trưởng Chuyên Môn (Quyền duyệt giáo án)</span>
-                      {updatingHeadGroupId === g.id && (
-                        <Loader2 className="w-3.5 h-3.5 text-indigo-600 animate-spin" />
-                      )}
-                    </label>
-                    <select
-                      value={g.headTeacherId || g.headTeacher?.id || ""}
-                      onChange={(e) => handleHeadTeacherChange(g.id, e.target.value)}
-                      disabled={updatingHeadGroupId === g.id || submitting}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
-                    >
-                      <option value="">— Gỡ quyền Tổ trưởng —</option>
-                      {teachers.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.user.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Subjects Badges List */}
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                      Danh sách môn học thuộc tổ:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5 min-h-[32px]">
-                      {g.subjects.length === 0 ? (
-                        <span className="text-xs text-slate-400 italic">Chưa gán môn nào vào tổ này</span>
-                      ) : (
-                        g.subjects.map((s) => (
-                          <span
-                            key={s.id}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50/80 text-indigo-900 rounded-full text-xs font-bold border border-indigo-100 shadow-2xs"
-                          >
-                            <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>{s.name}</span>
-                            <button
-                              onClick={() => handleRemoveSubject(s.id)}
-                              disabled={removingSubjectId === s.id || submitting}
-                              className="hover:bg-indigo-200 hover:text-rose-600 rounded-full w-4 h-4 inline-flex items-center justify-center ml-0.5 transition-colors disabled:opacity-50 font-extrabold"
-                              title="Gỡ khỏi tổ"
-                            >
-                              {removingSubjectId === s.id ? (
-                                <Loader2 className="w-3 h-3 text-rose-500 animate-spin" />
-                              ) : (
-                                "×"
-                              )}
-                            </button>
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      </Modal>
     </div>
   );
 }

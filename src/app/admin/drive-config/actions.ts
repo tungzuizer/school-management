@@ -4,32 +4,33 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-
 // Helper function to resolve effective schoolId for Admin
 async function getEffectiveSchoolId() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return null;
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return null;
 
-  if (session.user.schoolId) return session.user.schoolId;
+    if (session.user.schoolId) return session.user.schoolId;
 
-  // Check database user record directly
-  if (session.user.id) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { schoolId: true },
+    if (session.user.id) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { schoolId: true },
+      });
+      if (dbUser?.schoolId) return dbUser.schoolId;
+    }
+
+    const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+    if (firstSchool?.id) return firstSchool.id;
+
+    const defaultSchool = await prisma.school.create({
+      data: { name: "Trường THPT Trung Tâm" },
     });
-    if (dbUser?.schoolId) return dbUser.schoolId;
+    return defaultSchool.id;
+  } catch (error) {
+    console.error("Error resolving schoolId:", error);
+    return null;
   }
-
-  // Fallback 1: Return first school in database
-  const firstSchool = await prisma.school.findFirst({ select: { id: true } });
-  if (firstSchool?.id) return firstSchool.id;
-
-  // Fallback 2: Create a default school if database is empty
-  const defaultSchool = await prisma.school.create({
-    data: { name: "Trường THPT Trung Tâm" },
-  });
-  return defaultSchool.id;
 }
 
 // ==================== DRIVE CONFIG ====================
@@ -99,23 +100,26 @@ export async function togglePeriodActive(periodId: string, isActive: boolean) {
 
 export async function deletePeriod(periodId: string) {
   await prisma.lessonPlanPeriod.delete({ where: { id: periodId } });
-  
   return { success: true };
 }
 
 // ==================== SUBJECT GROUPS ====================
 
 export async function getSubjectGroups() {
-  const schoolId = await getEffectiveSchoolId();
-  if (!schoolId) return [];
-  return prisma.subjectGroup.findMany({
-    where: { schoolId },
-    include: {
-      headTeacher: { include: { user: { select: { name: true } } } },
-      subjects: { select: { id: true, name: true } },
-    },
-    orderBy: { name: "asc" },
-  });
+  try {
+    const schoolId = await getEffectiveSchoolId();
+    return await prisma.subjectGroup.findMany({
+      where: schoolId ? { schoolId } : {},
+      include: {
+        headTeacher: { include: { user: { select: { name: true } } } },
+        subjects: { select: { id: true, name: true } },
+      },
+      orderBy: { name: "asc" },
+    });
+  } catch (error) {
+    console.error("Error in getSubjectGroups:", error);
+    return [];
+  }
 }
 
 export async function createSubjectGroup(data: { name: string; headTeacherId?: string }) {
@@ -154,38 +158,52 @@ export async function createSubjectGroup(data: { name: string; headTeacherId?: s
 }
 
 export async function deleteSubjectGroup(groupId: string) {
-  // Unlink subjects first
-  await prisma.subject.updateMany({ where: { subjectGroupId: groupId }, data: { subjectGroupId: null } });
-  await prisma.subjectGroup.delete({ where: { id: groupId } });
-  
-  return { success: true };
+  try {
+    await prisma.subject.updateMany({ where: { subjectGroupId: groupId }, data: { subjectGroupId: null } });
+    await prisma.subjectGroup.delete({ where: { id: groupId } });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Lỗi khi xóa tổ" };
+  }
 }
 
 export async function assignSubjectToGroup(subjectId: string, groupId: string | null) {
-  await prisma.subject.update({
-    where: { id: subjectId },
-    data: { subjectGroupId: groupId },
-  });
-  
-  return { success: true };
+  try {
+    await prisma.subject.update({
+      where: { id: subjectId },
+      data: { subjectGroupId: groupId },
+    });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Lỗi khi gán môn" };
+  }
 }
 
 export async function getUnassignedSubjects() {
-  return prisma.subject.findMany({
-    where: { subjectGroupId: null },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
+  try {
+    return await prisma.subject.findMany({
+      where: { subjectGroupId: null },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+  } catch (error) {
+    console.error("Error in getUnassignedSubjects:", error);
+    return [];
+  }
 }
 
 export async function getAllTeachersList() {
-  return prisma.teacher.findMany({
-    include: { user: { select: { name: true } } },
-    orderBy: { user: { name: "asc" } },
-  });
+  try {
+    return await prisma.teacher.findMany({
+      include: { user: { select: { name: true } } },
+      orderBy: { user: { name: "asc" } },
+    });
+  } catch (error) {
+    console.error("Error in getAllTeachersList:", error);
+    return [];
+  }
 }
 
-// Cập nhật hoặc gỡ quyền Tổ trưởng chuyên môn
 export async function updateGroupHead(groupId: string, headTeacherId: string | null) {
   try {
     await prisma.subjectGroup.update({
