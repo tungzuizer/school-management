@@ -12,7 +12,7 @@ import {
 } from "../drive-config/actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2, Search, Edit2, ShieldCheck, Check } from "lucide-react";
+import { Users, Plus, Trash2, BookOpen, ArrowRight, Loader2, Search, Edit2, ShieldCheck, Check, AlertCircle, Sparkles } from "lucide-react";
 
 interface SubjectGroupRow {
   id: string;
@@ -106,7 +106,7 @@ export default function SubjectGroupsPage() {
     setSubmitting(true);
     try {
       if (editingGroup) {
-        // Update name or head teacher
+        // Update head teacher
         const resHead = await updateGroupHead(editingGroup.id, formHeadTeacherId || null);
         if (resHead.success) {
           showToast("Cập nhật thông tin Tổ thành công", "success");
@@ -229,11 +229,14 @@ export default function SubjectGroupsPage() {
     );
   });
 
+  const totalAssignedSubjects = groups.reduce((acc, g) => acc + g.subjects.length, 0);
+  const totalHeadAppointed = groups.filter((g) => g.headTeacherId || g.headTeacher?.id).length;
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
       {ToastComponent}
 
-      {/* ===== TOP HEADER & ACTION BUTTONS ===== */}
+      {/* ===== TOP HEADER & ACTION BUTTONS (Y HỆT QUẢN LÝ LỚP HỌC) ===== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -241,7 +244,7 @@ export default function SubjectGroupsPage() {
             Quản Lý Tổ Chuyên Môn
           </h1>
           <p className="text-xs text-gray-500 mt-1">
-            Gom nhóm môn học và chỉ định Tổ trưởng chuyên môn duyệt giáo án toàn trường
+            Quản lý danh sách Tổ chuyên môn, phân công Tổ trưởng và các môn học trực thuộc
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -265,7 +268,34 @@ export default function SubjectGroupsPage() {
         </div>
       </div>
 
-      {/* ===== FILTERS & VIEW SWITCHER (Y hệt Quản lý Lớp học) ===== */}
+      {/* ===== STATS SUMMARY BOARD (BẢNG CHỈ SỐ TỔNG QUAN) ===== */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover-lift">
+          <p className="text-xs text-slate-500 font-bold">Tổng số Tổ CM</p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-1">{groups.length}</p>
+          <p className="text-[10px] text-slate-400 font-semibold mt-1">Hoạt động ổn định</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover-lift">
+          <p className="text-xs text-indigo-600 font-bold">Tổ Trưởng CM Đã Bổ Nhiệm</p>
+          <p className="text-2xl font-extrabold text-indigo-700 mt-1">{totalHeadAppointed} / {groups.length}</p>
+          <p className="text-[10px] text-indigo-500 font-semibold mt-1">Quyền duyệt giáo án</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover-lift">
+          <p className="text-xs text-emerald-600 font-bold">Môn Đã Thuộc Tổ</p>
+          <p className="text-2xl font-extrabold text-emerald-700 mt-1">{totalAssignedSubjects}</p>
+          <p className="text-[10px] text-emerald-500 font-semibold mt-1">Đã phân công tổ</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover-lift">
+          <p className="text-xs text-amber-600 font-bold">Môn Chưa Thuộc Tổ</p>
+          <p className="text-2xl font-extrabold text-amber-700 mt-1">{unassigned.length}</p>
+          <p className="text-[10px] text-amber-500 font-semibold mt-1">Cần gán vào tổ</p>
+        </div>
+      </div>
+
+      {/* ===== FILTERS & VIEW SWITCHER (Y HỆT QUẢN LÝ LỚP HỌC) ===== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div className="relative flex-1 max-w-md">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
