@@ -1392,3 +1392,13 @@ model LoginAttempt {
   @@index([ipAddress])
   @@index([createdAt])
 }
+
+// ==================== CẤU HÌNH HỆ THỐNG (SYSTEM SETTINGS) ====================
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

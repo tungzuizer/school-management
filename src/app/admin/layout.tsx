@@ -103,6 +103,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { label: "Tư vấn & Cảnh báo AI", href: "/admin/principal-ai", icon: Bot },
       { label: "Bố trí dạy thay", href: "/admin/substitute-dispatch", icon: UserCheck },
+      { label: "Cấu hình OmniRoute AI", href: "/admin/ai-config", icon: Sparkles },
     ],
   },
   {
