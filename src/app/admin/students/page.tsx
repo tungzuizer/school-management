@@ -480,80 +480,82 @@ export default function StudentsPage() {
 
       {/* Table View */}
       {viewMode === "TABLE" && (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Mã HS</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Lớp</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Ngày sinh</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Giới tính</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">SĐT</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {loading ? (
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    Đang tải...
-                  </td>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Mã HS</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Lớp</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Ngày sinh</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Giới tính</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">SĐT</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
                 </tr>
-              ) : students.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    Chưa có học sinh nào
-                  </td>
-                </tr>
-              ) : (
-                students.map((s) => (
-                  <tr key={s.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-600">{s.studentCode || "—"}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.user.name}</td>
-                    <td className="px-4 py-3 text-sm">
-                      {s.classRoom ? (
-                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                          {s.classRoom.name}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {s.dob ? new Date(s.dob).toLocaleDateString("vi-VN") : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{s.phone || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-xs ${statusColor[s.status] || ""}`}>
-                        {statusLabel[s.status] || s.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      <button
-                        onClick={() => openEdit(s)}
-                        className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(s.id)}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
-                      >
-                        Xóa
-                      </button>
+              </thead>
+              <tbody className="divide-y">
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                      Đang tải...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : students.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                      Chưa có học sinh nào
+                    </td>
+                  </tr>
+                ) : (
+                  students.map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-600">{s.studentCode || "—"}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{s.user.name}</td>
+                      <td className="px-4 py-3 text-sm">
+                        {s.classRoom ? (
+                          <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                            {s.classRoom.name}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {s.dob ? new Date(s.dob).toLocaleDateString("vi-VN") : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{s.phone || "—"}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-xs ${statusColor[s.status] || ""}`}>
+                          {statusLabel[s.status] || s.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <button
+                          onClick={() => openEdit(s)}
+                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(s.id)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal
