@@ -52,78 +52,78 @@ type MenuGroup = {
 
 const menuGroups: MenuGroup[] = [
   {
-    title: "Phan he I: Quan tri chien luoc",
+    title: "Phân hệ I: Quản trị chiến lược",
     icon: Sparkles,
     items: [
-      { label: "Quan tri chien luoc", href: "/admin/strategy", icon: Sparkles },
+      { label: "Quản trị chiến lược", href: "/admin/strategy", icon: Sparkles },
     ],
   },
   {
-    title: "Tong quan",
+    title: "Tổng quan",
     icon: Home,
     items: [
-      { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Lien truong", href: "/admin/multi-school", icon: Globe },
-      { label: "Bao cao ngay", href: "/admin/daily-reports", icon: FileBarChart },
+      { label: "Bảng điều khiển", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Liên trường", href: "/admin/multi-school", icon: Globe },
+      { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileBarChart },
     ],
   },
   {
-    title: "Quan ly",
+    title: "Quản lý",
     icon: Settings,
     items: [
-      { label: "Truong hoc", href: "/admin/schools", icon: Building2 },
-      { label: "Lop hoc", href: "/admin/classes", icon: School },
-      { label: "Giao vien", href: "/admin/teachers", icon: UserCog },
-      { label: "Hoc sinh", href: "/admin/students", icon: Users },
-      { label: "Mon hoc", href: "/admin/subjects", icon: BookOpen },
-      { label: "To chuyen mon", href: "/admin/subject-groups", icon: Users },
+      { label: "Trường học", href: "/admin/schools", icon: Building2 },
+      { label: "Lớp học", href: "/admin/classes", icon: School },
+      { label: "Giáo viên", href: "/admin/teachers", icon: UserCog },
+      { label: "Học sinh", href: "/admin/students", icon: Users },
+      { label: "Môn học", href: "/admin/subjects", icon: BookOpen },
+      { label: "Tổ chuyên môn", href: "/admin/subject-groups", icon: Users },
     ],
   },
   {
-    title: "He thong",
+    title: "Hệ thống",
     icon: CalendarDays,
     items: [
-      { label: "Thoi khoa bieu", href: "/admin/schedule", icon: CalendarDays },
-      { label: "Thong bao", href: "/admin/notifications", icon: Bell },
+      { label: "Thời khóa biểu", href: "/admin/schedule", icon: CalendarDays },
+      { label: "Thông báo", href: "/admin/notifications", icon: Bell },
     ],
   },
   {
-    title: "Ho so so sach",
+    title: "Hồ sơ sổ sách",
     icon: FileBarChart,
     items: [
-      { label: "So dau bai", href: "/admin/journals", icon: FileBarChart },
-      { label: "Giao an phe duyet", href: "/admin/lesson-plans", icon: BookOpen },
-      { label: "Cau hinh Drive & Ky nop", href: "/admin/drive-config", icon: HardDrive },
+      { label: "Sổ đầu bài", href: "/admin/journals", icon: FileBarChart },
+      { label: "Giáo án phê duyệt", href: "/admin/lesson-plans", icon: BookOpen },
+      { label: "Cấu hình Drive & Ký nộp", href: "/admin/drive-config", icon: HardDrive },
     ],
   },
   {
-    title: "Tro ly AI Hieu Truong",
+    title: "Trợ lý AI Hiệu trưởng",
     icon: Bot,
     items: [
-      { label: "Tu van & Canh bao AI", href: "/admin/principal-ai", icon: Bot },
-      { label: "Bo tri day thay", href: "/admin/substitute-dispatch", icon: UserCheck },
+      { label: "Tư vấn & Cảnh báo AI", href: "/admin/principal-ai", icon: Bot },
+      { label: "Bố trí dạy thay", href: "/admin/substitute-dispatch", icon: UserCheck },
     ],
   },
   {
-    title: "Bao mat & Kiem soat",
+    title: "Bảo mật & Kiểm soát",
     icon: ShieldCheck,
     items: [
-      { label: "Nhat ky kiem toan", href: "/admin/audit-log", icon: ScrollText },
-      { label: "Khoa so du lieu", href: "/admin/data-lock", icon: Lock },
+      { label: "Nhật ký kiểm toán", href: "/admin/audit-log", icon: ScrollText },
+      { label: "Khóa sổ dữ liệu", href: "/admin/data-lock", icon: Lock },
     ],
   },
 ];
 
 // Mobile bottom tabs
 const mobileMainTabs = [
-  { label: "Home", href: "/admin/dashboard", icon: Home },
-  { label: "AI", href: "/admin/principal-ai", icon: Bot },
-  { label: "Quan ly", href: "/admin/schools", icon: Building2 },
-  { label: "He thong", href: "/admin/schedule", icon: CalendarDays },
+  { label: "Tổng quan", href: "/admin/dashboard", icon: Home },
+  { label: "Tổ CM", href: "/admin/subject-groups", icon: Users },
+  { label: "Quản lý", href: "/admin/classes", icon: Building2 },
+  { label: "Duyệt giáo án", href: "/admin/lesson-plans", icon: BookOpen },
 ];
 
 const aiPaths = ["/admin/principal-ai", "/admin/substitute-dispatch", "/admin/early-warnings", "/admin/daily-summary"];
-const quanlyPaths = ["/admin/schools", "/admin/classes", "/admin/teachers", "/admin/students", "/admin/subjects"];
+const quanlyPaths = ["/admin/schools", "/admin/classes", "/admin/teachers", "/admin/students", "/admin/subjects", "/admin/subject-groups"];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -170,11 +170,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Navigation Menu */}
         <nav className="flex-1 overflow-auto py-3 px-2 space-y-0.5">
           {menuGroups.map((group) => {
-            const isCollapsed = collapsedGroups[group.title] ?? true;
-            const GroupIcon = group.icon;
             const hasActiveItem = group.items.some(
               item => pathname === item.href || pathname.startsWith(item.href + "/")
             );
+            const isCollapsed = collapsedGroups[group.title] ?? !hasActiveItem;
+            const GroupIcon = group.icon;
 
             return (
               <div key={group.title} className="mb-1">
@@ -232,10 +232,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="px-3 py-3 border-t border-white/10">
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-red-300 hover:text-white hover:bg-red-500/30 rounded-lg transition-all"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-red-300 hover:text-white hover:bg-red-500/30 rounded-lg transition-all font-medium"
           >
             <LogOut className="w-4 h-4" />
-            Dang xuat
+            Đăng xuất
           </button>
         </div>
       </aside>
