@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { aiChatCompletion } from "@/lib/ai-provider";
 
 // Get daily summary stats for a specific date
 export async function getDailySummaryStats(date: string) {
@@ -131,39 +132,11 @@ Hay viet bao cao ${phase === "MORNING" ? "dau ca sang" : phase === "MIDDAY" ? "g
 ${phase === "EVENING" ? "Bao gom: 1. Tong quan 4 diem truong, 2. An ninh & canh bao, 3. Nhiem vu trong tam ngay mai." : ""}
 Viet bang tieng Viet co dau, chuyen nghiep, ngan gon. Toi da 400 tu.`;
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  const apiBase = process.env.OPENAI_API_BASE || "http://localhost:20128/v1";
-
-  if (!apiKey) {
-    return {
-      success: false,
-      text: null,
-      error: "Chua cau hinh OPENAI_API_KEY. Vui long cau hinh de su dung AI.",
-    };
+  const aiRes = await aiChatCompletion({ prompt, max_tokens: 1500 });
+  if (!aiRes.success) {
+    return { success: false, text: null, error: aiRes.error };
   }
-
-  try {
-    const response = await fetch(`${apiBase}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1500,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      return { success: false, text: null, error: `API loi: ${response.status} - ${err}` };
-    }
-
-    const result = await response.json();
-    const aiText = result.choices?.[0]?.message?.content || "";
-    return { success: true, text: aiText, error: null };
+  return { success: true, text: aiRes.text, error: null };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Loi khong xac dinh";
     return { success: false, text: null, error: `Khong the ket noi AI: ${msg}` };

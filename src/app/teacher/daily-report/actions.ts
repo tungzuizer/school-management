@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { aiChatCompletion } from "@/lib/ai-provider";
 
 // Get homeroom class for current teacher
 export async function getHomeroomClass(userId: string) {
@@ -132,47 +133,17 @@ Yêu cầu:
 - Tổng cộng không quá 300 từ`;
 
   try {
-    // Call AI via OpenAI-compatible API (OmniRoute)
-    const apiKey = process.env.OPENAI_API_KEY;
-    const apiBase = process.env.OPENAI_API_BASE || "http://localhost:20128/v1";
-    if (!apiKey) {
+    const aiRes = await aiChatCompletion({ prompt, max_tokens: 1024 });
+    if (!aiRes.success) {
       return {
         success: false,
         text: null,
-        error: "Chưa cấu hình OPENAI_API_KEY. Vui lòng nhập báo cáo thủ công.",
+        error: aiRes.error,
         data,
       };
     }
 
-    const response = await fetch(`${apiBase}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
-        messages: [
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      return {
-        success: false,
-        text: null,
-        error: `API lỗi: ${response.status} - ${err}`,
-        data,
-      };
-    }
-
-    const result = await response.json();
-    const aiText = result.choices?.[0]?.message?.content || "";
-
-    return { success: true, text: aiText, error: null, data };
+    return { success: true, text: aiRes.text, error: null, data };
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : "Lỗi không xác định";
     return {

@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { aiChatCompletion } from "@/lib/ai-provider";
 
 
 // Ask Principal AI for decision support
@@ -86,38 +87,12 @@ NHƯỢC_ĐIỂM: [liệt kê, ngăn cách bằng |]
 CƠ_SỞ_PHÁP_LÝ: [Trích dẫn văn bản quy phạm liên quan nếu có]
 BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  const apiBase = process.env.OPENAI_API_BASE || "http://localhost:20128/v1";
-
-  if (!apiKey) {
-    return {
-      success: false,
-      data: null,
-      error: "Chưa cấu hình OPENAI_API_KEY.",
-    };
+  const aiRes = await aiChatCompletion({ prompt, max_tokens: 2048 });
+  if (!aiRes.success) {
+    return { success: false, data: null, error: aiRes.error };
   }
 
-  try {
-    const response = await fetch(`${apiBase}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2048,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      return { success: false, data: null, error: `API lỗi: ${response.status} - ${err}` };
-    }
-
-    const result = await response.json();
-    const aiText = result.choices?.[0]?.message?.content || "";
+  const aiText = aiRes.text;
 
     // Parse structured response
     const lines = aiText.split("\n");

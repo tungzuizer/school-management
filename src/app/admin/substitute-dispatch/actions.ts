@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { aiChatCompletion } from "@/lib/ai-provider";
 
 
 // Get all substitute assignments with optional school point filter
@@ -190,32 +191,12 @@ LOP: [lop]
 TIET: [so tiet]
 KHUYEN_NGHI: [phan tich chi tiet]`;
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    const apiBase = process.env.OPENAI_API_BASE || "http://localhost:20128/v1";
-    if (!apiKey) {
-      return { success: false, error: "Chua cau hinh OPENAI_API_KEY" };
+    const aiRes = await aiChatCompletion({ prompt, max_tokens: 1024 });
+    if (!aiRes.success) {
+      return { success: false, error: aiRes.error };
     }
 
-    const response = await fetch(`${apiBase}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      return { success: false, error: `API loi: ${response.status} - ${err}` };
-    }
-
-    const result = await response.json();
-    const aiText = result.choices?.[0]?.message?.content || "";
+    const aiText = aiRes.text;
 
     // Parse AI response to create assignment
     const lines = aiText.split("\n");
@@ -286,16 +267,6 @@ async function findSubstituteAI(input: {
   date: string;
   period: number;
 }) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const apiBase = process.env.OPENAI_API_BASE || "http://localhost:20128/v1";
-
-  if (!apiKey) {
-    return {
-      substituteTeacher: "Chua xac dinh (thieu API key)",
-      recommendation: `AI dang quet lich day toan he thong de chon GV cung bo mon o ban kinh gan nhat (${input.distanceKm} km tu Trung Tam). Vui long cau hinh OPENAI_API_KEY.`,
-    };
-  }
-
   // Get all school points for context
   const schoolPoints = await prisma.schoolPoint.findMany({
     include: { campus: true },
@@ -362,35 +333,22 @@ GV_DAY_THAY: [Ten GV] ([Chuyen mon] - [Diem truong])
 KHUYEN_NGHI: [Phan tich ngan gon]`;
 
   try {
-    const response = await fetch(`${apiBase}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 512,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!response.ok) {
+    const aiRes = await aiChatCompletion({ prompt, max_tokens: 512 });
+    if (!aiRes.success) {
       return {
-        substituteTeacher: "Dang phan tich AI...",
-        recommendation: `AI dang quet lich day toan he thong de chon GV cung bo mon o ban kinh gan nhat (${input.distanceKm} km tu Trung Tam).`,
+        substituteTeacher: "Tự động phân công",
+        recommendation: `AI đang quét lịch dạy toàn hệ thống: ${aiRes.error}`,
       };
     }
 
-    const result = await response.json();
-    const aiText = result.choices?.[0]?.message?.content || "";
+    const aiText = aiRes.text;
 
     const lines = aiText.split("\n");
     const teacherLine = lines.find((l: string) => l.includes("GV_DAY_THAY"));
     const recLine = lines.find((l: string) => l.includes("KHUYEN_NGHI"));
 
     return {
-      substituteTeacher: teacherLine ? teacherLine.split(":").slice(1).join(":").trim() : "GV duoc AI de xuat",
+      substituteTeacher: teacherLine ? teacherLine.split(":").slice(1).join(":").trim() : "GV được AI đề xuất",
       recommendation: recLine ? recLine.split(":").slice(1).join(":").trim() : aiText,
     };
   } catch {
