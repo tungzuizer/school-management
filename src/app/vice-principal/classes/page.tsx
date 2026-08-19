@@ -28,6 +28,9 @@ export default function VPClassesPage() {
     load();
   }, [campusId]);
 
+  const uniqueGrades = Array.from(new Set(classes.map((c) => c.gradeLevel))).filter(Boolean).sort((a, b) => a - b);
+  const gradeOptions = uniqueGrades.length > 0 ? uniqueGrades : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
   const filtered = filterGrade === "ALL" 
     ? classes 
     : classes.filter((c) => String(c.gradeLevel) === filterGrade);
@@ -49,9 +52,11 @@ export default function VPClassesPage() {
             className="px-3 py-1.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-teal-500"
           >
             <option value="ALL">Tất cả khối</option>
-            <option value="10">Khối 10</option>
-            <option value="11">Khối 11</option>
-            <option value="12">Khối 12</option>
+            {gradeOptions.map((g) => (
+              <option key={g} value={String(g)}>
+                Khối {g}
+              </option>
+            ))}
           </select>
         </div>
       </div>
