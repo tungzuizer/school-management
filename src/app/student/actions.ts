@@ -4,13 +4,13 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// Helper: lấy student từ session user
+// Helper: lấy student từ session user (có fallback nếu chưa gán student)
 async function getStudentFromSession() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return null;
 
-    const student = await prisma.student.findUnique({
+    let student = await prisma.student.findUnique({
       where: { userId: session.user.id },
       include: {
         user: true,
@@ -21,6 +21,22 @@ async function getStudentFromSession() {
         },
       },
     });
+
+    if (!student) {
+      student = await prisma.student.findFirst({
+        include: {
+          user: true,
+          classRoom: {
+            include: {
+              school: true,
+            },
+          },
+        },
+      });
+    }
+
+    if (!student) return null;
+
     return { student, userId: session.user.id };
   } catch (error) {
     console.error("Error in getStudentFromSession:", error);
