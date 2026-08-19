@@ -159,10 +159,14 @@ export async function createSubjectGroup(data: { name: string; headTeacherId?: s
 
 export async function deleteSubjectGroup(groupId: string) {
   try {
+    const existing = await prisma.subjectGroup.findUnique({ where: { id: groupId } });
+    if (!existing) return { success: true };
+
     await prisma.subject.updateMany({ where: { subjectGroupId: groupId }, data: { subjectGroupId: null } });
     await prisma.subjectGroup.delete({ where: { id: groupId } });
     return { success: true };
   } catch (err: any) {
+    if (err.code === "P2025") return { success: true };
     return { success: false, error: err.message || "Lỗi khi xóa tổ" };
   }
 }
