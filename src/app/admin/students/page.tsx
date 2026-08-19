@@ -74,6 +74,9 @@ export default function StudentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const { showToast, ToastComponent } = useToast();
 
+  // Dynamic grade options derived from active classes
+  const uniqueGrades = Array.from(new Set(classes.map((c) => c.gradeLevel))).filter(Boolean).sort((a, b) => a - b);
+  const gradeOptions = uniqueGrades.length > 0 ? uniqueGrades : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   // Bulk import state
   const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
@@ -452,9 +455,11 @@ export default function StudentsPage() {
             className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
           >
             <option value="">📚 Tất cả khối</option>
-            <option value="10">Khối 10</option>
-            <option value="11">Khối 11</option>
-            <option value="12">Khối 12</option>
+            {gradeOptions.map((g) => (
+              <option key={g} value={g}>
+                Khối {g}
+              </option>
+            ))}
           </select>
 
           {/* Lọc theo Lớp */}
