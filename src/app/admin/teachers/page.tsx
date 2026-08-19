@@ -21,6 +21,7 @@ interface TeacherData {
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState<TeacherData[]>([]);
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<TeacherData | null>(null);
@@ -241,14 +242,106 @@ export default function TeachersPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <input type="text" placeholder="Tìm theo tên giáo viên..." value={search} onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-80" />
+      {/* Filters & View Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            placeholder="Tìm theo tên giáo viên..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-64 bg-white shadow-2xs"
+          />
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
+          <button
+            onClick={() => setViewMode("GRID")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "GRID" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            🎴 Dạng Thẻ
+          </button>
+          <button
+            onClick={() => setViewMode("TABLE")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            📋 Dạng Bảng
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      {/* Grid View */}
+      {viewMode === "GRID" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in">
+          {loading ? (
+            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Đang tải danh sách giáo viên...</div>
+          ) : teachers.length === 0 ? (
+            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Chưa có giáo viên nào</div>
+          ) : (
+            teachers.map((t) => (
+              <div
+                key={t.id}
+                className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all space-y-3 flex flex-col justify-between hover-lift group"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
+                      {t.user.name}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                      {t.specialty || "Giáo viên"}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-500 truncate">
+                    <span className="font-semibold text-slate-700">Email:</span> {t.user.email}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    <span className="font-semibold text-slate-700">Bằng cấp:</span> {t.degree || "—"} |{" "}
+                    <span className="font-semibold text-slate-700">SĐT:</span> {t.phone || "—"}
+                  </p>
+
+                  <div className="pt-1 space-y-1">
+                    <span className="text-xs text-slate-500 font-medium">Chủ nhiệm / Phân công:</span>
+                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pt-0.5">
+                      {t.homeroomClasses.map((c) => (
+                        <span key={c.id} className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md">
+                          CN: {c.name}
+                        </span>
+                      ))}
+                      {t.teachingAssignments.map((a) => (
+                        <span key={a.id} className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                          {a.subject.name} ({a.classRoom.name})
+                        </span>
+                      ))}
+                      {t.homeroomClasses.length === 0 && t.teachingAssignments.length === 0 && (
+                        <span className="text-[11px] text-slate-400 italic">Chưa phân công</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <button onClick={() => openEdit(t)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    Chỉnh sửa
+                  </button>
+                  <button onClick={() => setDeleteConfirm(t.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Table View */}
+      {viewMode === "TABLE" && (
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
@@ -315,6 +408,7 @@ export default function TeachersPage() {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Sửa giáo viên" : "Thêm giáo viên mới"}>

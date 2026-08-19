@@ -61,6 +61,7 @@ export default function StudentsPage() {
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [search, setSearch] = useState("");
   const [filterClass, setFilterClass] = useState("");
+  const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StudentData | null>(null);
@@ -382,31 +383,103 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 flex gap-3">
-        <input
-          type="text"
-          placeholder="Tìm theo tên..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-64"
-        />
-        <select
-          value={filterClass}
-          onChange={(e) => setFilterClass(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">Tất cả lớp</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              Lớp {c.name} (Khối {c.gradeLevel})
-            </option>
-          ))}
-        </select>
+      {/* Filters & View Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            placeholder="Tìm theo tên học sinh..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-64 bg-white shadow-2xs"
+          />
+          <select
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
+          >
+            <option value="">Tất cả lớp</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                Lớp {c.name} (Khối {c.gradeLevel})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
+          <button
+            onClick={() => setViewMode("GRID")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "GRID" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            🎴 Dạng Thẻ
+          </button>
+          <button
+            onClick={() => setViewMode("TABLE")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            📋 Dạng Bảng
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      {/* Grid View */}
+      {viewMode === "GRID" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in">
+          {loading ? (
+            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Đang tải danh sách học sinh...</div>
+          ) : students.length === 0 ? (
+            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Chưa có học sinh nào</div>
+          ) : (
+            students.map((s) => (
+              <div
+                key={s.id}
+                className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all space-y-3 flex flex-col justify-between hover-lift group"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
+                      {s.user.name}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusColor[s.status] || "bg-slate-100 text-slate-700"}`}>
+                      {statusLabel[s.status] || s.status}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-500">
+                    <span className="font-semibold text-slate-700">Mã HS:</span> {s.studentCode || "—"} |{" "}
+                    <span className="font-semibold text-slate-700">Lớp:</span> {s.classRoom?.name || "Chưa xếp lớp"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    <span className="font-semibold text-slate-700">Ngày sinh:</span> {s.dob || "—"} |{" "}
+                    <span className="font-semibold text-slate-700">Giới tính:</span> {s.gender || "—"}
+                  </p>
+                  <p className="text-xs text-slate-500 truncate">
+                    <span className="font-semibold text-slate-700">SĐT:</span> {s.phone || "—"}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <button onClick={() => openEdit(s)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    Chỉnh sửa
+                  </button>
+                  <button onClick={() => setDeleteConfirm(s.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Table View */}
+      {viewMode === "TABLE" && (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
@@ -481,6 +554,7 @@ export default function StudentsPage() {
           </table>
         </div>
       </div>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal
