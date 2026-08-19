@@ -6,16 +6,19 @@ import bcrypt from "bcryptjs";
 import { getTenantContext } from "@/lib/tenant";
 import { recordAuditLog } from "@/lib/audit-logger";
 
-export async function getStudents(search?: string, classId?: string, gradeLevel?: number) {
+export async function getStudents(search?: string, classId?: string, gradeLevel?: number, schoolId?: string) {
   const where: any = {};
 
-  // Tenant Isolation: auto-scope to user's school
-  try {
-    const ctx = await getTenantContext();
-    if (ctx.schoolId) {
-      where.classRoom = { ...(where.classRoom || {}), schoolId: ctx.schoolId };
-    }
-  } catch { /* allow unauthenticated for demo */ }
+  if (schoolId) {
+    where.classRoom = { ...(where.classRoom || {}), schoolId };
+  } else {
+    try {
+      const ctx = await getTenantContext();
+      if (ctx.schoolId) {
+        where.classRoom = { ...(where.classRoom || {}), schoolId: ctx.schoolId };
+      }
+    } catch { /* allow unauthenticated for demo */ }
+  }
 
   if (search) {
     where.user = { name: { contains: search, mode: "insensitive" } };
@@ -24,24 +27,41 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
     where.classId = classId;
   }
   if (gradeLevel) {
-    where.classRoom = { gradeLevel };
+    where.classRoom = { ...(where.classRoom || {}), gradeLevel };
   }
   return prisma.student.findMany({
     where,
     include: {
       user: { select: { id: true, name: true, email: true } },
-      classRoom: { select: { id: true, name: true, gradeLevel: true } },
+      classRoom: {
+        select: {
+          id: true,
+          name: true,
+          gradeLevel: true,
+          school: { select: { id: true, name: true } },
+        },
+      },
       group: { select: { id: true, name: true } },
     },
     orderBy: { user: { name: "asc" } },
-    take: 100,
+    take: 200,
   });
 }
 
-export async function getClassesForSelect() {
+export async function getClassesForSelect(schoolId?: string) {
+  const where: any = {};
+  if (schoolId) where.schoolId = schoolId;
   return prisma.classRoom.findMany({
-    select: { id: true, name: true, gradeLevel: true },
+    where,
+    select: { id: true, name: true, gradeLevel: true, schoolId: true, school: { select: { id: true, name: true } } },
     orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+  });
+}
+
+export async function getSchoolsForSelect() {
+  return prisma.school.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
 }
 
