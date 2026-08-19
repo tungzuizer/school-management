@@ -100,15 +100,37 @@ export default function StudentsPage() {
     setModalOpen(true);
   };
 
+  const safeFormatIsoDate = (val: any): string => {
+    if (!val) return "";
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return "";
+      return d.toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  };
+
+  const safeFormatDisplayDate = (val: any): string => {
+    if (!val) return "—";
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return "—";
+      return d.toLocaleDateString("vi-VN");
+    } catch {
+      return "—";
+    }
+  };
+
   const openEdit = (s: StudentData) => {
     setEditing(s);
     setForm({
-      name: s.user.name,
-      email: s.user.email,
+      name: s.user?.name || "",
+      email: s.user?.email || "",
       password: "",
       studentCode: s.studentCode || "",
       classId: s.classRoom?.id || "",
-      dob: s.dob ? new Date(s.dob).toISOString().split("T")[0] : "",
+      dob: safeFormatIsoDate(s.dob),
       gender: s.gender || "",
       phone: s.phone || "",
       ethnicity: s.ethnicity || "",
@@ -444,7 +466,7 @@ export default function StudentsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
-                      {s.user.name}
+                      {s.user?.name || "Học sinh"}
                     </span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusColor[s.status] || "bg-slate-100 text-slate-700"}`}>
                       {statusLabel[s.status] || s.status}
@@ -456,8 +478,8 @@ export default function StudentsPage() {
                     <span className="font-semibold text-slate-700">Lớp:</span> {s.classRoom?.name || "Chưa xếp lớp"}
                   </p>
                   <p className="text-xs text-slate-500">
-                    <span className="font-semibold text-slate-700">Ngày sinh:</span> {s.dob || "—"} |{" "}
-                    <span className="font-semibold text-slate-700">Giới tính:</span> {s.gender || "—"}
+                    <span className="font-semibold text-slate-700">Ngày sinh:</span> {safeFormatDisplayDate(s.dob)} |{" "}
+                    <span className="font-semibold text-slate-700">Giới tính:</span> {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
                   </p>
                   <p className="text-xs text-slate-500 truncate">
                     <span className="font-semibold text-slate-700">SĐT:</span> {s.phone || "—"}
@@ -512,7 +534,7 @@ export default function StudentsPage() {
                   students.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-600">{s.studentCode || "—"}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{s.user.name}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{s.user?.name || "Học sinh"}</td>
                       <td className="px-4 py-3 text-sm">
                         {s.classRoom ? (
                           <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
@@ -523,7 +545,7 @@ export default function StudentsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {s.dob ? new Date(s.dob).toLocaleDateString("vi-VN") : "—"}
+                        {safeFormatDisplayDate(s.dob)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}

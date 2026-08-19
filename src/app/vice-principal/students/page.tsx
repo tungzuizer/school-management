@@ -30,7 +30,7 @@ export default function VPStudentsPage() {
   }, [campusId]);
 
   const filtered = students.filter((s) =>
-    s.user.name.toLowerCase().includes(search.toLowerCase()) ||
+    (s.user?.name || "").toLowerCase().includes(search.toLowerCase()) ||
     (s.studentCode && s.studentCode.toLowerCase().includes(search.toLowerCase())) ||
     (s.classRoom?.name && s.classRoom.name.toLowerCase().includes(search.toLowerCase()))
   );
@@ -94,7 +94,7 @@ export default function VPStudentsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-slate-900 text-base group-hover:text-teal-600 transition-colors">
-                      {s.user.name}
+                      {s.user?.name || "Học sinh"}
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-100 text-teal-800">
                       {s.classRoom?.name || "Chưa xếp lớp"}
@@ -160,7 +160,7 @@ export default function VPStudentsPage() {
                         {s.studentCode || "—"}
                       </td>
                       <td className="px-4 py-3 font-semibold text-gray-900">
-                        {s.user.name}
+                        {s.user?.name || "Học sinh"}
                       </td>
                       <td className="px-4 py-3">
                         {s.classRoom ? (
