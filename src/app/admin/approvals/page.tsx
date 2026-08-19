@@ -327,9 +327,9 @@ export default function ApprovalsPage() {
                       </div>
                     )}
 
-                    {item.driveFileUrl && (
+                    {item.type === "LESSON_PLAN" && (item as LessonPlanItem).driveFileUrl && (
                       <a
-                        href={item.driveFileUrl}
+                        href={(item as LessonPlanItem).driveFileUrl!}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
