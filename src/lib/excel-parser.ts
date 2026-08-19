@@ -247,3 +247,64 @@ export function mapRowsToClasses(rawRows: Record<string, any>[]): ParsedClassRow
     };
   });
 }
+
+export interface ParsedSubjectGroupRow {
+  name: string;
+  headTeacherName?: string;
+  subjects?: string;
+  schoolName?: string;
+  description?: string;
+  isValid: boolean;
+  error?: string;
+}
+
+/**
+ * Maps raw spreadsheet rows to structured Subject Group records with validation
+ */
+export function mapRowsToSubjectGroups(rawRows: Record<string, any>[]): ParsedSubjectGroupRow[] {
+  return rawRows.map((row, idx) => {
+    const getVal = (...possibleKeys: string[]) => {
+      const rowKeys = Object.keys(row);
+      for (const pk of possibleKeys) {
+        const normPk = normalizeKey(pk);
+        const matchedKey = rowKeys.find((k) => normalizeKey(k) === normPk);
+        if (matchedKey && row[matchedKey] !== undefined && row[matchedKey] !== null) {
+          return String(row[matchedKey]).trim();
+        }
+      }
+      return "";
+    };
+
+    const name = getVal("name", "ten to", "ten to chuyen mon", "to chuyen mon", "to", "groupname");
+    const headTeacherName = getVal(
+      "headteachername",
+      "to truong",
+      "to truong chuyen mon",
+      "headteacher",
+      "giao vien to truong",
+      "gv to truong"
+    );
+    const subjects = getVal("subjects", "mon hoc", "danh sach mon", "cac mon", "mon");
+    const schoolName = getVal("schoolname", "truong", "ten truong");
+    const description = getVal("description", "mo ta", "ghi chu");
+
+    let isValid = true;
+    let error = "";
+
+    if (!name) {
+      isValid = false;
+      error = `Dòng ${idx + 2}: Thiếu tên tổ chuyên môn.`;
+    }
+
+    return {
+      name,
+      headTeacherName: headTeacherName || undefined,
+      subjects: subjects || undefined,
+      schoolName: schoolName || undefined,
+      description: description || undefined,
+      isValid,
+      error: error || undefined,
+    };
+  });
+}
+

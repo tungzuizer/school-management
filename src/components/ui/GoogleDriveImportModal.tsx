@@ -15,7 +15,7 @@ import {
 interface GoogleDriveImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: "STUDENTS" | "TEACHERS" | "CLASSES" | "EVIDENCE";
+  targetType: "STUDENTS" | "TEACHERS" | "CLASSES" | "EVIDENCE" | "SUBJECT_GROUPS";
   onConfirmImport: (data: any[]) => Promise<void>;
   title?: string;
   extraSelects?: React.ReactNode;
@@ -103,40 +103,44 @@ export default function GoogleDriveImportModal({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={title} size="xl">
-      <div className="space-y-5">
-        {/* Helper Instructions Box */}
-        <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-3.5 text-xs text-blue-800 dark:text-blue-200 flex items-start gap-2.5">
-          <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+      <div className="space-y-4">
+        {/* Helper Banner */}
+        <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200">
+          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-semibold">Hướng dẫn chuẩn bị file Google Drive / Google Sheet:</p>
-            <ol className="list-decimal list-inside space-y-0.5 text-blue-700 dark:text-blue-300">
-              <li>Mở tệp Google Sheet trên Google Drive của bạn.</li>
-              <li>Nhấp nút <strong>Chia sẻ (Share)</strong> ở góc phải trên &rarr; Chuyển sang <strong>"Bất kỳ ai có liên kết" (Anyone with the link)</strong>.</li>
-              <li>Sao chép đường dẫn (URL) từ thanh địa chỉ trình duyệt và dán vào ô bên dưới.</li>
-            </ol>
+            <p className="font-semibold">Hướng dẫn nhập dữ liệu từ Google Drive:</p>
+            <p>
+              1. Mở file Google Sheet/Drive và đặt quyền chia sẻ là <b>Bất kỳ ai có liên kết (Viewer)</b>.
+            </p>
+            <p>
+              2. Sao chép liên kết trình duyệt (URL) và dán vào ô bên dưới.
+            </p>
+            <p>
+              3. Hệ thống sẽ tự động quét các tiêu đề cột tiếng Việt hoặc tiếng Anh để xử lý.
+            </p>
           </div>
         </div>
 
-        {/* Extra Selection Controls (e.g. Bulk Class Selection) */}
-        {extraSelects && <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">{extraSelects}</div>}
+        {extraSelects && <div>{extraSelects}</div>}
 
-        {/* Input Box */}
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-            Đường dẫn Liên kết Google Drive / Google Sheet:
+        {/* Input Bar */}
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
+            Đường dẫn Google Sheet / Google Drive:
           </label>
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Link className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+              <Link className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
-                type="text"
-                placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs0XR..."
+                type="url"
                 value={driveUrl}
                 onChange={(e) => setDriveUrl(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
             <button
+              type="button"
               onClick={handleFetchDrive}
               disabled={fetching || !driveUrl.trim()}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 disabled:opacity-50 shrink-0"
@@ -199,7 +203,7 @@ export default function GoogleDriveImportModal({
                   <tr>
                     <th className="p-2 border-b dark:border-gray-700 w-12 text-center">STT</th>
                     <th className="p-2 border-b dark:border-gray-700">Trạng thái</th>
-                    <th className="p-2 border-b dark:border-gray-700">Họ và Tên</th>
+                    <th className="p-2 border-b dark:border-gray-700">{targetType === "SUBJECT_GROUPS" ? "Tên Tổ" : "Họ và Tên"}</th>
                     {targetType === "STUDENTS" && (
                       <>
                         <th className="p-2 border-b dark:border-gray-700">Mã HS</th>
@@ -217,6 +221,13 @@ export default function GoogleDriveImportModal({
                       <>
                         <th className="p-2 border-b dark:border-gray-700">Khối</th>
                         <th className="p-2 border-b dark:border-gray-700">Trường/Phân hiệu</th>
+                      </>
+                    )}
+                    {targetType === "SUBJECT_GROUPS" && (
+                      <>
+                        <th className="p-2 border-b dark:border-gray-700">Tổ Trưởng</th>
+                        <th className="p-2 border-b dark:border-gray-700">Môn Học</th>
+                        <th className="p-2 border-b dark:border-gray-700">Trường</th>
                       </>
                     )}
                     <th className="p-2 border-b dark:border-gray-700">Ghi chú / Lỗi</th>
@@ -273,6 +284,13 @@ export default function GoogleDriveImportModal({
                             <td className="p-2 text-gray-600 dark:text-gray-300">{row.schoolName || row.campusName || "—"}</td>
                           </>
                         )}
+                        {targetType === "SUBJECT_GROUPS" && (
+                          <>
+                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.headTeacherName || "—"}</td>
+                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.subjects || "—"}</td>
+                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.schoolName || "—"}</td>
+                          </>
+                        )}
                         <td className="p-2 text-gray-500 text-[11px]">
                           {row.error ? (
                             <span className="text-red-600 font-medium">{row.error}</span>
@@ -292,6 +310,7 @@ export default function GoogleDriveImportModal({
         {/* Modal Action Buttons */}
         <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
           <button
+            type="button"
             onClick={handleClose}
             className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
           >
@@ -299,6 +318,7 @@ export default function GoogleDriveImportModal({
           </button>
           {result && (
             <button
+              type="button"
               onClick={handleConfirm}
               disabled={importing || result.validRows === 0}
               className="px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition flex items-center gap-2 disabled:opacity-50"
