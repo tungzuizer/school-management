@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
-import { getTeachers, createTeacher, updateTeacher, deleteTeacher, createBulkTeachers, BulkTeacherInput } from "./actions";
+import { getTeachers, getSchoolsForTeacherSelect, createTeacher, updateTeacher, deleteTeacher, createBulkTeachers, BulkTeacherInput } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { Loader2 } from "lucide-react";
@@ -13,14 +13,18 @@ interface TeacherData {
   specialty: string | null;
   phone: string | null;
   degree: string | null;
-  user: { id: string; name: string; email: string };
+  user: { id: string; name: string; email: string; school?: { id: string; name: string } | null };
   homeroomClasses: { id: string; name: string; gradeLevel: number }[];
-  teachingAssignments: { id: string; subject: { name: string }; classRoom: { name: string } }[];
+  teachingAssignments: { id: string; subject: { name: string }; classRoom: { name: string; gradeLevel?: number } }[];
 }
 
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState<TeacherData[]>([]);
+  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
+  const [filterSchool, setFilterSchool] = useState("");
+  const [filterSpecialty, setFilterSpecialty] = useState("");
+  const [filterGrade, setFilterGrade] = useState("");
   const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -135,10 +139,33 @@ export default function TeachersPage() {
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    const data = await getTeachers(search || undefined);
-    setTeachers(data as TeacherData[]);
+    const [teachersData, schoolsData] = await Promise.all([
+      getTeachers(search || undefined, filterSpecialty || undefined, filterSchool || undefined),
+      getSchoolsForTeacherSelect(),
+    ]);
+    setTeachers(teachersData as unknown as TeacherData[]);
+    setSchools(schoolsData);
     setLoading(false);
-  }, [search]);
+  }, [search, filterSpecialty, filterSchool]);
+
+  const uniqueSpecialties = Array.from(new Set(teachers.map((t) => t.specialty).filter(Boolean))) as string[];
+  const uniqueGrades = Array.from(
+    new Set(
+      teachers.flatMap((t) => [
+        ...t.homeroomClasses.map((c) => c.gradeLevel),
+        ...t.teachingAssignments.map((a) => (a.classRoom as any)?.gradeLevel),
+      ]).filter(Boolean)
+    )
+  ).sort((a: any, b: any) => a - b);
+  const gradeOptions = uniqueGrades.length > 0 ? uniqueGrades : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+  const filteredTeachers = teachers.filter((t) => {
+    if (!filterGrade) return true;
+    const gradeNum = Number(filterGrade);
+    const inHomeroom = t.homeroomClasses.some((c) => c.gradeLevel === gradeNum);
+    const inTeaching = t.teachingAssignments.some((a) => (a.classRoom as any)?.gradeLevel === gradeNum);
+    return inHomeroom || inTeaching;
+  });
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -151,8 +178,8 @@ export default function TeachersPage() {
   const openEdit = (t: TeacherData) => {
     setEditing(t);
     setForm({
-      name: t.user.name,
-      email: t.user.email,
+      name: t.user?.name || "",
+      email: t.user?.email || "",
       password: "",
       specialty: t.specialty || "",
       phone: t.phone || "",
@@ -247,11 +274,55 @@ export default function TeachersPage() {
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="text"
-            placeholder="Tìm theo tên giáo viên..."
+            placeholder="Tìm theo tên, email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-64 bg-white shadow-2xs"
+            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-52 sm:w-64 bg-white shadow-2xs"
           />
+
+          {/* Lọc theo Trường */}
+          {schools.length > 0 && (
+            <select
+              value={filterSchool}
+              onChange={(e) => setFilterSchool(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs max-w-[200px]"
+            >
+              <option value="">🏫 Tất cả các trường</option>
+              {schools.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Lọc theo Chuyên môn */}
+          <select
+            value={filterSpecialty}
+            onChange={(e) => setFilterSpecialty(e.target.value)}
+            className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
+          >
+            <option value="">📖 Tất cả chuyên môn</option>
+            {uniqueSpecialties.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+
+          {/* Lọc theo Khối */}
+          <select
+            value={filterGrade}
+            onChange={(e) => setFilterGrade(e.target.value)}
+            className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
+          >
+            <option value="">📚 Tất cả khối dạy</option>
+            {gradeOptions.map((g) => (
+              <option key={g} value={g}>
+                Khối {g}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* View Mode Toggle */}
@@ -280,26 +351,33 @@ export default function TeachersPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in">
           {loading ? (
             <div className="col-span-full py-12 text-center text-slate-400 text-xs">Đang tải danh sách giáo viên...</div>
-          ) : teachers.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Chưa có giáo viên nào</div>
+          ) : filteredTeachers.length === 0 ? (
+            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Không tìm thấy giáo viên phù hợp</div>
           ) : (
-            teachers.map((t) => (
+            filteredTeachers.map((t) => (
               <div
                 key={t.id}
                 className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all space-y-3 flex flex-col justify-between hover-lift group"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
-                      {t.user.name}
-                    </span>
+                    <div>
+                      <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors block">
+                        {t.user?.name || "Giáo viên"}
+                      </span>
+                      {t.user?.school?.name && (
+                        <span className="text-[10px] text-indigo-700 font-semibold block">
+                          🏫 {t.user.school.name}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
                       {t.specialty || "Giáo viên"}
                     </span>
                   </div>
 
                   <p className="text-xs text-slate-500 truncate">
-                    <span className="font-semibold text-slate-700">Email:</span> {t.user.email}
+                    <span className="font-semibold text-slate-700">Email:</span> {t.user?.email || "—"}
                   </p>
                   <p className="text-xs text-slate-500">
                     <span className="font-semibold text-slate-700">Bằng cấp:</span> {t.degree || "—"} |{" "}
@@ -366,13 +444,18 @@ export default function TeachersPage() {
                     </div>
                   </td>
                 </tr>
-              ) : teachers.length === 0 ? (
-                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Chưa có giáo viên nào</td></tr>
+              ) : filteredTeachers.length === 0 ? (
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Không tìm thấy giáo viên phù hợp</td></tr>
               ) : (
-                teachers.map((t) => (
+                filteredTeachers.map((t) => (
                   <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">{t.user.name}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{t.user.email}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-gray-900">{t.user?.name || "Giáo viên"}</div>
+                      {t.user?.school?.name && (
+                        <div className="text-[11px] text-indigo-600 font-medium">🏫 {t.user.school.name}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 text-sm">{t.user?.email || "—"}</td>
                     <td className="px-6 py-4 text-gray-600">{t.specialty || "—"}</td>
                     <td className="px-6 py-4 text-gray-600">{t.degree || "—"}</td>
                     <td className="px-6 py-4 text-gray-600">{t.phone || "—"}</td>
