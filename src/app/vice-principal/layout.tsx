@@ -61,6 +61,7 @@ const menuGroups: MenuGroup[] = [
       { label: "Sổ đầu bài", href: "/vice-principal/journals", icon: FileBarChart },
       { label: "Trung tâm Phê duyệt & Từ chối", href: "/admin/approvals", icon: ClipboardCheck },
       { label: "Duyệt giáo án", href: "/vice-principal/lesson-plans", icon: BookOpen },
+      { label: "Cấu hình OmniRoute AI", href: "/admin/ai-config", icon: Bot },
       { label: "Cảnh báo", href: "/vice-principal/warnings", icon: AlertTriangle },
     ],
   },

@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export interface AIChatParams {
   prompt?: string;
@@ -15,27 +14,56 @@ export interface AIChatResult {
   error: string | null;
 }
 
+export async function getAISettings() {
+  try {
+    const settings = await prisma.systemSetting.findMany({
+      where: {
+        key: { in: ["OMNIROUTE_API_BASE", "OMNIROUTE_API_KEY", "OMNIROUTE_MODEL"] },
+      },
+    });
+
+    const settingsMap: Record<string, string> = {};
+    settings.forEach((s) => {
+      settingsMap[s.key] = s.value;
+    });
+
+    return {
+      apiBase:
+        settingsMap["OMNIROUTE_API_BASE"] ||
+        process.env.OMNIROUTE_API_BASE ||
+        process.env.OPENAI_API_BASE ||
+        "http://127.0.0.1:20128/v1",
+      apiKey:
+        settingsMap["OMNIROUTE_API_KEY"] ||
+        process.env.OMNIROUTE_API_KEY ||
+        process.env.OPENAI_API_KEY ||
+        "sk-omniroute-default",
+      model:
+        settingsMap["OMNIROUTE_MODEL"] ||
+        process.env.OMNIROUTE_MODEL ||
+        process.env.OPENAI_MODEL ||
+        "gpt-4o-mini",
+    };
+  } catch {
+    return {
+      apiBase: process.env.OMNIROUTE_API_BASE || process.env.OPENAI_API_BASE || "http://127.0.0.1:20128/v1",
+      apiKey: process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || "sk-omniroute-default",
+      model: process.env.OMNIROUTE_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini",
+    };
+  }
+}
+
 /**
  * Universal AI Completion function targeting OmniRoute API or OpenAI Compatible Endpoints
  */
 export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResult> {
-  // 1. Resolve API Key (OmniRoute / OpenAI / Custom AI API)
-  const apiKey =
-    process.env.OMNIROUTE_API_KEY ||
-    process.env.OPENAI_API_KEY ||
-    process.env.AI_API_KEY ||
-    process.env.GEMINI_API_KEY ||
-    "sk-omniroute-default";
+  const currentSettings = await getAISettings();
 
-  // 2. Resolve API Base URL for OmniRoute
-  let rawBase = (
-    process.env.OMNIROUTE_API_BASE ||
-    process.env.OPENAI_API_BASE ||
-    process.env.AI_API_BASE ||
-    "http://127.0.0.1:20128/v1"
-  ).trim();
+  // 1. Resolve API Key
+  const apiKey = currentSettings.apiKey;
 
-  rawBase = rawBase.replace(/\/$/, "");
+  // 2. Resolve Base URL
+  let rawBase = currentSettings.apiBase.trim().replace(/\/$/, "");
 
   const endpoint = rawBase.endsWith("/chat/completions")
     ? rawBase
@@ -44,12 +72,7 @@ export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResu
     : `${rawBase}/v1/chat/completions`;
 
   // 3. Resolve Model Name
-  const model =
-    params.model ||
-    process.env.OMNIROUTE_MODEL ||
-    process.env.OPENAI_MODEL ||
-    process.env.AI_MODEL ||
-    "gpt-4o-mini";
+  const model = params.model || currentSettings.model;
 
   const messages =
     params.messages ||
