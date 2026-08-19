@@ -92,6 +92,7 @@ const menuGroups: MenuGroup[] = [
     icon: FileBarChart,
     items: [
       { label: "Sổ đầu bài", href: "/admin/journals", icon: FileBarChart },
+      { label: "Trung tâm Phê duyệt & Từ chối", href: "/admin/approvals", icon: ShieldCheck },
       { label: "Giáo án phê duyệt", href: "/admin/lesson-plans", icon: BookOpen },
       { label: "Cấu hình Drive & Ký nộp", href: "/admin/drive-config", icon: HardDrive },
     ],
