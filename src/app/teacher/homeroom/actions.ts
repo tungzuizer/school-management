@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { aiChatCompletion } from "@/lib/ai-provider";
 
 // ============ Lấy lớp chủ nhiệm của giáo viên ============
 export async function getHomeroomClass(teacherId: string) {
@@ -358,9 +359,6 @@ export async function getAIMonthlyReminder(params: {
 }) {
   const calendar = await getAcademicCalendar(params.schoolId, params.schoolYear);
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  const apiBase = process.env.OPENAI_API_BASE || "http://localhost:20128/v1";
-
   const calendarContent = calendar
     ? calendar.content
     : "Chưa có kế hoạch năm học chi tiết được tải lên cho trường.";
@@ -383,49 +381,26 @@ Yêu cầu output:
   3. Nội dung cần nhắc nhở và đôn đốc học sinh / phụ huynh
   4. Lời khuyên & gợi ý nâng cao hiệu quả quản lý lớp`;
 
-  if (!apiKey) {
-    // Fallback if no API key set
-    return {
-      success: true,
-      reminder: `[Chưa cấu hình OPENAI_API_KEY - Gợi ý tự động cho Tháng ${params.month}/${params.year}]\n\n` +
-        `1. Nhiệm vụ trọng tâm:\n` +
-        `- Ổn định nếp sống, sĩ số và kỷ luật lớp học.\n` +
-        `- Cập nhật thông tin sổ liên lạc và rèn luyện của học sinh.\n` +
-        `- Kiểm tra tình hình học tập và chuẩn bị cho các kỳ kiểm tra.\n\n` +
-        `2. Sự kiện & Mốc thời gian:\n` +
-        `- Sinh hoạt chủ nhiệm hàng tuần.\n` +
-        `- Họp giao ban chủ nhiệm cấp trường/khối.\n\n` +
-        `3. Nhắc nhở học sinh & Phụ huynh:\n` +
-        `- Thực hiện nghiêm túc nội quy trường lớp.\n` +
-        `- Tăng cường phối hợp giữa gia đình và nhà trường.`,
-    };
-  }
-
   try {
-    const res = await fetch(`${apiBase}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        messages: [
-          {
-            role: "system",
-            content: "Bạn là chuyên gia tư vấn quản lý giáo dục và trợ lý giáo viên chủ nhiệm.",
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.7,
-      }),
+    const aiRes = await aiChatCompletion({
+      messages: [
+        {
+          role: "system",
+          content: "Bạn là chuyên gia tư vấn quản lý giáo dục và trợ lý giáo viên chủ nhiệm.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("AI API Error:", errText);
-      return { success: false, error: `Lỗi AI API (${res.status}): ${errText}` };
+    if (!aiRes.success) {
+      return { success: false, error: aiRes.error };
     }
+
+    return {
+      success: true,
+      reminder: aiRes.text,
+    };
 
     const data = await res.json();
     const reminder = data.choices?.[0]?.message?.content || "Không nhận được phản hồi từ AI.";
