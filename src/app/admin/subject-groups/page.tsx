@@ -103,6 +103,25 @@ export default function SubjectGroupsPage() {
 
   const { showToast, ToastComponent } = useToast();
 
+  const fetchFreshData = async () => {
+    try {
+      const [groupData, schoolData, teacherData, subData, unassignedData] = await Promise.all([
+        getSubjectGroups(undefined, filterSchool || undefined, filterHead || undefined),
+        getSchoolsForSelect(),
+        getTeachersForSelect(),
+        getAllSubjectsForSelect(),
+        getUnassignedSubjects(),
+      ]);
+      setGroups(groupData as unknown as SubjectGroupData[]);
+      setSchools(schoolData);
+      setTeachers(teacherData);
+      setAllSubjects(subData as unknown as SubjectOption[]);
+      setUnassignedSubjects(unassignedData as SubjectItem[]);
+    } catch (err) {
+      console.error("Lỗi khi cập nhật lại dữ liệu tổ chuyên môn:", err);
+    }
+  };
+
   const loadData = useCallback(
     async (silent = false) => {
       if (!silent) setLoading(true);
@@ -193,7 +212,8 @@ export default function SubjectGroupsPage() {
       if (result.success) {
         showToast(editing ? "Cập nhật tổ chuyên môn thành công" : "Thêm tổ chuyên môn thành công", "success");
         setModalOpen(false);
-        await loadData(true);
+        setSearch("");
+        await fetchFreshData();
       } else {
         showToast(result.error || "Có lỗi xảy ra", "error");
       }
@@ -221,9 +241,9 @@ export default function SubjectGroupsPage() {
     setAssignSubmitting(false);
 
     if (result.success) {
-      showToast("Cập nhật phân bổ môn học thành công");
+      showToast("Cập nhật phân bổ môn học thành công", "success");
       setAssignModalOpen(false);
-      loadData(true);
+      await fetchFreshData();
     } else {
       showToast(result.error || "Không thể gán môn học", "error");
     }
@@ -236,8 +256,8 @@ export default function SubjectGroupsPage() {
     const res = await assignSubjectToGroup(subjectId, null);
     setRemovingSubjectId(null);
     if (res.success) {
-      showToast("Đã gỡ môn khỏi tổ chuyên môn");
-      loadData(true);
+      showToast("Đã gỡ môn khỏi tổ chuyên môn", "success");
+      await fetchFreshData();
     } else {
       showToast(res.error || "Không thể gỡ môn", "error");
     }
@@ -248,8 +268,8 @@ export default function SubjectGroupsPage() {
     const result = await deleteSubjectGroup(id);
     setDeleteConfirm(null);
     if (result.success) {
-      showToast("Xóa tổ chuyên môn thành công");
-      loadData(true);
+      showToast("Xóa tổ chuyên môn thành công", "success");
+      await fetchFreshData();
     } else {
       showToast(result.error || "Không thể xóa", "error");
     }
