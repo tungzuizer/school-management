@@ -408,7 +408,6 @@ export default function TeachersPage() {
           </tbody>
         </table>
       </div>
-      )}
 
       {/* Create/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Sửa giáo viên" : "Thêm giáo viên mới"}>
