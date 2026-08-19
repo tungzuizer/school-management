@@ -701,14 +701,13 @@ export default function SubjectGroupsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Trường *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Trường</label>
             <select
               value={form.schoolId}
               onChange={(e) => setForm({ ...form, schoolId: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
-              required
             >
-              <option value="">-- Chọn trường --</option>
+              <option value="">-- Mặc định (Trường hiện tại) --</option>
               {schools.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
