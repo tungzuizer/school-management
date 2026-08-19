@@ -6,16 +6,23 @@ import bcrypt from "bcryptjs";
 import { getTenantContext } from "@/lib/tenant";
 import { recordAuditLog } from "@/lib/audit-logger";
 
-export async function getTeachers(search?: string) {
+export async function getTeachers(search?: string, specialty?: string, schoolId?: string) {
   const where: any = {};
 
-  // Tenant Isolation
-  try {
-    const ctx = await getTenantContext();
-    if (ctx.schoolId) {
-      where.user = { ...(where.user || {}), schoolId: ctx.schoolId };
-    }
-  } catch { /* allow */ }
+  if (schoolId) {
+    where.user = { ...(where.user || {}), schoolId };
+  } else {
+    try {
+      const ctx = await getTenantContext();
+      if (ctx.schoolId) {
+        where.user = { ...(where.user || {}), schoolId: ctx.schoolId };
+      }
+    } catch { /* allow */ }
+  }
+
+  if (specialty) {
+    where.specialty = { contains: specialty, mode: "insensitive" };
+  }
 
   if (search) {
     where.user = { ...(where.user || {}), name: { contains: search, mode: "insensitive" } };
@@ -23,7 +30,7 @@ export async function getTeachers(search?: string) {
   return prisma.teacher.findMany({
     where,
     include: {
-      user: { select: { id: true, name: true, email: true } },
+      user: { select: { id: true, name: true, email: true, school: { select: { id: true, name: true } } } },
       homeroomClasses: { select: { id: true, name: true, gradeLevel: true } },
       teachingAssignments: {
         select: {
@@ -34,6 +41,13 @@ export async function getTeachers(search?: string) {
       },
     },
     orderBy: { user: { name: "asc" } },
+  });
+}
+
+export async function getSchoolsForTeacherSelect() {
+  return prisma.school.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
 }
 
