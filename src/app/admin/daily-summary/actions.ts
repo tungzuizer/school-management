@@ -137,8 +137,4 @@ Viet bang tieng Viet co dau, chuyen nghiep, ngan gon. Toi da 400 tu.`;
     return { success: false, text: null, error: aiRes.error };
   }
   return { success: true, text: aiRes.text, error: null };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Loi khong xac dinh";
-    return { success: false, text: null, error: `Khong the ket noi AI: ${msg}` };
-  }
 }
