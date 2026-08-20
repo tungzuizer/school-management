@@ -27,12 +27,22 @@ export async function getAISettings() {
       settingsMap[s.key] = s.value;
     });
 
+    let apiBase =
+      settingsMap["OMNIROUTE_API_BASE"] ||
+      process.env.OMNIROUTE_API_BASE ||
+      process.env.OPENAI_API_BASE ||
+      "https://epicedial-fixtureless-imogene.ngrok-free.dev/v1";
+
+    // If running on Vercel Cloud, auto-fallback localhost/127.0.0.1 to active ngrok URL
+    if (
+      (apiBase.includes("localhost") || apiBase.includes("127.0.0.1")) &&
+      (process.env.VERCEL === "1" || process.env.NODE_ENV === "production")
+    ) {
+      apiBase = "https://epicedial-fixtureless-imogene.ngrok-free.dev/v1";
+    }
+
     return {
-      apiBase:
-        settingsMap["OMNIROUTE_API_BASE"] ||
-        process.env.OMNIROUTE_API_BASE ||
-        process.env.OPENAI_API_BASE ||
-        "https://epicedial-fixtureless-imogene.ngrok-free.dev/v1",
+      apiBase,
       apiKey:
         settingsMap["OMNIROUTE_API_KEY"] ||
         process.env.OMNIROUTE_API_KEY ||
@@ -45,8 +55,16 @@ export async function getAISettings() {
         "antigravity/gemini-2.5-flash-lite",
     };
   } catch {
+    let apiBase = process.env.OMNIROUTE_API_BASE || process.env.OPENAI_API_BASE || "https://epicedial-fixtureless-imogene.ngrok-free.dev/v1";
+    if (
+      (apiBase.includes("localhost") || apiBase.includes("127.0.0.1")) &&
+      (process.env.VERCEL === "1" || process.env.NODE_ENV === "production")
+    ) {
+      apiBase = "https://epicedial-fixtureless-imogene.ngrok-free.dev/v1";
+    }
+
     return {
-      apiBase: process.env.OMNIROUTE_API_BASE || process.env.OPENAI_API_BASE || "https://epicedial-fixtureless-imogene.ngrok-free.dev/v1",
+      apiBase,
       apiKey: process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || "sk-f3574d44ab943de1-9647e3-1d702ffe",
       model: process.env.OMNIROUTE_MODEL || process.env.OPENAI_MODEL || "antigravity/gemini-2.5-flash-lite",
     };
@@ -103,6 +121,7 @@ export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResu
         model,
         max_tokens: params.max_tokens || 2048,
         temperature: params.temperature ?? 0.7,
+        stream: false,
         messages,
       }),
       signal: controller.signal,
