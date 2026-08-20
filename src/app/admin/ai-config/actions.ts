@@ -80,9 +80,9 @@ export async function saveAISettingsConfig(data: {
 export async function testAIConnection() {
   const startTime = Date.now();
   const result = await aiChatCompletion({
-    prompt: "Hãy trả lời câu 'Kết nối OmniRoute AI thành công 100%!' trong đúng 1 câu ngắn gọn.",
-    max_tokens: 100,
-    temperature: 0.1,
+    prompt: "Xin chào! Bạn là Trợ lý AI Quản lý Giáo dục. Hãy giới thiệu bản thân và xác nhận kết nối hệ thống OmniRoute thành công trong 2-3 câu chuyên nghiệp.",
+    max_tokens: 500,
+    temperature: 0.7,
   });
   const latencyMs = Date.now() - startTime;
 
