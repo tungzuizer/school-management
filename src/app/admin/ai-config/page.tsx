@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function AIConfigPage() {
-  const [apiBase, setApiBase] = useState("https://spotty-donkeys-smile.loca.lt/v1");
+  const [apiBase, setApiBase] = useState("https://epicedial-fixtureless-imogene.ngrok-free.dev/v1");
   const [apiKey, setApiKey] = useState("sk-f3574d44ab943de1-9647e3-1d702ffe");
   const [model, setModel] = useState("antigravity/gemini-2.5-flash-lite");
   const [loading, setLoading] = useState(true);
