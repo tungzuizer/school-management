@@ -45,7 +45,7 @@ interface Message {
     }>;
     policyNote?: string;
     actionSteps: string[];
-  };
+  } | null;
 }
 
 interface SavedDecision {
