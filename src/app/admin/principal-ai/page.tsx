@@ -363,7 +363,7 @@ export default function PrincipalAIPage() {
                     </div>
 
                     {/* AI Structured Recommendation Card */}
-                    {msg.recommendation && (
+                    {msg.recommendation && (msg.recommendation.options.length > 0 || msg.recommendation.actionSteps.length > 0) && (
                       <div className="bg-white border border-blue-100 rounded-2xl p-5 shadow-lg space-y-5">
                         {/* Summary & Risk Badge */}
                         <div className="flex items-start justify-between gap-4 border-b border-gray-100 pb-4">
