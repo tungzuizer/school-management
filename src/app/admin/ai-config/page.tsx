@@ -24,7 +24,7 @@ export default function AIConfigPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; text?: string; error?: string; latencyMs?: number } | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; text?: string; error?: string | null; latencyMs?: number } | null>(null);
 
   const { showToast, ToastComponent } = useToast();
 
