@@ -30,6 +30,31 @@ export async function askPrincipalAI(query: string) {
 
   const totalStudents = await prisma.student.count({ where: { status: "STUDYING" } });
 
+  // Gather real-time attendance metrics for today
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const presentToday = await prisma.attendance.count({
+    where: {
+      createdAt: { gte: todayStart },
+      status: "PRESENT",
+    },
+  });
+
+  const absentToday = await prisma.attendance.count({
+    where: {
+      createdAt: { gte: todayStart },
+      status: { in: ["ABSENT_EXCUSED", "ABSENT_UNEXCUSED"] },
+    },
+  });
+
+  const lateToday = await prisma.attendance.count({
+    where: {
+      createdAt: { gte: todayStart },
+      status: "LATE",
+    },
+  });
+
   const pointsContext = schoolPoints
     .map((sp) => `- ${sp.name} (${sp.campus.name}): ${sp.distanceKm ?? 0}km, QL: ${sp.managerName || "N/A"}, SĐT: ${sp.phone || "N/A"}`)
     .join("\n");
@@ -48,12 +73,16 @@ export async function askPrincipalAI(query: string) {
 
   const prompt = `Bạn là Trợ lý AI Tư vấn Ra Quyết định cho Hiệu trưởng trường phổ thông có nhiều điểm trường vệ tinh phân tán theo địa hình vùng cao.
 
-DỮ LIỆU THỰC TẾ HỆ THỐNG:
+DỮ LIỆU THỰC TẾ TRÍCH XUẤT TỪ CƠ SỞ DỮ LIỆU HỆ THỐNG (100% REAL-TIME DATA):
 
 1. HỆ THỐNG ĐIỂM TRƯỜNG (${schoolPoints.length} điểm):
 ${pointsContext}
 
-2. TỔNG HỌC SINH ĐANG HỌC: ${totalStudents}
+2. DỮ LIỆU SĨ SỐ & ĐIỂM DANH HỌC SINH HÔM NAY:
+- Tổng số học sinh đang theo học toàn hệ thống: ${totalStudents} học sinh
+- Số học sinh đã điểm danh CÓ MẶT tại lớp hôm nay: ${presentToday > 0 ? presentToday + " học sinh" : "Chưa có dữ liệu điểm danh có mặt cho ngày hôm nay (hoặc chưa đến giờ chốt sổ)"}
+- Số học sinh VẮNG MẶT hôm nay: ${absentToday} học sinh
+- Số học sinh ĐI MUỘN hôm nay: ${lateToday} học sinh
 
 3. CẢNH BÁO SỚM ĐANG HOẠT ĐỘNG:
 ${warningsContext}
@@ -64,28 +93,32 @@ ${assignmentsContext}
 5. QUYẾT ĐỊNH CHỈ ĐẠO GẦN ĐÂY:
 ${decisionsContext}
 
-CÂU HỎI CỦA HIỆU TRƯỞNG:
+CÂU HỎI / YÊU CẦU CỦA HIỆU TRƯỞNG:
 "${query}"
 
-Hãy phân tích và đưa ra khuyến nghị chiến lược. Trả lời bằng tiếng Việt có dấu, chuyên nghiệp. Format:
+YÊU CẦU TRẢ LỜI:
+- Trả lời trực tiếp và chính xác dựa trên DỮ LIỆU THỰC TẾ ở Mục 2. Nếu Hiệu trưởng hỏi có bao nhiêu học sinh đi học/vắng mặt, hãy cung cấp rõ các con số thực tế từ CSDL.
+- Đưa ra giải pháp chỉ đạo thực tế, tuân thủ Thông tư và Điều lệ nhà trường của Bộ GD&ĐT.
 
-TÓM_TẮT: [Tóm tắt khuyến nghị tối ưu, 1-2 câu]
+Format phản hồi:
+
+TÓM_TẮT: [Trả lời trực tiếp câu hỏi của Hiệu trưởng kèm con số thực tế từ CSDL, 2-3 câu]
 MỨC_RỦI_RO: [LOW hoặc MEDIUM hoặc HIGH]
 
 PHƯƠNG_ÁN_1:
-TIÊU_ĐỀ: [Tên phương án]
+TIÊU_ĐỀ: [Tên phương án chỉ đạo 1]
 ĐIỂM: [0-100]
 ƯU_ĐIỂM: [liệt kê, ngăn cách bằng |]
 NHƯỢC_ĐIỂM: [liệt kê, ngăn cách bằng |]
 
 PHƯƠNG_ÁN_2:
-TIÊU_ĐỀ: [Tên phương án (nếu có)]
+TIÊU_ĐỀ: [Tên phương án chỉ đạo 2]
 ĐIỂM: [0-100]
 ƯU_ĐIỂM: [liệt kê, ngăn cách bằng |]
 NHƯỢC_ĐIỂM: [liệt kê, ngăn cách bằng |]
 
-CƠ_SỞ_PHÁP_LÝ: [Trích dẫn văn bản quy phạm liên quan nếu có]
-BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
+CƠ_SỞ_PHÁP_LÝ: [Trích dẫn Điều lệ trường học / Thông tư BGDĐT liên quan]
+BƯỚC_TRIỂN_KHAI: [các bước chỉ đạo cụ thể, ngăn cách bằng |]`;
 
   const aiRes = await aiChatCompletion({ prompt, max_tokens: 2048 });
   if (!aiRes.success) {
