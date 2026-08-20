@@ -32,7 +32,7 @@ export async function getAISettings() {
         settingsMap["OMNIROUTE_API_BASE"] ||
         process.env.OMNIROUTE_API_BASE ||
         process.env.OPENAI_API_BASE ||
-        "https://spotty-donkeys-smile.loca.lt/v1",
+        "https://epicedial-fixtureless-imogene.ngrok-free.dev/v1",
       apiKey:
         settingsMap["OMNIROUTE_API_KEY"] ||
         process.env.OMNIROUTE_API_KEY ||
@@ -46,7 +46,7 @@ export async function getAISettings() {
     };
   } catch {
     return {
-      apiBase: process.env.OMNIROUTE_API_BASE || process.env.OPENAI_API_BASE || "https://spotty-donkeys-smile.loca.lt/v1",
+      apiBase: process.env.OMNIROUTE_API_BASE || process.env.OPENAI_API_BASE || "https://epicedial-fixtureless-imogene.ngrok-free.dev/v1",
       apiKey: process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || "sk-f3574d44ab943de1-9647e3-1d702ffe",
       model: process.env.OMNIROUTE_MODEL || process.env.OPENAI_MODEL || "antigravity/gemini-2.5-flash-lite",
     };
@@ -96,6 +96,7 @@ export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResu
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
         "bypass-tunnel-reminder": "true",
+        "ngrok-skip-browser-warning": "true",
         "User-Agent": "SchoolManagementAI/1.0",
       },
       body: JSON.stringify({
