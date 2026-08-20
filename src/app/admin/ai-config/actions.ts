@@ -95,7 +95,7 @@ export async function testAIConnection() {
   } else {
     return {
       success: false,
-      error: result.error,
+      error: result.error || "Lỗi không xác định",
       latencyMs,
     };
   }
