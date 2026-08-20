@@ -95,6 +95,8 @@ export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResu
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "bypass-tunnel-reminder": "true",
+        "User-Agent": "SchoolManagementAI/1.0",
       },
       body: JSON.stringify({
         model,
