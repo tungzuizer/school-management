@@ -97,14 +97,16 @@ CÂU HỎI / YÊU CẦU CỦA HIỆU TRƯỞNG:
 "${query}"
 
 YÊU CẦU TRẢ LỜI:
-- Trả lời trực tiếp và chính xác dựa trên DỮ LIỆU THỰC TẾ ở Mục 2. Nếu Hiệu trưởng hỏi có bao nhiêu học sinh đi học/vắng mặt, hãy cung cấp rõ các con số thực tế từ CSDL.
-- Đưa ra giải pháp chỉ đạo thực tế, tuân thủ Thông tư và Điều lệ nhà trường của Bộ GD&ĐT.
+- Trả lời trực tiếp, tự nhiên và chính xác dựa trên DỮ LIỆU THỰC TẾ ở trên.
+- Nếu Hiệu trưởng hỏi câu hỏi tra cứu thông tin (ví dụ: sĩ số học sinh, số em đi học/vắng mặt, danh sách điểm trường, giáo viên), hãy tập trung trả lời chi tiết chính xác con số dữ liệu thực tế trong mục TÓM_TẮT và BỎ QUA các mục PHƯƠNG_ÁN_1, PHƯƠNG_ÁN_2.
+- Nếu Hiệu trưởng yêu cầu đề xuất giải pháp, xử lý sự cố hoặc phương án chỉ đạo, mới cung cấp các mục PHƯƠNG_ÁN_1, PHƯƠNG_ÁN_2.
 
 Format phản hồi:
 
-TÓM_TẮT: [Trả lời trực tiếp câu hỏi của Hiệu trưởng kèm con số thực tế từ CSDL, 2-3 câu]
+TÓM_TẮT: [Trả lời đầy đủ, chi tiết, tự nhiên trực tiếp vào câu hỏi của Hiệu trưởng kèm con số dữ liệu thực tế CSDL]
 MỨC_RỦI_RO: [LOW hoặc MEDIUM hoặc HIGH]
 
+(Chỉ điền các mục bên dưới nếu câu hỏi yêu cầu giải pháp chỉ đạo/lựa chọn phương án, nếu hỏi thông tin thông thường thì KHÔNG tạo các mục PHƯƠNG_ÁN):
 PHƯƠNG_ÁN_1:
 TIÊU_ĐỀ: [Tên phương án chỉ đạo 1]
 ĐIỂM: [0-100]
@@ -117,7 +119,7 @@ TIÊU_ĐỀ: [Tên phương án chỉ đạo 2]
 ƯU_ĐIỂM: [liệt kê, ngăn cách bằng |]
 NHƯỢC_ĐIỂM: [liệt kê, ngăn cách bằng |]
 
-CƠ_SỞ_PHÁP_LÝ: [Trích dẫn Điều lệ trường học / Thông tư BGDĐT liên quan]
+CƠ_SỞ_PHÁP_LÝ: [Trích dẫn Điều lệ trường học / Thông tư BGDĐT liên quan nếu có]
 BƯỚC_TRIỂN_KHAI: [các bước chỉ đạo cụ thể, ngăn cách bằng |]`;
 
   const aiRes = await aiChatCompletion({ prompt, max_tokens: 2048 });
@@ -168,14 +170,7 @@ BƯỚC_TRIỂN_KHAI: [các bước chỉ đạo cụ thể, ngăn cách bằng 
       options.push({ title, score, pros, cons });
     }
 
-    if (options.length === 0) {
-      options.push({
-        title: "Khuyến nghị AI",
-        score: 85,
-        pros: [summary],
-        cons: ["Cần Hiệu trưởng xem xét thêm bối cảnh thực tế"],
-      });
-    }
+    // If no PHƯƠNG_ÁN sections exist in AI output, options remains empty []
 
     return {
       success: true,
