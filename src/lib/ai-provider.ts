@@ -134,10 +134,15 @@ export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResu
     return { success: true, text, error: null };
   } catch (error: any) {
     console.error(`[OmniRoute Connection Error] (${endpoint}):`, error);
+    const isLocal = endpoint.includes("127.0.0.1") || endpoint.includes("localhost");
+    const localHint = isLocal
+      ? " 💡 LƯU Ý: Web đang chạy trên Vercel Cloud nên máy chủ đám mây không thể kết nối trực tiếp đến IP 127.0.0.1 / localhost trên máy tính cá nhân của bạn. Vui lòng chạy lệnh 'ngrok http 20128' hoặc dùng Cloudflare Tunnel để tạo URL công khai cho OmniRoute, sau đó dán URL đó vào trang /admin/ai-config."
+      : "";
+
     return {
       success: false,
       text: "",
-      error: `Không thể kết nối đến máy chủ OmniRoute API (${endpoint}). Chi tiết: ${error.message || "Lỗi mạng"}`,
+      error: `Không thể kết nối đến máy chủ OmniRoute API (${endpoint}). Chi tiết: ${error.message || "fetch failed"}.${localHint}`,
     };
   }
 }

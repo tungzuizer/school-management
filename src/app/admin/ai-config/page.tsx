@@ -166,8 +166,21 @@ export default function AIConfigPage() {
             required
           />
           <p className="text-[11px] text-slate-500">
-            Địa chỉ OmniRoute đang chạy. Mặc định máy cục bộ: <code className="bg-slate-100 px-1 py-0.5 rounded">http://127.0.0.1:20128/v1</code> hoặc domain Cloud của bạn.
+            Địa chỉ OmniRoute đang chạy. Mặc định máy cục bộ: <code className="bg-slate-100 px-1 py-0.5 rounded">http://127.0.0.1:20128/v1</code>.
           </p>
+          {(apiBase.includes("127.0.0.1") || apiBase.includes("localhost")) && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 leading-relaxed font-sans mt-1">
+              <strong>⚠️ Lưu ý quan trọng khi dùng trên Vercel Cloud:</strong>
+              <br />
+              Trang web đang chạy trên server Vercel (đám mây), vì vậy máy chủ Vercel <strong>không thể kết nối trực tiếp vào `127.0.0.1` trên máy tính cá nhân của bạn</strong>.
+              <br />
+              👉 Để kết nối OmniRoute local với Vercel, hãy mở Terminal trên máy bạn và chạy:
+              <code className="block bg-amber-100 p-1.5 rounded font-mono my-1 text-amber-950 font-bold">
+                npx localtunnel --port 20128
+              </code>
+              hoặc <code className="font-bold">ngrok http 20128</code>, sau đó dán URL được cấp (vd: <code className="font-bold">https://xyz.loca.lt/v1</code>) vào ô trên!
+            </div>
+          )}
         </div>
 
         {/* API Key */}
