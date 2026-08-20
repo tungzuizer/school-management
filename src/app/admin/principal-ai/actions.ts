@@ -71,18 +71,18 @@ export async function askPrincipalAI(query: string) {
     ? recentDecisions.map((d) => `- ${d.query.substring(0, 80)}... (${d.createdAt.toLocaleDateString("vi-VN")})`).join("\n")
     : "Chưa có quyết định nào được ghi nhận.";
 
-  const prompt = `Bạn là Trợ lý AI Tư vấn Ra Quyết định cho Hiệu trưởng trường phổ thông có nhiều điểm trường vệ tinh phân tán theo địa hình vùng cao.
+  const prompt = `Bạn là Trợ lý AI Thông minh & Cố vấn Quản lý Giáo dục cho Hiệu trưởng.
 
-DỮ LIỆU THỰC TẾ TRÍCH XUẤT TỪ CƠ SỞ DỮ LIỆU HỆ THỐNG (100% REAL-TIME DATA):
+DỮ LIỆU THỰC TẾ TRÍCH XUẤT TỪ CƠ SỞ DỮ LIỆU HỆ THỐNG HÔM NAY (${new Date().toLocaleDateString("vi-VN")}):
 
 1. HỆ THỐNG ĐIỂM TRƯỜNG (${schoolPoints.length} điểm):
 ${pointsContext}
 
-2. DỮ LIỆU SĨ SỐ & ĐIỂM DANH HỌC SINH HÔM NAY:
-- Tổng số học sinh đang theo học toàn hệ thống: ${totalStudents} học sinh
-- Số học sinh đã điểm danh CÓ MẶT tại lớp hôm nay: ${presentToday > 0 ? presentToday + " học sinh" : "Chưa có dữ liệu điểm danh có mặt cho ngày hôm nay (hoặc chưa đến giờ chốt sổ)"}
-- Số học sinh VẮNG MẶT hôm nay: ${absentToday} học sinh
-- Số học sinh ĐI MUỘN hôm nay: ${lateToday} học sinh
+2. DỮ LIỆU SĨ SỐ & ĐIỂM DANH HỌC SINH REAL-TIME:
+- Tổng số học sinh chính thức (STATUS=STUDYING): ${totalStudents} học sinh
+- Số học sinh CÓ MẶT đã điểm danh hôm nay: ${presentToday > 0 ? presentToday + " em" : "0 em (Chưa ghi nhận ca điểm danh có mặt hôm nay)"}
+- Số học sinh VẮNG MẶT hôm nay: ${absentToday} em
+- Số học sinh ĐI MUỘN hôm nay: ${lateToday} em
 
 3. CẢNH BÁO SỚM ĐANG HOẠT ĐỘNG:
 ${warningsContext}
@@ -96,61 +96,57 @@ ${decisionsContext}
 CÂU HỎI / YÊU CẦU CỦA HIỆU TRƯỞNG:
 "${query}"
 
-YÊU CẦU TRẢ LỜI:
-- Trả lời trực tiếp, tự nhiên và chính xác dựa trên DỮ LIỆU THỰC TẾ ở trên.
-- Nếu Hiệu trưởng hỏi câu hỏi tra cứu thông tin (ví dụ: sĩ số học sinh, số em đi học/vắng mặt, danh sách điểm trường, giáo viên), hãy tập trung trả lời chi tiết chính xác con số dữ liệu thực tế trong mục TÓM_TẮT và BỎ QUA các mục PHƯƠNG_ÁN_1, PHƯƠNG_ÁN_2.
-- Nếu Hiệu trưởng yêu cầu đề xuất giải pháp, xử lý sự cố hoặc phương án chỉ đạo, mới cung cấp các mục PHƯƠNG_ÁN_1, PHƯƠNG_ÁN_2.
+QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
+1. Hãy trả lời ĐÚNG TRỌNG TÂM câu hỏi của Hiệu trưởng. Đi thẳng vào vấn đề, tự nhiên, rõ ràng.
+2. Nếu Hiệu trưởng hỏi tra cứu thông tin (như sĩ số, học sinh đi học, vắng mặt, điểm trường, giáo viên), hãy cung cấp ngay con số thực tế ở Mục 2. KHÔNG viết lan man.
+3. Nếu câu hỏi yêu cầu lập kế hoạch/giải pháp chỉ đạo, hãy trình bày rõ các phương án chỉ đạo ở cuối bài dạng:
 
-Format phản hồi:
-
-TÓM_TẮT: [Trả lời đầy đủ, chi tiết, tự nhiên trực tiếp vào câu hỏi của Hiệu trưởng kèm con số dữ liệu thực tế CSDL]
-MỨC_RỦI_RO: [LOW hoặc MEDIUM hoặc HIGH]
-
-(Chỉ điền các mục bên dưới nếu câu hỏi yêu cầu giải pháp chỉ đạo/lựa chọn phương án, nếu hỏi thông tin thông thường thì KHÔNG tạo các mục PHƯƠNG_ÁN):
 PHƯƠNG_ÁN_1:
-TIÊU_ĐỀ: [Tên phương án chỉ đạo 1]
+TIÊU_ĐỀ: [Tên phương án 1]
 ĐIỂM: [0-100]
 ƯU_ĐIỂM: [liệt kê, ngăn cách bằng |]
 NHƯỢC_ĐIỂM: [liệt kê, ngăn cách bằng |]
 
 PHƯƠNG_ÁN_2:
-TIÊU_ĐỀ: [Tên phương án chỉ đạo 2]
+TIÊU_ĐỀ: [Tên phương án 2]
 ĐIỂM: [0-100]
 ƯU_ĐIỂM: [liệt kê, ngăn cách bằng |]
 NHƯỢC_ĐIỂM: [liệt kê, ngăn cách bằng |]
 
-CƠ_SỞ_PHÁP_LÝ: [Trích dẫn Điều lệ trường học / Thông tư BGDĐT liên quan nếu có]
-BƯỚC_TRIỂN_KHAI: [các bước chỉ đạo cụ thể, ngăn cách bằng |]`;
+CƠ_SỞ_PHÁP_LÝ: [Thông tư / Điều lệ BGDĐT]
+BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
 
   const aiRes = await aiChatCompletion({ prompt, max_tokens: 2048 });
   if (!aiRes.success) {
     return { success: false, data: null, error: aiRes.error };
   }
 
-  const aiText = aiRes.text;
+  let aiText = aiRes.text;
 
-    // Parse structured response
-    const lines = aiText.split("\n");
-    const getValue = (key: string) => {
-      const line = lines.find((l: string) => l.includes(key));
-      return line ? line.split(":").slice(1).join(":").trim() : "";
-    };
+  // Clean raw tags if any
+  const hasOptions = aiText.includes("PHƯƠNG_ÁN_1");
+  const lines = aiText.split("\n");
 
-    const summary = getValue("TÓM_TẮT") || aiText.substring(0, 200);
-    const riskLevel = (getValue("MỨC_RỦI_RO") || "MEDIUM").toUpperCase();
-    const policyNote = getValue("CƠ_SỞ_PHÁP_LÝ") || undefined;
-    const actionSteps = getValue("BƯỚC_TRIỂN_KHAI")
-      ? getValue("BƯỚC_TRIỂN_KHAI").split("|").map((s: string) => s.trim()).filter(Boolean)
-      : ["Xem xét và phê duyệt khuyến nghị"];
+  const getValue = (key: string) => {
+    const line = lines.find((l: string) => l.includes(key));
+    return line ? line.split(":").slice(1).join(":").trim() : "";
+  };
 
-    // Parse options
-    const options: Array<{
-      title: string;
-      pros: string[];
-      cons: string[];
-      score: number;
-    }> = [];
+  const summary = getValue("TÓM_TẮT") || aiText.split("PHƯƠNG_ÁN_1")[0].trim();
+  const riskLevel = (getValue("MỨC_RỦI_RO") || "LOW").toUpperCase();
+  const policyNote = getValue("CƠ_SỞ_PHÁP_LÝ") || undefined;
+  const actionSteps = getValue("BƯỚC_TRIỂN_KHAI")
+    ? getValue("BƯỚC_TRIỂN_KHAI").split("|").map((s: string) => s.trim()).filter(Boolean)
+    : [];
 
+  const options: Array<{
+    title: string;
+    pros: string[];
+    cons: string[];
+    score: number;
+  }> = [];
+
+  if (hasOptions) {
     for (let i = 1; i <= 3; i++) {
       const titleKey = i === 1 ? "PHƯƠNG_ÁN_1" : i === 2 ? "PHƯƠNG_ÁN_2" : "PHƯƠNG_ÁN_3";
       const sectionStart = lines.findIndex((l: string) => l.includes(titleKey));
@@ -164,28 +160,36 @@ BƯỚC_TRIỂN_KHAI: [các bước chỉ đạo cụ thể, ngăn cách bằng 
 
       const title = getVal("TIÊU_ĐỀ") || `Phương án ${i}`;
       const score = parseInt(getVal("ĐIỂM")) || 75;
-      const pros = getVal("ƯU_ĐIỂM") ? getVal("ƯU_ĐIỂM").split("|").map((s: string) => s.trim()).filter(Boolean) : ["Cần phân tích thêm"];
-      const cons = getVal("NHƯỢC_ĐIỂM") ? getVal("NHƯỢC_ĐIỂM").split("|").map((s: string) => s.trim()).filter(Boolean) : ["Cần đánh giá thêm"];
+      const pros = getVal("ƯU_ĐIỂM") ? getVal("ƯU_ĐIỂM").split("|").map((s: string) => s.trim()).filter(Boolean) : [];
+      const cons = getVal("NHƯỢC_ĐIỂM") ? getVal("NHƯỢC_ĐIỂM").split("|").map((s: string) => s.trim()).filter(Boolean) : [];
 
       options.push({ title, score, pros, cons });
     }
 
-    // If no PHƯƠNG_ÁN sections exist in AI output, options remains empty []
+    // Strip out the raw PHƯƠNG_ÁN block from main text so text is clean markdown
+    const optionStartIndex = aiText.indexOf("PHƯƠNG_ÁN_1");
+    if (optionStartIndex !== -1) {
+      aiText = aiText.substring(0, optionStartIndex).trim();
+    }
+  }
 
-    return {
-      success: true,
-      data: {
-        text: aiText,
-        recommendation: {
-          summary,
-          riskLevel: (["LOW", "MEDIUM", "HIGH"].includes(riskLevel) ? riskLevel : "MEDIUM") as "LOW" | "MEDIUM" | "HIGH",
-          options,
-          policyNote,
-          actionSteps,
-        },
-      },
-      error: null,
-    };
+  // Clean remaining key labels like TÓM_TẮT:
+  aiText = aiText.replace(/^TÓM_TẮT:\s*/i, "").replace(/^MỨC_RỦI_RO:\s*\w+\s*/im, "").trim();
+
+  return {
+    success: true,
+    data: {
+      text: aiText,
+      recommendation: hasOptions || actionSteps.length > 0 ? {
+        summary: summary.replace(/^TÓM_TẮT:\s*/i, ""),
+        riskLevel: (["LOW", "MEDIUM", "HIGH"].includes(riskLevel) ? riskLevel : "LOW") as "LOW" | "MEDIUM" | "HIGH",
+        options,
+        policyNote,
+        actionSteps,
+      } : null,
+    },
+    error: null,
+  };
 }
 
 // Save a decision to the log
