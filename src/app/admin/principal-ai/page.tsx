@@ -142,7 +142,7 @@ export default function PrincipalAIPage() {
         const aiResponse: Message = {
           id: (Date.now() + 1).toString(),
           sender: "ai",
-          text: `AI đã phân tích dữ liệu thực tế từ hệ thống và đưa ra khuyến nghị cho: "${query}"`,
+          text: result.data.text || result.data.recommendation?.summary || "Đã phân tích xong.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           recommendation: result.data.recommendation,
         };
@@ -392,12 +392,13 @@ export default function PrincipalAIPage() {
                         </div>
 
                         {/* Options Comparison */}
-                        <div className="space-y-3">
-                          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Scale className="w-4 h-4 text-blue-600" /> So sánh các phương án
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {msg.recommendation.options.map((opt, i) => (
+                        {msg.recommendation.options && msg.recommendation.options.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <Scale className="w-4 h-4 text-blue-600" /> So sánh các phương án chỉ đạo
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {msg.recommendation.options.map((opt, i) => (
                               <div
                                 key={i}
                                 className={`p-4 rounded-xl border ${
@@ -442,6 +443,7 @@ export default function PrincipalAIPage() {
                             ))}
                           </div>
                         </div>
+                        )}
 
                         {/* Legal & Policy Note */}
                         {msg.recommendation.policyNote && (
