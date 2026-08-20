@@ -32,7 +32,7 @@ export async function getAISettings() {
         settingsMap["OMNIROUTE_API_BASE"] ||
         process.env.OMNIROUTE_API_BASE ||
         process.env.OPENAI_API_BASE ||
-        "http://localhost:20128/v1",
+        "https://spotty-donkeys-smile.loca.lt/v1",
       apiKey:
         settingsMap["OMNIROUTE_API_KEY"] ||
         process.env.OMNIROUTE_API_KEY ||
@@ -46,7 +46,7 @@ export async function getAISettings() {
     };
   } catch {
     return {
-      apiBase: process.env.OMNIROUTE_API_BASE || process.env.OPENAI_API_BASE || "http://localhost:20128/v1",
+      apiBase: process.env.OMNIROUTE_API_BASE || process.env.OPENAI_API_BASE || "https://spotty-donkeys-smile.loca.lt/v1",
       apiKey: process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || "sk-f3574d44ab943de1-9647e3-1d702ffe",
       model: process.env.OMNIROUTE_MODEL || process.env.OPENAI_MODEL || "antigravity/gemini-2.5-flash-lite",
     };
