@@ -104,6 +104,35 @@ export default function AIConfigPage() {
         </button>
       </div>
 
+      {/* Guide Banner for Vercel Cloud vs Local OmniRoute */}
+      <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-3xl text-xs text-amber-950 space-y-2 shadow-2xs">
+        <div className="flex items-center gap-2 font-bold text-sm text-amber-900">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+          Giải thích lỗi: "Không thể kết nối đến máy chủ OmniRoute API (http://localhost:20128/v1). Chi tiết: fetch failed"
+        </div>
+        <p className="leading-relaxed">
+          Báo lỗi này xuất hiện vì <strong>trang web đang chạy trực tuyến trên Vercel Cloud (máy chủ đám mây)</strong>. Khi Vercel gọi vào <code className="bg-amber-200/70 font-mono px-1 rounded">localhost:20128</code>, máy chủ Vercel ở bên Mỹ đang tự tìm cổng 20128 của chính nó chứ <strong>không thể nối dây mạng về máy tính cá nhân của bạn</strong>.
+        </p>
+
+        <div className="bg-white p-3.5 rounded-2xl border border-amber-200 space-y-2">
+          <p className="font-bold text-amber-900">🛠️ CÁCH SỬA 1 (Dùng Ngrok / Localtunnel nối máy bạn với Vercel):</p>
+          <ol className="list-decimal pl-5 space-y-1 text-slate-700">
+            <li>Mở Terminal trên máy bạn (nơi đang bật OmniRoute 20128) và gõ lệnh:
+              <code className="block bg-slate-900 text-emerald-400 p-2 rounded-xl font-mono my-1 font-bold">
+                npx localtunnel --port 20128
+              </code>
+            </li>
+            <li>Terminal sẽ cấp cho bạn một đường link online, ví dụ: <code className="font-mono text-indigo-700 font-bold">https://happy-fish-88.loca.lt</code></li>
+            <li>Dán đường link đó vào ô <strong>1. Đường dẫn URL Cổng OmniRoute</strong> bên dưới dạng:
+              <code className="block bg-indigo-50 text-indigo-900 p-1.5 rounded font-mono my-1 font-bold">
+                https://happy-fish-88.loca.lt/v1
+              </code>
+            </li>
+            <li>Bấm <strong>"💾 Lưu Cấu Hình"</strong> và <strong>"⚡ Thử kết nối AI"</strong> -&gt; Thành công 100%!</li>
+          </ol>
+        </div>
+      </div>
+
       {/* Test Result Panel */}
       {testResult && (
         <div
