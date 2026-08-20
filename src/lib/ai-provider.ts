@@ -47,7 +47,7 @@ export async function getAISettings() {
         settingsMap["OMNIROUTE_API_KEY"] ||
         process.env.OMNIROUTE_API_KEY ||
         process.env.OPENAI_API_KEY ||
-        "sk-f3574d44ab943de1-9647e3-1d702ffe",
+        "CHANGEME",
       model:
         settingsMap["OMNIROUTE_MODEL"] ||
         process.env.OMNIROUTE_MODEL ||
@@ -65,7 +65,7 @@ export async function getAISettings() {
 
     return {
       apiBase,
-      apiKey: process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || "sk-f3574d44ab943de1-9647e3-1d702ffe",
+      apiKey: process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || "CHANGEME",
       model: process.env.OMNIROUTE_MODEL || process.env.OPENAI_MODEL || "antigravity/gemini-2.5-flash-lite",
     };
   }
