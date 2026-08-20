@@ -21,6 +21,7 @@ import {
   ClipboardCheck,
   Building2,
   User,
+  Bot,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
