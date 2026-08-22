@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Bell, Search, LogOut, ChevronDown, ShieldCheck, Menu } from "lucide-react";
-import CommandPalette from "@/components/ui/CommandPalette";
+import dynamic from "next/dynamic";
+const CommandPalette = dynamic(() => import("@/components/ui/CommandPalette"), { ssr: false });
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Hiệu trưởng",
