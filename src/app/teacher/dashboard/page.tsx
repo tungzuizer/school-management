@@ -171,13 +171,37 @@ export default function TeacherDashboardPage() {
 
       setHomeroom(dbData.homeroomClass);
 
-      // Load Teacher's Today Schedule
-      const schedData = await getTodaySchedule(dbData.teacherId);
-      setSchedules(schedData);
+      const cId = dbData.homeroomClass?.id;
 
-      // If Homeroom Teacher, fetch homeroom analytics
-      if (dbData.homeroomClass) {
-        const cId = dbData.homeroomClass.id;
+      // Fully parallelized data fetching for sub-second dashboard loading
+      const [
+        schedData,
+        weekData,
+        courseData,
+        homeroomResults,
+      ] = await Promise.all([
+        getTodaySchedule(dbData.teacherId),
+        getWeekSchedule(dbData.teacherId),
+        getTeacherCourses(dbData.teacherId),
+        cId
+          ? Promise.all([
+              getTodayAttendance(cId),
+              getAtRiskAcademic(cId),
+              getAtRiskViolations(cId),
+              getStudentsNeedingCounseling(cId),
+              getUnreadParentFeedbacks(cId),
+              getDailyReportStatus(cId),
+              getClassCompetitionStats(cId),
+              getIncompleteRecords(cId),
+            ])
+          : Promise.resolve(null),
+      ]);
+
+      setSchedules(schedData);
+      setWeekGrid(weekData.grid as unknown as WeekGridItem[]);
+      setCourses(courseData);
+
+      if (homeroomResults) {
         const [
           attData,
           acadData,
@@ -187,16 +211,7 @@ export default function TeacherDashboardPage() {
           repData,
           compData,
           incData,
-        ] = await Promise.all([
-          getTodayAttendance(cId),
-          getAtRiskAcademic(cId),
-          getAtRiskViolations(cId),
-          getStudentsNeedingCounseling(cId),
-          getUnreadParentFeedbacks(cId),
-          getDailyReportStatus(cId),
-          getClassCompetitionStats(cId),
-          getIncompleteRecords(cId),
-        ]);
+        ] = homeroomResults;
 
         setAttendance(attData);
         setAcademicRisks(acadData);
@@ -211,14 +226,6 @@ export default function TeacherDashboardPage() {
           setShowConfetti(true);
         }
       }
-
-      // Load week schedule for timetable tab
-      const weekData = await getWeekSchedule(dbData.teacherId);
-      setWeekGrid(weekData.grid as unknown as WeekGridItem[]);
-
-      // Load courses tab
-      const courseData = await getTeacherCourses(dbData.teacherId);
-      setCourses(courseData);
     } catch (err) {
       console.error("Lỗi khi tải bảng điều khiển:", err);
     } finally {
