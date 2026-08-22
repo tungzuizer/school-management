@@ -45,7 +45,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const navItems: NavItem[] = [
     { label: "Góc Học Tập 360°", href: "/student/dashboard", icon: Home, description: "Tổng quan kết quả & động lực" },
     { label: "Bảng Điểm Môn Học", href: "/student/grades", icon: Award, description: "Chi tiết điểm số các môn" },
-    { label: "Chuyên Cần & Điểm Danh", href: "/student/attendance", icon: CalendarCheck, description: "Thống kê ngày học & chuyên cần" },
+    { label: "Nhật Ký Chuyên Cần", href: "/student/attendance", icon: CalendarCheck, description: "Xem lịch sử điểm danh do Thầy/Cô ghi" },
     { label: "Thời Khóa Biểu Tuần", href: "/student/schedule", icon: Calendar, description: "Lịch học & giáo viên bộ môn" },
   ];
 
@@ -57,7 +57,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const bottomTabs = [
     { label: "Trang chủ", href: "/student/dashboard", icon: Home },
     { label: "Bảng điểm", href: "/student/grades", icon: Award },
-    { label: "Điểm danh", href: "/student/attendance", icon: CalendarCheck },
+    { label: "Chuyên cần", href: "/student/attendance", icon: CalendarCheck },
     { label: "Thời khóa biểu", href: "/student/schedule", icon: Calendar },
   ];
 
@@ -93,7 +93,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </button>
       </div>
 
-      {/* Main Content Workspace */}
+      {/* Main Workspace */}
       <div className="relative z-10 flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-4 sm:py-6 gap-6">
         {/* Desktop Sidebar */}
         <aside className="hidden lg:flex flex-col w-64 shrink-0 space-y-4">
@@ -282,7 +282,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </div>
       )}
 
-      {/* Floating AI Assistant Chatbot */}
+      {/* Floating AI Chatbot */}
       <FloatingAIChatWidget userRole="STUDENT" />
     </div>
   );

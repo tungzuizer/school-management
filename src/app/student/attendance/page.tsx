@@ -1,7 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { getStudentAttendance } from "../actions";
+import { CalendarCheck, Calendar, CheckCircle2, Clock, XCircle, AlertCircle, Info } from "lucide-react";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 
 type AttendanceRecord = {
   id: string;
@@ -20,11 +22,11 @@ type AttendanceData = {
   summary: { present: number; absentExcused: number; absentUnexcused: number; late: number; total: number; attendanceRate: number };
 };
 
-const statusLabels: Record<string, { label: string; color: string; bg: string }> = {
-  PRESENT: { label: "Có mặt", color: "text-green-700", bg: "bg-green-100" },
-  ABSENT_EXCUSED: { label: "Vắng CP", color: "text-blue-700", bg: "bg-blue-100" },
-  ABSENT_UNEXCUSED: { label: "Vắng KP", color: "text-red-700", bg: "bg-red-100" },
-  LATE: { label: "Đi muộn", color: "text-yellow-700", bg: "bg-yellow-100" },
+const statusLabels: Record<string, { label: string; color: string; bg: string; icon: typeof CheckCircle2 }> = {
+  PRESENT: { label: "Có mặt", color: "text-emerald-700 font-extrabold", bg: "bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
+  ABSENT_EXCUSED: { label: "Vắng CP", color: "text-blue-700 font-extrabold", bg: "bg-blue-50 border-blue-200", icon: Info },
+  ABSENT_UNEXCUSED: { label: "Vắng KP", color: "text-rose-700 font-extrabold", bg: "bg-rose-50 border-rose-200", icon: XCircle },
+  LATE: { label: "Đi muộn", color: "text-amber-700 font-extrabold", bg: "bg-amber-50 border-amber-200", icon: Clock },
 };
 
 export default function StudentAttendancePage() {
@@ -46,9 +48,12 @@ export default function StudentAttendancePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-500">Đang tải điểm danh...</span>
+      <div className="space-y-6 animate-fade-in">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+          <div className="h-7 w-56 bg-slate-200 rounded-xl animate-pulse mb-2" />
+          <div className="h-4 w-72 bg-slate-100 rounded-lg animate-pulse" />
+        </div>
+        <TableSkeleton rows={6} cols={4} />
       </div>
     );
   }
@@ -56,8 +61,9 @@ export default function StudentAttendancePage() {
   if (!data) {
     return (
       <div className="p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
-          Không tìm thấy thông tin. Vui lòng liên hệ quản trị viên.
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-amber-900 font-semibold flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+          <span>Không tìm thấy dữ liệu điểm danh. Vui lòng liên hệ Giáo viên chủ nhiệm.</span>
         </div>
       </div>
     );
@@ -67,106 +73,119 @@ export default function StudentAttendancePage() {
     ? Math.round((data.summary.present / data.summary.total) * 100)
     : 100;
 
-  // Group by date
-  const byDate = new Map<string, AttendanceRecord[]>();
-  data.records.forEach((r) => {
-    const existing = byDate.get(r.date) || [];
-    existing.push(r);
-    byDate.set(r.date, existing);
-  });
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6">
+      {/* Top Banner Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800"> Điểm danh</h1>
-          <p className="text-gray-500 mt-1">
-            {data.studentName} — Lớp {data.className}
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <CalendarCheck className="w-6 h-6 text-emerald-600" />
+            Nhật Ký Chuyên Cần Cá Nhân
+          </h1>
+          <p className="text-xs font-semibold text-slate-500 mt-1">
+            Học sinh: <span className="text-slate-900 font-extrabold">{data.studentName}</span> — Lớp: <span className="text-emerald-700 font-extrabold">{data.className}</span>
           </p>
         </div>
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center shadow-sm">
-          <p className="text-sm text-gray-500">Tổng buổi</p>
-          <p className="text-2xl font-bold text-gray-800 mt-1">{data.summary.total}</p>
-        </div>
-        <div className="bg-green-50 rounded-xl border border-green-200 p-4 text-center">
-          <p className="text-sm text-green-600">Có mặt</p>
-          <p className="text-2xl font-bold text-green-700 mt-1">{data.summary.present}</p>
-        </div>
-        <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 text-center">
-          <p className="text-sm text-blue-600">Vắng CP</p>
-          <p className="text-2xl font-bold text-blue-700 mt-1">{data.summary.absentExcused}</p>
-        </div>
-        <div className="bg-red-50 rounded-xl border border-red-200 p-4 text-center">
-          <p className="text-sm text-red-600">Vắng KP</p>
-          <p className="text-2xl font-bold text-red-700 mt-1">{data.summary.absentUnexcused}</p>
-        </div>
-        <div className="bg-yellow-50 rounded-xl border border-yellow-200 p-4 text-center">
-          <p className="text-sm text-yellow-600">Đi muộn</p>
-          <p className="text-2xl font-bold text-yellow-700 mt-1">{data.summary.late}</p>
+        {/* Month Selector */}
+        <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200/80 self-start sm:self-auto">
+          <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-600">Tháng:</span>
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer"
+          />
         </div>
       </div>
 
-      {/* Attendance Rate Bar */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Tỷ lệ chuyên cần</span>
-          <span className={`text-lg font-bold ${attendanceRate >= 80 ? "text-green-600" : attendanceRate >= 60 ? "text-yellow-600" : "text-red-600"}`}>
+      {/* Overview Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="bg-white border border-slate-200/80 p-4 rounded-2xl text-center shadow-2xs">
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Tổng Số Buổi</p>
+          <p className="text-xl font-extrabold text-slate-900 mt-1">{data.summary.total} <span className="text-xs font-medium text-slate-400">buổi</span></p>
+        </div>
+        <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl text-center shadow-2xs">
+          <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Có Mặt</p>
+          <p className="text-xl font-extrabold text-emerald-700 mt-1">{data.summary.present}</p>
+        </div>
+        <div className="bg-blue-50/70 border border-blue-200/80 p-4 rounded-2xl text-center shadow-2xs">
+          <p className="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Vắng Có Phép</p>
+          <p className="text-xl font-extrabold text-blue-700 mt-1">{data.summary.absentExcused}</p>
+        </div>
+        <div className="bg-rose-50/70 border border-rose-200/80 p-4 rounded-2xl text-center shadow-2xs">
+          <p className="text-[10px] text-rose-700 font-bold uppercase tracking-wider">Vắng Không Phép</p>
+          <p className="text-xl font-extrabold text-rose-700 mt-1">{data.summary.absentUnexcused}</p>
+        </div>
+        <div className="bg-amber-50/70 border border-amber-200/80 p-4 rounded-2xl text-center shadow-2xs col-span-2 sm:col-span-1">
+          <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Đi Muộn</p>
+          <p className="text-xl font-extrabold text-amber-700 mt-1">{data.summary.late}</p>
+        </div>
+      </div>
+
+      {/* Attendance Rate Progress Card */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            Tỷ Lệ Chuyên Cần Tháng
+          </span>
+          <span className={`text-base font-extrabold ${attendanceRate >= 90 ? "text-emerald-700" : attendanceRate >= 75 ? "text-amber-700" : "text-rose-700"}`}>
             {attendanceRate}%
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3">
+        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200/60">
           <div
-            className={`h-3 rounded-full transition-all ${attendanceRate >= 80 ? "bg-green-500" : attendanceRate >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
+            className={`h-full rounded-full transition-all duration-500 ${attendanceRate >= 90 ? "bg-gradient-to-r from-emerald-500 to-teal-500" : attendanceRate >= 75 ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-rose-500 to-pink-500"}`}
             style={{ width: `${attendanceRate}%` }}
           />
         </div>
       </div>
 
-      {/* Records Table */}
+      {/* Attendance History Table */}
       {data.records.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-          <p className="text-gray-500">Không có dữ liệu điểm danh trong tháng này</p>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-2xs">
+          <p className="text-slate-500 font-bold">Chưa có ghi nhận điểm danh nào trong tháng này từ Giáo viên.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left p-4 font-semibold text-gray-700">Ngày</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">Tiết</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">Trạng thái</th>
-                  <th className="text-left p-4 font-semibold text-gray-700">Ghi chú</th>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-3.5">Ngày Học</th>
+                  <th className="px-4 py-3.5 text-center w-28">Tiết Học</th>
+                  <th className="px-4 py-3.5 text-center w-36">Trạng Thái Hiện Diện</th>
+                  <th className="px-4 py-3.5">Ghi Chú Của Thầy / Cô</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 text-xs">
                 {data.records.map((r, idx) => {
-                  const st = statusLabels[r.status] || { label: r.status, color: "text-gray-700", bg: "bg-gray-100" };
+                  const st = statusLabels[r.status] || { label: r.status, color: "text-slate-700", bg: "bg-slate-100 border-slate-200", icon: Info };
+                  const Icon = st.icon;
+
                   return (
-                    <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-4 font-medium text-gray-800">
-                        {new Date(r.date).toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit" })}
+                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3.5 font-extrabold text-slate-900">
+                        {new Date(r.date).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
                       </td>
-                      <td className="p-4 text-center text-gray-600">
-                        {r.period ? `Tiết ${r.period}` : "—"}
+                      <td className="px-4 py-3.5 text-center font-bold text-slate-600">
+                        {r.period ? `Tiết ${r.period}` : "Cả ngày"}
                       </td>
-                      <td className="p-4 text-center">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${st.bg} ${st.color}`}>
+                      <td className="px-4 py-3.5 text-center">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border ${st.bg} ${st.color}`}>
+                          <Icon className="w-3.5 h-3.5" />
                           {st.label}
                         </span>
                       </td>
-                      <td className="p-4 text-gray-500 text-sm">{r.note || "—"}</td>
+                      <td className="px-4 py-3.5 text-slate-600 font-medium">
+                        {r.note ? (
+                          <span className="italic text-slate-800">"{r.note}"</span>
+                        ) : (
+                          <span className="text-slate-300 font-semibold">—</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -175,6 +194,16 @@ export default function StudentAttendancePage() {
           </div>
         </div>
       )}
+
+      {/* Info Footer Banner */}
+      <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex items-start gap-3 text-xs text-slate-600">
+        <Info className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <p className="font-extrabold text-slate-900">Thông tin dành cho Học sinh & Phụ huynh:</p>
+          <p>• Dữ liệu chuyên cần được cập nhật tự động từ <strong>Sổ điểm danh hàng ngày của Giáo viên bộ môn & Giáo viên chủ nhiệm</strong>.</p>
+          <p>• Nếu có sai sót về trạng thái xin nghỉ phép, vui lòng liên hệ Thầy/Cô chủ nhiệm để điều chỉnh kịp thời.</p>
+        </div>
+      </div>
     </div>
   );
 }
