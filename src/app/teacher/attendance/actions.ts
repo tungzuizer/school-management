@@ -20,6 +20,21 @@ export interface TeacherSlotOption {
   isLocked?: boolean;
 }
 
+
+function parseLocalDate(dateStr: string): { dateObj: Date; dayOfWeek: number } {
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const jsDay = d.getDay();
+    return { dateObj: d, dayOfWeek: jsDay === 0 ? 7 : jsDay };
+  }
+  const dateObj = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+  const jsDay = dateObj.getDay();
+  const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+  return { dateObj, dayOfWeek };
+}
+
 const PERIOD_TIMES: Record<number, string> = {
   1: "07:00 - 07:45",
   2: "07:50 - 08:35",
@@ -39,11 +54,7 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
   const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
   if (!teacher) return [];
 
-  const dateObj = new Date(date);
-  dateObj.setHours(0, 0, 0, 0);
-
-  const jsDay = dateObj.getDay();
-  const dayOfWeek = jsDay === 0 ? 7 : jsDay; // 1=Thứ 2..7=Chủ nhật
+  const { dateObj, dayOfWeek } = parseLocalDate(date);
 
   // Execute queries in parallel using Promise.all for maximum speed
   const [scheduleEntries, homeroomClasses, existingAttendance] = await Promise.all([
@@ -154,8 +165,7 @@ export async function getAttendanceByDateAndPeriod(classId: string, date: string
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { isLocked: false, existingData: [], lockedAt: null };
 
-  const dateObj = new Date(date);
-  dateObj.setHours(0, 0, 0, 0);
+  const { dateObj } = parseLocalDate(date);
 
   const existingData = await prisma.attendance.findMany({
     where: {
@@ -197,11 +207,7 @@ export async function saveAttendance(
   const classRoom = await prisma.classRoom.findUnique({ where: { id: classId } });
   if (!classRoom) return { success: false, error: "Không tìm thấy thông tin lớp học" };
 
-  const dateObj = new Date(date);
-  dateObj.setHours(0, 0, 0, 0);
-
-  const jsDay = dateObj.getDay();
-  const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+  const { dateObj, dayOfWeek } = parseLocalDate(date);
 
   // Verify Schedule permission: Is teacher scheduled to teach this class/period, or assignment, or homeroom?
   const isHomeroom = classRoom.homeroomTeacherId === teacher.id;
