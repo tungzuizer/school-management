@@ -280,14 +280,14 @@ export default function TeacherDailyReportPage() {
           {/* Daily Data Summary Cards */}
           {dailyData && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl border p-4 shadow-sm flex items-center justify-between">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold">Sĩ số</p>
                   <p className="text-2xl font-bold text-gray-900 mt-0.5">{dailyData.totalStudents}</p>
                 </div>
                 <Users className="w-8 h-8 text-gray-450" />
               </div>
-              <div className="bg-white rounded-xl border p-4 shadow-sm flex items-center justify-between">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold">Vắng</p>
                   <p className={`text-2xl font-bold mt-0.5 ${dailyData.absentCount > 0 ? "text-red-600" : "text-green-600"}`}>
@@ -296,7 +296,7 @@ export default function TeacherDailyReportPage() {
                 </div>
                 <UserX className="w-8 h-8 text-red-400" />
               </div>
-              <div className="bg-white rounded-xl border p-4 shadow-sm flex items-center justify-between">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold">Đi muộn</p>
                   <p className={`text-2xl font-bold mt-0.5 ${dailyData.lateCount > 0 ? "text-amber-600" : "text-green-600"}`}>
@@ -305,7 +305,7 @@ export default function TeacherDailyReportPage() {
                 </div>
                 <Clock className="w-8 h-8 text-amber-400" />
               </div>
-              <div className="bg-white rounded-xl border p-4 shadow-sm flex items-center justify-between">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold">Vi phạm</p>
                   <p className={`text-2xl font-bold mt-0.5 ${dailyData.violations.length > 0 ? "text-red-650" : "text-green-600"}`}>
@@ -321,7 +321,7 @@ export default function TeacherDailyReportPage() {
           {dailyData && (
             <div className="grid md:grid-cols-2 gap-4">
               {/* Absent list */}
-              <div className="bg-white rounded-xl border p-4 shadow-sm">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm">
                 <h3 className="font-semibold text-sm mb-3 text-red-700 flex items-center gap-1.5">
                   <UserX className="w-4 h-4 shrink-0" />
                   <span>Học sinh vắng ({dailyData.absentCount})</span>
@@ -345,7 +345,7 @@ export default function TeacherDailyReportPage() {
               </div>
 
               {/* Late list */}
-              <div className="bg-white rounded-xl border p-4 shadow-sm">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm">
                 <h3 className="font-semibold text-sm mb-3 text-amber-700 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 shrink-0" />
                   <span>Đi muộn ({dailyData.lateCount})</span>
@@ -365,7 +365,7 @@ export default function TeacherDailyReportPage() {
               </div>
 
               {/* Violations */}
-              <div className="bg-white rounded-xl border p-4 shadow-sm">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm">
                 <h3 className="font-semibold text-sm mb-3 text-red-700 flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>Vi phạm ({dailyData.violations.length})</span>
@@ -384,7 +384,7 @@ export default function TeacherDailyReportPage() {
               </div>
 
               {/* Commendations */}
-              <div className="bg-white rounded-xl border p-4 shadow-sm">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm">
                 <h3 className="font-semibold text-sm mb-3 text-green-700 flex items-center gap-1.5">
                   <Award className="w-4 h-4 shrink-0" />
                   <span>Khen thưởng ({dailyData.commendations.length})</span>
@@ -404,7 +404,7 @@ export default function TeacherDailyReportPage() {
 
               {/* Parent feedbacks */}
               {dailyData.parentFeedbacks.length > 0 && (
-                <div className="bg-white rounded-xl border p-4 md:col-span-2 shadow-sm">
+                <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl md:col-span-2 shadow-sm">
                   <h3 className="font-semibold text-sm mb-3 text-indigo-700 flex items-center gap-1.5">
                     <MessageSquare className="w-4 h-4 shrink-0" />
                     <span>Phản hồi phụ huynh ({dailyData.parentFeedbacks.length})</span>
@@ -423,7 +423,7 @@ export default function TeacherDailyReportPage() {
           )}
 
           {/* AI Report Generation & Editing */}
-          <div className="bg-white rounded-xl border p-6 shadow-sm">
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl backdrop-blur-xl shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
               <h3 className="font-semibold text-lg">Nội dung báo cáo</h3>
               <button
@@ -463,7 +463,7 @@ export default function TeacherDailyReportPage() {
               onChange={(e) => setReportText(e.target.value)}
               disabled={status === "SENT"}
               placeholder="Nhập nội dung báo cáo hoặc bấm 'Tạo báo cáo bằng AI' để tự động tạo..."
-              className="w-full h-64 border border-gray-200 rounded-lg p-4 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 leading-relaxed font-medium"
+              className="w-full h-64 border border-gray-200 rounded-lg p-4 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-950/80 disabled:text-gray-500 leading-relaxed font-medium"
             />
 
             <div className="flex items-center justify-between mt-4">
@@ -499,7 +499,7 @@ export default function TeacherDailyReportPage() {
 
       {/* History */}
       {showHistory && (
-        <div className="bg-white rounded-xl border p-6 shadow-sm">
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl backdrop-blur-xl shadow-sm">
           <h3 className="font-semibold text-lg mb-4 flex items-center gap-1.5">
             <History className="w-5 h-5 text-gray-500" />
             <span>Lịch sử báo cáo</span>
@@ -510,7 +510,7 @@ export default function TeacherDailyReportPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b bg-gray-50 font-bold text-gray-600">
+                  <tr className="border-b bg-slate-950/80 font-bold text-gray-600">
                     <th className="text-left p-3">Ngày</th>
                     <th className="text-center p-3">Vắng</th>
                     <th className="text-center p-3">Muộn</th>
@@ -520,7 +520,7 @@ export default function TeacherDailyReportPage() {
                 </thead>
                 <tbody>
                   {history.map((r) => (
-                    <tr key={r.id} className="border-b hover:bg-gray-50 text-gray-700">
+                    <tr key={r.id} className="border-b hover:bg-slate-950/80 text-gray-700">
                       <td className="p-3 font-medium">{new Date(r.date).toLocaleDateString("vi-VN")}</td>
                       <td className="p-3 text-center">
                         <span className={r.absentCount > 0 ? "text-red-600 font-bold" : ""}>

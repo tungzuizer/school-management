@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -13,27 +13,21 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  FileBarChart,
+  FileSpreadsheet,
   Calculator,
   TrendingDown,
   ShieldAlert,
   Heart,
   MessageSquare,
-  ListChecks,
-  Trophy,
-  FolderOpen,
   RefreshCw,
   Loader2,
   CalendarDays,
   BookOpen,
-  GraduationCap,
-  Search,
-  ChevronDown,
   Sparkles,
   Award,
   Zap,
+  ArrowRight,
+  CheckSquare,
 } from "lucide-react";
 import {
   getTeacherDashboardData,
@@ -53,6 +47,7 @@ import { checkIsSubjectHead } from "../subject-head/actions";
 // ---- Types ----
 type DashboardData = {
   teacherId: string;
+  teacherName: string;
   homeroomClass: {
     id: string;
     name: string;
@@ -63,8 +58,8 @@ type DashboardData = {
   } | null;
 } | null;
 
-type AttendanceData = Awaited<ReturnType<typeof getTodayAttendance>>;
-type WeekScheduleData = Awaited<ReturnType<typeof getWeekSchedule>>;
+type AttendanceData = Awaited<ReturnType<typeof getTodayAttendance>> | null;
+type WeekScheduleData = Awaited<ReturnType<typeof getWeekSchedule>> | null;
 type CourseData = Awaited<ReturnType<typeof getTeacherCourses>>;
 type AtRiskStudent = { id: string; name: string; avgScore: number; failedSubjects: number };
 type ViolationStudent = { id: string; name: string; count: number; latest: string };
@@ -72,24 +67,19 @@ type CounselingStudent = { id: string; studentId: string; studentName: string; t
 type ParentFeedback = { id: string; studentName: string; content: string; channel: string | null; date: string };
 type ReportStatus = { exists: boolean; status: string | null; sentAt: string | null };
 type CompetitionStats = { weekAttendanceRate: number; weekAbsences: number; weekViolations: number };
-type IncompleteRecord = { label: string; count: number; href: string };
 
-// Active tab
-type ActiveTab = "timetable" | "courses" | "overview";
+type ActiveTab = "timetable" | "homeroom" | "warnings" | "courses";
 
-// Color palette for timetable cells
 const SUBJECT_COLORS: Record<string, string> = {};
 const COLOR_POOL = [
-  "bg-blue-50 border-blue-200 text-blue-800",
-  "bg-emerald-50 border-emerald-200 text-emerald-800",
-  "bg-purple-50 border-purple-200 text-purple-800",
-  "bg-amber-50 border-amber-200 text-amber-800",
-  "bg-rose-50 border-rose-200 text-rose-800",
-  "bg-cyan-50 border-cyan-200 text-cyan-800",
-  "bg-indigo-50 border-indigo-200 text-indigo-800",
-  "bg-orange-50 border-orange-200 text-orange-800",
-  "bg-teal-50 border-teal-200 text-teal-800",
-  "bg-pink-50 border-pink-200 text-pink-800",
+  "bg-blue-500/20 border-blue-500/40 text-blue-300",
+  "bg-emerald-500/20 border-emerald-500/40 text-emerald-300",
+  "bg-purple-500/20 border-purple-500/40 text-purple-300",
+  "bg-amber-500/20 border-amber-500/40 text-amber-300",
+  "bg-rose-500/20 border-rose-500/40 text-rose-300",
+  "bg-cyan-500/20 border-cyan-500/40 text-cyan-300",
+  "bg-indigo-500/20 border-indigo-500/40 text-indigo-300",
+  "bg-teal-500/20 border-teal-500/40 text-teal-300",
 ];
 let colorIndex = 0;
 function getSubjectColor(subject: string) {
@@ -101,892 +91,575 @@ function getSubjectColor(subject: string) {
 }
 
 const DAY_NAMES_SHORT = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-const DAY_NAMES_FULL = ["Thu 2", "Thu 3", "Thu 4", "Thu 5", "Thu 6", "Thu 7", "CN"];
 
 function formatDateShort(dateStr: string) {
   const d = new Date(dateStr);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function formatDateFull(dateStr: string) {
-  const d = new Date(dateStr);
-  return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
-}
-
 export default function TeacherDashboard() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
-    const [showCelebration, setShowCelebration] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [praiseModalOpen, setPraiseModalOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
-  // Active tab
-  const [activeTab, setActiveTab] = useState<ActiveTab>("timetable");
-
-  // Data states
-  const [dashData, setDashData] = useState<DashboardData>(null);
-  const [attendance, setAttendance] = useState<AttendanceData | null>(null);
-  const [weekSchedule, setWeekSchedule] = useState<WeekScheduleData | null>(null);
+  // Core State
+  const [dashboardData, setDashboardData] = useState<DashboardData>(null);
+  const [todayAttendance, setTodayAttendance] = useState<AttendanceData>(null);
+  const [weekSchedule, setWeekSchedule] = useState<WeekScheduleData>(null);
   const [courses, setCourses] = useState<CourseData>([]);
   const [atRiskAcademic, setAtRiskAcademic] = useState<AtRiskStudent[]>([]);
   const [atRiskViolations, setAtRiskViolations] = useState<ViolationStudent[]>([]);
-  const [counseling, setCounseling] = useState<CounselingStudent[]>([]);
+  const [studentsCounseling, setStudentsCounseling] = useState<CounselingStudent[]>([]);
   const [parentFeedbacks, setParentFeedbacks] = useState<ParentFeedback[]>([]);
-  const [reportStatus, setReportStatus] = useState<ReportStatus | null>(null);
-  const [competition, setCompetition] = useState<CompetitionStats | null>(null);
-  const [incompleteRecords, setIncompleteRecords] = useState<IncompleteRecord[]>([]);
-  const [headInfo, setHeadInfo] = useState<{ isSubjectHead: boolean; pendingCount: number }>({
-    isSubjectHead: false,
-    pendingCount: 0,
-  });
+  const [dailyReportStatus, setDailyReportStatus] = useState<ReportStatus | null>(null);
+  const [competitionStats, setCompetitionStats] = useState<CompetitionStats | null>(null);
+  const [isSubjectHead, setIsSubjectHead] = useState(false);
 
-  // Week navigation
-  const [weekOffset, setWeekOffset] = useState(0);
+  // Tab
+  const [activeTab, setActiveTab] = useState<ActiveTab>("timetable");
 
-  // Search
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const loadAll = useCallback(async (wOffset = 0) => {
-    if (!session?.user?.id) return;
+  // Load all dashboard data
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await getTeacherDashboardData(session.user.id);
-      setDashData(data);
-      if (!data) return;
+      const userId = (session?.user as { id?: string })?.id || "";
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
 
-      // Calculate week start date based on offset
-      const now = new Date();
-      const targetDate = new Date(now);
-      targetDate.setDate(now.getDate() + wOffset * 7);
+      const dbData = await getTeacherDashboardData(userId);
+      setDashboardData(dbData);
 
-      // Load week schedule, courses, subject head info and all homeroom widgets IN PARALLEL
-      const classId = data.homeroomClass?.id;
-      const [sched, crs, hInfo, att, risk, viol, couns, fb, rpt, comp, inc] = await Promise.all([
-        getWeekSchedule(data.teacherId, targetDate.toISOString().split("T")[0]),
-        getTeacherCourses(data.teacherId),
-        checkIsSubjectHead(),
-        classId ? getTodayAttendance(classId) : null,
-        classId ? getAtRiskAcademic(classId) : [],
-        classId ? getAtRiskViolations(classId) : [],
-        classId ? getStudentsNeedingCounseling(classId) : [],
-        classId ? getUnreadParentFeedbacks(classId) : [],
-        classId ? getDailyReportStatus(classId) : null,
-        classId ? getClassCompetitionStats(classId) : null,
-        classId ? getIncompleteRecords(classId) : [],
-      ]);
+      if (dbData?.teacherId) {
+        const [sched, crs, isHead] = await Promise.all([
+          getWeekSchedule(dbData.teacherId),
+          getTeacherCourses(dbData.teacherId),
+          checkIsSubjectHead().then((r) => r.isSubjectHead).catch(() => false),
+        ]);
+        setWeekSchedule(sched);
+        setCourses(crs);
+        setIsSubjectHead(isHead);
+      }
 
-      setWeekSchedule(sched);
-      setCourses(crs);
-      setHeadInfo(hInfo);
-      setAttendance(att);
-      setAtRiskAcademic(risk);
-      setAtRiskViolations(viol);
-      setCounseling(couns);
-      setParentFeedbacks(fb);
-      setReportStatus(rpt);
-      setCompetition(comp);
-      setIncompleteRecords(inc);
+      if (dbData?.homeroomClass?.id) {
+        const classId = dbData.homeroomClass.id;
+        const [att, academic, viol, couns, fbacks, repStat, comp] = await Promise.all([
+          getTodayAttendance(classId),
+          getAtRiskAcademic(classId),
+          getAtRiskViolations(classId),
+          getStudentsNeedingCounseling(classId),
+          getUnreadParentFeedbacks(classId),
+          getDailyReportStatus(classId),
+          getClassCompetitionStats(classId),
+        ]);
+
+        setTodayAttendance(att);
+        setAtRiskAcademic(academic);
+        setAtRiskViolations(viol);
+        setStudentsCounseling(couns);
+        setParentFeedbacks(fbacks);
+        setDailyReportStatus(repStat);
+        setCompetitionStats(comp);
+      }
     } catch (err) {
-      console.error("Dashboard load error:", err);
+      console.error("Lỗi khi tải dữ liệu giáo viên:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [session?.user?.id]);
+  }, [session?.user]);
 
   useEffect(() => {
-    loadAll(weekOffset).finally(() => setLoading(false));
-  }, [loadAll, weekOffset]);
+    if (session?.user) {
+      loadData();
+    }
+  }, [loadData, session?.user]);
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await loadAll(weekOffset);
-    setRefreshing(false);
-  }
-
-  function goToPreviousWeek() {
-    setWeekOffset((prev) => prev - 1);
-  }
-
-  function goToNextWeek() {
-    setWeekOffset((prev) => prev + 1);
-  }
-
-  function goToCurrentWeek() {
-    setWeekOffset(0);
-  }
-
-  const userName = session?.user?.name || "Giao vien";
-  const userEmail = session?.user?.email || "";
-  const hc = dashData?.homeroomClass;
+  const teacherName = session?.user?.name || "Thầy/Cô";
+  const homeroom = dashboardData?.homeroomClass;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="min-h-[500px] flex flex-col items-center justify-center gap-4 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin text-emerald-400" />
+        <p className="text-sm font-semibold animate-pulse">Đang tải không gian làm việc của Giáo viên...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-0">
-      {/* ===== Breadcrumb ===== */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-2.5">
-        <div className="flex items-center text-xs text-gray-500">
-          <Link href="/teacher/dashboard" className="hover:text-blue-600 transition">Home</Link>
-          <ChevronRight className="w-3 h-3 mx-1.5" />
-          <span className="text-gray-400">Dashboard</span>
-          <ChevronRight className="w-3 h-3 mx-1.5" />
-          <span className="text-gray-700 font-medium">
-            {activeTab === "timetable" ? "Thoi khoa bieu & Diem danh" : activeTab === "courses" ? "Mon hoc hoc ky" : "Tong quan lop"}
-          </span>
-        </div>
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      {/* Confetti celebration on student praise */}
+      <ConfettiEffect trigger={showCelebration} onComplete={() => setShowCelebration(false)} />
 
-            <ConfettiEffect trigger={showCelebration} onComplete={() => setShowCelebration(false)} />
+      {/* Student Praise Modal */}
+      <StudentPraiseModal
+        isOpen={praiseModalOpen}
+        onClose={() => setPraiseModalOpen(false)}
+        teacherUserId={(session?.user as { id?: string })?.id || ""}
+        onSuccess={() => setShowCelebration(true)}
+      />
 
-      {/* ===== Teacher Inspiration Hero Header ===== */}
-      <div className="mx-4 md:mx-6 mt-4 relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 p-6 md:p-7 text-white shadow-lg">
-        <div className="absolute -right-8 -top-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-blue-100 border border-white/20">
+      {/* ===== Futuristic Hero Banner ===== */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 p-6 md:p-8 text-white shadow-2xl border border-white/10">
+        {/* Glow Particles */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-yellow-300/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-bold text-emerald-100 border border-white/20">
               <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
-              Cổng Thông Tin Giảng Dạy & Quản Lý
+              <span>Góc Giáo Viên Smart Workstation 360°</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              Kính chào Thầy/Cô, {userName}! 🌟
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              Xin chào, {teacherName}! 👋
             </h1>
-            <p className="text-blue-100 text-xs md:text-sm font-medium max-w-2xl">
-              Chúc Thầy/Cô một ngày giảng dạy tràn đầy cảm hứng, hỗ trợ tốt nhất cho các thế hệ học sinh!
+            <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed font-medium">
+              {homeroom
+                ? `Chủ nhiệm lớp ${homeroom.name} (${homeroom.totalStudents} học sinh) · ${homeroom.schoolName}`
+                : "Chúc Thầy/Cô một ngày làm việc hiệu quả và tràn đầy cảm hứng giảng dạy!"}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setPraiseModalOpen(true)}
-              className="bg-yellow-400 hover:bg-yellow-300 text-amber-950 font-extrabold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer"
-            >
-              <Award className="w-4 h-4 fill-amber-950" />
-              Tuyên dương học sinh 🎉
-            </button>
+          {/* Quick Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
             <Link
               href="/teacher/attendance"
-              className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/20 transition-all flex items-center gap-1.5"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white text-emerald-900 font-extrabold text-xs shadow-lg hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-200"
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-              Điểm danh nhanh
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Điểm danh ngay</span>
+            </Link>
+
+            <Link
+              href="/teacher/journal"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-extrabold text-xs border border-white/20 hover:scale-105 active:scale-95 transition-all duration-200"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-amber-300" />
+              <span>Ghi sổ đầu bài</span>
+            </Link>
+
+            <button
+              onClick={() => setPraiseModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-400 text-slate-950 font-extrabold text-xs shadow-lg hover:bg-amber-300 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+            >
+              <Award className="w-4 h-4 text-slate-950" />
+              <span>Tuyên dương HS</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== Positivity Quote Widget ===== */}
+      <DailyPositivityWidget role="teacher" />
+
+      {/* ===== Quick Metrics & Priority Alerts Hub ===== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Metric 1: Attendance Today */}
+        <div className="glass-card-premium rounded-3xl p-5 border border-slate-800 bg-slate-900/80 space-y-3 relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sĩ số & Chuyên cần</span>
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-white flex items-baseline gap-2">
+              {todayAttendance ? todayAttendance.presentCount : homeroom?.totalStudents || 0}
+              <span className="text-xs font-semibold text-slate-400">/ {todayAttendance ? todayAttendance.totalStudents : homeroom?.totalStudents || 0} HS có mặt</span>
+            </div>
+            <p className="text-xs text-emerald-400 font-bold mt-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 pulse-dot" />
+              {todayAttendance && todayAttendance.absentCount > 0
+                ? `${todayAttendance.absentCount} học sinh vắng hôm nay`
+                : "100% học sinh đi học đầy đủ"}
+            </p>
+          </div>
+        </div>
+
+        {/* Metric 2: Lesson Plan Status */}
+        <div className="glass-card-premium rounded-3xl p-5 border border-slate-800 bg-slate-900/80 space-y-3 relative overflow-hidden group hover:border-indigo-500/50 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Kế hoạch bài dạy</span>
+            <div className="w-9 h-9 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+              <BookOpen className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-white">
+              Sẵn sàng
+            </div>
+            <Link
+              href="/teacher/lesson-plans"
+              className="text-xs text-indigo-400 font-bold mt-1 flex items-center gap-1 hover:underline"
+            >
+              <span>Xem giáo án tuần này</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
-      </div>
 
-      {/* ===== Header Controls (FPT-style) ===== */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* School/Campus info */}
-          {hc && (
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
-              <GraduationCap className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">
-                {hc.campusName || hc.schoolName}
-              </span>
-            </div>
-          )}
-
-          {/* Homeroom class badge */}
-          {hc && (
-            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5">
-              <Users className="w-4 h-4 text-emerald-600" />
-              <span className="text-sm font-medium text-emerald-800">
-                CN: {hc.name} ({hc.totalStudents} HS)
-              </span>
-            </div>
-          )}
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Week picker */}
-          {weekSchedule && (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={goToPreviousWeek}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition"
-                title="Tuan truoc"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={goToCurrentWeek}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                  weekOffset === 0
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                <CalendarDays className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
-                {formatDateFull(weekSchedule.weekStart)} - {formatDateFull(weekSchedule.weekEnd)}
-              </button>
-              <button
-                onClick={goToNextWeek}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition"
-                title="Tuan sau"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {/* Refresh */}
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-            title="Lam moi"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* Subject Head Privilege Banner */}
-      {headInfo.isSubjectHead && (
-        <div className="mx-4 md:mx-6 mt-4 bg-gradient-to-r from-indigo-900 to-indigo-700 text-white rounded-2xl p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-bold text-white shrink-0">
-              👑
-            </div>
-            <div>
-              <p className="text-sm font-bold">Bạn là Tổ Trưởng Chuyên Môn</p>
-              <p className="text-xs text-indigo-200">
-                {headInfo.pendingCount > 0
-                  ? `Có ${headInfo.pendingCount} giáo án mới gửi lên đang chờ bạn duyệt chuyên môn.`
-                  : "Hiện tại không có giáo án nào chờ duyệt."}
-              </p>
+        {/* Metric 3: Daily Report Status */}
+        <div className="glass-card-premium rounded-3xl p-5 border border-slate-800 bg-slate-900/80 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Báo cáo ngày BGH</span>
+            <div className="w-9 h-9 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <Sparkles className="w-4 h-4" />
             </div>
           </div>
-          <Link
-            href="/teacher/subject-head"
-            className="px-4 py-2 bg-white text-indigo-900 font-bold text-xs rounded-xl hover:bg-indigo-50 transition-colors shrink-0 text-center shadow-xs"
-          >
-            Đến trang duyệt giáo án →
-          </Link>
-        </div>
-      )}
-
-      {/* ===== Tabs (FPT-style) ===== */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-6">
-        <div className="flex items-center gap-0">
-          <button
-            onClick={() => setActiveTab("timetable")}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition ${
-              activeTab === "timetable"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            <Clock className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-            Thoi khoa bieu
-          </button>
-          <button
-            onClick={() => setActiveTab("courses")}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition ${
-              activeTab === "courses"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            <BookOpen className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-            Mon hoc hoc ky
-          </button>
-          {hc && (
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition relative ${
-                activeTab === "overview"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          <div>
+            <div className="text-2xl font-extrabold text-white">
+              {dailyReportStatus?.exists ? "Đã gửi báo cáo" : "Chưa gửi"}
+            </div>
+            <Link
+              href="/teacher/daily-report"
+              className={`text-xs font-bold mt-1 flex items-center gap-1 ${
+                dailyReportStatus?.exists ? "text-emerald-400" : "text-amber-400 hover:underline"
               }`}
             >
-              <Users className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-              Tong quan CN
-              {incompleteRecords.length > 0 && (
-                <span className="ml-1.5 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  {incompleteRecords.length}
-                </span>
-              )}
+              <span>{dailyReportStatus?.exists ? "Hoàn thành hôm nay" : "Gửi tổng kết nếp sống ngay"}</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Metric 4: Alerts */}
+        <div className="glass-card-premium rounded-3xl p-5 border border-slate-800 bg-slate-900/80 space-y-3 relative overflow-hidden group hover:border-purple-500/50 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cảnh báo học sinh</span>
+            <div className="w-9 h-9 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-white">
+              {atRiskAcademic.length + atRiskViolations.length} em cần chú ý
+            </div>
+            <button
+              onClick={() => setActiveTab("warnings")}
+              className="text-xs text-rose-400 font-bold mt-1 flex items-center gap-1 hover:underline cursor-pointer"
+            >
+              <span>Xem danh sách hỗ trợ</span>
+              <ArrowRight className="w-3 h-3" />
             </button>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* ===== Tab Content ===== */}
-      <div className="px-4 md:px-6 py-4">
-        {/* ===== TAB: TIMETABLE ===== */}
+      {/* ===== Command Center Interactive Tabs ===== */}
+      <div className="space-y-4">
+        {/* Tab Buttons Bar */}
+        <div className="flex items-center gap-2 p-1.5 bg-slate-950/80 rounded-2xl border border-slate-800 overflow-x-auto hide-scrollbar">
+          <button
+            onClick={() => setActiveTab("timetable")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "timetable"
+                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            }`}
+          >
+            <CalendarDays className="w-4 h-4 text-blue-300" />
+            <span>Thời khóa biểu & Tiết dạy</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("homeroom")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "homeroom"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            }`}
+          >
+            <Users className="w-4 h-4 text-emerald-300" />
+            <span>Lớp Chủ Nhiệm ({homeroom?.name || "GVCN"})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("warnings")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "warnings"
+                ? "bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4 text-rose-300" />
+            <span>Chăm sóc HS & Cảnh báo ({atRiskAcademic.length + atRiskViolations.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("courses")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "courses"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            }`}
+          >
+            <BookOpen className="w-4 h-4 text-purple-300" />
+            <span>Phân công Giảng dạy ({courses.length})</span>
+          </button>
+        </div>
+
+        {/* ===== TAB CONTENT 1: TIMETABLE & SCHEDULE ===== */}
         {activeTab === "timetable" && (
-          <div className="space-y-4">
-            {/* Search + Total */}
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tim kiem mon hoc, lop..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+          <div className="glass-card-premium rounded-3xl p-6 border border-slate-800 bg-slate-900/80 space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                  <CalendarDays className="w-5 h-5 text-blue-400" />
+                  Thời khóa biểu giảng dạy tuần này
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                  {weekSchedule ? `Thời gian: ${formatDateShort(weekSchedule.weekStart)} - ${formatDateShort(weekSchedule.weekEnd)}` : "Lịch giảng dạy phân công"}
+                </p>
               </div>
-              <span className="text-sm text-gray-500">
-                Tong: <strong className="text-gray-700">{weekSchedule?.totalSlots || 0}</strong> tiet/tuan
-              </span>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/teacher/journal"
+                  className="px-3.5 py-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-300 hover:bg-blue-600/30 text-xs font-extrabold transition"
+                >
+                  Sổ đầu bài điện tử →
+                </Link>
+              </div>
             </div>
 
-            {/* Timetable Grid */}
-            {weekSchedule && weekSchedule.grid.length > 0 ? (
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                {/* Desktop table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gradient-to-r from-blue-600 to-blue-700">
-                        <th className="text-white font-semibold px-3 py-3 text-center border-r border-blue-500 w-20">
-                          Tiet
+            {/* Weekly Schedule Grid */}
+            {weekSchedule ? (
+              <div className="overflow-x-auto hide-scrollbar">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400">
+                      <th className="py-3 px-3 font-extrabold uppercase w-16">Tiết</th>
+                      {weekSchedule.weekDates.map((dStr, idx) => (
+                        <th key={dStr} className="py-3 px-3 font-extrabold text-center min-w-[120px]">
+                          <div>{DAY_NAMES_SHORT[idx]}</div>
+                          <div className="text-[10px] font-medium text-slate-500">{formatDateShort(dStr)}</div>
                         </th>
-                        {weekSchedule.weekDates.map((date, i) => {
-                          const isToday = date === new Date().toISOString().split("T")[0];
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {weekSchedule.grid.map((row) => (
+                      <tr key={row.period} className="hover:bg-slate-800/40 transition">
+                        <td className="py-2.5 px-3 font-extrabold text-slate-400">Tiết {row.period}</td>
+                        {row.slots.map((slot, idx) => {
+                          if (!slot) {
+                            return <td key={idx} className="p-1 text-center text-slate-700">-</td>;
+                          }
+                          const colorClass = getSubjectColor(slot.subjectName);
                           return (
-                            <th
-                              key={date}
-                              className={`text-white font-semibold px-2 py-3 text-center border-r border-blue-500 last:border-r-0 ${
-                                isToday ? "bg-blue-800" : ""
-                              }`}
-                            >
-                              <div className="text-xs opacity-80">{DAY_NAMES_FULL[i]}</div>
-                              <div className={`text-sm ${isToday ? "font-bold" : ""}`}>
-                                {formatDateShort(date)}
-                                {isToday && <span className="ml-1 text-[10px] bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full font-bold">Hom nay</span>}
+                            <td key={idx} className="p-1">
+                              <div className={`p-2 rounded-xl border ${colorClass} space-y-0.5 transition hover:scale-102`}>
+                                <p className="font-extrabold text-xs truncate">{slot.subjectName}</p>
+                                <p className="text-[10px] opacity-80 font-semibold">{slot.className}</p>
                               </div>
-                            </th>
+                            </td>
                           );
                         })}
                       </tr>
-                    </thead>
-                    <tbody>
-                      {weekSchedule.grid
-                        .filter((row) => {
-                          if (!searchQuery) return true;
-                          const q = searchQuery.toLowerCase();
-                          return row.slots.some(
-                            (s) =>
-                              s &&
-                              (s.subjectName.toLowerCase().includes(q) ||
-                                s.className.toLowerCase().includes(q))
-                          );
-                        })
-                        .map((row, rowIdx) => (
-                          <tr
-                            key={row.period}
-                            className={`border-b border-gray-100 ${rowIdx % 2 === 0 ? "bg-white" : "bg-gray-50/50"} hover:bg-blue-50/30 transition`}
-                          >
-                            {/* Period cell */}
-                            <td className="px-3 py-2 text-center border-r border-gray-200 bg-gray-50">
-                              <div className="font-bold text-gray-700">Tiet {row.period}</div>
-                              <div className="text-[11px] text-gray-400">
-                                {row.time.start}-{row.time.end}
-                              </div>
-                            </td>
-                            {/* Day cells */}
-                            {row.slots.map((slot, dayIdx) => {
-                              const dateStr = weekSchedule.weekDates[dayIdx];
-                              const isToday = dateStr === new Date().toISOString().split("T")[0];
-                              return (
-                                <td
-                                  key={dayIdx}
-                                  className={`px-1.5 py-1.5 text-center border-r border-gray-100 last:border-r-0 ${
-                                    isToday ? "bg-blue-50/40" : ""
-                                  }`}
-                                >
-                                  {slot ? (
-                                    <div className={`rounded-lg border px-2 py-1.5 ${getSubjectColor(slot.subjectName)}`}>
-                                      <div className="font-semibold text-xs leading-tight">{slot.subjectName}</div>
-                                      <div className="text-[11px] opacity-75 mt-0.5">{slot.className}</div>
-                                      {slot.room && (
-                                        <div className="text-[10px] opacity-60">P.{slot.room}</div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="text-gray-300 text-xs">-</div>
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile card view */}
-                <div className="md:hidden divide-y divide-gray-100">
-                  {weekSchedule.weekDates.map((date, dayIdx) => {
-                    const isToday = date === new Date().toISOString().split("T")[0];
-                    const daySlots = weekSchedule.grid
-                      .filter((row) => row.slots[dayIdx] !== null)
-                      .filter((row) => {
-                        if (!searchQuery) return true;
-                        const s = row.slots[dayIdx];
-                        const q = searchQuery.toLowerCase();
-                        return s && (s.subjectName.toLowerCase().includes(q) || s.className.toLowerCase().includes(q));
-                      });
-
-                    if (daySlots.length === 0) return null;
-
-                    return (
-                      <div key={date} className={`${isToday ? "bg-blue-50/50" : ""}`}>
-                        <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? "bg-blue-100/60" : "bg-gray-50"}`}>
-                          <span className="font-semibold text-sm text-gray-700">{DAY_NAMES_FULL[dayIdx]}</span>
-                          <span className="text-xs text-gray-500">{formatDateShort(date)}</span>
-                          {isToday && (
-                            <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold">Hom nay</span>
-                          )}
-                          <span className="ml-auto text-xs text-gray-400">{daySlots.length} tiet</span>
-                        </div>
-                        <div className="px-4 py-2 space-y-1.5">
-                          {daySlots.map((row) => {
-                            const slot = row.slots[dayIdx]!;
-                            return (
-                              <div
-                                key={row.period}
-                                className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${getSubjectColor(slot.subjectName)}`}
-                              >
-                                <div className="text-center shrink-0 w-12">
-                                  <div className="text-[10px] opacity-60">Tiet</div>
-                                  <div className="font-bold text-lg leading-none">{row.period}</div>
-                                  <div className="text-[10px] opacity-60">{row.time.start}</div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-sm">{slot.subjectName}</div>
-                                  <div className="text-xs opacity-75">{slot.className} {slot.room ? `| P.${slot.room}` : ""}</div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {weekSchedule.grid.length === 0 && (
-                  <div className="text-center py-12 text-gray-400">
-                    <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Khong co lich day trong tuan nay</p>
-                  </div>
-                )}
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div className="bg-white border border-gray-200 rounded-xl text-center py-12 text-gray-400">
-                <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Chua co thoi khoa bieu</p>
-                <p className="text-xs mt-1">Lien he quan tri vien de duoc phan cong lich day</p>
+              <div className="text-center py-10 text-slate-500 text-xs italic">
+                Chưa có thời khóa biểu tuần này.
               </div>
             )}
           </div>
         )}
 
-        {/* ===== TAB: COURSES ===== */}
-        {activeTab === "courses" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-800">Mon hoc duoc phan cong</h2>
-              <span className="text-sm text-gray-500">
-                <strong className="text-gray-700">{courses.length}</strong> mon hoc
-              </span>
-            </div>
+        {/* ===== TAB CONTENT 2: HOMEROOM COMMAND HUB ===== */}
+        {activeTab === "homeroom" && (
+          <div className="space-y-6">
+            {homeroom ? (
+              <div className="glass-card-premium rounded-3xl p-6 border border-slate-800 bg-slate-900/80 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                  <div>
+                    <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                      <Users className="w-5 h-5 text-emerald-400" />
+                      Lớp Chủ Nhiệm: {homeroom.name} (Khối {homeroom.gradeLevel})
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                      Tổng số: {homeroom.totalStudents} học sinh · Trường: {homeroom.schoolName}
+                    </p>
+                  </div>
 
-            {courses.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-xl text-center py-12 text-gray-400">
-                <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Chua co mon hoc nao duoc phan cong</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {courses.map((course) => (
-                  <div
-                    key={course.subjectId}
-                    className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md hover:border-blue-300 transition-all group"
+                  <Link
+                    href="/teacher/homeroom"
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600/30 text-xs font-extrabold transition"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        getSubjectColor(course.subjectName).split(" ").slice(0, 2).join(" ")
-                      }`}>
-                        <BookOpen className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-800 group-hover:text-blue-600 transition">
-                          {course.subjectName}
-                        </h3>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {course.classes.length} lop
-                        </p>
-                      </div>
+                    Xem Sổ Chủ Nhiệm Chi Tiết →
+                  </Link>
+                </div>
+
+                {/* Homeroom Competition Stats */}
+                {competitionStats && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-1">
+                      <p className="text-xs font-bold text-slate-400">Tỷ lệ chuyên cần tuần này</p>
+                      <p className="text-2xl font-extrabold text-emerald-400">{competitionStats.weekAttendanceRate}%</p>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {course.classes.map((cls) => (
-                        <span
-                          key={cls.classId}
-                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md font-medium"
-                        >
-                          {cls.className}
-                        </span>
+                    <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-1">
+                      <p className="text-xs font-bold text-slate-400">Lượt vắng học tuần này</p>
+                      <p className="text-2xl font-extrabold text-amber-400">{competitionStats.weekAbsences} lượt</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-1">
+                      <p className="text-xs font-bold text-slate-400">Lượt ghi nếp sống / vi phạm</p>
+                      <p className="text-2xl font-extrabold text-purple-400">{competitionStats.weekViolations} lượt</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Parent Feedbacks list */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-blue-400" />
+                    Phản hồi mới từ Phụ huynh ({parentFeedbacks.length})
+                  </h4>
+                  {parentFeedbacks.length > 0 ? (
+                    <div className="space-y-2">
+                      {parentFeedbacks.map((fb) => (
+                        <div key={fb.id} className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-start justify-between gap-3 text-xs">
+                          <div>
+                            <p className="font-bold text-white">{fb.studentName}</p>
+                            <p className="text-slate-300 mt-0.5">{fb.content}</p>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-medium shrink-0">{fb.date}</span>
+                        </div>
                       ))}
                     </div>
-                    <div className="mt-3 flex gap-2">
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">Không có tin nhắn phản hồi mới từ phụ huynh.</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-400 text-xs italic bg-slate-900/60 rounded-3xl border border-slate-800">
+                Thầy/Cô chưa được phân công làm Chủ nhiệm lớp nào trong học kỳ này.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== TAB CONTENT 3: WARNINGS & STUDENT CARE ===== */}
+        {activeTab === "warnings" && (
+          <div className="glass-card-premium rounded-3xl p-6 border border-slate-800 bg-slate-900/80 space-y-6">
+            <div className="border-b border-slate-800 pb-4">
+              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-rose-400" />
+                Trung tâm Cảnh báo sớm & Chăm sóc Học sinh
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                Theo dõi các trường hợp cần hỗ trợ học lực, tư vấn tâm lý hoặc theo dõi nếp sống
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Academic Risk */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4" />
+                  Cần hỗ trợ học lực ({atRiskAcademic.length})
+                </h4>
+                {atRiskAcademic.length > 0 ? (
+                  <div className="space-y-2">
+                    {atRiskAcademic.map((st) => (
+                      <div key={st.id} className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-bold text-white">{st.name}</p>
+                          <p className="text-slate-400 text-[11px]">ĐTB: {st.avgScore} · Hỏng {st.failedSubjects} môn</p>
+                        </div>
+                        <span className="px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-extrabold">
+                          Cần kèm cặp
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 italic">Không có học sinh nguy cơ yếu kém.</p>
+                )}
+              </div>
+
+              {/* Counseling Need */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-extrabold text-rose-400 uppercase tracking-wider flex items-center gap-2">
+                  <Heart className="w-4 h-4" />
+                  Cần tư vấn tâm lý / Chăm sóc ({studentsCounseling.length})
+                </h4>
+                {studentsCounseling.length > 0 ? (
+                  <div className="space-y-2">
+                    {studentsCounseling.map((c) => (
+                      <div key={c.id} className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-bold text-white">{c.studentName}</p>
+                          <p className="text-slate-400 text-[11px]">{c.description || c.type}</p>
+                        </div>
+                        <span className="px-2 py-1 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-extrabold">
+                          Độ rủi ro: {c.riskScore}/10
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 italic">Không có học sinh trong danh sách chăm sóc đặc biệt.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== TAB CONTENT 4: COURSES & ASSIGNMENTS ===== */}
+        {activeTab === "courses" && (
+          <div className="glass-card-premium rounded-3xl p-6 border border-slate-800 bg-slate-900/80 space-y-6">
+            <div className="border-b border-slate-800 pb-4">
+              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-purple-400" />
+                Các môn học & Lớp học phụ trách
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                Danh sách các môn học và lớp được phân công giảng dạy trong năm học
+              </p>
+            </div>
+
+            {courses.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {courses.map((crs, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3 hover:border-purple-500/40 transition">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-purple-300 bg-purple-500/20 px-2.5 py-0.5 rounded-full border border-purple-500/30">
+                        {crs.subjectName}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-white">
+                        Lớp: {crs.classes.map((c) => c.className).join(", ")}
+                      </p>
+                    </div>
+                    <div className="pt-2 flex items-center gap-2 border-t border-slate-800">
                       <Link
                         href="/teacher/grades"
-                        className="flex-1 text-center text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg py-1.5 font-medium hover:bg-blue-100 transition"
+                        className="text-[11px] font-bold text-emerald-400 hover:underline"
                       >
-                        <Calculator className="w-3 h-3 inline mr-1 -mt-0.5" />
-                        Nhap diem
-                      </Link>
-                      <Link
-                        href="/teacher/lesson-plans"
-                        className="flex-1 text-center text-xs bg-purple-50 text-purple-700 border border-purple-200 rounded-lg py-1.5 font-medium hover:bg-purple-100 transition"
-                      >
-                        <FileBarChart className="w-3 h-3 inline mr-1 -mt-0.5" />
-                        Giao an
+                        Nhập điểm →
                       </Link>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        )}
-
-        {/* ===== TAB: OVERVIEW (GVCN) ===== */}
-        {activeTab === "overview" && hc && (
-          <div className="space-y-4 max-w-4xl">
-                        {/* Daily Inspiration Card for Teachers */}
-            <DailyPositivityWidget role="teacher" />
-
-            {/* Homeroom class header */}
-            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-4 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold">Lop {hc.name}</h2>
-                  <p className="text-emerald-100 text-sm">
-                    {hc.schoolName} {hc.campusName ? `- ${hc.campusName}` : ""} | Khoi {hc.gradeLevel}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold">{hc.totalStudents}</div>
-                  <div className="text-emerald-100 text-xs">Hoc sinh</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Incomplete Records Alert */}
-            {incompleteRecords.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
-                <h3 className="text-sm font-bold text-red-800 flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4" />
-                  Ho so chua hoan thanh ({incompleteRecords.length})
-                </h3>
-                <div className="space-y-1.5">
-                  {incompleteRecords.map((r, i) => (
-                    <Link
-                      key={i}
-                      href={r.href}
-                      className="flex items-center justify-between bg-white rounded-lg px-3 py-2 text-sm hover:bg-red-100 transition border border-red-100"
-                    >
-                      <span className="text-red-700">{r.label}</span>
-                      {r.count > 1 && (
-                        <span className="bg-red-200 text-red-800 text-xs font-bold px-2 py-0.5 rounded-full">
-                          {r.count}
-                        </span>
-                      )}
-                    </Link>
-                  ))}
-                </div>
+            ) : (
+              <div className="text-center py-10 text-slate-500 text-xs italic">
+                Chưa có thông tin phân công giảng dạy.
               </div>
             )}
-
-            {/* Attendance Today */}
-            {attendance && (
-              <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-emerald-600" />
-                    Chuyen can hom nay
-                  </h3>
-                  <span className="text-xs text-gray-400">Si so: {hc.totalStudents}</span>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-center">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 mx-auto mb-0.5" />
-                    <p className="text-lg font-bold text-emerald-700">{attendance.presentCount}</p>
-                    <p className="text-[10px] text-emerald-600">Co mat</p>
-                  </div>
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-center">
-                    <XCircle className="w-4 h-4 text-red-500 mx-auto mb-0.5" />
-                    <p className="text-lg font-bold text-red-600">{attendance.absentCount}</p>
-                    <p className="text-[10px] text-red-500">Vang</p>
-                  </div>
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-center">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 mx-auto mb-0.5" />
-                    <p className="text-lg font-bold text-amber-600">{attendance.lateCount}</p>
-                    <p className="text-[10px] text-amber-500">Di muon</p>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-center">
-                    <div className="w-4 h-4 mx-auto mb-0.5 rounded-full bg-blue-200 flex items-center justify-center">
-                      <span className="text-[8px] font-bold text-blue-700">%</span>
-                    </div>
-                    <p className="text-lg font-bold text-blue-700">{attendance.attendanceRate}%</p>
-                    <p className="text-[10px] text-blue-600">Ty le</p>
-                  </div>
-                </div>
-
-                {attendance.absentList.length > 0 && (
-                  <div className="bg-red-50/50 rounded-lg p-2.5 space-y-1">
-                    <p className="text-xs font-semibold text-red-700">Hoc sinh vang:</p>
-                    {attendance.absentList.map((s, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                          s.status === "ABSENT_EXCUSED" ? "bg-orange-200 text-orange-800" : "bg-red-200 text-red-800"
-                        }`}>
-                          {s.status === "ABSENT_EXCUSED" ? "P" : "KP"}
-                        </span>
-                        <span className="text-gray-700">{s.name}</span>
-                        {s.note && <span className="text-gray-400 italic">- {s.note}</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {attendance.lateList.length > 0 && (
-                  <div className="bg-amber-50/50 rounded-lg p-2.5 space-y-1">
-                    <p className="text-xs font-semibold text-amber-700">Hoc sinh di muon:</p>
-                    {attendance.lateList.map((s, i) => (
-                      <div key={i} className="text-xs text-gray-700">
-                        {s.name} {s.note && <span className="text-gray-400 italic">- {s.note}</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {attendance.unmarkedCount > 0 && (
-                  <Link
-                    href="/teacher/attendance"
-                    className="block bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-2 rounded-lg text-center hover:bg-amber-200 transition"
-                  >
-                    Con {attendance.unmarkedCount} HS chua diem danh - Bam de diem danh
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {/* Risk + Competition Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* At-risk Academic */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
-                <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-2">
-                  <TrendingDown className="w-4 h-4 text-red-500" />
-                  Nguy co hoc luc yeu
-                </h3>
-                {atRiskAcademic.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-2">Khong co HS nguy co</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {atRiskAcademic.slice(0, 5).map((s) => (
-                      <div key={s.id} className="flex items-center justify-between text-xs bg-red-50 rounded-lg px-2.5 py-1.5">
-                        <span className="font-medium text-gray-700">{s.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-red-600 font-bold">TBC: {s.avgScore}</span>
-                          {s.failedSubjects > 0 && (
-                            <span className="bg-red-200 text-red-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                              {s.failedSubjects} mon
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* At-risk Violations */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
-                <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-2">
-                  <ShieldAlert className="w-4 h-4 text-orange-500" />
-                  Nguy co vi pham
-                </h3>
-                {atRiskViolations.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-2">Khong co HS vi pham nhieu</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {atRiskViolations.slice(0, 5).map((s) => (
-                      <div key={s.id} className="flex items-center justify-between text-xs bg-orange-50 rounded-lg px-2.5 py-1.5">
-                        <span className="font-medium text-gray-700">{s.name}</span>
-                        <span className="bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                          {s.count} lan
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Counseling */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
-                <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-2">
-                  <Heart className="w-4 h-4 text-pink-500" />
-                  Can tu van
-                </h3>
-                {counseling.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-2">Khong co canh bao</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {counseling.slice(0, 5).map((s) => (
-                      <div key={s.id} className="text-xs bg-pink-50 rounded-lg px-2.5 py-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-gray-700">{s.studentName}</span>
-                          <span className="bg-pink-200 text-pink-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                            Muc: {s.riskScore}
-                          </span>
-                        </div>
-                        {s.description && <p className="text-gray-500 mt-0.5 truncate">{s.description}</p>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Competition */}
-              {competition && (
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-2">
-                    <Trophy className="w-4 h-4 text-yellow-500" />
-                    Thi dua tuan nay
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-center bg-emerald-50 rounded-lg p-2">
-                      <p className="text-lg font-bold text-emerald-700">{competition.weekAttendanceRate}%</p>
-                      <p className="text-[10px] text-emerald-600">Chuyen can</p>
-                    </div>
-                    <div className="text-center bg-red-50 rounded-lg p-2">
-                      <p className="text-lg font-bold text-red-600">{competition.weekAbsences}</p>
-                      <p className="text-[10px] text-red-500">Vang</p>
-                    </div>
-                    <div className="text-center bg-orange-50 rounded-lg p-2">
-                      <p className="text-lg font-bold text-orange-600">{competition.weekViolations}</p>
-                      <p className="text-[10px] text-orange-500">Vi pham</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Parent feedbacks */}
-            {parentFeedbacks.length > 0 && (
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-blue-500" />
-                    Phan hoi PH chua xu ly
-                  </h3>
-                  <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                    {parentFeedbacks.length}
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {parentFeedbacks.slice(0, 3).map((fb) => (
-                    <div key={fb.id} className="bg-blue-50 rounded-lg px-3 py-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-gray-700">PH {fb.studentName}</span>
-                        <span className="text-gray-400">{new Date(fb.date).toLocaleDateString("vi-VN")}</span>
-                      </div>
-                      <p className="text-gray-600 mt-0.5 line-clamp-2">{fb.content}</p>
-                    </div>
-                  ))}
-                  {parentFeedbacks.length > 3 && (
-                    <Link href="/teacher/homeroom" className="block text-xs text-blue-600 font-semibold text-center hover:underline">
-                      Xem tat ca ({parentFeedbacks.length})
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Daily Report */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                  <FileBarChart className="w-4 h-4 text-rose-500" />
-                  Bao cao hom nay
-                </h3>
-                {reportStatus?.exists ? (
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                    reportStatus.status === "SENT"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}>
-                    {reportStatus.status === "SENT" ? "Da gui" : "Ban nhap"}
-                  </span>
-                ) : (
-                  <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">
-                    Chua tao
-                  </span>
-                )}
-              </div>
-              {!reportStatus?.exists && (
-                <Link
-                  href="/teacher/daily-report"
-                  className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition text-sm"
-                >
-                  <FileBarChart className="w-4 h-4" />
-                  Tao bao cao ngay
-                </Link>
-              )}
-              {reportStatus?.exists && reportStatus.status !== "SENT" && (
-                <Link
-                  href="/teacher/daily-report"
-                  className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-xl font-semibold hover:bg-amber-200 transition text-sm"
-                >
-                  Hoan thanh va gui bao cao
-                </Link>
-              )}
-            </div>
-
-            {/* Quick Links */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <Link href="/teacher/homeroom" className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center hover:bg-emerald-100 transition">
-                <ListChecks className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-emerald-700">So chu nhiem</p>
-              </Link>
-              <Link href="/teacher/attendance" className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-center hover:bg-teal-100 transition">
-                <CheckCircle2 className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-teal-700">Diem danh</p>
-              </Link>
-              <Link href="/teacher/journal" className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-center hover:bg-purple-100 transition">
-                <FileBarChart className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-purple-700">So dau bai</p>
-              </Link>
-              <Link href="/teacher/grades" className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-center hover:bg-indigo-100 transition">
-                <Calculator className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-indigo-700">Nhap diem</p>
-              </Link>
-            </div>
           </div>
         )}
       </div>
+
+      {/* Floating AI Chat Widget */}
       <FloatingAIChatWidget userRole="TEACHER" />
-      {/* Student Praise Modal */}
-      {session?.user?.id && (
-        <StudentPraiseModal
-          isOpen={praiseModalOpen}
-          onClose={() => setPraiseModalOpen(false)}
-          teacherUserId={session.user.id}
-        />
-      )}
     </div>
   );
 }

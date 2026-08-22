@@ -98,12 +98,12 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-indigo-500/50 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
+          className="group relative flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-indigo-500/50 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer animate-float"
         >
           <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 border-2 border-white rounded-full animate-ping" />
           <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md">
-            <Bot className="w-5 h-5 text-yellow-300 group-hover:rotate-12 transition-transform" />
+            <Bot className="w-5 h-5 text-yellow-300 group-hover:rotate-12 transition-transform duration-300" />
           </div>
           <span className="text-xs font-extrabold tracking-wide hidden sm:inline-block pr-1">
             Trợ lý AI Smart 💬
@@ -112,7 +112,7 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
       )}
 
       {isOpen && (
-        <div className="w-[92vw] sm:w-[380px] md:w-[420px] h-[520px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="w-[92vw] sm:w-[380px] md:w-[420px] h-[520px] bg-white/95 rounded-3xl shadow-2xl border border-slate-200/80 flex flex-col overflow-hidden animate-modal-pop backdrop-blur-xl">
           <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 p-4 text-white flex items-center justify-between shadow-md">
             <div className="flex items-center gap-3">
               <div className="relative w-9 h-9 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20">
@@ -122,7 +122,7 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
               <div>
                 <h3 className="font-extrabold text-sm flex items-center gap-1.5">
                   Trợ Lý AI Giáo Dục
-                  <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
                 </h3>
                 <p className="text-[11px] text-blue-100/90 font-medium">Sẵn sàng hỗ trợ 24/7</p>
               </div>
@@ -141,37 +141,37 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
                   ])
                 }
                 title="Làm mới trò chuyện"
-                className="p-1.5 hover:bg-white/15 rounded-xl transition cursor-pointer"
+                className="p-1.5 hover:bg-white/15 rounded-xl transition-colors cursor-pointer active-press"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 hover:bg-white/15 rounded-xl transition cursor-pointer"
+                className="p-1.5 hover:bg-white/15 rounded-xl transition-colors cursor-pointer active-press"
               >
                 <Minimize2 className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
+          <div className="p-2.5 bg-slate-50/80 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
             {presetQueries.map((q, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSend(q)}
                 disabled={loading}
-                className="px-2.5 py-1 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-700 text-[11px] font-semibold rounded-full whitespace-nowrap transition shadow-2xs shrink-0 cursor-pointer"
+                className="px-2.5 py-1 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-700 text-[11px] font-semibold rounded-full whitespace-nowrap transition-all shadow-2xs shrink-0 cursor-pointer hover:scale-102 active:scale-98"
               >
                 {q}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-50/50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-50/50 custom-scrollbar">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex gap-2.5 animate-slide-up ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.sender === "ai" && (
                   <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 text-xs shadow-xs mt-0.5">
@@ -179,7 +179,7 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
                   </div>
                 )}
                 <div
-                  className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-xs md:text-sm leading-relaxed ${
+                  className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-xs md:text-sm leading-relaxed transition-all ${
                     msg.sender === "user"
                       ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-tr-none shadow-xs"
                       : "bg-white text-slate-800 border border-slate-200/80 rounded-tl-none shadow-2xs"
@@ -198,7 +198,7 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
             ))}
 
             {loading && (
-              <div className="flex items-center gap-2 text-slate-500 text-xs italic py-1">
+              <div className="flex items-center gap-2 text-slate-500 text-xs italic py-1 animate-pulse">
                 <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 </div>
@@ -220,12 +220,12 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Nhập thắc mắc hoặc yêu cầu..."
-              className="flex-1 px-3.5 py-2 bg-slate-100 rounded-xl text-xs md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+              className="flex-1 px-3.5 py-2 bg-slate-100 rounded-xl text-xs md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all duration-200"
             />
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:opacity-50 transition shadow-xs cursor-pointer"
+              className="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:opacity-50 transition-all shadow-xs cursor-pointer active-press"
             >
               <Send className="w-4 h-4" />
             </button>

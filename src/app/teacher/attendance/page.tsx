@@ -135,7 +135,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl mb-6">
         <div className="flex flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
@@ -195,9 +195,9 @@ export default function AttendancePage() {
       )}
 
       {/* Attendance Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl shadow-xl backdrop-blur-xl overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-slate-950/80 border-b">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase w-12">STT</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Mã HS</th>
@@ -215,7 +215,7 @@ export default function AttendancePage() {
               </td></tr>
             ) : (
               students.map((s, idx) => (
-                <tr key={s.id} className={`hover:bg-gray-50 ${records[s.id]?.status !== "PRESENT" ? "bg-red-50/50" : ""}`}>
+                <tr key={s.id} className={`hover:bg-slate-950/80 ${records[s.id]?.status !== "PRESENT" ? "bg-red-50/50" : ""}`}>
                   <td className="px-4 py-3 text-sm text-gray-500">{idx + 1}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{s.studentCode || "—"}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">{s.user.name}</td>
@@ -228,7 +228,7 @@ export default function AttendancePage() {
                           className={`px-2 py-1 rounded text-xs font-medium border transition-all ${
                             records[s.id]?.status === opt.value
                               ? `${opt.color} ring-2 ring-offset-1 ring-gray-400`
-                              : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"
+                              : "bg-slate-950/80 text-gray-400 border-gray-200 hover:bg-gray-100"
                           }`}
                         >
                           {opt.label}

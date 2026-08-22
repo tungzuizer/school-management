@@ -5,124 +5,64 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { checkIsSubjectHead } from "./subject-head/actions";
+import { FloatingAIChatWidget } from "@/components/ui/FloatingAIChatWidget";
+import Header from "@/components/layout/Header";
 import {
-  CalendarDays,
-  NotebookPen,
-  LogOut,
-  User,
-  BookOpen,
-  FileSpreadsheet,
-  ClipboardCheck,
-  Calculator,
-  FileBarChart,
-  Menu,
-  X,
-  ChevronDown,
-  ChevronRight,
-  GraduationCap,
   Home,
   Users,
-  Sparkles,
-  Clock,
-  Settings,
-  Bell,
-  Mail,
+  BookOpen,
   UserCheck,
+  User,
+  Sparkles,
+  ClipboardCheck,
+  NotebookPen,
+  FileSpreadsheet,
+  Calculator,
+  CheckSquare,
+  LogOut,
+  Menu,
+  X,
+  Compass,
+  Zap,
+  Award,
+  CalendarDays,
+  Layers,
+  ChevronRight,
+  ShieldCheck,
+  Bot,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-type MenuItem = {
+type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
+  badge?: string;
+  description?: string;
 };
 
-type MenuGroup = {
+type WorkspaceMode = {
+  id: string;
   title: string;
   icon: LucideIcon;
-  items: MenuItem[];
+  gradient: string;
+  items: NavItem[];
 };
-
-const baseMenuGroups: MenuGroup[] = [
-  {
-    title: "Tong quan",
-    icon: Home,
-    items: [
-      { label: "Dashboard", href: "/teacher/dashboard", icon: Home },
-    ],
-  },
-  {
-    title: "GVCN - Chu nhiem",
-    icon: Users,
-    items: [
-      { label: "So chu nhiem", href: "/teacher/homeroom", icon: NotebookPen },
-      { label: "Diem danh", href: "/teacher/attendance", icon: ClipboardCheck },
-      { label: "Bao cao ngay", href: "/teacher/daily-report", icon: Sparkles },
-    ],
-  },
-  {
-    title: "GVBM - Bo mon",
-    icon: BookOpen,
-    items: [
-      { label: "So dau bai", href: "/teacher/journal", icon: FileSpreadsheet },
-      { label: "Giao an", href: "/teacher/lesson-plans", icon: BookOpen },
-      { label: "Nhap diem", href: "/teacher/grades", icon: Calculator },
-    ],
-  },
-  {
-    title: "Ca nhan",
-    icon: User,
-    items: [
-      { label: "Ho so", href: "/teacher/profile", icon: User },
-    ],
-  },
-];
-
-const subjectHeadMenuGroup: MenuGroup = {
-  title: "To chuyen mon",
-  icon: UserCheck,
-  items: [
-    { label: "Duyet giao an", href: "/teacher/subject-head", icon: UserCheck },
-  ],
-};
-
-// Mobile bottom tabs
-const mobileMainTabs = [
-  { label: "Home", href: "/teacher/dashboard", icon: Home },
-  { label: "GVCN", href: "/teacher/homeroom", icon: Users },
-  { label: "GVBM", href: "/teacher/journal", icon: BookOpen },
-  { label: "Ho so", href: "/teacher/profile", icon: User },
-];
-
-const gvcnPaths = ["/teacher/homeroom", "/teacher/attendance", "/teacher/daily-report"];
-const gvbtPaths = ["/teacher/journal", "/teacher/lesson-plans", "/teacher/grades"];
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [isSubjectHead, setIsSubjectHead] = useState(false);
-  const userName = session?.user?.name || "Giao vien";
+  const userName = session?.user?.name || "Giáo viên";
   const userEmail = session?.user?.email || "";
 
-  // Check dynamically if this teacher is a subject head
   useEffect(() => {
-    checkIsSubjectHead().then((res) => {
-      setIsSubjectHead(res.isSubjectHead);
-    }).catch(() => setIsSubjectHead(false));
+    checkIsSubjectHead()
+      .then((res) => setIsSubjectHead(res.isSubjectHead))
+      .catch(() => setIsSubjectHead(false));
   }, []);
 
-  // Build menu groups: only include "To chuyen mon" if teacher is subject head
-  const menuGroups = isSubjectHead
-    ? [...baseMenuGroups.slice(0, 3), subjectHeadMenuGroup, baseMenuGroups[3]]
-    : baseMenuGroups;
-
-  const toggleGroup = (title: string) => {
-    setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
-  };
-
-  // Get user initials (up to 2 chars)
   const getInitials = (name: string) => {
     const parts = name.split(" ").filter(Boolean);
     if (parts.length >= 2) {
@@ -131,61 +71,150 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     return name.substring(0, 2).toUpperCase();
   };
 
-  const isGvcnActive = gvcnPaths.some(p => pathname === p || pathname.startsWith(p + "/"));
-  const isGvbtActive = gvbtPaths.some(p => pathname === p || pathname.startsWith(p + "/"));
+  // Define workspaces
+  const workspaces: WorkspaceMode[] = [
+    {
+      id: "overview",
+      title: "Trung tâm Điều hành",
+      icon: Compass,
+      gradient: "from-blue-600 via-indigo-600 to-violet-600",
+      items: [
+        { label: "Bảng điều khiển 360°", href: "/teacher/dashboard", icon: Home, description: "Tổng quan lịch dạy & tác vụ" },
+      ],
+    },
+    {
+      id: "homeroom",
+      title: "Góc Lớp Chủ Nhiệm",
+      icon: Users,
+      gradient: "from-emerald-600 via-teal-600 to-cyan-600",
+      items: [
+        { label: "Sổ chủ nhiệm", href: "/teacher/homeroom", icon: NotebookPen, description: "Quản lý nếp sống & thi đua" },
+        { label: "Điểm danh học sinh", href: "/teacher/attendance", icon: ClipboardCheck, description: "Báo cáo sĩ số hằng ngày" },
+        { label: "Báo cáo ngày BGH", href: "/teacher/daily-report", icon: Sparkles, description: "Nộp tổng kết ngày" },
+      ],
+    },
+    {
+      id: "teaching",
+      title: "Góc Giảng Dạy Bộ Môn",
+      icon: BookOpen,
+      gradient: "from-indigo-600 via-purple-600 to-pink-600",
+      items: [
+        { label: "Sổ đầu bài điện tử", href: "/teacher/journal", icon: FileSpreadsheet, description: "Ghi tiết dạy & điểm danh tiết" },
+        { label: "Giáo án & Bài dạy", href: "/teacher/lesson-plans", icon: BookOpen, description: "Kế hoạch bài dạy AI" },
+        { label: "Sổ nhập điểm", href: "/teacher/grades", icon: Calculator, description: "Nhập & tổng kết điểm" },
+      ],
+    },
+    ...(isSubjectHead
+      ? [
+          {
+            id: "subject-head",
+            title: "Tổ Chuyên Môn",
+            icon: UserCheck,
+            gradient: "from-amber-600 via-orange-600 to-red-600",
+            items: [
+              { label: "Duyệt giáo án Tổ CM", href: "/teacher/subject-head", icon: CheckSquare, badge: "Cần duyệt", description: "Phê duyệt bài dạy giáo viên" },
+            ],
+          } as WorkspaceMode,
+        ]
+      : []),
+    {
+      id: "account",
+      title: "Hồ Sơ & Cá Nhân",
+      icon: User,
+      gradient: "from-slate-700 to-slate-900",
+      items: [
+        { label: "Hồ sơ giáo viên", href: "/teacher/profile", icon: User, description: "Thông tin cá nhân & phân công" },
+      ],
+    },
+  ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* ===== Sidebar - Desktop (FPT EduNext Blue Style) ===== */}
-      <aside className="hidden lg:flex flex-col w-64 bg-gradient-to-b from-[#1a237e] to-[#283593] text-white shrink-0 shadow-xl">
-        {/* User Profile Header */}
-        <div className="px-4 pt-5 pb-4 border-b border-white/10">
+    <div className="min-h-screen bg-[#0f172a] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+      {/* Background Ambient Light Gradients */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-float-slow" />
+        <div className="absolute top-1/3 -right-40 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-40 left-1/3 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-3xl" />
+      </div>
+
+      {/* ===== Top Futuristic Header & Workspace Bar ===== */}
+      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800/80 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16 gap-4">
+          {/* Logo & Teacher Identity */}
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0 ring-2 ring-white/30">
-              <span className="text-base font-bold text-white">
-                {getInitials(userName)}
-              </span>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-2 ring-white/10 transition-transform duration-300 hover:scale-105">
+              <span className="text-sm font-extrabold text-white">{getInitials(userName)}</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{userName}</p>
-              <p className="text-[11px] text-blue-200 truncate">{userEmail || "Giao vien"}</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm font-extrabold text-white tracking-tight leading-tight">{userName}</h1>
+                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <Zap className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  {isSubjectHead ? "Tổ trưởng CM" : "Giáo viên"}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[180px] sm:max-w-xs">{userEmail || "Hệ thống Quản lý Giáo dục"}</p>
             </div>
           </div>
-        </div>
 
-        {/* Navigation Menu */}
-        <nav className="flex-1 overflow-auto py-3 px-2 space-y-0.5">
-          {menuGroups.map((group) => {
-            const isCollapsed = collapsedGroups[group.title];
-            const GroupIcon = group.icon;
-            const hasActiveItem = group.items.some(
-              item => pathname === item.href || pathname.startsWith(item.href + "/")
-            );
+          {/* Center Quick Switch Tabs for Desktop */}
+          <div className="hidden lg:flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 shadow-inner">
+            {workspaces.map((ws) => {
+              const isActive = ws.items.some(
+                (item) => pathname === item.href || pathname.startsWith(item.href + "/")
+              );
+              const WsIcon = ws.icon;
+              const firstHref = ws.items[0]?.href || "/teacher/dashboard";
 
-            return (
-              <div key={group.title} className="mb-1">
-                {/* Group header */}
-                <button
-                  onClick={() => toggleGroup(group.title)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
-                    hasActiveItem
-                      ? "text-white bg-white/15"
-                      : "text-blue-300 hover:text-white hover:bg-white/8"
+              return (
+                <Link
+                  key={ws.id}
+                  href={firstHref}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                    isActive
+                      ? `bg-gradient-to-r ${ws.gradient} text-white shadow-md shadow-indigo-950/50 scale-102`
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                   }`}
                 >
-                  <GroupIcon className="w-4 h-4 shrink-0" />
-                  <span className="flex-1 text-left">{group.title}</span>
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                  )}
-                </button>
+                  <WsIcon className="w-3.5 h-3.5" />
+                  <span>{ws.title}</span>
+                </Link>
+              );
+            })}
+          </div>
 
-                {/* Group items */}
-                {!isCollapsed && (
-                  <div className="mt-0.5 ml-1 space-y-0.5">
-                    {group.items.map((item) => {
+          {/* Right Header Integration */}
+          <div className="flex items-center gap-2">
+            {/* Global Header Wrapper for search & easy mode */}
+            <div className="hidden md:block">
+              <Header />
+            </div>
+
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition active-press"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ===== Main Dynamic Teacher Layout ===== */}
+      <div className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-6">
+        {/* Desktop Sidebar Navigator */}
+        <aside className="hidden lg:block w-72 shrink-0 space-y-4">
+          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-4 shadow-2xl space-y-5">
+            {workspaces.map((ws) => {
+              const WsIcon = ws.icon;
+              return (
+                <div key={ws.id} className="space-y-2">
+                  <div className="flex items-center gap-2 px-2 text-slate-400 font-extrabold text-[11px] uppercase tracking-wider">
+                    <WsIcon className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{ws.title}</span>
+                  </div>
+                  <div className="space-y-1">
+                    {ws.items.map((item) => {
                       const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                       const Icon = item.icon;
                       return (
@@ -193,188 +222,125 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
                           key={item.href}
                           href={item.href}
                           prefetch={true}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                          className={`group flex items-start gap-3 p-3 rounded-2xl transition-all duration-200 ${
                             isActive
-                              ? "bg-white text-[#1a237e] font-semibold shadow-md"
-                              : "text-blue-100 hover:bg-white/10 hover:text-white"
+                              ? `bg-gradient-to-r ${ws.gradient} text-white shadow-xl shadow-indigo-950/60 font-bold border border-white/10`
+                              : "bg-slate-950/40 border border-slate-800/50 text-slate-300 hover:bg-slate-800/80 hover:text-white hover:translate-x-1"
                           }`}
                         >
-                          <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-[#1a237e]" : "text-blue-300"}`} />
-                          <span>{item.label}</span>
-                          {isActive && (
-                            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1a237e]" />
-                          )}
+                          <div className={`p-2 rounded-xl ${isActive ? "bg-white/20" : "bg-slate-800 text-slate-400 group-hover:text-emerald-400 group-hover:bg-slate-700"} transition-colors`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold truncate">{item.label}</span>
+                              {item.badge && (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 shadow-2xs animate-pulse">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                            {item.description && (
+                              <p className={`text-[10px] leading-tight truncate mt-0.5 ${isActive ? "text-white/80 font-normal" : "text-slate-400"}`}>
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
                         </Link>
                       );
                     })}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-
-        {/* Bottom: Logout */}
-        <div className="px-3 py-3 border-t border-white/10">
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-red-300 hover:text-white hover:bg-red-500/30 rounded-lg transition-all"
-          >
-            <LogOut className="w-4 h-4" />
-            Dang xuat
-          </button>
-        </div>
-      </aside>
-
-      {/* ===== Main Content Area ===== */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Mobile Top Bar */}
-        <header className="lg:hidden bg-gradient-to-r from-[#1a237e] to-[#283593] px-4 py-3 flex items-center justify-between shrink-0 shadow-md">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-              <span className="text-xs font-bold text-white">{getInitials(userName)}</span>
-            </div>
-            <div>
-              <h1 className="text-sm font-semibold text-white">{userName}</h1>
-              <p className="text-[10px] text-blue-200 -mt-0.5">{userEmail || "Giao vien"}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="p-2 rounded-lg text-white/80 hover:bg-white/10 transition"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-        </header>
-
-        {/* Mobile Drawer */}
-        {mobileMenuOpen && (
-          <>
-            <div
-              className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            <div className="fixed inset-y-0 left-0 w-72 bg-gradient-to-b from-[#1a237e] to-[#283593] z-50 lg:hidden flex flex-col shadow-2xl">
-              {/* Drawer header */}
-              <div className="px-4 pt-5 pb-4 border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center ring-2 ring-white/30">
-                    <span className="text-sm font-bold text-white">{getInitials(userName)}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{userName}</p>
-                    <p className="text-[11px] text-blue-200 truncate">{userEmail || "Giao vien"}</p>
-                  </div>
                 </div>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-lg text-white/60 hover:bg-white/10 transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Drawer nav */}
-              <nav className="flex-1 overflow-auto py-3 px-2 space-y-1">
-                {menuGroups.map((group) => {
-                  const GroupIcon = group.icon;
-                  return (
-                    <div key={group.title} className="mb-1">
-                      <div className="flex items-center gap-2 px-3 py-1.5">
-                        <GroupIcon className="w-4 h-4 text-blue-300" />
-                        <p className="text-[11px] font-bold text-blue-300 uppercase tracking-wider">
-                          {group.title}
-                        </p>
-                      </div>
-                      <div className="space-y-0.5 ml-1">
-                        {group.items.map((item) => {
-                          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              prefetch={true}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                                isActive
-                                  ? "bg-white text-[#1a237e] font-semibold shadow-md"
-                                  : "text-blue-100 hover:bg-white/10"
-                              }`}
-                            >
-                              <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-[#1a237e]" : "text-blue-300"}`} />
-                              {item.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </nav>
-
-              {/* Drawer footer */}
-              <div className="px-3 py-3 border-t border-white/10">
-                <button
-                  onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-red-300 hover:text-white hover:bg-red-500/30 rounded-lg transition"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Dang xuat
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Page content */}
-        <main className="flex-1 overflow-auto pb-20 lg:pb-0">{children}</main>
-
-        {/* ===== Mobile Bottom Tab Bar (FPT blue style) ===== */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
-          <div className="flex items-stretch justify-around max-w-lg mx-auto pb-[env(safe-area-inset-bottom)]">
-            {mobileMainTabs.map((tab) => {
-              const Icon = tab.icon;
-              let isActive = false;
-              if (tab.label === "GVCN") {
-                isActive = isGvcnActive;
-              } else if (tab.label === "GVBM") {
-                isActive = isGvbtActive;
-              } else {
-                isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
-              }
-
-              return (
-                <Link
-                  key={tab.href}
-                  href={tab.href}
-                  prefetch={true}
-                  className={`flex flex-col items-center justify-center py-2.5 px-4 min-w-[68px] relative transition-colors ${
-                    isActive
-                      ? "text-[#1a237e]"
-                      : "text-gray-400 active:text-gray-600"
-                  }`}
-                >
-                  {isActive && (
-                    <div className="absolute top-0 w-10 h-[3px] bg-[#1a237e] rounded-b-full" />
-                  )}
-                  <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-                  <span className={`text-[10px] mt-0.5 ${isActive ? "font-bold" : "font-medium"}`}>
-                    {tab.label}
-                  </span>
-                </Link>
               );
             })}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="flex flex-col items-center justify-center py-2.5 px-4 min-w-[68px] text-gray-400 active:text-gray-600 transition-colors"
-            >
-              <Menu className="w-5 h-5" />
-              <span className="text-[10px] mt-0.5 font-medium">Menu</span>
-            </button>
+
+            {/* Logout Action */}
+            <div className="pt-3 border-t border-slate-800">
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 font-bold text-xs transition-all active-press cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Đăng xuất hệ thống</span>
+              </button>
+            </div>
           </div>
-        </nav>
+        </aside>
+
+        {/* ===== Main Page Workspace Area ===== */}
+        <main className="flex-1 min-w-0 bg-slate-900/50 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl pb-24 lg:pb-6">
+          {children}
+        </main>
       </div>
+
+      {/* Mobile Overlay Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 animate-fade-in">
+          <div
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto space-y-5 animate-modal-pop shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-bold text-white text-xs">
+                  {getInitials(userName)}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">{userName}</h3>
+                  <p className="text-[10px] text-emerald-400 font-semibold">{isSubjectHead ? "Tổ trưởng chuyên môn" : "Giáo viên"}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1.5 rounded-xl bg-slate-800 text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {workspaces.map((ws) => (
+              <div key={ws.id} className="space-y-2">
+                <p className="text-[11px] font-extrabold text-emerald-400 uppercase tracking-wider">{ws.title}</p>
+                <div className="space-y-1.5">
+                  {ws.items.map((item) => {
+                    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 p-3 rounded-2xl text-xs font-bold transition ${
+                          isActive
+                            ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                            : "bg-slate-950/60 text-slate-300 hover:bg-slate-800"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            <div className="pt-2 border-t border-slate-800">
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl bg-rose-500/10 text-rose-400 font-bold text-xs"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating AI Chatbot for Teachers */}
+      <FloatingAIChatWidget userRole="TEACHER" />
     </div>
   );
 }
