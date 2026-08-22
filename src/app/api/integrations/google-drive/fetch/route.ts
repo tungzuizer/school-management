@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { fetchGoogleDriveBuffer, parseGoogleDriveUrl } from "@/lib/google-drive";
@@ -8,6 +8,7 @@ import {
   mapRowsToTeachers,
   mapRowsToClasses,
   mapRowsToSubjectGroups,
+  mapRowsToSchedules,
 } from "@/lib/excel-parser";
 
 export async function POST(req: NextRequest) {
@@ -73,6 +74,8 @@ export async function POST(req: NextRequest) {
       parsedData = mapRowsToClasses(rawRows);
     } else if (targetType === "SUBJECT_GROUPS") {
       parsedData = mapRowsToSubjectGroups(rawRows);
+    } else if (targetType === "SCHEDULES") {
+      parsedData = mapRowsToSchedules(rawRows);
     } else {
       // Default: STUDENTS
       parsedData = mapRowsToStudents(rawRows);

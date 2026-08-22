@@ -308,3 +308,95 @@ export function mapRowsToSubjectGroups(rawRows: Record<string, any>[]): ParsedSu
   });
 }
 
+
+export interface ParsedScheduleRow {
+  className?: string;
+  dayOfWeek: number;
+  dayLabel: string;
+  period: number;
+  subjectName: string;
+  teacherName: string;
+  room?: string;
+  isValid: boolean;
+  error?: string;
+}
+
+/**
+ * Maps raw spreadsheet rows to structured Schedule records with validation
+ */
+export function mapRowsToSchedules(rawRows: Record<string, any>[]): ParsedScheduleRow[] {
+  return rawRows.map((row, idx) => {
+    const getVal = (...possibleKeys: string[]) => {
+      const rowKeys = Object.keys(row);
+      for (const pk of possibleKeys) {
+        const normPk = normalizeKey(pk);
+        const matchedKey = rowKeys.find((k) => normalizeKey(k) === normPk);
+        if (matchedKey && row[matchedKey] !== undefined && row[matchedKey] !== null) {
+          return String(row[matchedKey]).trim();
+        }
+      }
+      return "";
+    };
+
+    const className = getVal("classname", "lop", "lop hoc", "ten lop", "ma lop", "class");
+    const dayRaw = getVal("dayofweek", "thu", "ngay trong tuan", "thu trong tuan", "day");
+    const periodRaw = getVal("period", "tiet", "tiet hoc", "tiet thu", "tiethoc");
+    const subjectName = getVal("subjectname", "mon", "mon hoc", "ten mon", "subject");
+    const teacherName = getVal("teachername", "giao vien", "ten giao vien", "gv", "giao vien day", "teacher");
+    const room = getVal("room", "phong", "phong hoc", "phong hoc ten");
+
+    let dayOfWeek = 0;
+    const normDay = normalizeKey(dayRaw);
+    if (normDay.includes("2") || normDay.includes("hai") || normDay.includes("mon")) dayOfWeek = 1;
+    else if (normDay.includes("3") || normDay.includes("ba") || normDay.includes("tue")) dayOfWeek = 2;
+    else if (normDay.includes("4") || normDay.includes("tu") || normDay.includes("wed")) dayOfWeek = 3;
+    else if (normDay.includes("5") || normDay.includes("nam") || normDay.includes("thu")) dayOfWeek = 4;
+    else if (normDay.includes("6") || normDay.includes("sau") || normDay.includes("fri")) dayOfWeek = 5;
+    else if (normDay.includes("7") || normDay.includes("bay") || normDay.includes("sat")) dayOfWeek = 6;
+    else if (normDay.includes("8") || normDay.includes("cn") || normDay.includes("nhat") || normDay.includes("sun")) dayOfWeek = 7;
+    else {
+      const parsedNum = parseInt(dayRaw, 10);
+      if (!isNaN(parsedNum) && parsedNum >= 2 && parsedNum <= 8) {
+        dayOfWeek = parsedNum === 8 ? 7 : parsedNum - 1;
+      }
+    }
+
+    let period = parseInt(periodRaw, 10);
+    if (isNaN(period) || period < 1 || period > 10) {
+      period = 0;
+    }
+
+    let isValid = true;
+    let error = "";
+
+    if (!dayOfWeek) {
+      isValid = false;
+      error = `Dòng ${idx + 2}: Không nhận diện được Thứ (${dayRaw}).`;
+    } else if (!period) {
+      isValid = false;
+      error = `Dòng ${idx + 2}: Tiết học phải từ 1 đến 8 (nhận được: ${periodRaw}).`;
+    } else if (!subjectName) {
+      isValid = false;
+      error = `Dòng ${idx + 2}: Thiếu tên môn học.`;
+    } else if (!teacherName) {
+      isValid = false;
+      error = `Dòng ${idx + 2}: Thiếu tên giáo viên.`;
+    }
+
+    const dayLabelsMap: Record<number, string> = {
+      1: "Thứ 2", 2: "Thứ 3", 3: "Thứ 4", 4: "Thứ 5", 5: "Thứ 6", 6: "Thứ 7", 7: "Chủ nhật"
+    };
+
+    return {
+      className: className || undefined,
+      dayOfWeek,
+      dayLabel: dayLabelsMap[dayOfWeek] || dayRaw,
+      period,
+      subjectName,
+      teacherName,
+      room: room || undefined,
+      isValid,
+      error: error || undefined,
+    };
+  });
+}
