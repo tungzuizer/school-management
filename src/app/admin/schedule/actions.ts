@@ -99,7 +99,13 @@ export async function getScheduleFormData(schoolId?: string) {
         id: true,
         specialty: true,
         user: { select: { id: true, name: true, email: true } },
-        teachingAssignments: { select: { subjectId: true } },
+        homeroomClasses: { select: { school: { select: { id: true, name: true } } } },
+        teachingAssignments: {
+          select: {
+            subjectId: true,
+            classRoom: { select: { school: { select: { id: true, name: true } } } },
+          },
+        },
       },
       orderBy: { user: { name: "asc" } },
     }),
