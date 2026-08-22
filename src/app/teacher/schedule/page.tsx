@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getTeacherSchedule, TeacherScheduleData, ScheduleSlot } from "./actions";
+import { getTeacherSchedule, TeacherScheduleData, ScheduleSlot, ScheduleDayHeader } from "./actions";
 import Link from "next/link";
 import {
   Calendar,
@@ -12,16 +12,12 @@ import {
   Award,
   Sparkles,
   ClipboardCheck,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  AlertCircle,
+  Filter,
 } from "lucide-react";
-
-const DAYS_OF_WEEK = [
-  { day: 1, label: "Thứ 2", short: "T2" },
-  { day: 2, label: "Thứ 3", short: "T3" },
-  { day: 3, label: "Thứ 4", short: "T4" },
-  { day: 4, label: "Thứ 5", short: "T5" },
-  { day: 5, label: "Thứ 6", short: "T6" },
-  { day: 6, label: "Thứ 7", short: "T7" },
-];
 
 const PERIOD_TIMES: Record<number, { label: string; time: string; shift: "MORNING" | "AFTERNOON" }> = {
   1: { label: "Tiết 1", time: "07:00 - 07:45", shift: "MORNING" },
@@ -56,23 +52,44 @@ function getSubjectBadgeStyle(name: string) {
   return { bg: "bg-slate-100", text: "text-slate-800", border: "border-slate-300" };
 }
 
+function getTodayString(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function TeacherSchedulePage() {
   const [data, setData] = useState<TeacherScheduleData | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const res = await getTeacherSchedule();
-        setData(res);
-      } catch (err) {
-        console.error("Lỗi tải thời khóa biểu giáo viên:", err);
-      } finally {
-        setLoading(false);
-      }
+  async function loadData(dateStr: string) {
+    setLoading(true);
+    try {
+      const res = await getTeacherSchedule(dateStr);
+      setData(res);
+    } catch (err) {
+      console.error("Lỗi tải thời khóa biểu giáo viên:", err);
+    } finally {
+      setLoading(false);
     }
-    loadData();
-  }, []);
+  }
+
+  useEffect(() => {
+    loadData(selectedDate);
+  }, [selectedDate]);
+
+  const changeWeek = (daysOffset: number) => {
+    const parts = selectedDate.split("-").map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    d.setDate(d.getDate() + daysOffset);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    setSelectedDate(`${yyyy}-${mm}-${dd}`);
+  };
 
   const getSlot = (dayOfWeek: number, period: number): ScheduleSlot | undefined => {
     return data?.slots.find((s) => s.dayOfWeek === dayOfWeek && s.period === period);
@@ -80,6 +97,8 @@ export default function TeacherSchedulePage() {
 
   const morningPeriods = [1, 2, 3, 4];
   const afternoonPeriods = [5, 6, 7, 8];
+
+  const daysToRender = data?.days.slice(0, 6) || [];
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
@@ -90,7 +109,7 @@ export default function TeacherSchedulePage() {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-indigo-300 text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
-                <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Thời Khóa Biểu Giảng Dạy
+                <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Thời Khóa Biểu Giảng Dạy Tuần
               </span>
               {data?.homeroomClassName && (
                 <span className="px-2.5 py-0.5 bg-amber-500/20 border border-amber-400/30 rounded-full text-amber-300 text-[11px] font-bold">
@@ -99,10 +118,10 @@ export default function TeacherSchedulePage() {
               )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Lịch Dạy Cá Nhân — {data?.teacherName || "Giáo Viên"}
+              Lịch Dạy & Trạng Thái Điểm Danh — {data?.teacherName || "Giáo Viên"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 mt-1">
-              Tổng hợp phân công tiết dạy hàng tuần, danh sách lớp phụ trách và lối tắt điểm danh nhanh.
+              Đồng bộ dữ liệu thời khóa biểu thực tế từ cơ sở dữ liệu. Theo dõi tiết dạy và trạng thái điểm danh từng ngày.
             </p>
           </div>
 
@@ -112,9 +131,46 @@ export default function TeacherSchedulePage() {
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-extrabold transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
             >
               <ClipboardCheck className="w-4 h-4" />
-              <span>Sổ Điểm Danh</span>
+              <span>Điểm Danh Theo Lớp</span>
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Week Navigator & Controls */}
+      <div className="bg-white border border-slate-200/80 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+          <button
+            onClick={() => changeWeek(-7)}
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" /> Tuần trước
+          </button>
+          <button
+            onClick={() => setSelectedDate(getTodayString())}
+            className="px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-extrabold transition-colors cursor-pointer"
+          >
+            Tuần này (Hôm nay)
+          </button>
+          <button
+            onClick={() => changeWeek(7)}
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            Tuần sau <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+            <Filter className="w-4 h-4 text-indigo-500" />
+            <span>Chọn ngày xem:</span>
+          </div>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+            className="px-3 py-1.5 border border-slate-300 rounded-xl text-xs font-bold bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+          />
         </div>
       </div>
 
@@ -167,32 +223,38 @@ export default function TeacherSchedulePage() {
         </div>
       )}
 
-      {/* Timetable Matrix */}
+      {/* Timetable Matrix with Real Dates and Real Attendance Badges */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
         <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold">
             <BookOpen className="w-4 h-4 text-emerald-400" />
-            <span>Ma Trận Thời Khóa Biểu Giảng Dạy Tuần</span>
+            <span>Ma Trận Thời Khóa Biểu & Trạng Thái Điểm Danh Thực Tế</span>
           </div>
-          <span className="text-[11px] text-slate-400 italic">Tự động cập nhật theo phân công BGH</span>
+          <span className="text-[11px] text-slate-400 italic">Dữ liệu trực tiếp từ cơ sở dữ liệu</span>
         </div>
 
         {loading ? (
           <div className="p-12 text-center text-slate-500 font-bold flex items-center justify-center gap-2">
             <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <span>Đang tải ma trận thời khóa biểu...</span>
+            <span>Đang tải dữ liệu thời khóa biểu thực tế...</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse min-w-[850px]">
+            <table className="w-full border-collapse min-w-[900px]">
               <thead>
                 <tr className="bg-slate-100/80 border-b border-slate-200 text-xs font-extrabold text-slate-700">
                   <th className="py-3 px-3 w-32 border-r border-slate-200 text-center uppercase tracking-wider">
                     Tiết / Giờ
                   </th>
-                  {DAYS_OF_WEEK.map((d) => (
-                    <th key={d.day} className="py-3 px-3 text-center border-r border-slate-200 last:border-0">
-                      {d.label}
+                  {daysToRender.map((d) => (
+                    <th
+                      key={d.dayOfWeek}
+                      className={`py-3 px-3 text-center border-r border-slate-200 last:border-0 ${
+                        d.isToday ? "bg-indigo-50/80 text-indigo-900 font-black border-b-2 border-b-indigo-600" : ""
+                      }`}
+                    >
+                      <div>{d.label}</div>
+                      <div className="text-[11px] text-slate-500 font-bold mt-0.5">({d.formattedDate})</div>
                     </th>
                   ))}
                 </tr>
@@ -212,18 +274,20 @@ export default function TeacherSchedulePage() {
                       <div className="text-[10px] text-slate-500 mt-0.5">{PERIOD_TIMES[period].time}</div>
                     </td>
 
-                    {DAYS_OF_WEEK.map((d) => {
-                      const slot = getSlot(d.day, period);
+                    {daysToRender.map((d) => {
+                      const slot = getSlot(d.dayOfWeek, period);
                       const style = slot ? getSubjectBadgeStyle(slot.subjectName) : null;
 
                       return (
                         <td
-                          key={d.day}
-                          className="p-2 border-r border-slate-200 last:border-0 align-top h-24 w-1/6 transition-all hover:bg-indigo-50/20"
+                          key={d.dayOfWeek}
+                          className={`p-2 border-r border-slate-200 last:border-0 align-top h-28 w-1/6 transition-all ${
+                            d.isToday ? "bg-indigo-50/10" : ""
+                          }`}
                         >
                           {slot ? (
                             <div
-                              className={`h-full p-2.5 rounded-xl border ${style?.bg} ${style?.border} flex flex-col justify-between shadow-2xs transition-transform hover:scale-[1.02]`}
+                              className={`h-full p-2.5 rounded-xl border ${style?.bg} ${style?.border} flex flex-col justify-between shadow-2xs transition-transform hover:scale-[1.01]`}
                             >
                               <div>
                                 <div className="flex items-center justify-between gap-1">
@@ -239,12 +303,23 @@ export default function TeacherSchedulePage() {
                                 )}
                               </div>
 
-                              <div className="mt-2 pt-1 border-t border-slate-200/50 flex items-center justify-end">
+                              {/* Real DB Attendance Status Overlay */}
+                              <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between gap-1">
+                                {slot.isAttendanceDone ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded-md border border-emerald-300">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đã điểm danh
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-300">
+                                    <AlertCircle className="w-3 h-3 text-amber-600" /> Chưa điểm danh
+                                  </span>
+                                )}
+
                                 <Link
-                                  href="/teacher/attendance"
-                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
+                                  href={`/teacher/attendance?classId=${slot.classId}&period=${slot.period}&date=${d.dateStr}`}
+                                  className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-900 underline flex items-center gap-0.5"
                                 >
-                                  <ClipboardCheck className="w-3 h-3" /> Điểm danh
+                                  Điểm danh
                                 </Link>
                               </div>
                             </div>
@@ -273,18 +348,20 @@ export default function TeacherSchedulePage() {
                       <div className="text-[10px] text-slate-500 mt-0.5">{PERIOD_TIMES[period].time}</div>
                     </td>
 
-                    {DAYS_OF_WEEK.map((d) => {
-                      const slot = getSlot(d.day, period);
+                    {daysToRender.map((d) => {
+                      const slot = getSlot(d.dayOfWeek, period);
                       const style = slot ? getSubjectBadgeStyle(slot.subjectName) : null;
 
                       return (
                         <td
-                          key={d.day}
-                          className="p-2 border-r border-slate-200 last:border-0 align-top h-24 w-1/6 transition-all hover:bg-amber-50/20"
+                          key={d.dayOfWeek}
+                          className={`p-2 border-r border-slate-200 last:border-0 align-top h-28 w-1/6 transition-all ${
+                            d.isToday ? "bg-indigo-50/10" : ""
+                          }`}
                         >
                           {slot ? (
                             <div
-                              className={`h-full p-2.5 rounded-xl border ${style?.bg} ${style?.border} flex flex-col justify-between shadow-2xs transition-transform hover:scale-[1.02]`}
+                              className={`h-full p-2.5 rounded-xl border ${style?.bg} ${style?.border} flex flex-col justify-between shadow-2xs transition-transform hover:scale-[1.01]`}
                             >
                               <div>
                                 <div className="flex items-center justify-between gap-1">
@@ -300,12 +377,23 @@ export default function TeacherSchedulePage() {
                                 )}
                               </div>
 
-                              <div className="mt-2 pt-1 border-t border-slate-200/50 flex items-center justify-end">
+                              {/* Real DB Attendance Status Overlay */}
+                              <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between gap-1">
+                                {slot.isAttendanceDone ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded-md border border-emerald-300">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đã điểm danh
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-300">
+                                    <AlertCircle className="w-3 h-3 text-amber-600" /> Chưa điểm danh
+                                  </span>
+                                )}
+
                                 <Link
-                                  href="/teacher/attendance"
-                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
+                                  href={`/teacher/attendance?classId=${slot.classId}&period=${slot.period}&date=${d.dateStr}`}
+                                  className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-900 underline flex items-center gap-0.5"
                                 >
-                                  <ClipboardCheck className="w-3 h-3" /> Điểm danh
+                                  Điểm danh
                                 </Link>
                               </div>
                             </div>

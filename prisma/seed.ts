@@ -376,6 +376,46 @@ async function main() {
 
       console.log(`   ✅ Lớp ${cSpec.name}: Seeded ${classStudents.length} học sinh (Chủ nhiệm: ${homeroomTeacher.userId})`);
     }
+
+    // Create Teaching Assignments & Schedule Matrix for this School's classes
+    const schoolClasses = await prisma.classRoom.findMany({ where: { schoolId: school.id } });
+    const allSubjects = [mathSubject, physicsSubject, literatureSubject, englishSubject, historySubject];
+
+    for (let cIdx = 0; cIdx < schoolClasses.length; cIdx++) {
+      const cls = schoolClasses[cIdx];
+      // Create teaching assignments for each subject
+      for (let sIdxSub = 0; sIdxSub < allSubjects.length; sIdxSub++) {
+        const sub = allSubjects[sIdxSub];
+        const assignedTeacher = schoolTeachers[(cIdx + sIdxSub) % schoolTeachers.length];
+
+        await prisma.teachingAssignment.create({
+          data: {
+            classId: cls.id,
+            subjectId: sub.id,
+            teacherId: assignedTeacher.id,
+          },
+        });
+      }
+
+      // Create Timetable Schedules (Monday=1 to Friday=5, Periods 1 to 5)
+      for (let day = 1; day <= 5; day++) {
+        for (let p = 1; p <= 5; p++) {
+          const sub = allSubjects[(cIdx + day + p) % allSubjects.length];
+          const teacher = schoolTeachers[(cIdx + p) % schoolTeachers.length];
+
+          await prisma.schedule.create({
+            data: {
+              classId: cls.id,
+              subjectId: sub.id,
+              teacherId: teacher.id,
+              dayOfWeek: day,
+              period: p,
+              room: `Phòng ${cls.name}`,
+            },
+          });
+        }
+      }
+    }
   }
 
   // ==================== 4. QUALITY OBJECTIVES & KPIS ====================
