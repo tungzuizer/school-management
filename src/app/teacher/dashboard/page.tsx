@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { DailyPositivityWidget } from "@/components/ui/DailyPositivityWidget";
 import { ConfettiEffect } from "@/components/ui/ConfettiEffect";
 import { StudentPraiseModal } from "@/components/ui/StudentPraiseModal";
+import { FloatingAIChatWidget } from "@/components/ui/FloatingAIChatWidget";
 import {
   Clock,
   Users,
@@ -977,6 +978,7 @@ export default function TeacherDashboard() {
           </div>
         )}
       </div>
+      <FloatingAIChatWidget userRole="TEACHER" />
       {/* Student Praise Modal */}
       {session?.user?.id && (
         <StudentPraiseModal

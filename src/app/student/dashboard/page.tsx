@@ -23,6 +23,7 @@ import { DailyPositivityWidget } from "@/components/ui/DailyPositivityWidget";
 import { LiveClassTimeline } from "@/components/ui/LiveClassTimeline";
 import { InteractiveStatCard } from "@/components/ui/InteractiveStatCard";
 import { ConfettiEffect } from "@/components/ui/ConfettiEffect";
+import { FloatingAIChatWidget } from "@/components/ui/FloatingAIChatWidget";
 
 type DashboardData = {
   student: {
@@ -291,6 +292,7 @@ export default function StudentDashboardPage() {
           </div>
         </div>
       </div>
+      <FloatingAIChatWidget userRole="STUDENT" />
     </div>
   );
 }
