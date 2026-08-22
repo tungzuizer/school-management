@@ -34,26 +34,38 @@ export async function askPrincipalAI(query: string) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const presentToday = await prisma.attendance.count({
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const presentStudents = await prisma.attendance.findMany({
     where: {
-      createdAt: { gte: todayStart },
+      date: { gte: todayStart, lte: todayEnd },
       status: "PRESENT",
     },
+    select: { studentId: true },
+    distinct: ["studentId"],
   });
+  const presentToday = presentStudents.length;
 
-  const absentToday = await prisma.attendance.count({
+  const absentStudents = await prisma.attendance.findMany({
     where: {
-      createdAt: { gte: todayStart },
+      date: { gte: todayStart, lte: todayEnd },
       status: { in: ["ABSENT_EXCUSED", "ABSENT_UNEXCUSED"] },
     },
+    select: { studentId: true },
+    distinct: ["studentId"],
   });
+  const absentToday = absentStudents.length;
 
-  const lateToday = await prisma.attendance.count({
+  const lateStudents = await prisma.attendance.findMany({
     where: {
-      createdAt: { gte: todayStart },
+      date: { gte: todayStart, lte: todayEnd },
       status: "LATE",
     },
+    select: { studentId: true },
+    distinct: ["studentId"],
   });
+  const lateToday = lateStudents.length;
 
   const pointsContext = schoolPoints
     .map((sp) => `- ${sp.name} (${sp.campus.name}): ${sp.distanceKm ?? 0}km, QL: ${sp.managerName || "N/A"}, SĐT: ${sp.phone || "N/A"}`)

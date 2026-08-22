@@ -104,11 +104,20 @@ export async function getFinancialExpenditureData(year: number = 2026, campusId?
           remainingBudget: remaining,
           disbursementRate: rate,
           varianceAlert: rate > 85 ? "⚠️ Tỷ lệ giải ngân cao vượt kế hoạch" : rate < 75 ? "💡 Giải ngân chậm hơn dự kiến" : "✓ Tiến độ giải ngân đạt chuẩn",
-          categories: defaultRef.categories.map((c) => ({
-            category: c.category,
-            budget: Math.round(allocated * (c.budget / defaultRef.allocatedBudget)),
-            spent: Math.round(spent * (c.spent / defaultRef.spentBudget)),
-          })),
+          categories: (() => {
+            const raw = defaultRef.categories.map((c) => ({
+              category: c.category,
+              budget: Math.round(allocated * (c.budget / defaultRef.allocatedBudget)),
+              spent: Math.round(spent * (c.spent / defaultRef.spentBudget)),
+            }));
+            const sumB = raw.reduce((acc, cur) => acc + cur.budget, 0);
+            const sumS = raw.reduce((acc, cur) => acc + cur.spent, 0);
+            if (raw.length > 0) {
+              raw[raw.length - 1].budget += allocated - sumB;
+              raw[raw.length - 1].spent += spent - sumS;
+            }
+            return raw;
+          })(),
         };
       });
     }

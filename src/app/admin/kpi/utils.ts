@@ -17,7 +17,8 @@ export function calculateKpiScore(
     }
   } else if (direction === MeasurementDirection.LOWER_BETTER) {
     if (actual === 0) {
-      rate = 100;
+      // Perfect performance
+      rate = target >= 0 ? 200 : 100;
     } else {
       rate = (target / actual) * 100;
     }
