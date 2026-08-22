@@ -319,7 +319,7 @@ export default function TeacherLessonPlansPage() {
         {loading ? (
           <div className="text-center py-8 text-sm text-gray-500">Đang tải giáo án...</div>
         ) : plans.length === 0 ? (
-          <div className="text-center py-12 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl p-6">
+          <div className="text-center py-12 bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl p-6">
             <BookOpen className="w-8 h-8 mx-auto text-gray-300 mb-2" />
             <p className="text-sm font-semibold text-gray-500">Chưa có giáo án nào được soạn</p>
             <p className="text-xs text-gray-400 mt-1">Hãy bấm nút dấu "+" ở trên để bắt đầu soạn bài.</p>
@@ -330,12 +330,12 @@ export default function TeacherLessonPlansPage() {
             return (
               <div
                 key={p.id}
-                className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl overflow-hidden transition-all duration-200"
+                className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl overflow-hidden transition-all duration-200"
               >
                 {/* Header card info */}
                 <div
                   onClick={() => toggleExpand(p.id)}
-                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-950/80 transition-colors"
+                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
                 >
                   <div className="space-y-1 flex-1 pr-2">
                     <div className="flex items-center gap-2">
@@ -359,7 +359,7 @@ export default function TeacherLessonPlansPage() {
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100 bg-slate-950/80 p-4 space-y-4 text-xs text-gray-700">
+                  <div className="border-t border-gray-100 bg-slate-50 p-4 space-y-4 text-xs text-gray-700">
                     {p.status === "REJECTED" && p.reviewNote && (
                       <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-rose-800">
                         <p className="font-semibold">Nhận xét từ BGH (Không duyệt):</p>

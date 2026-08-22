@@ -160,12 +160,12 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
           </div>
 
           {loading ? (
-            <div className="text-center py-12 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl">
+            <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p className="text-xs text-slate-400 mt-2 font-semibold">Đang tải danh sách giáo án...</p>
+              <p className="text-xs text-slate-500 mt-2 font-semibold">Đang tải danh sách giáo án...</p>
             </div>
           ) : lessonPlans.length === 0 ? (
-            <div className="text-center py-12 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl text-gray-400 text-xs sm:text-sm">Không có giáo án nào thuộc môn bạn phụ trách</div>
+            <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl text-gray-400 text-xs sm:text-sm">Không có giáo án nào thuộc môn bạn phụ trách</div>
           ) : (
             <div className="space-y-3">
               {lessonPlans.map(p => {
@@ -175,7 +175,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
 
                 return (
                   <div key={p.id} className="border rounded-xl overflow-hidden bg-white">
-                    <button onClick={() => setExpandedLP(isExpanded ? null : p.id)} className="w-full text-left p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-slate-950/80/80 transition-colors">
+                    <button onClick={() => setExpandedLP(isExpanded ? null : p.id)} className="w-full text-left p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-slate-50/80 transition-colors">
                       <div className="space-y-1">
                         <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight">{p.title}</h3>
                         <p className="text-xs text-gray-500">GV: <strong>{p.teacherName}</strong> • {p.subjectName} • Lớp {p.className} • Tuần {p.weekNumber}</p>
@@ -187,7 +187,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
                     </button>
 
                     {isExpanded && (
-                      <div className="p-3.5 sm:p-5 border-t space-y-4 bg-slate-950/60">
+                      <div className="p-3.5 sm:p-5 border-t space-y-4 bg-slate-50">
                         {/* Google Drive Link if present */}
                         {p.driveFileUrl && (
                           <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
@@ -299,7 +299,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-slate-950/80 border-b text-[10px] sm:text-xs text-gray-500 uppercase">
+            <thead className="bg-slate-50 border-b text-[10px] sm:text-xs text-gray-500 uppercase">
               <tr>
                 <th className="px-3 sm:px-4 py-2.5">Môn học</th>
                 <th className="px-3 sm:px-4 py-2.5">Lớp học</th>
@@ -316,7 +316,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
                 <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Chưa có yêu cầu</td></tr>
               ) : (
                 requests.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-950/80">
+                  <tr key={r.id} className="hover:bg-slate-50">
                     <td className="px-3 sm:px-4 py-3 font-semibold text-gray-900">{r.subject.name}</td>
                     <td className="px-3 sm:px-4 py-3 text-gray-600">{r.classRoom.name}</td>
                     <td className="px-3 sm:px-4 py-3 text-rose-600 font-semibold">{r.currentTeacher.user.name}</td>
@@ -349,7 +349,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
       <Modal isOpen={!!selectedReq} onClose={() => setSelectedReq(null)} title="Quyết định đổi giáo viên" size="md">
         {selectedReq && (
           <div className="space-y-4">
-            <div className="p-3.5 bg-slate-950/80 rounded-xl space-y-2 text-xs sm:text-sm">
+            <div className="p-3.5 bg-slate-50 rounded-xl space-y-2 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Môn học:</span>
                 <span className="font-semibold text-gray-900">{selectedReq.subject.name}</span>
@@ -370,7 +370,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
             <textarea rows={3} value={reviewNote} onChange={(e) => setReviewNote(e.target.value)}
               placeholder="Nhận xét Tổ trưởng..." className="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none" />
             <div className="flex flex-col sm:flex-row justify-end gap-2.5 pt-3 border-t">
-              <button onClick={() => setSelectedReq(null)} className="w-full sm:w-auto px-4 py-2 border rounded-xl text-xs font-bold hover:bg-slate-950/80">Đóng</button>
+              <button onClick={() => setSelectedReq(null)} className="w-full sm:w-auto px-4 py-2 border rounded-xl text-xs font-bold hover:bg-slate-50">Đóng</button>
               <button disabled={submitting} onClick={() => handleReview(false)}
                 className="w-full sm:w-auto px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 disabled:opacity-50 flex items-center justify-center gap-1.5">
                 <X className="w-4 h-4" /> Từ chối
