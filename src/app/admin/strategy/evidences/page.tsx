@@ -1,7 +1,5 @@
 export const dynamic = "force-dynamic";
 
-"use server";
-
 import React from "react";
 import EvidencesClient from "./EvidencesClient";
 import { getEvidenceFiles } from "./actions";

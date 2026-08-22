@@ -1,7 +1,5 @@
 export const dynamic = "force-dynamic";
 
-"use server";
-
 import React from "react";
 import ReportsClient from "./ReportsClient";
 import { getStrategyReportData } from "../evidences/actions";
