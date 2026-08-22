@@ -23,7 +23,6 @@ import { DailyPositivityWidget } from "@/components/ui/DailyPositivityWidget";
 import { LiveClassTimeline } from "@/components/ui/LiveClassTimeline";
 import { InteractiveStatCard } from "@/components/ui/InteractiveStatCard";
 import { ConfettiEffect } from "@/components/ui/ConfettiEffect";
-import { FloatingAIChatWidget } from "@/components/ui/FloatingAIChatWidget";
 
 type DashboardData = {
   student: {
@@ -101,10 +100,6 @@ export default function StudentDashboardPage() {
         <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-blue-100 border border-white/20">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-              Góc Học Sinh Thông Minh
-            </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
               Xin chào, {data.student.name}! 👋
             </h1>
@@ -292,7 +287,6 @@ export default function StudentDashboardPage() {
           </div>
         </div>
       </div>
-      <FloatingAIChatWidget userRole="STUDENT" />
     </div>
   );
 }

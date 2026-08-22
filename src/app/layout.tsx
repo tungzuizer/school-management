@@ -1,6 +1,14 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
+import { Be_Vietnam_Pro } from "next/font/google";
 import SessionProvider from "@/components/providers/SessionProvider";
 import "./globals.css";
+
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-be-vietnam-pro",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Hệ thống Quản lý Trường học",
@@ -20,9 +28,9 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className="h-full antialiased"
+      className={`h-full antialiased ${beVietnamPro.variable}`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className={`min-h-full flex flex-col ${beVietnamPro.className}`}>
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
