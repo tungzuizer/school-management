@@ -30,8 +30,10 @@ export async function getMyAssignments() {
     }
   }
 
-  // Fallback: If no teaching assignments found, return all available classes + subjects for testing/homeroom
+  // Fallback: If no teaching assignments found, return available classes in teacher's school
+  const user = session?.user;
   const allClasses = await prisma.classRoom.findMany({
+    where: user?.schoolId ? { schoolId: user.schoolId } : undefined,
     take: 10,
     orderBy: { name: "asc" },
   });
@@ -83,30 +85,48 @@ export async function getStudentGrades(classId: string, subjectId: string, term:
 
   return students.map((s) => {
     const studentGrades = gradesByStudent.get(s.id) || [];
-    const oral = studentGrades.find((g) => g.type === "ORAL");
-    const fifteenMin = studentGrades.find((g) => g.type === "FIFTEEN_MIN");
+    const oralList = studentGrades.filter((g) => g.type === "ORAL");
+    const fifteenMinList = studentGrades.filter((g) => g.type === "FIFTEEN_MIN");
     const midterm = studentGrades.find((g) => g.type === "MIDTERM");
     const final_ = studentGrades.find((g) => g.type === "FINAL");
 
-    // Calculate average: Oral(1) + 15min(1) + Midterm(2) + Final(3) / 7
+    const avgOral = oralList.length
+      ? oralList.reduce((sum, g) => sum + g.score, 0) / oralList.length
+      : null;
+    const avg15Min = fifteenMinList.length
+      ? fifteenMinList.reduce((sum, g) => sum + g.score, 0) / fifteenMinList.length
+      : null;
+
+    // Calculate average using all regular scores + midterm(weight 2) + final(weight 3)
     let average: number | null = null;
-    if (oral && fifteenMin && midterm && final_) {
-      average =
-        (oral.score * 1 + fifteenMin.score * 1 + midterm.score * 2 + final_.score * 3) / 7;
-      average = Math.round(average * 100) / 100;
+    const regularGrades = [...oralList, ...fifteenMinList];
+    let totalWeight = regularGrades.length;
+    let weightedSum = regularGrades.reduce((sum, g) => sum + g.score, 0);
+
+    if (midterm) {
+      weightedSum += midterm.score * 2;
+      totalWeight += 2;
+    }
+    if (final_) {
+      weightedSum += final_.score * 3;
+      totalWeight += 3;
+    }
+
+    if (totalWeight > 0) {
+      average = Math.round((weightedSum / totalWeight) * 100) / 100;
     }
 
     return {
       studentId: s.id,
       studentName: s.user.name,
       studentCode: (s as any).studentCode || null,
-      oral: oral?.score ?? null,
-      fifteenMin: fifteenMin?.score ?? null,
+      oral: avgOral !== null ? Math.round(avgOral * 100) / 100 : null,
+      fifteenMin: avg15Min !== null ? Math.round(avg15Min * 100) / 100 : null,
       midterm: midterm?.score ?? null,
       final: final_?.score ?? null,
       average,
-      oralId: oral?.id || null,
-      fifteenMinId: fifteenMin?.id || null,
+      oralId: oralList[0]?.id || null,
+      fifteenMinId: fifteenMinList[0]?.id || null,
       midtermId: midterm?.id || null,
       finalId: final_?.id || null,
     };
@@ -128,21 +148,55 @@ export async function saveGrade(
   if (score < 0 || score > 10) return { success: false, error: "Điểm phải từ 0 đến 10" };
 
   try {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: { classRoom: true },
+    });
+
+    if (student?.classRoom?.schoolId) {
+      const isLocked = await prisma.dataLock.findFirst({
+        where: {
+          schoolId: student.classRoom.schoolId,
+          lockType: `GRADE_HK${term}`,
+          isLocked: true,
+        },
+      });
+      if (isLocked) {
+        return { success: false, error: `Dữ liệu điểm Học kỳ ${term} đã bị khóa sổ` };
+      }
+    }
+
     if (existingId) {
       await prisma.grade.update({
         where: { id: existingId },
         data: { score },
       });
     } else {
-      await prisma.grade.create({
-        data: {
+      const existing = await prisma.grade.findFirst({
+        where: {
           studentId,
           subjectId,
           term,
           type: type as any,
-          score,
         },
       });
+
+      if (existing) {
+        await prisma.grade.update({
+          where: { id: existing.id },
+          data: { score },
+        });
+      } else {
+        await prisma.grade.create({
+          data: {
+            studentId,
+            subjectId,
+            term,
+            type: type as any,
+            score,
+          },
+        });
+      }
     }
     return { success: true };
   } catch (error: any) {
@@ -165,26 +219,10 @@ export async function saveAllGrades(
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
 
   try {
-    const operations = grades.map((g) => {
-      if (g.existingId) {
-        return prisma.grade.update({
-          where: { id: g.existingId },
-          data: { score: g.score },
-        });
-      } else {
-        return prisma.grade.create({
-          data: {
-            studentId: g.studentId,
-            subjectId,
-            term,
-            type: g.type as any,
-            score: g.score,
-          },
-        });
-      }
-    });
-
-    await prisma.$transaction(operations);
+    for (const g of grades) {
+      const res = await saveGrade(g.studentId, subjectId, term, g.type, g.score, g.existingId);
+      if (!res.success) return res;
+    }
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi lưu điểm" };

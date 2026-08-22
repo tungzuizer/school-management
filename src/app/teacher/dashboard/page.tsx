@@ -1,8 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { DailyPositivityWidget } from "@/components/ui/DailyPositivityWidget";
+import { ConfettiEffect } from "@/components/ui/ConfettiEffect";
 import {
   Clock,
   Users,
@@ -27,6 +29,9 @@ import {
   GraduationCap,
   Search,
   ChevronDown,
+  Sparkles,
+  Award,
+  Zap,
 } from "lucide-react";
 import {
   getTeacherDashboardData,
@@ -109,6 +114,7 @@ function formatDateFull(dateStr: string) {
 export default function TeacherDashboard() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
+    const [showCelebration, setShowCelebration] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Active tab
@@ -227,6 +233,44 @@ export default function TeacherDashboard() {
           <span className="text-gray-700 font-medium">
             {activeTab === "timetable" ? "Thoi khoa bieu & Diem danh" : activeTab === "courses" ? "Mon hoc hoc ky" : "Tong quan lop"}
           </span>
+        </div>
+      </div>
+
+            <ConfettiEffect trigger={showCelebration} onComplete={() => setShowCelebration(false)} />
+
+      {/* ===== Teacher Inspiration Hero Header ===== */}
+      <div className="mx-4 md:mx-6 mt-4 relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 p-6 md:p-7 text-white shadow-lg">
+        <div className="absolute -right-8 -top-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-blue-100 border border-white/20">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+              Cổng Thông Tin Giảng Dạy & Quản Lý
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              Kính chào Thầy/Cô, {userName}! 🌟
+            </h1>
+            <p className="text-blue-100 text-xs md:text-sm font-medium max-w-2xl">
+              Chúc Thầy/Cô một ngày giảng dạy tràn đầy cảm hứng, hỗ trợ tốt nhất cho các thế hệ học sinh!
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowCelebration(true)}
+              className="bg-yellow-400 hover:bg-yellow-300 text-amber-950 font-extrabold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Award className="w-4 h-4 fill-amber-950" />
+              Tuyên dương học sinh 🎉
+            </button>
+            <Link
+              href="/teacher/attendance"
+              className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/20 transition-all flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+              Điểm danh nhanh
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -618,6 +662,9 @@ export default function TeacherDashboard() {
         {/* ===== TAB: OVERVIEW (GVCN) ===== */}
         {activeTab === "overview" && hc && (
           <div className="space-y-4 max-w-4xl">
+                        {/* Daily Inspiration Card for Teachers */}
+            <DailyPositivityWidget role="teacher" />
+
             {/* Homeroom class header */}
             <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-4 text-white">
               <div className="flex items-center justify-between">

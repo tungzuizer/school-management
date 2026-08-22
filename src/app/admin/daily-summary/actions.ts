@@ -16,13 +16,19 @@ export async function getDailySummaryStats(date: string) {
     where: { status: "STUDYING" },
   });
 
-  // Attendance stats
-  const attendances = await prisma.attendance.findMany({
-    where: { date: { gte: startOfDay, lte: endOfDay } },
+  // Attendance stats (distinct students per day)
+  const absentExcusedList = await prisma.attendance.findMany({
+    where: { date: { gte: startOfDay, lte: endOfDay }, status: "ABSENT_EXCUSED" },
+    select: { studentId: true },
+    distinct: ["studentId"],
   });
-
-  const absentExcused = attendances.filter((a) => a.status === "ABSENT_EXCUSED").length;
-  const absentUnexcused = attendances.filter((a) => a.status === "ABSENT_UNEXCUSED").length;
+  const absentUnexcusedList = await prisma.attendance.findMany({
+    where: { date: { gte: startOfDay, lte: endOfDay }, status: "ABSENT_UNEXCUSED" },
+    select: { studentId: true },
+    distinct: ["studentId"],
+  });
+  const absentExcused = absentExcusedList.length;
+  const absentUnexcused = absentUnexcusedList.length;
   const totalAbsent = absentExcused + absentUnexcused;
 
   // Teacher substitute assignments
@@ -70,34 +76,45 @@ export async function getSchoolPointStats(date: string) {
     where: { date: { gte: startOfDay, lte: endOfDay } },
   });
 
-  return schoolPoints.map((sp) => {
-    const totalStudents = sp.classRooms.reduce((sum, c) => sum + c.students.length, 0);
-    const allAttendances = sp.classRooms.flatMap((c) => c.attendances);
-    const absent = allAttendances.filter(
-      (a) => a.status === "ABSENT_EXCUSED" || a.status === "ABSENT_UNEXCUSED"
-    ).length;
-    const present = totalStudents - absent;
-    const presentRate = totalStudents > 0 ? ((present / totalStudents) * 100).toFixed(1) + "%" : "N/A";
+  return await Promise.all(
+    schoolPoints.map(async (sp) => {
+      const totalStudents = sp.classRooms.reduce((sum, c) => sum + c.students.length, 0);
+      const spClassIds = sp.classRooms.map((c) => c.id);
 
-    const incidents = sp.classRooms.reduce((sum, c) => sum + c.incidents.length, 0);
+      const absentStudentsInSp = await prisma.attendance.findMany({
+        where: {
+          classId: { in: spClassIds },
+          date: { gte: startOfDay, lte: endOfDay },
+          status: { in: ["ABSENT_EXCUSED", "ABSENT_UNEXCUSED"] },
+        },
+        select: { studentId: true },
+        distinct: ["studentId"],
+      });
 
-    const pointSubs = substitutes.filter((s) => s.schoolPointName === sp.name);
-    const substituteNote = pointSubs.length > 0
-      ? pointSubs.map((s) => `${s.substituteTeacher} day thay tiet ${s.period} mon ${s.subjectName}`).join("; ")
-      : "Khong co dieu chuyen";
+      const absent = absentStudentsInSp.length;
+      const present = Math.max(0, totalStudents - absent);
+      const presentRate = totalStudents > 0 ? ((present / totalStudents) * 100).toFixed(1) + "%" : "N/A";
 
-    return {
-      name: sp.name,
-      distanceKm: sp.distanceKm ?? 0,
-      manager: sp.managerName || "Chua cap nhat",
-      studentsCount: totalStudents,
-      presentRate,
-      incidents,
-      weatherStatus: "Cap nhat tu thuc dia",
-      substituteNote,
-      note: `${sp.classRooms.length} lop hoc tai diem truong nay.`,
-    };
-  });
+      const incidents = sp.classRooms.reduce((sum, c) => sum + c.incidents.length, 0);
+
+      const pointSubs = substitutes.filter((s) => s.schoolPointName === sp.name);
+      const substituteNote = pointSubs.length > 0
+        ? pointSubs.map((s) => `${s.substituteTeacher} day thay tiet ${s.period} mon ${s.subjectName}`).join("; ")
+        : "Khong co dieu chuyen";
+
+      return {
+        name: sp.name,
+        distanceKm: sp.distanceKm ?? 0,
+        manager: sp.managerName || "Chua cap nhat",
+        studentsCount: totalStudents,
+        presentRate,
+        incidents,
+        weatherStatus: "Cap nhat tu thuc dia",
+        substituteNote,
+        note: `${sp.classRooms.length} lop hoc tai diem truong nay.`,
+      };
+    })
+  );
 }
 
 // Generate AI briefing for a specific phase
