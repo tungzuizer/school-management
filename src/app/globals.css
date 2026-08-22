@@ -12,13 +12,40 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   CUSTOM SMOOTH SCROLLBAR
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
 }
 
 /* Ensure inputs don't zoom on iOS */
@@ -31,42 +58,41 @@ input, select, textarea {
    ========================================================================== */
 
 /* 1. Global Buttons & Action Links */
-button, 
-a[role="button"], 
-input[type="button"], 
+button,
+a[role="button"],
+input[type="button"],
 input[type="submit"],
 .interactive-btn {
   min-height: 44px;
   touch-action: manipulation;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              filter 0.2s ease, 
-              box-shadow 0.2s ease, 
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.2s ease,
+              box-shadow 0.25s ease,
               background-color 0.2s ease,
               border-color 0.2s ease !important;
 }
 
-/* Hover: Lift slightly & Illuminate */
-button:not(:disabled):hover, 
-a[role="button"]:not(:disabled):hover, 
-input[type="button"]:not(:disabled):hover, 
+/* Hover: Lift slightly & Illuminate with spring physics */
+button:not(:disabled):hover,
+a[role="button"]:not(:disabled):hover,
+input[type="button"]:not(:disabled):hover,
 input[type="submit"]:not(:disabled):hover,
 .interactive-btn:not(:disabled):hover {
-  transform: translateY(-1.5px);
-  filter: brightness(1.08); /* Glowing effect */
-  /* Remove global generic shadow so it doesn't conflict with custom painted shadows */
+  transform: translateY(-2px);
+  filter: brightness(1.06);
 }
 
 /* Active: Press down physically */
-button:not(:disabled):active, 
-a[role="button"]:not(:disabled):active, 
-input[type="button"]:not(:disabled):active, 
+button:not(:disabled):active,
+a[role="button"]:not(:disabled):active,
+input[type="button"]:not(:disabled):active,
 input[type="submit"]:not(:disabled):active,
 .interactive-btn:not(:disabled):active {
   transform: translateY(0.5px) scale(0.96) !important;
-  filter: brightness(0.92);
+  filter: brightness(0.94);
 }
 
-/* Base anchor styling so it doesn't break normal links but still has some padding */
+/* Base anchor styling */
 a, [role="button"]:not(a) {
   min-height: 44px;
   touch-action: manipulation;
@@ -77,14 +103,14 @@ a:not([role="button"]):not(.interactive-btn) {
   transition: all 0.2s ease-in-out;
 }
 a:not([role="button"]):not(.interactive-btn):hover {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 a:not([role="button"]):not(.interactive-btn):active {
   transform: scale(0.98);
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
-/* 3. Inputs & Selects : Focus ring and slight elevation */
+/* 3. Inputs & Selects : Focus ring and elevation */
 input, select, textarea {
   transition: all 0.25s ease-in-out !important;
 }
@@ -96,25 +122,33 @@ input:not(:focus):active, select:active {
 }
 input:focus, select:focus, textarea:focus {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px -4px rgba(99, 102, 241, 0.15) !important;
+  box-shadow: 0 4px 18px -4px rgba(99, 102, 241, 0.2) !important;
+  border-color: #6366f1 !important;
+  outline: none !important;
 }
 
 /* 4. Table Rows and interactive structural elements */
 tbody tr:not(.no-hover) {
-  transition: background-color 0.2s ease, filter 0.2s ease;
+  transition: background-color 0.2s ease, filter 0.2s ease, transform 0.15s ease;
+  position: relative;
 }
 tbody tr:not(.no-hover):hover {
-  filter: brightness(0.98);
+  background-color: rgba(241, 245, 249, 0.7);
+  filter: brightness(0.99);
 }
 tbody tr:not(.no-hover):active {
-  filter: brightness(0.94);
+  filter: brightness(0.95);
 }
 
-/* Smooth Page Fade In Animation */
+/* ==========================================================================
+   ANIMATION KEYFRAMES & UTILITY CLASSES
+   ========================================================================== */
+
+/* Fade & Scale In Entrance */
 @keyframes fadeInScale {
   from {
     opacity: 0;
-    transform: scale(0.985) translateY(4px);
+    transform: scale(0.97) translateY(6px);
   }
   to {
     opacity: 1;
@@ -126,29 +160,143 @@ tbody tr:not(.no-hover):active {
   animation: fadeInScale 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Better focus styles for accessibility */
-:focus-visible {
-  outline: 3px solid #6366f1;
-  outline-offset: 2px;
-  border-radius: 8px;
+/* Slide Up Fade */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Hide scrollbar but keep functionality on mobile nav */
-.hide-scrollbar, .no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.hide-scrollbar::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar {
-  display: none;
+.animate-slide-up {
+  animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Glassmorphism utility classes */
+/* Floating Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float {
+  animation: float 3.5s ease-in-out infinite;
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+/* Pulsing Glow */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    opacity: 0.65;
+    box-shadow: 0 0 6px rgba(99, 102, 241, 0.15);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+/* Shimmer Sweep */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite ease-in-out;
+}
+
+/* Bell Swing Animation */
+@keyframes bellSwing {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(18deg); }
+  40% { transform: rotate(-14deg); }
+  60% { transform: rotate(10deg); }
+  80% { transform: rotate(-5deg); }
+}
+
+.bell-swing:hover {
+  animation: bellSwing 0.65s ease-in-out;
+}
+
+/* Modal Scale Entrance */
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-pop {
+  animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Slide in from top right for Toasts */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   GLASSMORPHISM & ELEGANT CONTAINERS
+   ========================================================================== */
 .glass-card {
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(226, 232, 240, 0.9);
   box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06);
+}
+
+.glass-card-premium {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 14px 35px -6px rgba(15, 23, 42, 0.07), 0 4px 12px -2px rgba(99, 102, 241, 0.04);
 }
 
 .glass-header {
@@ -159,7 +307,7 @@ tbody tr:not(.no-hover):active {
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
 }
 
-/* Eye-Catching Interactive Card Hover Lift & Neon Accent */
+/* Interactive Card Elevation & Neon Accent */
 .interactive-card {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
@@ -186,23 +334,7 @@ tbody tr:not(.no-hover):active {
   transform: scale(0.96);
 }
 
-/* Animated Shimmer Effect for Progress bars & Skeleton */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.animate-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.8s infinite ease-in-out;
-}
-
-/* Vibrant Gradient Text */
+/* Vibrant Gradient Texts */
 .gradient-text-indigo {
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
   -webkit-background-clip: text;
@@ -211,6 +343,12 @@ tbody tr:not(.no-hover):active {
 
 .gradient-text-emerald {
   background: linear-gradient(135deg, #059669 0%, #10b981 50%, #0d9488 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-amber {
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #b45309 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -233,55 +371,89 @@ tbody tr:not(.no-hover):active {
   animation: pulseDot 2s infinite ease-in-out;
 }
 
-/* Bell Swing Animation */
-@keyframes bellSwing {
-  0%, 100% { transform: rotate(0deg); }
-  20% { transform: rotate(18deg); }
-  40% { transform: rotate(-14deg); }
-  60% { transform: rotate(10deg); }
-  80% { transform: rotate(-5deg); }
-}
-
-.bell-swing:hover {
-  animation: bellSwing 0.65s ease-in-out;
-}
-
 /* Glowing Live Badges */
 .badge-glowing-emerald {
   background: rgba(209, 250, 229, 0.9);
   color: #065f46;
   border: 1px solid #a7f3d0;
-  box-shadow: 0 0 12px -2px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 12px -2px rgba(16, 185, 129, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.badge-glowing-emerald:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px -1px rgba(16, 185, 129, 0.5);
 }
 
 .badge-glowing-sky {
   background: rgba(224, 242, 254, 0.9);
   color: #075985;
   border: 1px solid #bae6fd;
-  box-shadow: 0 0 12px -2px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 0 12px -2px rgba(14, 165, 233, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.badge-glowing-sky:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px -1px rgba(14, 165, 233, 0.5);
+}
+
+.badge-glowing-indigo {
+  background: rgba(238, 242, 255, 0.9);
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  box-shadow: 0 0 12px -2px rgba(99, 102, 241, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.badge-glowing-indigo:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px -1px rgba(99, 102, 241, 0.5);
 }
 
 .badge-glowing-amber {
   background: rgba(254, 243, 199, 0.9);
   color: #92400e;
   border: 1px solid #fde68a;
-  box-shadow: 0 0 12px -2px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 12px -2px rgba(245, 158, 11, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.badge-glowing-amber:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px -1px rgba(245, 158, 11, 0.5);
 }
 
 .badge-glowing-rose {
-  background: rgba(2ffe, 226, 226, 0.9);
+  background: rgba(254, 226, 226, 0.9);
   color: #991b1b;
   border: 1px solid #fecaca;
-  box-shadow: 0 0 12px -2px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 12px -2px rgba(239, 68, 68, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.badge-glowing-rose:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px -1px rgba(239, 68, 68, 0.5);
 }
 
-/* Easy Mode styling updates */
+/* Accessibility Focus Ring */
+:focus-visible {
+  outline: 3px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Hide scrollbars */
+.hide-scrollbar, .no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Easy Mode adjustments */
 html.easy-mode body {
   font-size: 19px !important;
   font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* Adjust heading sizes under easy mode */
 html.easy-mode h1 {
   font-size: 1.875rem !important;
 }
@@ -292,11 +464,10 @@ html.easy-mode h3 {
   font-size: 1.25rem !important;
 }
 
-/* Increase button select and input spacing for older/tech-illiterate users */
-html.easy-mode button, 
-html.easy-mode a, 
-html.easy-mode select, 
-html.easy-mode input, 
+html.easy-mode button,
+html.easy-mode a,
+html.easy-mode select,
+html.easy-mode input,
 html.easy-mode textarea {
   font-size: 18px !important;
 }
@@ -309,7 +480,6 @@ html.easy-mode .easy-mode-action-btn {
   padding-right: 18px !important;
 }
 
-/* High contrast shadow and text helper styles */
 html.easy-mode .easy-mode-guide {
   font-weight: 500;
   border-width: 2px !important;

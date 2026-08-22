@@ -24,6 +24,7 @@ import {
   ClipboardList,
   MoreHorizontal,
   X,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -60,24 +61,27 @@ interface SidebarProps {
   userName?: string;
 }
 
-const roleConfig: Record<string, { bg: string; accent: string; sidebarBg: string; mobileAccent: string }> = {
+const roleConfig: Record<string, { bg: string; accent: string; sidebarBg: string; mobileAccent: string; activeGlow: string }> = {
   ADMIN: {
-    bg: "bg-indigo-600",
-    accent: "bg-indigo-500/20 text-indigo-100 border-indigo-400/30",
-    sidebarBg: "bg-slate-900",
+    bg: "bg-gradient-to-r from-indigo-500 to-violet-600",
+    accent: "bg-indigo-500/20 text-indigo-200 border-indigo-400/30",
+    sidebarBg: "bg-slate-950",
     mobileAccent: "text-indigo-600",
+    activeGlow: "shadow-[0_0_20px_rgba(99,102,241,0.35)]",
   },
   TEACHER: {
-    bg: "bg-emerald-600",
-    accent: "bg-emerald-500/20 text-emerald-100 border-emerald-400/30",
-    sidebarBg: "bg-slate-900",
+    bg: "bg-gradient-to-r from-emerald-500 to-teal-600",
+    accent: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
+    sidebarBg: "bg-slate-950",
     mobileAccent: "text-emerald-600",
+    activeGlow: "shadow-[0_0_20px_rgba(16,185,129,0.35)]",
   },
   STUDENT: {
-    bg: "bg-amber-600",
-    accent: "bg-amber-500/20 text-amber-100 border-amber-400/30",
-    sidebarBg: "bg-slate-900",
+    bg: "bg-gradient-to-r from-amber-500 to-orange-600",
+    accent: "bg-amber-500/20 text-amber-200 border-amber-400/30",
+    sidebarBg: "bg-slate-950",
     mobileAccent: "text-amber-600",
+    activeGlow: "shadow-[0_0_20px_rgba(245,158,11,0.35)]",
   },
 };
 
@@ -85,6 +89,9 @@ const roleLabels: Record<string, string> = {
   ADMIN: "Hiệu trưởng",
   TEACHER: "Giáo viên",
   STUDENT: "Học sinh",
+  DEPARTMENT_ADMIN: "Sở GD&ĐT",
+  WARD_ADMIN: "Phòng GD&ĐT",
+  VICE_PRINCIPAL: "Phó Hiệu trưởng",
 };
 
 export default function Sidebar({ items, title, role }: SidebarProps) {
@@ -101,17 +108,21 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
     <>
       {/* ==================== DESKTOP SIDEBAR ==================== */}
       <aside
-        className={`hidden md:flex w-64 min-h-screen ${config.sidebarBg} text-white flex-col border-r border-slate-700/50`}
+        className={`hidden md:flex w-64 min-h-screen ${config.sidebarBg} text-white flex-col border-r border-slate-800/80 shadow-2xl relative z-20`}
       >
+        {/* Ambient Top Glow */}
+        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent pointer-events-none" />
+
         {/* Logo & Brand */}
-        <div className="p-5 border-b border-slate-700/50">
-          <div className="flex items-center gap-3">
-            <div className="shrink-0 bg-white/10 p-1 rounded-xl border border-slate-700/50 flex items-center justify-center">
-              <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain rounded-lg" />
+        <div className="p-5 border-b border-slate-800/80 relative">
+          <div className="flex items-center gap-3.5">
+            <div className="shrink-0 bg-white/10 p-1.5 rounded-2xl border border-white/10 flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105">
+              <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain rounded-xl" />
             </div>
             <div className="min-w-0">
-              <h2 className="font-bold text-base truncate">{title}</h2>
-              <span className={`text-xs px-2 py-0.5 rounded border ${config.accent} font-medium`}>
+              <h2 className="font-extrabold text-base tracking-tight truncate text-slate-100">{title}</h2>
+              <span className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border ${config.accent} font-bold mt-0.5`}>
+                <Sparkles className="w-3 h-3 animate-pulse" />
                 {roleLabels[role] || role}
               </span>
             </div>
@@ -119,7 +130,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto custom-scrollbar relative">
           {items.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = iconMap[item.icon] || LayoutDashboard;
@@ -128,19 +139,19 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-150 relative ${
+                className={`group flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 relative ${
                   isActive
-                    ? "bg-white/15 text-white shadow-sm"
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                    ? `bg-white/15 text-white ${config.activeGlow} border border-white/10 backdrop-blur-md`
+                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1"
                 }`}
               >
                 {isActive && (
-                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-7 ${config.bg} rounded-r-full`} />
+                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 ${config.bg} rounded-r-full shadow-md`} />
                 )}
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`} />
+                <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-indigo-400" : "text-slate-400 group-hover:text-slate-200"}`} />
                 <span className="truncate">{item.label}</span>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[22px] text-center">
+                  <span className="ml-auto bg-rose-500 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full min-w-[22px] text-center shadow-sm animate-pulse">
                     {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 )}
@@ -150,20 +161,20 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
         </nav>
 
         {/* Footer: Logout */}
-        <div className="border-t border-slate-700/50 p-3">
+        <div className="border-t border-slate-800/80 p-3 relative">
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-base text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            className="flex items-center gap-3.5 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:bg-rose-500/15 hover:text-rose-300 transition-all duration-200 active-press cursor-pointer"
             title="Đăng xuất"
           >
-            <LogOut className="w-5 h-5 shrink-0" />
+            <LogOut className="w-5 h-5 shrink-0 text-slate-400 group-hover:text-rose-400" />
             <span>Đăng xuất</span>
           </button>
         </div>
       </aside>
 
       {/* ==================== MOBILE BOTTOM NAV ==================== */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-header border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
         <div className="flex items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
           {mobileMainItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -173,19 +184,19 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
-                className={`flex flex-col items-center justify-center py-2 px-2 min-w-[64px] relative ${
-                  isActive ? config.mobileAccent : "text-gray-400"
+                className={`flex flex-col items-center justify-center py-2 px-2 min-w-[64px] relative transition-transform duration-200 active:scale-95 ${
+                  isActive ? config.mobileAccent : "text-slate-400 hover:text-slate-600"
                 }`}
               >
                 {isActive && (
-                  <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 ${config.bg} rounded-b-full`} />
+                  <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 ${config.bg} rounded-b-full shadow-sm`} />
                 )}
-                <Icon className="w-6 h-6" />
-                <span className={`text-[11px] mt-1 font-medium leading-tight text-center ${isActive ? "font-bold" : ""}`}>
+                <Icon className="w-5 h-5" />
+                <span className={`text-[11px] mt-1 font-semibold leading-tight text-center ${isActive ? "font-bold" : ""}`}>
                   {item.label}
                 </span>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="absolute top-1 right-1 bg-rose-500 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
                     {item.badge > 9 ? "9+" : item.badge}
                   </span>
                 )}
@@ -197,12 +208,12 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
           {hasExtras && (
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className={`flex flex-col items-center justify-center py-2 px-2 min-w-[64px] ${
-                mobileMenuOpen ? config.mobileAccent : "text-gray-400"
+              className={`flex flex-col items-center justify-center py-2 px-2 min-w-[64px] transition-transform duration-200 active:scale-95 ${
+                mobileMenuOpen ? config.mobileAccent : "text-slate-400 hover:text-slate-600"
               }`}
             >
-              <MoreHorizontal className="w-6 h-6" />
-              <span className="text-[11px] mt-1 font-medium">Thêm</span>
+              <MoreHorizontal className="w-5 h-5" />
+              <span className="text-[11px] mt-1 font-semibold">Thêm</span>
             </button>
           )}
         </div>
@@ -210,26 +221,26 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
 
       {/* ==================== MOBILE "MORE" OVERLAY ==================== */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[60]">
+        <div className="md:hidden fixed inset-0 z-[60] animate-fade-in">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300"
             onClick={() => setMobileMenuOpen(false)}
           />
 
           {/* Panel from bottom */}
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl pb-[env(safe-area-inset-bottom)] max-h-[70vh] overflow-y-auto">
+          <div className="absolute bottom-0 left-0 right-0 bg-white/95 rounded-t-3xl shadow-2xl pb-[env(safe-area-inset-bottom)] max-h-[75vh] overflow-y-auto backdrop-blur-xl border-t border-slate-200/80 animate-modal-pop">
             {/* Handle bar */}
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+              <div className="w-12 h-1.5 bg-slate-300 rounded-full" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-gray-800">Menu</h3>
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-800">Menu chức năng</h3>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -246,16 +257,16 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
                     href={item.href}
                     prefetch={true}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-4 px-4 py-4 rounded-xl text-base font-medium transition-colors ${
+                    className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all ${
                       isActive
-                        ? `bg-gray-100 ${config.mobileAccent} font-bold`
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? `bg-slate-100 ${config.mobileAccent} font-bold shadow-xs`
+                        : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
-                    <Icon className="w-6 h-6 shrink-0" />
+                    <Icon className="w-5 h-5 shrink-0" />
                     <span>{item.label}</span>
                     {item.badge !== undefined && item.badge > 0 && (
-                      <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      <span className="ml-auto bg-rose-500 text-white text-xs font-extrabold px-2 py-0.5 rounded-full">
                         {item.badge}
                       </span>
                     )}
@@ -264,12 +275,12 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
               })}
 
               {/* Logout in mobile menu */}
-              <div className="border-t border-gray-100 mt-2 pt-2">
+              <div className="border-t border-slate-100 mt-2 pt-2">
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="flex items-center gap-4 w-full px-4 py-4 rounded-xl text-base font-medium text-red-500 hover:bg-red-50 transition-colors"
+                  className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                 >
-                  <LogOut className="w-6 h-6 shrink-0" />
+                  <LogOut className="w-5 h-5 shrink-0" />
                   <span>Đăng xuất</span>
                 </button>
               </div>

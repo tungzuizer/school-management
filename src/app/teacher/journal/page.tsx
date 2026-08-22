@@ -269,14 +269,14 @@ export default function ClassJournalPage() {
       )}
 
       {/* Selectors block */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
+      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl p-4 space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase">Lớp học</label>
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 font-medium"
+              className="w-full bg-slate-950/80 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 font-medium"
             >
               <option value="" disabled>--- Chọn lớp ---</option>
               {classes.map((c) => (
@@ -292,7 +292,7 @@ export default function ClassJournalPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none focus:border-blue-500 font-medium"
+              className="w-full bg-slate-950/80 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none focus:border-blue-500 font-medium"
             />
           </div>
         </div>
@@ -314,12 +314,12 @@ export default function ClassJournalPage() {
         <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide px-1">Danh sách tiết học trong ngày</h2>
         
         {initializing || loading ? (
-          <div className="py-8 flex flex-col items-center justify-center gap-2 bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="py-8 flex flex-col items-center justify-center gap-2 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl p-6">
             <ListRestart className="w-8 h-8 text-blue-500 animate-spin" />
             <p className="text-xs text-gray-400">Đang tải sổ đầu bài...</p>
           </div>
         ) : classes.length === 0 ? (
-          <div className="py-8 text-center bg-white rounded-2xl border border-gray-100 p-6 space-y-1">
+          <div className="py-8 text-center bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl p-6 space-y-1">
             <p className="text-sm font-semibold text-gray-700">Chưa có lớp học nào trong hệ thống</p>
             <p className="text-xs text-gray-400">Vui lòng liên hệ Quản trị viên để cập nhật danh sách lớp.</p>
           </div>
@@ -330,12 +330,12 @@ export default function ClassJournalPage() {
               return (
                 <div
                   key={periodNum}
-                  className={`bg-white rounded-2xl border transition-all p-4 ${
+                  className={`bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl transition-all p-4 ${
                     entry
                       ? entry.isConfirmed
                         ? "border-emerald-100 bg-emerald-50/10"
                         : "border-blue-105"
-                      : "border-dashed border-gray-200 hover:bg-gray-50/50"
+                      : "border-dashed border-gray-200 hover:bg-slate-950/80/50"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -395,7 +395,7 @@ export default function ClassJournalPage() {
                             <>
                               <button
                                 onClick={() => handleOpenEditModal(entry)}
-                                className="p-2 border border-gray-200 hover:bg-gray-50 rounded-lg text-gray-500 hover:text-blue-600 transition"
+                                className="p-2 border border-gray-200 hover:bg-slate-950/80 rounded-lg text-gray-500 hover:text-blue-600 transition"
                                 title="Sửa bài ghi"
                               >
                                 <Edit2 className="w-4 h-4" />
@@ -478,7 +478,7 @@ export default function ClassJournalPage() {
                 <select
                   value={formSubjectId}
                   onChange={(e) => setFormSubjectId(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
+                  className="w-full bg-slate-950/80 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
                   required
                 >
                   <option value="" disabled>--- Chọn môn học ---</option>
@@ -496,7 +496,7 @@ export default function ClassJournalPage() {
                   max="10"
                   value={formPeriod}
                   onChange={(e) => setFormPeriod(Number(e.target.value))}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2.5 outline-none font-medium"
+                  className="w-full bg-slate-950/80 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2.5 outline-none font-medium"
                   required
                   disabled={!!editingEntry}
                 />
@@ -509,7 +509,7 @@ export default function ClassJournalPage() {
                   placeholder="Ví dụ: Đại số: Bài 1 - Phép cộng phân số"
                   value={formLessonTitle}
                   onChange={(e) => setFormLessonTitle(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none font-medium"
+                  className="w-full bg-slate-950/80 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none font-medium"
                   required
                 />
               </div>
@@ -521,7 +521,7 @@ export default function ClassJournalPage() {
                   placeholder="Các nội dung bài giảng chính, bài thực hành..."
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
+                  className="w-full bg-slate-950/80 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
                 />
               </div>
 
@@ -532,7 +532,7 @@ export default function ClassJournalPage() {
                   placeholder="Ví dụ: Nguyễn Văn A (P), Trần Thị B (KP)"
                   value={formAbsentees}
                   onChange={(e) => setFormAbsentees(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
+                  className="w-full bg-slate-950/80 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
                 />
               </div>
 
@@ -543,7 +543,7 @@ export default function ClassJournalPage() {
                   placeholder="Ví dụ: Học sinh làm bài kiểm tra 15 phút tốt, lớp học sôi nổi"
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
+                  className="w-full bg-slate-950/80 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
                 />
               </div>
 
@@ -551,7 +551,7 @@ export default function ClassJournalPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-50 active:scale-95 transition"
+                  className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-500 hover:bg-slate-950/80 active:scale-95 transition"
                 >
                   Hủy bỏ
                 </button>

@@ -130,7 +130,7 @@ export default function GradesPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl mb-6">
         <div className="flex flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Lớp - Môn</label>
@@ -180,10 +180,10 @@ export default function GradesPage() {
       )}
 
       {/* Grades Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl shadow-xl backdrop-blur-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-slate-950/80 border-b">
               <tr>
                 <th className="text-left px-3 py-3 text-xs font-medium text-gray-500 uppercase w-10">STT</th>
                 <th className="text-left px-3 py-3 text-xs font-medium text-gray-500 uppercase">Mã HS</th>
@@ -209,7 +209,7 @@ export default function GradesPage() {
                 students.map((s, idx) => {
                   const rating = getRating(s.average);
                   return (
-                    <tr key={s.studentId} className="hover:bg-gray-50">
+                    <tr key={s.studentId} className="hover:bg-slate-950/80">
                       <td className="px-3 py-2 text-sm text-gray-500">{idx + 1}</td>
                       <td className="px-3 py-2 text-sm text-gray-600">{s.studentCode || "—"}</td>
                       <td className="px-3 py-2 font-medium text-gray-900">{s.studentName}</td>
@@ -252,7 +252,7 @@ export default function GradesPage() {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 bg-white rounded-xl shadow-sm border p-4">
+      <div className="mt-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl">
         <h3 className="text-sm font-medium text-gray-700 mb-2">Hướng dẫn</h3>
         <ul className="text-sm text-gray-500 space-y-1">
           <li>• Nhập điểm trực tiếp vào ô, nhấn <kbd className="px-1 bg-gray-100 rounded">Tab</kbd> hoặc click ra ngoài để lưu</li>
