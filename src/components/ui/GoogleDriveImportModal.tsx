@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Modal from "./Modal";
@@ -15,7 +15,7 @@ import {
 interface GoogleDriveImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: "STUDENTS" | "TEACHERS" | "CLASSES" | "EVIDENCE" | "SUBJECT_GROUPS";
+  targetType: "STUDENTS" | "TEACHERS" | "CLASSES" | "EVIDENCE" | "SUBJECT_GROUPS" | "SCHEDULES";
   onConfirmImport: (data: any[]) => Promise<void>;
   title?: string;
   extraSelects?: React.ReactNode;
@@ -203,31 +203,44 @@ export default function GoogleDriveImportModal({
                   <tr>
                     <th className="p-2 border-b dark:border-gray-700 w-12 text-center">STT</th>
                     <th className="p-2 border-b dark:border-gray-700">Trạng thái</th>
-                    <th className="p-2 border-b dark:border-gray-700">{targetType === "SUBJECT_GROUPS" ? "Tên Tổ" : "Họ và Tên"}</th>
-                    {targetType === "STUDENTS" && (
+                    {targetType === "SCHEDULES" ? (
                       <>
-                        <th className="p-2 border-b dark:border-gray-700">Mã HS</th>
-                        <th className="p-2 border-b dark:border-gray-700">Giới tính</th>
                         <th className="p-2 border-b dark:border-gray-700">Lớp</th>
-                      </>
-                    )}
-                    {targetType === "TEACHERS" && (
-                      <>
-                        <th className="p-2 border-b dark:border-gray-700">Email</th>
-                        <th className="p-2 border-b dark:border-gray-700">Chuyên môn</th>
-                      </>
-                    )}
-                    {targetType === "CLASSES" && (
-                      <>
-                        <th className="p-2 border-b dark:border-gray-700">Khối</th>
-                        <th className="p-2 border-b dark:border-gray-700">Trường/Phân hiệu</th>
-                      </>
-                    )}
-                    {targetType === "SUBJECT_GROUPS" && (
-                      <>
-                        <th className="p-2 border-b dark:border-gray-700">Tổ Trưởng</th>
+                        <th className="p-2 border-b dark:border-gray-700">Thứ</th>
+                        <th className="p-2 border-b dark:border-gray-700">Tiết</th>
                         <th className="p-2 border-b dark:border-gray-700">Môn Học</th>
-                        <th className="p-2 border-b dark:border-gray-700">Trường</th>
+                        <th className="p-2 border-b dark:border-gray-700">Giáo Viên</th>
+                        <th className="p-2 border-b dark:border-gray-700">Phòng</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="p-2 border-b dark:border-gray-700">{targetType === "SUBJECT_GROUPS" ? "Tên Tổ" : "Họ và Tên"}</th>
+                        {targetType === "STUDENTS" && (
+                          <>
+                            <th className="p-2 border-b dark:border-gray-700">Mã HS</th>
+                            <th className="p-2 border-b dark:border-gray-700">Giới tính</th>
+                            <th className="p-2 border-b dark:border-gray-700">Lớp</th>
+                          </>
+                        )}
+                        {targetType === "TEACHERS" && (
+                          <>
+                            <th className="p-2 border-b dark:border-gray-700">Email</th>
+                            <th className="p-2 border-b dark:border-gray-700">Chuyên môn</th>
+                          </>
+                        )}
+                        {targetType === "CLASSES" && (
+                          <>
+                            <th className="p-2 border-b dark:border-gray-700">Khối</th>
+                            <th className="p-2 border-b dark:border-gray-700">Trường/Phân hiệu</th>
+                          </>
+                        )}
+                        {targetType === "SUBJECT_GROUPS" && (
+                          <>
+                            <th className="p-2 border-b dark:border-gray-700">Tổ Trưởng</th>
+                            <th className="p-2 border-b dark:border-gray-700">Môn Học</th>
+                            <th className="p-2 border-b dark:border-gray-700">Trường</th>
+                          </>
+                        )}
                       </>
                     )}
                     <th className="p-2 border-b dark:border-gray-700">Ghi chú / Lỗi</th>
@@ -236,7 +249,7 @@ export default function GoogleDriveImportModal({
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {displayData.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center text-gray-500">
+                      <td colSpan={8} className="p-4 text-center text-gray-500">
                         Không tìm thấy dòng phù hợp.
                       </td>
                     </tr>
@@ -262,35 +275,50 @@ export default function GoogleDriveImportModal({
                             </span>
                           )}
                         </td>
-                        <td className="p-2 font-medium text-gray-900 dark:text-white">
-                          {row.name || "—"}
-                        </td>
-                        {targetType === "STUDENTS" && (
+
+                        {targetType === "SCHEDULES" ? (
                           <>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.studentCode || "—"}</td>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.gender === "MALE" ? "Nam" : row.gender === "FEMALE" ? "Nữ" : "Khác"}</td>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.className || "—"}</td>
+                            <td className="p-2 text-gray-900 dark:text-white font-semibold">{row.className || "Lớp chọn"}</td>
+                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.dayLabel}</td>
+                            <td className="p-2 text-gray-600 dark:text-gray-300">Tiết {row.period}</td>
+                            <td className="p-2 font-bold text-indigo-600 dark:text-indigo-400">{row.subjectName || "—"}</td>
+                            <td className="p-2 text-gray-900 dark:text-white font-medium">{row.teacherName || "—"}</td>
+                            <td className="p-2 text-gray-500">{row.room || "—"}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="p-2 font-medium text-gray-900 dark:text-white">
+                              {row.name || "—"}
+                            </td>
+                            {targetType === "STUDENTS" && (
+                              <>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.studentCode || "—"}</td>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.gender === "MALE" ? "Nam" : row.gender === "FEMALE" ? "Nữ" : "Khác"}</td>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.className || "—"}</td>
+                              </>
+                            )}
+                            {targetType === "TEACHERS" && (
+                              <>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.email || "—"}</td>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.specialty || "—"}</td>
+                              </>
+                            )}
+                            {targetType === "CLASSES" && (
+                              <>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">Khối {row.gradeLevel}</td>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.schoolName || row.campusName || "—"}</td>
+                              </>
+                            )}
+                            {targetType === "SUBJECT_GROUPS" && (
+                              <>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.headTeacherName || "—"}</td>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.subjects || "—"}</td>
+                                <td className="p-2 text-gray-600 dark:text-gray-300">{row.schoolName || "—"}</td>
+                              </>
+                            )}
                           </>
                         )}
-                        {targetType === "TEACHERS" && (
-                          <>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.email || "—"}</td>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.specialty || "—"}</td>
-                          </>
-                        )}
-                        {targetType === "CLASSES" && (
-                          <>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">Khối {row.gradeLevel}</td>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.schoolName || row.campusName || "—"}</td>
-                          </>
-                        )}
-                        {targetType === "SUBJECT_GROUPS" && (
-                          <>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.headTeacherName || "—"}</td>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.subjects || "—"}</td>
-                            <td className="p-2 text-gray-600 dark:text-gray-300">{row.schoolName || "—"}</td>
-                          </>
-                        )}
+
                         <td className="p-2 text-gray-500 text-[11px]">
                           {row.error ? (
                             <span className="text-red-600 font-medium">{row.error}</span>
