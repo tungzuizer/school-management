@@ -39,6 +39,12 @@ type DashboardData = {
     academicRating: string;
     totalGrades: number;
   };
+    commendations?: {
+    id: string;
+    description: string;
+    date: string;
+    reportedBy: string;
+  }[];
   recentNotifications: {
     id: string;
     title: string;
@@ -189,6 +195,47 @@ export default function StudentDashboardPage() {
         <StudyStreakWidget streakDays={7} />
         <DailyPositivityWidget role="student" />
       </div>
+
+            {/* Bảng Vàng Tuyên Dương Khen Thưởng */}
+      {data.commendations && data.commendations.length > 0 && (
+        <div className="rounded-3xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 p-6 text-white shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-white/20 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-yellow-300">
+                <Award className="w-6 h-6 fill-yellow-300" />
+              </div>
+              <div>
+                <h2 className="text-lg md:text-xl font-extrabold tracking-tight">Bảng Vàng Tuyên Dương 🎉</h2>
+                <p className="text-xs text-orange-100 font-medium">Những lời khen thưởng & huy hiệu ghi nhận từ Thầy Cô</p>
+              </div>
+            </div>
+            <span className="bg-yellow-400 text-amber-950 font-black text-xs px-3 py-1 rounded-full shadow-xs">
+              {data.commendations.length} Tuyên dương
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {data.commendations.map((c) => (
+              <div key={c.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 space-y-1.5 hover:bg-white/20 transition-all">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold bg-yellow-400 text-amber-950 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 fill-amber-950" /> Khen thưởng
+                  </span>
+                  <span className="text-[11px] text-orange-100">
+                    {new Date(c.date).toLocaleDateString("vi-VN")}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-white leading-relaxed mt-1">
+                  "{c.description}"
+                </p>
+                <p className="text-xs text-yellow-200 font-bold">
+                  — Thầy/Cô: {c.reportedBy}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Schedule & Notifications Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">

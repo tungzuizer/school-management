@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
@@ -22,18 +22,7 @@ async function getStudentFromSession() {
       },
     });
 
-    if (!student) {
-      student = await prisma.student.findFirst({
-        include: {
-          user: true,
-          classRoom: {
-            include: {
-              school: true,
-            },
-          },
-        },
-      });
-    }
+
 
     if (!student) return null;
 
@@ -90,6 +79,16 @@ export async function getStudentDashboardData() {
       else academicRating = "Chưa đạt";
     }
 
+        // Danh sách tuyên dương khen thưởng của học sinh
+    const commendations = await prisma.incident.findMany({
+      where: {
+        studentId: student.id,
+        type: "COMMENDATION",
+      },
+      orderBy: { date: "desc" },
+      take: 10,
+    });
+
     // Thông báo mới nhất
     const recentNotifications = await prisma.notification.findMany({
       where: { receiverId: userId },
@@ -132,6 +131,12 @@ export async function getStudentDashboardData() {
         academicRating,
         totalGrades: grades.length,
       },
+            commendations: commendations.map((c) => ({
+        id: c.id,
+        description: c.description,
+        date: c.date.toISOString(),
+        reportedBy: c.reportedBy || "Giáo viên",
+      })),
       recentNotifications: recentNotifications.map((n) => ({
         id: n.id,
         title: n.title,

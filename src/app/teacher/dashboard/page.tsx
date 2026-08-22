@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { DailyPositivityWidget } from "@/components/ui/DailyPositivityWidget";
 import { ConfettiEffect } from "@/components/ui/ConfettiEffect";
+import { StudentPraiseModal } from "@/components/ui/StudentPraiseModal";
 import {
   Clock,
   Users,
@@ -115,6 +116,7 @@ export default function TeacherDashboard() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
     const [showCelebration, setShowCelebration] = useState(false);
+  const [praiseModalOpen, setPraiseModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Active tab
@@ -257,7 +259,7 @@ export default function TeacherDashboard() {
 
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setShowCelebration(true)}
+              onClick={() => setPraiseModalOpen(true)}
               className="bg-yellow-400 hover:bg-yellow-300 text-amber-950 font-extrabold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               <Award className="w-4 h-4 fill-amber-950" />
@@ -975,6 +977,14 @@ export default function TeacherDashboard() {
           </div>
         )}
       </div>
+      {/* Student Praise Modal */}
+      {session?.user?.id && (
+        <StudentPraiseModal
+          isOpen={praiseModalOpen}
+          onClose={() => setPraiseModalOpen(false)}
+          teacherUserId={session.user.id}
+        />
+      )}
     </div>
   );
 }
