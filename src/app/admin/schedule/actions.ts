@@ -99,6 +99,7 @@ export async function getScheduleFormData(schoolId?: string) {
         id: true,
         specialty: true,
         user: { select: { id: true, name: true, email: true } },
+        teachingAssignments: { select: { subjectId: true } },
       },
       orderBy: { user: { name: "asc" } },
     }),

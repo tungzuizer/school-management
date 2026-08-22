@@ -32,6 +32,9 @@ import {
   RefreshCw,
   Search,
   Upload,
+  CheckCircle2,
+  Filter,
+  Users,
 } from "lucide-react";
 import { StatCardSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { parseSpreadsheetBuffer, mapRowsToSchedules } from "@/lib/excel-parser";
@@ -76,8 +79,17 @@ const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string 
   "cong nghe": { bg: "bg-cyan-50 dark:bg-cyan-950/50", text: "text-cyan-700 dark:text-cyan-300", border: "border-cyan-200 dark:border-cyan-800" },
 };
 
+function normalizeStr(str: string): string {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
 function getSubjectBadgeColor(name: string) {
-  const norm = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const norm = normalizeStr(name);
   for (const [key, val] of Object.entries(SUBJECT_COLORS)) {
     if (norm.includes(key)) return val;
   }
@@ -98,7 +110,12 @@ type ScheduleEntry = {
 type SchoolOption = { id: string; name: string };
 type ClassOption = { id: string; name: string; gradeLevel: number; school?: { id: string; name: string } };
 type SubjectOption = { id: string; name: string; code?: string | null };
-type TeacherOption = { id: string; specialty: string | null; user: { id: string; name: string; email: string } };
+type TeacherOption = {
+  id: string;
+  specialty: string | null;
+  user: { id: string; name: string; email: string };
+  teachingAssignments?: { subjectId: string }[];
+};
 
 export default function SchedulePage() {
   const { isEasyMode } = useEasyMode();
@@ -128,6 +145,7 @@ export default function SchedulePage() {
     room: "",
   });
 
+  const [onlyMatchedTeachers, setOnlyMatchedTeachers] = useState(true);
   const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [excelModalOpen, setExcelModalOpen] = useState(false);
 
@@ -153,7 +171,7 @@ export default function SchedulePage() {
       setSelectedClassId(scheduleRes.selectedClassId);
       setSelectedClass(scheduleRes.selectedClass as any);
       setSubjects(formOptions.subjects);
-      setTeachers(formOptions.teachers);
+      setTeachers(formOptions.teachers as any);
     } catch (err) {
       console.error("Error loading schedule page data:", err);
       setToast({ message: "Không thể tải dữ liệu thời khóa biểu", type: "error" });
@@ -175,7 +193,7 @@ export default function SchedulePage() {
 
       const formOptions = await getScheduleFormData(schoolId);
       setSubjects(formOptions.subjects);
-      setTeachers(formOptions.teachers);
+      setTeachers(formOptions.teachers as any);
     } catch (err) {
       console.error(err);
     } finally {
@@ -212,14 +230,44 @@ export default function SchedulePage() {
         teacherId: existing.teacher.id,
         room: existing.room || "",
       });
+      setOnlyMatchedTeachers(false); // Show all or matched
     } else {
       setEditingEntry(null);
       setSelectedSlot({ day, period });
       setFormData({ subjectId: "", teacherId: "", room: "" });
+      setOnlyMatchedTeachers(true);
     }
     setTeacherSearch("");
     setShowEntryModal(true);
   }
+
+  // Handle subject change & smart auto-select teacher
+  const handleSubjectChange = (subjectId: string) => {
+    const selectedSubj = subjects.find((s) => s.id === subjectId);
+    let suggestedTeacherId = "";
+
+    if (selectedSubj) {
+      const matched = teachers.filter((t) => {
+        const isAssigned = t.teachingAssignments?.some((ta) => ta.subjectId === selectedSubj.id);
+        if (isAssigned) return true;
+        if (!t.specialty) return false;
+        const normSpec = normalizeStr(t.specialty);
+        const normSubj = normalizeStr(selectedSubj.name);
+        return normSpec.includes(normSubj) || normSubj.includes(normSpec);
+      });
+
+      if (matched.length > 0) {
+        suggestedTeacherId = matched[0].id;
+      }
+    }
+
+    setFormData({
+      ...formData,
+      subjectId,
+      teacherId: suggestedTeacherId || formData.teacherId,
+    });
+    setOnlyMatchedTeachers(true);
+  };
 
   async function handleSubmitForm() {
     if (!selectedSlot || !formData.subjectId || !formData.teacherId) {
@@ -344,7 +392,7 @@ export default function SchedulePage() {
   // Sample CSV Template Generator
   const downloadSampleTemplate = () => {
     const csvContent =
-      "﻿" +
+      "" +
       "Lớp,Thứ,Tiết,Môn Học,Giáo Viên,Phòng Học\n" +
       "10A1,Thứ 2,1,Toán,Nguyễn Văn A,Phòng 101\n" +
       "10A1,Thứ 2,2,Ngữ văn,Trần Thị B,Phòng 101\n" +
@@ -366,6 +414,21 @@ export default function SchedulePage() {
   });
 
   const availableGrades = Array.from(new Set(classes.map((c) => c.gradeLevel))).sort((a, b) => a - b);
+
+  // Compute matched vs other teachers for selected subject
+  const currentSelectedSubject = subjects.find((s) => s.id === formData.subjectId);
+  const matchedTeachers = currentSelectedSubject
+    ? teachers.filter((t) => {
+        const isAssigned = t.teachingAssignments?.some((ta) => ta.subjectId === currentSelectedSubject.id);
+        if (isAssigned) return true;
+        if (!t.specialty) return false;
+        const normSpec = normalizeStr(t.specialty);
+        const normSubj = normalizeStr(currentSelectedSubject.name);
+        return normSpec.includes(normSubj) || normSubj.includes(normSpec);
+      })
+    : [];
+
+  const otherTeachers = teachers.filter((t) => !matchedTeachers.some((mt) => mt.id === t.id));
 
   if (loading) {
     return (
@@ -501,7 +564,7 @@ export default function SchedulePage() {
             2. <b>Bấm vào bất kỳ ô nào</b> để thêm tiết học mới hoặc sửa/đổi môn và đổi giáo viên.
           </p>
           <p>
-            3. Mỗi ô hiển thị rõ: <b>Tên Môn Học</b>, <b>Tên Giáo Viên phụ trách</b> và <b>Phòng Học</b>.
+            3. Hệ thống sẽ **tự động gợi ý đúng Giáo Viên thuộc tổ/môn đó** để không bị rối mắt!
           </p>
         </div>
       )}
@@ -670,14 +733,14 @@ export default function SchedulePage() {
                                   {entry.subject.name}
                                 </span>
                                 {entry.room && (
-                                  <span className="px-1.5 py-0.2 rounded bg-white/80 dark:bg-slate-900/80 text-[10px] font-semibold text-slate-600 dark:text-slate-300 border border-slate-200">
+                                  <span className="px-1.5 py-0.2 rounded bg-white/80 text-[10px] font-semibold text-slate-600 border border-slate-200">
                                     {entry.room}
                                   </span>
                                 )}
                               </div>
 
                               {/* Teacher Name */}
-                              <p className="text-[11px] font-bold text-slate-900 dark:text-slate-100 mt-1 flex items-center gap-1">
+                              <p className="text-[11px] font-bold text-slate-900 mt-1 flex items-center gap-1">
                                 <UserCheck className="w-3 h-3 text-emerald-600 shrink-0" />
                                 <span>{entry.teacher.user.name}</span>
                               </p>
@@ -797,68 +860,138 @@ export default function SchedulePage() {
 
             {/* Subject Select */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Môn Học *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">1. Chọn Môn Học *</label>
               <select
                 value={formData.subjectId}
-                onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
+                onChange={(e) => handleSubjectChange(e.target.value)}
                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
               >
                 <option value="">-- Chọn môn học --</option>
                 {subjects.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name} {s.code ? `(${s.code})` : ""}
+                    {s.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Teacher Select */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-slate-700">Giáo Viên Phụ Trách *</label>
-                <span className="text-[11px] text-slate-500">
-                  {teachers.length} giáo viên sẵn sàng
-                </span>
+            {/* Smart Teacher Selection Section */}
+            <div className="space-y-2 pt-1 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>2. Chọn Giáo Viên Phụ Trách *</span>
+                </label>
+
+                {currentSelectedSubject && (
+                  <button
+                    type="button"
+                    onClick={() => setOnlyMatchedTeachers(!onlyMatchedTeachers)}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                  >
+                    <Filter className="w-3 h-3" />
+                    <span>
+                      {onlyMatchedTeachers
+                        ? `Hiện tất cả (${teachers.length} GV)`
+                        : `Chỉ xem GV môn ${currentSelectedSubject.name} (${matchedTeachers.length} GV)`}
+                    </span>
+                  </button>
+                )}
               </div>
 
-              {/* Filter Teacher input */}
-              <div className="relative mb-1.5">
+              {/* Matched Banner Info */}
+              {currentSelectedSubject && matchedTeachers.length > 0 && onlyMatchedTeachers && (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-bold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Đã lọc {matchedTeachers.length} Giáo Viên đúng môn {currentSelectedSubject.name}</span>
+                  </span>
+                </div>
+              )}
+
+              {/* Filter Teacher Search Bar */}
+              <div className="relative">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm tên giáo viên hoặc chuyên môn..."
+                  placeholder="Gõ tên giáo viên để tìm nhanh..."
                   value={teacherSearch}
                   onChange={(e) => setTeacherSearch(e.target.value)}
                   className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
+              {/* Smart Dropdown */}
               <select
                 value={formData.teacherId}
                 onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
               >
-                <option value="">-- Chọn giáo viên --</option>
-                {teachers
-                  .filter((t) => {
-                    if (!teacherSearch) return true;
-                    const query = teacherSearch.toLowerCase();
-                    return (
-                      t.user.name.toLowerCase().includes(query) ||
-                      (t.specialty && t.specialty.toLowerCase().includes(query))
-                    );
-                  })
-                  .map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.user.name} {t.specialty ? `(Tổ/Bộ môn: ${t.specialty})` : ""}
-                    </option>
-                  ))}
+                <option value="">-- Chọn giáo viên phụ trách --</option>
+
+                {/* If subject selected & onlyMatched is active */}
+                {currentSelectedSubject && matchedTeachers.length > 0 && onlyMatchedTeachers ? (
+                  <optgroup label={`⭐ GIÁO VIÊN CHUYÊN MÔN (${currentSelectedSubject.name.toUpperCase()})`}>
+                    {matchedTeachers
+                      .filter((t) => {
+                        if (!teacherSearch) return true;
+                        const query = teacherSearch.toLowerCase();
+                        return (
+                          t.user.name.toLowerCase().includes(query) ||
+                          (t.specialty && t.specialty.toLowerCase().includes(query))
+                        );
+                      })
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          ⭐ {t.user.name} {t.specialty ? `— ${t.specialty}` : ""}
+                        </option>
+                      ))}
+                  </optgroup>
+                ) : (
+                  <>
+                    {matchedTeachers.length > 0 && (
+                      <optgroup label={`⭐ GIÁO VIÊN ĐÚNG BỘ MÔN (${currentSelectedSubject?.name?.toUpperCase() || ""})`}>
+                        {matchedTeachers
+                          .filter((t) => {
+                            if (!teacherSearch) return true;
+                            const query = teacherSearch.toLowerCase();
+                            return (
+                              t.user.name.toLowerCase().includes(query) ||
+                              (t.specialty && t.specialty.toLowerCase().includes(query))
+                            );
+                          })
+                          .map((t) => (
+                            <option key={t.id} value={t.id}>
+                              ⭐ {t.user.name} {t.specialty ? `— ${t.specialty}` : ""}
+                            </option>
+                          ))}
+                      </optgroup>
+                    )}
+
+                    <optgroup label="TẤT CẢ GIÁO VIÊN BỘ MÔN KHÁC">
+                      {otherTeachers
+                        .filter((t) => {
+                          if (!teacherSearch) return true;
+                          const query = teacherSearch.toLowerCase();
+                          return (
+                            t.user.name.toLowerCase().includes(query) ||
+                            (t.specialty && t.specialty.toLowerCase().includes(query))
+                          );
+                        })
+                        .map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.user.name} {t.specialty ? `(${t.specialty})` : ""}
+                          </option>
+                        ))}
+                    </optgroup>
+                  </>
+                )}
               </select>
             </div>
 
             {/* Room Input */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Phòng Học (Tùy chọn)</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">3. Phòng Học (Tùy chọn)</label>
               <input
                 type="text"
                 placeholder="Ví dụ: Phòng 201, Phòng Lab 1..."
