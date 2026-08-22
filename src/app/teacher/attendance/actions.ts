@@ -100,14 +100,30 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
     });
   });
 
-  // Add Homeroom Class fallback options if teacher is homeroom teacher and not already added for all periods
+  // Add Homeroom Class fallback options if teacher is homeroom teacher and has no timetable slots for this day
   if (homeroomClasses.length > 0) {
-    const defaultSubject = await prisma.subject.findFirst({ select: { id: true, name: true } });
-    const subId = defaultSubject?.id || "";
-    const subName = defaultSubject?.name || "Sinh hoạt / Điểm danh lớp";
+    // Try to find "Sinh hoạt" or teacher specialty subject, otherwise fallback
+    let fallbackSubject = await prisma.subject.findFirst({
+      where: { name: { contains: "Sinh hoạt" } },
+      select: { id: true, name: true },
+    });
+
+    if (!fallbackSubject && teacher.specialty) {
+      fallbackSubject = await prisma.subject.findFirst({
+        where: { name: { contains: teacher.specialty.replace("học", "").trim() } },
+        select: { id: true, name: true },
+      });
+    }
+
+    if (!fallbackSubject) {
+      fallbackSubject = await prisma.subject.findFirst({ select: { id: true, name: true } });
+    }
+
+    const subId = fallbackSubject?.id || "";
+    const subName = "Sinh hoạt lớp (GVCN)";
 
     homeroomClasses.forEach((hr) => {
-      // If homeroom teacher has no timetable slots for this day, allow period 1-8 for homeroom attendance
+      // If homeroom teacher has no timetable slots for this day, allow periods for homeroom attendance
       if (!slots.some((s) => s.classId === hr.id)) {
         [1, 2, 3, 4, 5, 6, 7, 8].forEach((p) => {
           const slotKey = `${hr.id}_${p}_${subId}`;
