@@ -2,87 +2,125 @@
 
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 
-export interface ClassSubjectOption {
+export interface TeacherSlotOption {
+  slotKey: string; // Key unique for dropdown: e.g. "classId_period_subjectId"
   classId: string;
   className: string;
   gradeLevel: number;
-  subjects: { id: string; name: string }[];
+  period: number;
+  periodLabel: string;
+  periodTime: string;
+  subjectId: string;
+  subjectName: string;
+  room?: string | null;
+  isHomeroom?: boolean;
+  isLocked?: boolean;
 }
 
-// Get classes & assigned subjects for current teacher
-export async function getMyClasses(): Promise<ClassSubjectOption[]> {
+const PERIOD_TIMES: Record<number, string> = {
+  1: "07:00 - 07:45",
+  2: "07:50 - 08:35",
+  3: "08:50 - 09:35",
+  4: "09:40 - 10:25",
+  5: "13:00 - 13:45",
+  6: "13:50 - 14:35",
+  7: "14:50 - 15:35",
+  8: "15:40 - 16:25",
+};
+
+// Fetch teacher's exact teaching slots according to timetable on a specific date
+export async function getTeacherScheduleForDate(date: string): Promise<TeacherSlotOption[]> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return [];
 
   const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
   if (!teacher) return [];
 
-  const assignments = await prisma.teachingAssignment.findMany({
-    where: { teacherId: teacher.id },
-    include: { classRoom: true, subject: true },
-  });
+  const dateObj = new Date(date);
+  dateObj.setHours(0, 0, 0, 0);
 
-  const homeroomClasses = await prisma.classRoom.findMany({
-    where: { homeroomTeacherId: teacher.id },
-    include: {
-      teachingAssignments: {
-        include: { subject: true },
+  const jsDay = dateObj.getDay();
+  const dayOfWeek = jsDay === 0 ? 7 : jsDay; // 1=Thứ 2..7=Chủ nhật
+
+  // Execute queries in parallel using Promise.all for maximum speed
+  const [scheduleEntries, homeroomClasses, existingAttendance] = await Promise.all([
+    prisma.schedule.findMany({
+      where: { teacherId: teacher.id, dayOfWeek },
+      include: { classRoom: true, subject: true },
+      orderBy: { period: "asc" },
+    }),
+    prisma.classRoom.findMany({
+      where: { homeroomTeacherId: teacher.id },
+    }),
+    prisma.attendance.findMany({
+      where: {
+        date: dateObj,
+        period: { in: [1, 2, 3, 4, 5, 6, 7, 8] },
       },
-    },
-  });
+      select: { classId: true, period: true },
+    }),
+  ]);
 
-  const classMap = new Map<
-    string,
-    { classId: string; className: string; gradeLevel: number; subjectsMap: Map<string, string> }
-  >();
+  const lockedSet = new Set(existingAttendance.map((a) => `${a.classId}_${a.period}`));
 
-  assignments.forEach((a) => {
-    if (!classMap.has(a.classRoom.id)) {
-      classMap.set(a.classRoom.id, {
-        classId: a.classRoom.id,
-        className: a.classRoom.name,
-        gradeLevel: a.classRoom.gradeLevel,
-        subjectsMap: new Map(),
-      });
-    }
-    if (a.subject) {
-      classMap.get(a.classRoom.id)!.subjectsMap.set(a.subject.id, a.subject.name);
-    }
-  });
+  const slots: TeacherSlotOption[] = [];
 
-  homeroomClasses.forEach((c) => {
-    if (!classMap.has(c.id)) {
-      classMap.set(c.id, {
-        classId: c.id,
-        className: c.name,
-        gradeLevel: c.gradeLevel,
-        subjectsMap: new Map(),
-      });
-    }
-    c.teachingAssignments.forEach((ta) => {
-      if (ta.subject) {
-        classMap.get(c.id)!.subjectsMap.set(ta.subject.id, ta.subject.name);
-      }
+  // Add timetable slots
+  scheduleEntries.forEach((s) => {
+    const slotKey = `${s.classId}_${s.period}_${s.subjectId}`;
+    const isLocked = lockedSet.has(`${s.classId}_${s.period}`);
+
+    slots.push({
+      slotKey,
+      classId: s.classId,
+      className: s.classRoom.name,
+      gradeLevel: s.classRoom.gradeLevel,
+      period: s.period,
+      periodLabel: `Tiết ${s.period}`,
+      periodTime: PERIOD_TIMES[s.period] || "",
+      subjectId: s.subject.id,
+      subjectName: s.subject.name,
+      room: s.room,
+      isHomeroom: false,
+      isLocked,
     });
   });
 
-  // If no subjects found for a class (e.g. homeroom without assignments), fetch all school subjects as fallback
-  const allSubjects = await prisma.subject.findMany({ select: { id: true, name: true } });
+  // Add Homeroom Class fallback options if teacher is homeroom teacher and not already added for all periods
+  if (homeroomClasses.length > 0) {
+    const defaultSubject = await prisma.subject.findFirst({ select: { id: true, name: true } });
+    const subId = defaultSubject?.id || "";
+    const subName = defaultSubject?.name || "Sinh hoạt / Điểm danh lớp";
 
-  return Array.from(classMap.values()).map((item) => {
-    let subjectList = Array.from(item.subjectsMap.entries()).map(([id, name]) => ({ id, name }));
-    if (subjectList.length === 0) {
-      subjectList = allSubjects;
-    }
-    return {
-      classId: item.classId,
-      className: item.className,
-      gradeLevel: item.gradeLevel,
-      subjects: subjectList,
-    };
-  });
+    homeroomClasses.forEach((hr) => {
+      // If homeroom teacher has no timetable slots for this day, allow period 1-8 for homeroom attendance
+      if (!slots.some((s) => s.classId === hr.id)) {
+        [1, 2, 3, 4, 5, 6, 7, 8].forEach((p) => {
+          const slotKey = `${hr.id}_${p}_${subId}`;
+          const isLocked = lockedSet.has(`${hr.id}_${p}`);
+          slots.push({
+            slotKey,
+            classId: hr.id,
+            className: hr.name,
+            gradeLevel: hr.gradeLevel,
+            period: p,
+            periodLabel: `Tiết ${p} (GVCN)`,
+            periodTime: PERIOD_TIMES[p] || "",
+            subjectId: subId,
+            subjectName: subName,
+            room: null,
+            isHomeroom: true,
+            isLocked,
+          });
+        });
+      }
+    });
+  }
+
+  return slots;
 }
 
 // Get students of a class for attendance
@@ -98,7 +136,11 @@ export async function getClassStudents(classId: string) {
   const hasAccess = await prisma.teachingAssignment.findFirst({
     where: { teacherId: teacher.id, classId },
   });
-  if (!hasAccess && !isHomeroom) return [];
+  const hasSchedule = await prisma.schedule.findFirst({
+    where: { teacherId: teacher.id, classId },
+  });
+
+  if (!hasAccess && !isHomeroom && !hasSchedule) return [];
 
   return prisma.student.findMany({
     where: { classId, status: "STUDYING" },
@@ -107,32 +149,14 @@ export async function getClassStudents(classId: string) {
   });
 }
 
-// Get attendance & schedule info for specific class, date, and period
+// Get attendance records for a specific class, date, and period
 export async function getAttendanceByDateAndPeriod(classId: string, date: string, period: number) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return { isLocked: false, existingData: [], scheduledSubject: null, lockedAt: null };
+  if (!session?.user?.id) return { isLocked: false, existingData: [], lockedAt: null };
 
   const dateObj = new Date(date);
   dateObj.setHours(0, 0, 0, 0);
 
-  // Convert Date to DayOfWeek (Sunday=0 -> 7, Monday=1 -> 1, ..., Saturday=6 -> 6)
-  const jsDay = dateObj.getDay();
-  const dayOfWeek = jsDay === 0 ? 7 : jsDay;
-
-  // 1. Fetch scheduled subject from timetable
-  const scheduleEntry = await prisma.schedule.findFirst({
-    where: {
-      classId,
-      dayOfWeek,
-      period,
-    },
-    include: {
-      subject: { select: { id: true, name: true } },
-      teacher: { select: { user: { select: { name: true } } } },
-    },
-  });
-
-  // 2. Fetch existing attendance records for this period
   const existingData = await prisma.attendance.findMany({
     where: {
       classId,
@@ -148,13 +172,11 @@ export async function getAttendanceByDateAndPeriod(classId: string, date: string
   return {
     isLocked,
     existingData,
-    scheduledSubject: scheduleEntry ? scheduleEntry.subject : null,
-    scheduledTeacherName: scheduleEntry ? scheduleEntry.teacher.user.name : null,
     lockedAt,
   };
 }
 
-// Save attendance for all students at once with STRICT 1-TIME PER PERIOD RULE
+// Save attendance with strict check: Teacher MUST be scheduled to teach this class at this period, or be Homeroom teacher
 export async function saveAttendance(
   classId: string,
   date: string,
@@ -166,25 +188,43 @@ export async function saveAttendance(
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
 
   if (!period || period < 1 || period > 10) {
-    return { success: false, error: "Vui lòng chọn Tiết học cụ thể (Tiết 1 đến Tiết 10) để điểm danh" };
+    return { success: false, error: "Vui lòng chọn Tiết học cụ thể để điểm danh" };
   }
 
   const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
-  if (!teacher) return { success: false, error: "Không tìm thấy hồ sơ giáo viên" };
+  if (!teacher) return { success: false, error: "Không tìm thấy thông tin giáo viên" };
 
   const classRoom = await prisma.classRoom.findUnique({ where: { id: classId } });
   if (!classRoom) return { success: false, error: "Không tìm thấy thông tin lớp học" };
 
+  const dateObj = new Date(date);
+  dateObj.setHours(0, 0, 0, 0);
+
+  const jsDay = dateObj.getDay();
+  const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+
+  // Verify Schedule permission: Is teacher scheduled to teach this class/period, or assignment, or homeroom?
   const isHomeroom = classRoom.homeroomTeacherId === teacher.id;
-  const hasAccess = await prisma.teachingAssignment.findFirst({
+  const isScheduled = await prisma.schedule.findFirst({
+    where: {
+      teacherId: teacher.id,
+      classId,
+      dayOfWeek,
+      period,
+    },
+  });
+  const isAssigned = await prisma.teachingAssignment.findFirst({
     where: { teacherId: teacher.id, classId },
   });
-  if (!hasAccess && !isHomeroom) return { success: false, error: "Bạn không có quyền điểm danh lớp này" };
+
+  if (!isScheduled && !isAssigned && !isHomeroom) {
+    return {
+      success: false,
+      error: `Bạn không có ca dạy Lớp ${classRoom.name} vào Tiết ${period} ngày ${date}. Không thể thực hiện điểm danh!`,
+    };
+  }
 
   try {
-    const dateObj = new Date(date);
-    dateObj.setHours(0, 0, 0, 0);
-
     // 1. Check if Attendance for this period already exists (STRICT ONE-TIME RULE)
     const existingCount = await prisma.attendance.count({
       where: {
@@ -230,28 +270,15 @@ export async function saveAttendance(
       )
     );
 
+    revalidatePath("/teacher/attendance");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/daily-summary");
+    revalidatePath("/vice-principal/dashboard");
+    revalidatePath("/vice-principal/attendance");
+    revalidatePath("/student/attendance");
     return { success: true };
   } catch (error: any) {
     console.error("Error in saveAttendance:", error);
     return { success: false, error: error.message || "Lỗi khi lưu điểm danh" };
   }
-}
-
-// Get attendance summary for a class in a date range
-export async function getAttendanceSummary(classId: string, startDate: string, endDate: string) {
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
-
-  const records = await prisma.attendance.groupBy({
-    by: ["status"],
-    where: {
-      classId,
-      date: { gte: start, lte: end },
-    },
-    _count: { status: true },
-  });
-
-  return records.map((r) => ({ status: r.status, count: r._count.status }));
 }
