@@ -9,6 +9,7 @@ import {
   deleteScheduleEntry,
   clearClassSchedule,
   bulkImportSchedules,
+  ScheduleDayHeader,
 } from "./actions";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
@@ -16,6 +17,9 @@ import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import { useEasyMode } from "@/lib/useEasyMode";
 import {
   CalendarDays,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   BookOpen,
   UserCheck,
@@ -129,6 +133,14 @@ function getTeacherSchoolName(t: TeacherOption): string {
   return "";
 }
 
+function getTodayString(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function SchedulePage() {
   const { isEasyMode } = useEasyMode();
   const [schools, setSchools] = useState<SchoolOption[]>([]);
@@ -142,6 +154,9 @@ export default function SchedulePage() {
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
+  const [days, setDays] = useState<ScheduleDayHeader[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -169,10 +184,28 @@ export default function SchedulePage() {
     loadData();
   }, []);
 
-  async function loadData(classId?: string, schoolId?: string) {
+  const changeWeek = (daysOffset: number) => {
+    const parts = selectedDate.split("-").map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    d.setDate(d.getDate() + daysOffset);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const newDateStr = `${yyyy}-${mm}-${dd}`;
+    setSelectedDate(newDateStr);
+    loadData(selectedClassId, selectedSchoolId, newDateStr);
+  };
+
+  const handleDateChange = (newDateStr: string) => {
+    setSelectedDate(newDateStr);
+    loadData(selectedClassId, selectedSchoolId, newDateStr);
+  };
+
+  async function loadData(classId?: string, schoolId?: string, dateStr?: string) {
     setLoading(true);
+    const activeDateStr = dateStr || selectedDate;
     try {
-      const scheduleRes = await getScheduleData(classId, schoolId);
+      const scheduleRes = await getScheduleData(classId, schoolId, activeDateStr);
       const activeSchoolId = schoolId || scheduleRes.selectedClass?.school?.id || "";
 
       const formOptions = await getScheduleFormData(activeSchoolId);
@@ -182,6 +215,7 @@ export default function SchedulePage() {
       setSchedules(scheduleRes.schedules as ScheduleEntry[]);
       setSelectedClassId(scheduleRes.selectedClassId);
       setSelectedClass(scheduleRes.selectedClass as any);
+      setDays(scheduleRes.days);
       if (activeSchoolId) {
         setSelectedSchoolId(activeSchoolId);
       }
@@ -200,13 +234,14 @@ export default function SchedulePage() {
     setSelectedSchoolId(schoolId);
     setRefreshing(true);
     try {
-      const scheduleRes = await getScheduleData(undefined, schoolId);
+      const scheduleRes = await getScheduleData(undefined, schoolId, selectedDate);
       const activeSchoolId = schoolId || scheduleRes.selectedClass?.school?.id || "";
 
       setClasses(scheduleRes.classes);
       setSchedules(scheduleRes.schedules as ScheduleEntry[]);
       setSelectedClassId(scheduleRes.selectedClassId);
       setSelectedClass(scheduleRes.selectedClass as any);
+      setDays(scheduleRes.days);
 
       const formOptions = await getScheduleFormData(activeSchoolId);
       setSubjects(formOptions.subjects);
@@ -223,9 +258,10 @@ export default function SchedulePage() {
     setSelectedClassId(classId);
     setRefreshing(true);
     try {
-      const data = await getScheduleData(classId, selectedSchoolId);
+      const data = await getScheduleData(classId, selectedSchoolId, selectedDate);
       setSchedules(data.schedules as ScheduleEntry[]);
       setSelectedClass(data.selectedClass as any);
+      setDays(data.days);
 
       const activeSchoolId = data.selectedClass?.school?.id || selectedSchoolId;
       if (activeSchoolId) {
@@ -594,6 +630,51 @@ export default function SchedulePage() {
 
       {/* School & Grade & Class Selector Toolbar */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-4">
+        {/* Week & Date Selector Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
+            <span className="text-xs font-extrabold text-indigo-950">
+              Thời Khóa Biểu Tuần:{" "}
+              <span className="text-indigo-700">
+                {days.length > 0 ? `${days[0].formattedDate} — ${days[days.length - 1].formattedDate}` : ""}
+              </span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs">
+              <button
+                onClick={() => changeWeek(-7)}
+                className="p-1 hover:bg-slate-100 rounded-md text-slate-600 transition-colors cursor-pointer"
+                title="Tuần trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDateChange(getTodayString())}
+                className="px-2 py-0.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-md text-xs font-extrabold transition-colors cursor-pointer"
+              >
+                Hôm Nay
+              </button>
+              <button
+                onClick={() => changeWeek(7)}
+                className="p-1 hover:bg-slate-100 rounded-md text-slate-600 transition-colors cursor-pointer"
+                title="Tuần sau"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => e.target.value && handleDateChange(e.target.value)}
+              className="px-2.5 py-1 border border-slate-300 rounded-lg text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
+            />
+          </div>
+        </div>
+
         {/* School Selector */}
         {schools.length > 1 && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-slate-100 pb-3">
@@ -708,9 +789,25 @@ export default function SchedulePage() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 text-xs uppercase font-extrabold">
                 <th className="p-3 w-28 text-center border-r border-slate-200">Tiết / Thời Gian</th>
-                {DAYS.map((day) => (
-                  <th key={day} className="p-3 text-center border-r border-slate-200 last:border-r-0">
-                    <span className="text-indigo-700 font-extrabold text-sm">{DAY_LABELS[day]}</span>
+                {(days.length > 0
+                  ? days.slice(0, 6)
+                  : DAYS.map((d) => ({ dayOfWeek: d, label: DAY_LABELS[d], formattedDate: "", isToday: false }))
+                ).map((d) => (
+                  <th
+                    key={d.dayOfWeek}
+                    className={`p-3 text-center border-r border-slate-200 last:border-r-0 ${
+                      d.isToday ? "bg-indigo-50/80 text-indigo-950 font-black border-b-2 border-b-indigo-600" : ""
+                    }`}
+                  >
+                    <div className="text-indigo-700 font-extrabold text-sm">{d.label}</div>
+                    {d.formattedDate && (
+                      <div className="text-[11px] text-slate-500 font-bold mt-0.5">({d.formattedDate})</div>
+                    )}
+                    {d.isToday && (
+                      <span className="inline-block mt-1 px-1.5 py-0.5 bg-indigo-600 text-white font-extrabold text-[9px] rounded-full uppercase tracking-wider">
+                        Hôm nay
+                      </span>
+                    )}
                   </th>
                 ))}
               </tr>
