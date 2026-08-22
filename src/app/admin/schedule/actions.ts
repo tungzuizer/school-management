@@ -88,11 +88,7 @@ export async function getScheduleFormData(schoolId?: string) {
     prisma.teacher.findMany({
       where: schoolId
         ? {
-            OR: [
-              { user: { schoolId } },
-              { homeroomClasses: { some: { schoolId } } },
-              { teachingAssignments: { some: { classRoom: { schoolId } } } },
-            ],
+            user: { schoolId },
           }
         : undefined,
       select: {
@@ -144,6 +140,22 @@ export async function createScheduleEntry(data: {
     return { success: true, updated: true };
   }
 
+  // Verify teacher belongs to the same school as the target class
+  const targetClass = await prisma.classRoom.findUnique({
+    where: { id: data.classId },
+    select: { schoolId: true, name: true },
+  });
+  const teacher = await prisma.teacher.findUnique({
+    where: { id: data.teacherId },
+    include: { user: { select: { schoolId: true, name: true } } },
+  });
+
+  if (targetClass && teacher?.user?.schoolId && teacher.user.schoolId !== targetClass.schoolId) {
+    return {
+      error: `Giáo viên ${teacher.user.name} thuộc trường khác, không thể phân công dạy ở lớp ${targetClass.name}.`,
+    };
+  }
+
   // Check teacher conflict (same teacher, same day, same period in another class)
   const teacherConflict = await prisma.schedule.findFirst({
     where: {
@@ -192,6 +204,22 @@ export async function updateScheduleEntry(
 
   if (!current) {
     return { error: "Không tìm thấy tiết học cần cập nhật" };
+  }
+
+  // Verify teacher belongs to the same school as the target class
+  const targetClass = await prisma.classRoom.findUnique({
+    where: { id: current.classId },
+    select: { schoolId: true, name: true },
+  });
+  const teacher = await prisma.teacher.findUnique({
+    where: { id: data.teacherId },
+    include: { user: { select: { schoolId: true, name: true } } },
+  });
+
+  if (targetClass && teacher?.user?.schoolId && teacher.user.schoolId !== targetClass.schoolId) {
+    return {
+      error: `Giáo viên ${teacher.user.name} thuộc trường khác, không thể phân công dạy ở lớp ${targetClass.name}.`,
+    };
   }
 
   // Check teacher conflict
