@@ -22,18 +22,24 @@ export interface ScheduleSlot {
   classId: string;
   className: string;
   gradeLevel: number;
+  teacherId?: string;
+  teacherName?: string;
+  isMySlot?: boolean;
   room?: string | null;
   isHomeroom?: boolean;
   isAttendanceDone?: boolean; // Real DB status from prisma.attendance
 }
 
 export interface TeacherScheduleData {
+  teacherId: string;
   teacherName: string;
   specialty?: string | null;
+  homeroomClassId?: string | null;
   homeroomClassName?: string | null;
   totalPeriods: number;
   classesCount: number;
   selectedDateStr: string;
+  viewMode: "PERSONAL" | "HOMEROOM";
   days: ScheduleDayHeader[];
   slots: ScheduleSlot[];
 }
@@ -97,7 +103,10 @@ function getWeekDays(dateStr?: string) {
   return { monday, sunday, days, selectedDateStr: formatDateStr(baseDate) };
 }
 
-export async function getTeacherSchedule(dateStr?: string): Promise<TeacherScheduleData | null> {
+export async function getTeacherSchedule(
+  dateStr?: string,
+  requestedViewMode: "PERSONAL" | "HOMEROOM" = "PERSONAL"
+): Promise<TeacherScheduleData | null> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
 
@@ -111,22 +120,42 @@ export async function getTeacherSchedule(dateStr?: string): Promise<TeacherSched
 
   if (!teacher) return null;
 
+  const homeroomClass = teacher.homeroomClasses[0] || null;
+
+  // Fallback to PERSONAL if HOMEROOM is requested but teacher is not a homeroom teacher
+  const effectiveViewMode = requestedViewMode === "HOMEROOM" && homeroomClass ? "HOMEROOM" : "PERSONAL";
+
   const { monday, sunday, days, selectedDateStr } = getWeekDays(dateStr);
 
-  // 1. Fetch real Timetable Schedule entries
-  const schedules = await prisma.schedule.findMany({
-    where: { teacherId: teacher.id },
-    include: {
-      classRoom: { select: { id: true, name: true, gradeLevel: true } },
-      subject: { select: { id: true, name: true } },
-    },
-    orderBy: [{ dayOfWeek: "asc" }, { period: "asc" }],
-  });
+  let schedules: any[] = [];
+
+  if (effectiveViewMode === "HOMEROOM" && homeroomClass) {
+    // Fetch complete timetable schedule for the homeroom class
+    schedules = await prisma.schedule.findMany({
+      where: { classId: homeroomClass.id },
+      include: {
+        classRoom: { select: { id: true, name: true, gradeLevel: true } },
+        subject: { select: { id: true, name: true } },
+        teacher: { select: { id: true, user: { select: { name: true } } } },
+      },
+      orderBy: [{ dayOfWeek: "asc" }, { period: "asc" }],
+    });
+  } else {
+    // Fetch personal teaching schedule across all assigned classes
+    schedules = await prisma.schedule.findMany({
+      where: { teacherId: teacher.id },
+      include: {
+        classRoom: { select: { id: true, name: true, gradeLevel: true } },
+        subject: { select: { id: true, name: true } },
+        teacher: { select: { id: true, user: { select: { name: true } } } },
+      },
+      orderBy: [{ dayOfWeek: "asc" }, { period: "asc" }],
+    });
+  }
 
   const classIds = Array.from(new Set(schedules.map((s) => s.classId)));
-  const homeroomName = teacher.homeroomClasses[0]?.name || null;
 
-  // 2. Fetch real Attendance records for this teacher's classes during this week
+  // Fetch real Attendance records for these classes during this week
   const attendanceRecords = classIds.length > 0
     ? await prisma.attendance.findMany({
         where: {
@@ -153,6 +182,7 @@ export async function getTeacherSchedule(dateStr?: string): Promise<TeacherSched
 
     daySchedules.forEach((s) => {
       const isDone = attendanceDoneSet.has(`${s.classId}_${s.period}_${dayHeader.dateStr}`);
+      const isMySlot = s.teacherId === teacher.id;
 
       slots.push({
         id: `${s.id}_${dayHeader.dateStr}`,
@@ -164,20 +194,26 @@ export async function getTeacherSchedule(dateStr?: string): Promise<TeacherSched
         classId: s.classRoom.id,
         className: s.classRoom.name,
         gradeLevel: s.classRoom.gradeLevel,
+        teacherId: s.teacher.id,
+        teacherName: s.teacher.user.name,
+        isMySlot,
         room: s.room,
-        isHomeroom: teacher.homeroomClasses.some((h) => h.id === s.classId),
+        isHomeroom: homeroomClass ? s.classId === homeroomClass.id : false,
         isAttendanceDone: isDone,
       });
     });
   });
 
   return {
+    teacherId: teacher.id,
     teacherName: teacher.user.name,
     specialty: teacher.specialty,
-    homeroomClassName: homeroomName,
+    homeroomClassId: homeroomClass?.id || null,
+    homeroomClassName: homeroomClass?.name || null,
     totalPeriods: schedules.length,
     classesCount: classIds.length,
     selectedDateStr,
+    viewMode: effectiveViewMode,
     days: days.map(({ dateObj, ...rest }) => rest),
     slots,
   };
