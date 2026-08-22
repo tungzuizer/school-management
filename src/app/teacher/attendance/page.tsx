@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  getMyClasses,
+  getTeacherScheduleForDate,
   getClassStudents,
   getAttendanceByDateAndPeriod,
   saveAttendance,
-  ClassSubjectOption,
+  TeacherSlotOption,
 } from "./actions";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -18,10 +18,11 @@ import {
   Calendar,
   Clock,
   Lock,
-  AlertCircle,
   BookOpen,
-  Info,
   Sparkles,
+  MapPin,
+  CalendarDays,
+  AlertTriangle,
 } from "lucide-react";
 
 interface StudentItem {
@@ -63,23 +64,10 @@ const STATUS_OPTIONS = [
   },
 ];
 
-const PERIOD_TIMES: Record<number, string> = {
-  1: "07:00 - 07:45",
-  2: "07:50 - 08:35",
-  3: "08:50 - 09:35",
-  4: "09:40 - 10:25",
-  5: "13:00 - 13:45",
-  6: "13:50 - 14:35",
-  7: "14:50 - 15:35",
-  8: "15:40 - 16:25",
-};
-
 export default function AttendancePage() {
-  const [classes, setClasses] = useState<ClassSubjectOption[]>([]);
-  const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [selectedPeriod, setSelectedPeriod] = useState<number>(1);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
+  const [slots, setSlots] = useState<TeacherSlotOption[]>([]);
+  const [selectedSlotKey, setSelectedSlotKey] = useState<string>("");
 
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [records, setRecords] = useState<Record<string, AttendanceRecord>>({});
@@ -88,47 +76,50 @@ export default function AttendancePage() {
 
   const [isLocked, setIsLocked] = useState(false);
   const [lockedAt, setLockedAt] = useState<string | null>(null);
-  const [scheduledSubjectInfo, setScheduledSubjectInfo] = useState<{ id: string; name: string } | null>(null);
-  const [scheduledTeacherName, setScheduledTeacherName] = useState<string | null>(null);
 
   const { showToast, ToastComponent } = useToast();
 
-  // Load classes initially
-  useEffect(() => {
-    getMyClasses().then((data) => {
-      setClasses(data);
-      if (data.length > 0) {
-        setSelectedClassId(data[0].classId);
-        if (data[0].subjects.length > 0) {
-          setSelectedSubjectId(data[0].subjects[0].id);
-        }
+  // Load teacher's timetable slots when date changes
+  const loadScheduleSlots = useCallback(async () => {
+    setLoading(true);
+    try {
+      const scheduleSlots = await getTeacherScheduleForDate(selectedDate);
+      setSlots(scheduleSlots);
+
+      if (scheduleSlots.length > 0) {
+        setSelectedSlotKey(scheduleSlots[0].slotKey);
+      } else {
+        setSelectedSlotKey("");
+        setStudents([]);
       }
-    });
-  }, []);
+    } catch (err) {
+      console.error("Error loading schedule slots:", err);
+      showToast("Không thể tải ca dạy theo thời khóa biểu", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate]);
 
-  const selectedClass = classes.find((c) => c.classId === selectedClassId);
+  useEffect(() => {
+    loadScheduleSlots();
+  }, [loadScheduleSlots]);
 
-  // Load students & attendance session info
-  const loadData = useCallback(async () => {
-    if (!selectedClassId) return;
+  const activeSlot = slots.find((s) => s.slotKey === selectedSlotKey);
+
+  // Load students & attendance session info for active slot
+  const loadSlotData = useCallback(async () => {
+    if (!activeSlot) return;
     setLoading(true);
 
     try {
       const [studentsData, sessionInfo] = await Promise.all([
-        getClassStudents(selectedClassId),
-        getAttendanceByDateAndPeriod(selectedClassId, selectedDate, selectedPeriod),
+        getClassStudents(activeSlot.classId),
+        getAttendanceByDateAndPeriod(activeSlot.classId, selectedDate, activeSlot.period),
       ]);
 
       setStudents(studentsData as unknown as StudentItem[]);
       setIsLocked(sessionInfo.isLocked);
       setLockedAt(sessionInfo.lockedAt);
-      setScheduledSubjectInfo(sessionInfo.scheduledSubject);
-      setScheduledTeacherName(sessionInfo.scheduledTeacherName || null);
-
-      // If timetable has a subject for this slot, auto-select it
-      if (sessionInfo.scheduledSubject) {
-        setSelectedSubjectId(sessionInfo.scheduledSubject.id);
-      }
 
       const recordsMap: Record<string, AttendanceRecord> = {};
       const existingMap = new Map((sessionInfo.existingData as any[]).map((a: any) => [a.studentId, a]));
@@ -144,16 +135,16 @@ export default function AttendancePage() {
 
       setRecords(recordsMap);
     } catch (err) {
-      console.error(err);
-      showToast("Lỗi tải thông tin điểm danh", "error");
+      console.error("Error loading slot attendance data:", err);
+      showToast("Lỗi tải thông tin điểm danh ca dạy", "error");
     } finally {
       setLoading(false);
     }
-  }, [selectedClassId, selectedDate, selectedPeriod]);
+  }, [activeSlot, selectedDate]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadSlotData();
+  }, [loadSlotData]);
 
   const updateStatus = (studentId: string, status: string) => {
     if (isLocked) return;
@@ -177,15 +168,13 @@ export default function AttendancePage() {
   };
 
   const handleSave = async () => {
-    if (!selectedClassId) return;
+    if (!activeSlot) return;
     if (isLocked) {
       showToast("Tiết học này đã được điểm danh và khóa sổ. Không thể sửa!", "error");
       return;
     }
 
-    const currentSubj = selectedClass?.subjects.find((s) => s.id === selectedSubjectId);
-
-    const confirmMsg = `XÁC NHẬN ĐIỂM DANH LỚP ${selectedClass?.className}?\n\n• Ngày: ${selectedDate}\n• Tiết: Tiết ${selectedPeriod} (${PERIOD_TIMES[selectedPeriod]})\n• Môn: ${currentSubj?.name || "Bộ môn"}\n\n⚠️ Lưu ý: Sau khi lưu, thông tin điểm danh của tiết này sẽ bị KHÓA VĨNH VIỄN và không thể tự đổi lại. Bạn có chắc chắn muốn hoàn tất?`;
+    const confirmMsg = `XÁC NHẬN ĐIỂM DANH CA DẠY?\n\n• Lớp: ${activeSlot.className}\n• Ngày: ${selectedDate}\n• Tiết: ${activeSlot.periodLabel} (${activeSlot.periodTime})\n• Môn: ${activeSlot.subjectName}\n\n⚠️ Sau khi bấm Xác nhận, thông tin điểm danh cho tiết học này sẽ bị KHÓA VĨNH VIỄN và không thể điểm danh lại. Bạn có chắc chắn?`;
 
     if (!confirm(confirmMsg)) return;
 
@@ -193,19 +182,19 @@ export default function AttendancePage() {
     const recordsList = Object.values(records);
 
     const result = await saveAttendance(
-      selectedClassId,
+      activeSlot.classId,
       selectedDate,
-      selectedPeriod,
-      selectedSubjectId,
+      activeSlot.period,
+      activeSlot.subjectId,
       recordsList
     );
 
     setSaving(false);
 
     if (result.success) {
-      showToast("Đã khóa và lưu điểm danh thành công!");
+      showToast("Đã lưu & khóa điểm danh ca dạy thành công!");
       setIsLocked(true);
-      loadData();
+      loadScheduleSlots();
     } else {
       showToast(result.error || "Lỗi khi lưu điểm danh", "error");
     }
@@ -230,22 +219,22 @@ export default function AttendancePage() {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-300 text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
-                <UserCheck className="w-3.5 h-3.5 text-emerald-400" /> Điểm Danh Theo Tiết Học
+                <CalendarDays className="w-3.5 h-3.5 text-emerald-400" /> Khớp Lịch Giảng Dạy TKB
               </span>
               <span className="px-2.5 py-0.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-indigo-300 text-[11px] font-bold">
-                Mỗi Tiết / Môn 1 Lần Duy Nhất
+                Đúng Ca / Lớp / Tiết Dạy 1 Lần Duy Nhất
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Sổ Điểm Danh Giảng Dạy</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Sổ Điểm Danh Giảng Dạy Theo Ca</h1>
             <p className="text-xs sm:text-sm text-slate-300 mt-1">
-              Ghi nhận hiện diện theo tiết, khớp thời khóa biểu & khóa tự động ngay sau khi điểm danh xong.
+              Giáo viên điểm danh đúng lớp & tiết được phân công trên Thời khóa biểu. Mỗi ca dạy chỉ điểm danh 1 lần.
             </p>
           </div>
 
-          {!isLocked && students.length > 0 && (
+          {!isLocked && activeSlot && students.length > 0 && (
             <button
               onClick={setAllPresent}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 rounded-xl text-xs font-extrabold transition-all backdrop-blur-md shadow-xs active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 rounded-xl text-xs font-extrabold transition-all backdrop-blur-md shadow-xs active:scale-95 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-300" />
               <span>Đánh dấu tất cả Có Mặt</span>
@@ -254,110 +243,88 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Lock Notification Banner if already taken */}
-      {isLocked && (
-        <div className="bg-rose-50 border-2 border-rose-300 text-rose-900 rounded-2xl p-4 shadow-xs flex items-start gap-3">
-          <Lock className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h3 className="font-extrabold text-sm text-rose-900 flex items-center gap-2">
-              <span>ĐÃ ĐIỂM DANH & KHÓA SỔ TIẾT HỌC NÀY</span>
-              {lockedAt && (
-                <span className="text-xs font-normal text-rose-700">
-                  (Đã lưu lúc {new Date(lockedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })})
-                </span>
-              )}
-            </h3>
-            <p className="text-xs text-rose-800">
-              Tiết <strong>{selectedPeriod}</strong> ngày <strong>{selectedDate}</strong> của lớp{" "}
-              <strong>{selectedClass?.className}</strong> đã được lưu thành công. Mỗi tiết học chỉ được phép điểm danh 1 lần duy nhất để bảo đảm dữ liệu minh bạch.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Filters Toolbar Bar */}
+      {/* Date & Teaching Slot Selector Toolbar */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Class Select */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          {/* Date Picker */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-              1. Chọn Lớp Dạy *
-            </label>
-            <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
-            >
-              {classes.length === 0 && <option value="">Chưa có lớp dạy</option>}
-              {classes.map((c) => (
-                <option key={c.classId} value={c.classId}>
-                  Lớp {c.className} (Khối {c.gradeLevel})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Date Select */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-              2. Ngày Điểm Danh *
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-indigo-600" />
+              <span>1. Chọn Ngày Giảng Dạy *</span>
             </label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
 
-          {/* Period Select (Mandatory Tiết 1..8) */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-              3. Tiết Học (1 - 8) *
+          {/* Schedule Slots Dropdown */}
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-emerald-600" />
+              <span>2. Chọn Ca Dạy Theo Thời Khóa Biểu *</span>
+              <span className="text-slate-400 font-normal">({slots.length} ca dạy tìm thấy)</span>
             </label>
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(parseInt(e.target.value, 10))}
-              className="w-full px-3.5 py-2.5 bg-white border-2 border-indigo-500 rounded-xl text-xs font-extrabold text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((p) => (
-                <option key={p} value={p}>
-                  Tiết {p} ({PERIOD_TIMES[p]})
-                </option>
-              ))}
-            </select>
-          </div>
 
-          {/* Subject Select */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-              4. Môn Học *
-            </label>
-            <select
-              value={selectedSubjectId}
-              onChange={(e) => setSelectedSubjectId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
-            >
-              {selectedClass?.subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  Môn {s.name}
-                </option>
-              ))}
-            </select>
+            {slots.length === 0 ? (
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-bold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Bạn không có lịch dạy tiết nào vào ngày {selectedDate} trên Thời khóa biểu.</span>
+              </div>
+            ) : (
+              <select
+                value={selectedSlotKey}
+                onChange={(e) => setSelectedSlotKey(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border-2 border-indigo-600 rounded-xl text-xs font-extrabold text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
+              >
+                {slots.map((s) => (
+                  <option key={s.slotKey} value={s.slotKey}>
+                    {s.isLocked ? "🔒 [ĐÃ ĐIỂM DANH] " : "⚡ [CHƯA ĐIỂM DANH] "}
+                    {s.periodLabel} ({s.periodTime}) — Lớp {s.className} (Môn {s.subjectName}
+                    {s.room ? ` - ${s.room}` : ""})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
 
-        {/* Timetable match banner */}
-        {scheduledSubjectInfo && (
-          <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs text-indigo-900 flex items-center justify-between">
-            <span className="flex items-center gap-2 font-bold">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
-              <span>Thời khóa biểu: Tiết {selectedPeriod} là Môn {scheduledSubjectInfo.name}</span>
-              {scheduledTeacherName && <span className="text-slate-600 font-normal">(GV: {scheduledTeacherName})</span>}
-            </span>
-            <span className="text-[11px] bg-indigo-200 text-indigo-800 font-bold px-2 py-0.5 rounded-md">
-              Đã tự động khớp TKB
-            </span>
+        {/* Selected Slot Information Card */}
+        {activeSlot && (
+          <div className="p-4 bg-slate-900 text-white rounded-xl shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-indigo-500/20 border border-indigo-400/30 rounded-xl text-indigo-300 font-black text-sm">
+                {activeSlot.periodLabel}
+              </div>
+              <div>
+                <div className="text-sm font-extrabold flex items-center gap-2">
+                  <span>Lớp {activeSlot.className}</span>
+                  <span className="text-emerald-400 font-semibold">• Môn {activeSlot.subjectName}</span>
+                </div>
+                <div className="text-xs text-slate-300 mt-0.5 flex items-center gap-2">
+                  <span>Giờ dạy: {activeSlot.periodTime}</span>
+                  {activeSlot.room && (
+                    <span className="flex items-center gap-1 text-indigo-300">
+                      <MapPin className="w-3 h-3" /> {activeSlot.room}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              {isLocked ? (
+                <span className="px-3 py-1.5 bg-rose-500/20 border border-rose-400/30 text-rose-300 text-xs font-extrabold rounded-xl flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" /> Đã Khóa Điểm Danh
+                </span>
+              ) : (
+                <span className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-extrabold rounded-xl flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Ca Dạy Đang Mở
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -413,7 +380,7 @@ export default function AttendancePage() {
           <div className="flex items-center gap-2 text-xs font-bold">
             <BookOpen className="w-4 h-4 text-emerald-400" />
             <span>
-              Danh Sách Học Sinh — Lớp {selectedClass?.className} (Tiết {selectedPeriod})
+              Danh Sách Học Sinh Lớp {activeSlot?.className} — Ca Dạy {activeSlot?.periodLabel} (Môn {activeSlot?.subjectName})
             </span>
           </div>
           {isLocked && (
@@ -440,14 +407,14 @@ export default function AttendancePage() {
                   <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
                     <div className="inline-flex items-center gap-2 font-semibold">
                       <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                      Đang tải danh sách học sinh...
+                      Đang tải danh sách học sinh ca dạy...
                     </div>
                   </td>
                 </tr>
               ) : students.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-slate-500 font-semibold">
-                    {classes.length === 0 ? "Bạn chưa được phân công lớp nào." : "Lớp hiện chưa có học sinh."}
+                    {slots.length === 0 ? "Bạn không có ca dạy nào vào ngày này." : "Lớp hiện chưa có học sinh."}
                   </td>
                 </tr>
               ) : (
@@ -501,22 +468,22 @@ export default function AttendancePage() {
       </div>
 
       {/* Save Button Bar */}
-      {students.length > 0 && (
+      {students.length > 0 && activeSlot && (
         <div className="flex items-center justify-between pt-2">
           <div className="text-xs text-slate-500 italic">
             {isLocked ? (
               <span className="text-rose-600 font-bold flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5" /> Tiết học đã điểm danh và bị khóa sổ.
+                <Lock className="w-3.5 h-3.5" /> Ca dạy này đã được điểm danh và bị khóa sổ.
               </span>
             ) : (
-              <span>⚠️ Kiểm tra kỹ trước khi bấm lưu. Tiết học sẽ bị khóa ngay sau khi lưu.</span>
+              <span>⚠️ Kiểm tra kỹ sĩ số trước khi bấm lưu. Ca dạy sẽ bị khóa ngay sau khi điểm danh xong.</span>
             )}
           </div>
 
           {isLocked ? (
             <div className="px-6 py-3 bg-slate-200 text-slate-600 rounded-2xl font-extrabold text-sm flex items-center gap-2 cursor-not-allowed">
               <Lock className="w-4 h-4 text-slate-500" />
-              <span>Đã Điểm Danh Tiết Này (Đã Khóa)</span>
+              <span>Đã Điểm Danh Ca Dạy Này (Đã Khóa)</span>
             </div>
           ) : (
             <button
@@ -525,7 +492,7 @@ export default function AttendancePage() {
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-extrabold text-sm shadow-md shadow-emerald-500/20 transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>{saving ? "Đang lưu và khóa..." : `Xác Nhận & Khóa Điểm Danh Tiết ${selectedPeriod}`}</span>
+              <span>{saving ? "Đang lưu & khóa..." : `Xác Nhận & Khóa Điểm Danh ${activeSlot.periodLabel}`}</span>
             </button>
           )}
         </div>

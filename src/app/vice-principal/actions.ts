@@ -59,42 +59,53 @@ export async function getVPAttendanceData(campusId: string) {
       include: { _count: { select: { students: true } } },
     });
 
+    if (classes.length === 0) return [];
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const classSummaries = await Promise.all(
-      classes.map(async (cls) => {
-        const [present, absent, late] = await Promise.all([
-          prisma.attendance.count({
-            where: { classId: cls.id, date: { gte: today }, status: AttendanceStatus.PRESENT },
-          }),
-          prisma.attendance.count({
-            where: {
-              classId: cls.id,
-              date: { gte: today },
-              status: { in: [AttendanceStatus.ABSENT_EXCUSED, AttendanceStatus.ABSENT_UNEXCUSED] },
-            },
-          }),
-          prisma.attendance.count({
-            where: { classId: cls.id, date: { gte: today }, status: AttendanceStatus.LATE },
-          }),
-        ]);
+    const classIds = classes.map((c) => c.id);
+    const attendanceGroups = await prisma.attendance.groupBy({
+      by: ["classId", "status"],
+      where: {
+        classId: { in: classIds },
+        date: { gte: today },
+      },
+      _count: { _all: true },
+    });
 
-        const total = cls._count.students || 0;
-        const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
+    const statsMap = new Map<string, { present: number; absent: number; late: number }>();
+    attendanceGroups.forEach((g) => {
+      const cur = statsMap.get(g.classId) || { present: 0, absent: 0, late: 0 };
+      if (g.status === AttendanceStatus.PRESENT) {
+        cur.present += g._count._all;
+      } else if (
+        g.status === AttendanceStatus.ABSENT_EXCUSED ||
+        g.status === AttendanceStatus.ABSENT_UNEXCUSED
+      ) {
+        cur.absent += g._count._all;
+      } else if (g.status === AttendanceStatus.LATE) {
+        cur.late += g._count._all;
+      }
+      statsMap.set(g.classId, cur);
+    });
 
-        return {
-          classId: cls.id,
-          className: cls.name,
-          gradeLevel: cls.gradeLevel,
-          totalStudents: total,
-          presentCount: present,
-          absentCount: absent,
-          lateCount: late,
-          rate: rate > 100 ? 100 : rate,
-        };
-      })
-    );
+    const classSummaries = classes.map((cls) => {
+      const counts = statsMap.get(cls.id) || { present: 0, absent: 0, late: 0 };
+      const total = cls._count.students || 0;
+      const rate = total > 0 ? Math.round(((counts.present + counts.late) / total) * 100) : 0;
+
+      return {
+        classId: cls.id,
+        className: cls.name,
+        gradeLevel: cls.gradeLevel,
+        totalStudents: total,
+        presentCount: counts.present,
+        absentCount: counts.absent,
+        lateCount: counts.late,
+        rate: rate > 100 ? 100 : rate,
+      };
+    });
 
     return classSummaries;
   } catch (err) {
