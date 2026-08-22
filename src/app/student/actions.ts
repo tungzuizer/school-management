@@ -1,16 +1,16 @@
-﻿"use server";
+"use server";
 
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// Helper: lấy student từ session user (có fallback nếu chưa gán student)
+// Helper: lấy student từ session user
 async function getStudentFromSession() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return null;
 
-    let student = await prisma.student.findUnique({
+    const student = await prisma.student.findUnique({
       where: { userId: session.user.id },
       include: {
         user: true,
@@ -22,8 +22,6 @@ async function getStudentFromSession() {
       },
     });
 
-
-
     if (!student) return null;
 
     return { student, userId: session.user.id };
@@ -31,6 +29,65 @@ async function getStudentFromSession() {
     console.error("Error in getStudentFromSession:", error);
     return null;
   }
+}
+
+function parseLocalDate(dateStr?: string): Date {
+  if (!dateStr) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+}
+
+function formatDateStr(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getWeekDays(dateStr?: string) {
+  const baseDate = parseLocalDate(dateStr);
+  const todayStr = formatDateStr(new Date());
+
+  const jsDay = baseDate.getDay();
+  const diffToMon = jsDay === 0 ? 6 : jsDay - 1;
+
+  const monday = new Date(baseDate);
+  monday.setDate(baseDate.getDate() - diffToMon);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  const dayLabels = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"];
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dStr = formatDateStr(d);
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    days.push({
+      dayOfWeek: i + 1,
+      label: dayLabels[i],
+      dateStr: dStr,
+      formattedDate: `${dd}/${mm}`,
+      isToday: dStr === todayStr,
+      dateObj: d,
+    });
+  }
+
+  return { monday, sunday, days, selectedDateStr: formatDateStr(baseDate) };
 }
 
 // Dashboard data
@@ -44,9 +101,8 @@ export async function getStudentDashboardData() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=CN, 1=T2...
+    const dayOfWeek = today.getDay();
 
-    // Optimized parallel execution via Promise.all
     const [
       grades,
       absentDays,
@@ -92,7 +148,7 @@ export async function getStudentDashboardData() {
         ? prisma.schedule.findMany({
             where: {
               classId: student.classId,
-              dayOfWeek: dayOfWeek,
+              dayOfWeek: dayOfWeek === 0 ? 7 : dayOfWeek,
             },
             include: {
               subject: true,
@@ -131,7 +187,7 @@ export async function getStudentDashboardData() {
         academicRating,
         totalGrades: grades.length,
       },
-            commendations: commendations.map((c) => ({
+      commendations: commendations.map((c) => ({
         id: c.id,
         description: c.description,
         date: c.date.toISOString(),
@@ -175,7 +231,6 @@ export async function getStudentGrades(term?: number) {
       orderBy: [{ subject: { name: "asc" } }, { type: "asc" }],
     });
 
-    // Nhóm theo môn học
     const gradesBySubject: Record<
       string,
       {
@@ -202,7 +257,6 @@ export async function getStudentGrades(term?: number) {
       });
     });
 
-    // Tính điểm TB từng môn (có hệ số)
     Object.values(gradesBySubject).forEach((subject) => {
       let totalWeighted = 0;
       let totalWeight = 0;
@@ -252,7 +306,6 @@ export async function getStudentAttendance(month?: number, year?: number) {
       orderBy: [{ date: "asc" }, { period: "asc" }],
     });
 
-    // Thống kê
     const totalPresent = attendances.filter(
       (a) => String(a.status) === "PRESENT"
     ).length;
@@ -296,33 +349,132 @@ export async function getStudentAttendance(month?: number, year?: number) {
   }
 }
 
-// Thời khóa biểu
-export async function getStudentSchedule() {
+export interface StudentScheduleDayHeader {
+  dayOfWeek: number;
+  label: string;
+  dateStr: string;
+  formattedDate: string;
+  isToday: boolean;
+}
+
+export interface StudentScheduleSlot {
+  id: string;
+  dayOfWeek: number;
+  dateStr: string;
+  period: number;
+  subjectName: string;
+  teacherName: string;
+  room: string | null;
+  attendanceStatus?: string | null;
+}
+
+export interface StudentNotificationItem {
+  id: string;
+  title: string;
+  content: string;
+  type?: string;
+  senderName: string;
+  createdAt: string;
+  isImportant?: boolean;
+}
+
+export interface StudentScheduleData {
+  studentName: string;
+  className: string;
+  schoolName: string;
+  selectedDateStr: string;
+  days: StudentScheduleDayHeader[];
+  schedules: StudentScheduleSlot[];
+  notifications: StudentNotificationItem[];
+}
+
+export async function getStudentSchedule(dateStr?: string): Promise<StudentScheduleData | null> {
   try {
     const result = await getStudentFromSession();
     if (!result?.student || !result.student.classId) return null;
-    const { student } = result;
+    const { student, userId } = result;
+    const classId = student.classId as string;
 
-    const schedules = await prisma.schedule.findMany({
-      where: { classId: student.classId! },
-      include: {
-        subject: true,
-        teacher: { include: { user: true } },
-      },
-      orderBy: [{ dayOfWeek: "asc" }, { period: "asc" }],
+    const { monday, sunday, days, selectedDateStr } = getWeekDays(dateStr);
+
+    const [schedules, attendances, notifications] = await Promise.all([
+      prisma.schedule.findMany({
+        where: { classId: classId },
+        include: {
+          subject: true,
+          teacher: { include: { user: true } },
+        },
+        orderBy: [{ dayOfWeek: "asc" }, { period: "asc" }],
+      }),
+      prisma.attendance.findMany({
+        where: {
+          studentId: student.id,
+          date: { gte: monday, lte: sunday },
+        },
+        select: { period: true, date: true, status: true },
+      }),
+      prisma.notification.findMany({
+        where: {
+          OR: [
+            { receiverId: userId },
+            { receiverId: null },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+        include: {
+          sender: { select: { name: true, role: true } },
+        },
+      }),
+    ]);
+
+    const attendanceMap = new Map<string, string>();
+    attendances.forEach((att) => {
+      const dStr = formatDateStr(att.date);
+      attendanceMap.set(`${att.period}_${dStr}`, String(att.status));
     });
+
+    const slots: StudentScheduleSlot[] = [];
+    days.forEach((dayHeader) => {
+      const daySchedules = schedules.filter((s) => s.dayOfWeek === dayHeader.dayOfWeek);
+      daySchedules.forEach((s) => {
+        const status = attendanceMap.get(`${s.period}_${dayHeader.dateStr}`) || null;
+        slots.push({
+          id: `${s.id}_${dayHeader.dateStr}`,
+          dayOfWeek: s.dayOfWeek,
+          dateStr: dayHeader.dateStr,
+          period: s.period,
+          subjectName: s.subject.name,
+          teacherName: s.teacher?.user?.name || "Giáo viên bộ môn",
+          room: s.room,
+          attendanceStatus: status,
+        });
+      });
+    });
+
+    const formattedNotifications: StudentNotificationItem[] = notifications.map((n) => ({
+      id: n.id,
+      title: n.title,
+      content: n.content,
+      type: "Thông báo",
+      senderName: n.sender?.name || "BGH Nhà trường",
+      createdAt: new Date(n.createdAt).toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      isImportant: n.title.toLowerCase().includes("thông báo") || n.title.toLowerCase().includes("lịch"),
+    }));
 
     return {
       studentName: student.user.name,
-      className: student.classRoom?.name || "",
-      schedules: schedules.map((s) => ({
-        id: s.id,
-        dayOfWeek: s.dayOfWeek,
-        period: s.period,
-        subjectName: s.subject.name,
-        teacherName: s.teacher?.user?.name || "Giáo viên",
-        room: s.room,
-      })),
+      className: student.classRoom?.name || "Chưa xếp lớp",
+      schoolName: student.classRoom?.school?.name || "Trường THCS",
+      selectedDateStr,
+      days: days.map(({ dateObj, ...rest }) => rest),
+      schedules: slots,
+      notifications: formattedNotifications,
     };
   } catch (error) {
     console.error("Error in getStudentSchedule:", error);

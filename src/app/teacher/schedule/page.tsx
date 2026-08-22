@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Filter,
+  UserCheck,
+  User,
 } from "lucide-react";
 
 const PERIOD_TIMES: Record<number, { label: string; time: string; shift: "MORNING" | "AFTERNOON" }> = {
@@ -63,12 +65,13 @@ function getTodayString(): string {
 export default function TeacherSchedulePage() {
   const [data, setData] = useState<TeacherScheduleData | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
+  const [viewMode, setViewMode] = useState<"PERSONAL" | "HOMEROOM">("PERSONAL");
   const [loading, setLoading] = useState(true);
 
-  async function loadData(dateStr: string) {
+  async function loadData(dateStr: string, mode: "PERSONAL" | "HOMEROOM") {
     setLoading(true);
     try {
-      const res = await getTeacherSchedule(dateStr);
+      const res = await getTeacherSchedule(dateStr, mode);
       setData(res);
     } catch (err) {
       console.error("Lỗi tải thời khóa biểu giáo viên:", err);
@@ -78,8 +81,8 @@ export default function TeacherSchedulePage() {
   }
 
   useEffect(() => {
-    loadData(selectedDate);
-  }, [selectedDate]);
+    loadData(selectedDate, viewMode);
+  }, [selectedDate, viewMode]);
 
   const changeWeek = (daysOffset: number) => {
     const parts = selectedDate.split("-").map(Number);
@@ -118,10 +121,14 @@ export default function TeacherSchedulePage() {
               )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Lịch Dạy & Trạng Thái Điểm Danh — {data?.teacherName || "Giáo Viên"}
+              {viewMode === "HOMEROOM"
+                ? `Thời Khóa Biểu Lớp Chủ Nhiệm (${data?.homeroomClassName || ""})`
+                : `Lịch Dạy Cá Nhân — ${data?.teacherName || "Giáo Viên"}`}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 mt-1">
-              Đồng bộ dữ liệu thời khóa biểu thực tế từ cơ sở dữ liệu. Theo dõi tiết dạy và trạng thái điểm danh từng ngày.
+              {viewMode === "HOMEROOM"
+                ? `Xem toàn bộ lịch học & giáo viên bộ môn giảng dạy của lớp chủ nhiệm ${data?.homeroomClassName}.`
+                : "Theo dõi phân công giảng dạy bộ môn cá nhân ở tất cả các lớp & trạng thái điểm danh."}
             </p>
           </div>
 
@@ -131,40 +138,65 @@ export default function TeacherSchedulePage() {
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-extrabold transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
             >
               <ClipboardCheck className="w-4 h-4" />
-              <span>Điểm Danh Theo Lớp</span>
+              <span>Sổ Điểm Danh</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Week Navigator & Controls */}
-      <div className="bg-white border border-slate-200/80 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+      {/* Mode Switcher Tabs */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xs">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
-            onClick={() => changeWeek(-7)}
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            onClick={() => setViewMode("PERSONAL")}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              viewMode === "PERSONAL"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
           >
-            <ChevronLeft className="w-4 h-4" /> Tuần trước
+            <User className="w-4 h-4" />
+            <span>Lịch Dạy Cá Nhân (Bộ Môn)</span>
           </button>
-          <button
-            onClick={() => setSelectedDate(getTodayString())}
-            className="px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-extrabold transition-colors cursor-pointer"
-          >
-            Tuần này (Hôm nay)
-          </button>
-          <button
-            onClick={() => changeWeek(7)}
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-          >
-            Tuần sau <ChevronRight className="w-4 h-4" />
-          </button>
+
+          {data?.homeroomClassName && (
+            <button
+              onClick={() => setViewMode("HOMEROOM")}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                viewMode === "HOMEROOM"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>TKB Lớp Chủ Nhiệm ({data.homeroomClassName})</span>
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-            <Filter className="w-4 h-4 text-indigo-500" />
-            <span>Chọn ngày xem:</span>
+        {/* Week Controls & Date Filter */}
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => changeWeek(-7)}
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setSelectedDate(getTodayString())}
+              className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-extrabold transition-colors cursor-pointer"
+            >
+              Hôm nay
+            </button>
+            <button
+              onClick={() => changeWeek(7)}
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
+
           <input
             type="date"
             value={selectedDate}
@@ -182,7 +214,9 @@ export default function TeacherSchedulePage() {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase">Tổng tiết dạy / tuần</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase">
+                {viewMode === "HOMEROOM" ? "Tổng tiết học / tuần" : "Tổng tiết dạy / tuần"}
+              </p>
               <p className="text-lg font-extrabold text-slate-900">{data.totalPeriods} tiết</p>
             </div>
           </div>
@@ -192,8 +226,12 @@ export default function TeacherSchedulePage() {
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase">Số lớp phụ trách</p>
-              <p className="text-lg font-extrabold text-slate-900">{data.classesCount} lớp</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase">
+                {viewMode === "HOMEROOM" ? "Lớp xem TKB" : "Số lớp phụ trách"}
+              </p>
+              <p className="text-lg font-extrabold text-slate-900">
+                {viewMode === "HOMEROOM" ? `Lớp ${data.homeroomClassName}` : `${data.classesCount} lớp`}
+              </p>
             </div>
           </div>
 
@@ -214,7 +252,7 @@ export default function TeacherSchedulePage() {
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase">Lớp chủ nhiệm</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase">Chủ nhiệm</p>
               <p className="text-xs font-extrabold text-slate-900">
                 {data.homeroomClassName ? `Lớp ${data.homeroomClassName}` : "Không"}
               </p>
@@ -223,24 +261,28 @@ export default function TeacherSchedulePage() {
         </div>
       )}
 
-      {/* Timetable Matrix with Real Dates and Real Attendance Badges */}
+      {/* Timetable Matrix */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
         <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold">
             <BookOpen className="w-4 h-4 text-emerald-400" />
-            <span>Ma Trận Thời Khóa Biểu & Trạng Thái Điểm Danh Thực Tế</span>
+            <span>
+              {viewMode === "HOMEROOM"
+                ? `Thời Khóa Biểu Chi Tiết Lớp Chủ Nhiệm ${data?.homeroomClassName}`
+                : "Ma Trận Lịch Dạy Bộ Môn Cá Nhân"}
+            </span>
           </div>
-          <span className="text-[11px] text-slate-400 italic">Dữ liệu trực tiếp từ cơ sở dữ liệu</span>
+          <span className="text-[11px] text-slate-400 italic">Dữ liệu thời gian thực từ hệ thống</span>
         </div>
 
         {loading ? (
           <div className="p-12 text-center text-slate-500 font-bold flex items-center justify-center gap-2">
             <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <span>Đang tải dữ liệu thời khóa biểu thực tế...</span>
+            <span>Đang tải dữ liệu thời khóa biểu...</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse min-w-[900px]">
+            <table className="w-full border-collapse min-w-[920px]">
               <thead>
                 <tr className="bg-slate-100/80 border-b border-slate-200 text-xs font-extrabold text-slate-700">
                   <th className="py-3 px-3 w-32 border-r border-slate-200 text-center uppercase tracking-wider">
@@ -281,13 +323,15 @@ export default function TeacherSchedulePage() {
                       return (
                         <td
                           key={d.dayOfWeek}
-                          className={`p-2 border-r border-slate-200 last:border-0 align-top h-28 w-1/6 transition-all ${
+                          className={`p-2 border-r border-slate-200 last:border-0 align-top h-32 w-1/6 transition-all ${
                             d.isToday ? "bg-indigo-50/10" : ""
                           }`}
                         >
                           {slot ? (
                             <div
-                              className={`h-full p-2.5 rounded-xl border ${style?.bg} ${style?.border} flex flex-col justify-between shadow-2xs transition-transform hover:scale-[1.01]`}
+                              className={`h-full p-2.5 rounded-xl border ${style?.bg} ${style?.border} flex flex-col justify-between shadow-2xs transition-transform hover:scale-[1.01] ${
+                                slot.isMySlot ? "ring-2 ring-indigo-500/50" : ""
+                              }`}
                             >
                               <div>
                                 <div className="flex items-center justify-between gap-1">
@@ -296,10 +340,20 @@ export default function TeacherSchedulePage() {
                                     Lớp {slot.className}
                                   </span>
                                 </div>
-                                {slot.room && (
-                                  <div className="text-[10px] text-slate-600 font-bold mt-1 flex items-center gap-1">
-                                    <MapPin className="w-3 h-3 text-slate-400" /> {slot.room}
+
+                                {viewMode === "HOMEROOM" ? (
+                                  <div className="text-[10px] text-slate-700 font-bold mt-1">
+                                    <span className="text-slate-400 font-medium">GV: </span>
+                                    <span className={slot.isMySlot ? "text-indigo-700 font-extrabold" : ""}>
+                                      {slot.teacherName} {slot.isMySlot ? "(Tôi)" : ""}
+                                    </span>
                                   </div>
+                                ) : (
+                                  slot.room && (
+                                    <div className="text-[10px] text-slate-600 font-bold mt-1 flex items-center gap-1">
+                                      <MapPin className="w-3 h-3 text-slate-400" /> {slot.room}
+                                    </div>
+                                  )
                                 )}
                               </div>
 
@@ -355,13 +409,15 @@ export default function TeacherSchedulePage() {
                       return (
                         <td
                           key={d.dayOfWeek}
-                          className={`p-2 border-r border-slate-200 last:border-0 align-top h-28 w-1/6 transition-all ${
+                          className={`p-2 border-r border-slate-200 last:border-0 align-top h-32 w-1/6 transition-all ${
                             d.isToday ? "bg-indigo-50/10" : ""
                           }`}
                         >
                           {slot ? (
                             <div
-                              className={`h-full p-2.5 rounded-xl border ${style?.bg} ${style?.border} flex flex-col justify-between shadow-2xs transition-transform hover:scale-[1.01]`}
+                              className={`h-full p-2.5 rounded-xl border ${style?.bg} ${style?.border} flex flex-col justify-between shadow-2xs transition-transform hover:scale-[1.01] ${
+                                slot.isMySlot ? "ring-2 ring-indigo-500/50" : ""
+                              }`}
                             >
                               <div>
                                 <div className="flex items-center justify-between gap-1">
@@ -370,10 +426,20 @@ export default function TeacherSchedulePage() {
                                     Lớp {slot.className}
                                   </span>
                                 </div>
-                                {slot.room && (
-                                  <div className="text-[10px] text-slate-600 font-bold mt-1 flex items-center gap-1">
-                                    <MapPin className="w-3 h-3 text-slate-400" /> {slot.room}
+
+                                {viewMode === "HOMEROOM" ? (
+                                  <div className="text-[10px] text-slate-700 font-bold mt-1">
+                                    <span className="text-slate-400 font-medium">GV: </span>
+                                    <span className={slot.isMySlot ? "text-indigo-700 font-extrabold" : ""}>
+                                      {slot.teacherName} {slot.isMySlot ? "(Tôi)" : ""}
+                                    </span>
                                   </div>
+                                ) : (
+                                  slot.room && (
+                                    <div className="text-[10px] text-slate-600 font-bold mt-1 flex items-center gap-1">
+                                      <MapPin className="w-3 h-3 text-slate-400" /> {slot.room}
+                                    </div>
+                                  )
                                 )}
                               </div>
 
