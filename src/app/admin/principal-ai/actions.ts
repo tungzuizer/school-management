@@ -2,115 +2,22 @@
 
 import prisma from "@/lib/prisma";
 import { aiChatCompletion } from "@/lib/ai-provider";
+import { getComprehensiveAIContext } from "@/lib/ai-data-engine";
 
-
-// Ask Principal AI for decision support
 export async function askPrincipalAI(query: string) {
-  // Gather real context from DB
-  const schoolPoints = await prisma.schoolPoint.findMany({
-    include: { campus: true },
-    orderBy: { distanceKm: "asc" },
-  });
-
-  const recentWarnings = await prisma.earlyWarning.findMany({
-    where: { isResolved: false },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
-
-  const recentAssignments = await prisma.substituteAssignment.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
-
-  const recentDecisions = await prisma.decisionLog.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
-
-  const totalStudents = await prisma.student.count({ where: { status: "STUDYING" } });
-
-  // Gather real-time attendance metrics for today
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
-
-  const presentStudents = await prisma.attendance.findMany({
-    where: {
-      date: { gte: todayStart, lte: todayEnd },
-      status: "PRESENT",
-    },
-    select: { studentId: true },
-    distinct: ["studentId"],
-  });
-  const presentToday = presentStudents.length;
-
-  const absentStudents = await prisma.attendance.findMany({
-    where: {
-      date: { gte: todayStart, lte: todayEnd },
-      status: { in: ["ABSENT_EXCUSED", "ABSENT_UNEXCUSED"] },
-    },
-    select: { studentId: true },
-    distinct: ["studentId"],
-  });
-  const absentToday = absentStudents.length;
-
-  const lateStudents = await prisma.attendance.findMany({
-    where: {
-      date: { gte: todayStart, lte: todayEnd },
-      status: "LATE",
-    },
-    select: { studentId: true },
-    distinct: ["studentId"],
-  });
-  const lateToday = lateStudents.length;
-
-  const pointsContext = schoolPoints
-    .map((sp) => `- ${sp.name} (${sp.campus.name}): ${sp.distanceKm ?? 0}km, QL: ${sp.managerName || "N/A"}, SĐT: ${sp.phone || "N/A"}`)
-    .join("\n");
-
-  const warningsContext = recentWarnings.length > 0
-    ? recentWarnings.map((w) => `- [${w.level}] ${w.title} tại ${w.schoolPointName || "N/A"} (${w.category})`).join("\n")
-    : "Không có cảnh báo nào đang hoạt động.";
-
-  const assignmentsContext = recentAssignments.length > 0
-    ? recentAssignments.map((a) => `- ${a.originalTeacher} nghỉ → ${a.substituteTeacher} dạy thay tại ${a.schoolPointName || "N/A"} (${a.status})`).join("\n")
-    : "Không có điều chuyển gần đây.";
-
-  const decisionsContext = recentDecisions.length > 0
-    ? recentDecisions.map((d) => `- ${d.query.substring(0, 80)}... (${d.createdAt.toLocaleDateString("vi-VN")})`).join("\n")
-    : "Chưa có quyết định nào được ghi nhận.";
+  const dbContext = await getComprehensiveAIContext(query);
 
   const prompt = `Bạn là Trợ lý AI Thông minh & Cố vấn Quản lý Giáo dục cho Hiệu trưởng.
 
-DỮ LIỆU THỰC TẾ TRÍCH XUẤT TỪ CƠ SỞ DỮ LIỆU HỆ THỐNG HÔM NAY (${new Date().toLocaleDateString("vi-VN")}):
-
-1. HỆ THỐNG ĐIỂM TRƯỜNG (${schoolPoints.length} điểm):
-${pointsContext}
-
-2. DỮ LIỆU SĨ SỐ & ĐIỂM DANH HỌC SINH REAL-TIME:
-- Tổng số học sinh chính thức (STATUS=STUDYING): ${totalStudents} học sinh
-- Số học sinh CÓ MẶT đã điểm danh hôm nay: ${presentToday > 0 ? presentToday + " em" : "0 em (Chưa ghi nhận ca điểm danh có mặt hôm nay)"}
-- Số học sinh VẮNG MẶT hôm nay: ${absentToday} em
-- Số học sinh ĐI MUỘN hôm nay: ${lateToday} em
-
-3. CẢNH BÁO SỚM ĐANG HOẠT ĐỘNG:
-${warningsContext}
-
-4. ĐIỀU CHUYỂN DẠY THAY GẦN ĐÂY:
-${assignmentsContext}
-
-5. QUYẾT ĐỊNH CHỈ ĐẠO GẦN ĐÂY:
-${decisionsContext}
+DỮ LIỆU THỰC TẾ TRÍCH XUẤT TỪ CƠ SỞ DỮ LIỆU HỆ THỐNG NGUYÊN BẢN:
+${dbContext}
 
 CÂU HỎI / YÊU CẦU CỦA HIỆU TRƯỞNG:
 "${query}"
 
 QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
-1. Hãy trả lời ĐÚNG TRỌNG TÂM câu hỏi của Hiệu trưởng. Đi thẳng vào vấn đề, tự nhiên, rõ ràng.
-2. Nếu Hiệu trưởng hỏi tra cứu thông tin (như sĩ số, học sinh đi học, vắng mặt, điểm trường, giáo viên), hãy cung cấp ngay con số thực tế ở Mục 2. KHÔNG viết lan man.
+1. Hãy trả lời ĐÚNG TRỌNG TÂM câu hỏi của Hiệu trưởng dựa trên dữ liệu thực tế ở trên. Đi thẳng vào vấn đề, tự nhiên, rõ ràng.
+2. Nếu Hiệu trưởng hỏi tra cứu thông tin (như sĩ số, học sinh đi học, vắng mặt, điểm trường, giáo viên), hãy cung cấp ngay con số thực tế trong cơ sở dữ liệu. KHÔNG viết lan man hay tự chế số liệu.
 3. Nếu câu hỏi yêu cầu lập kế hoạch/giải pháp chỉ đạo, hãy trình bày rõ các phương án chỉ đạo ở cuối bài dạng:
 
 PHƯƠNG_ÁN_1:
@@ -135,57 +42,43 @@ BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
 
   let aiText = aiRes.text;
 
-  // Clean raw tags if any
   const hasOptions = aiText.includes("PHƯƠNG_ÁN_1");
   const lines = aiText.split("\n");
 
-  const getValue = (key: string) => {
-    const line = lines.find((l: string) => l.includes(key));
-    return line ? line.split(":").slice(1).join(":").trim() : "";
-  };
+  const summary = lines.find(l => l.includes("TÓM_TẮT"))?.split(":")[1]?.trim() || aiText.split("PHƯƠNG_ÁN_1")[0].trim();
+  const riskLevel = (lines.find(l => l.includes("MỨC_RỦI_RO"))?.split(":")[1]?.trim() || "LOW").toUpperCase();
+  const policyNote = lines.find(l => l.includes("CƠ_SỞ_PHÁP_LÝ"))?.split(":")[1]?.trim() || undefined;
+  const actionStepsStr = lines.find(l => l.includes("BƯỚC_TRIỂN_KHAI"))?.split(":")[1]?.trim();
+  const actionSteps = actionStepsStr ? actionStepsStr.split("|").map(s => s.trim()).filter(Boolean) : [];
 
-  const summary = getValue("TÓM_TẮT") || aiText.split("PHƯƠNG_ÁN_1")[0].trim();
-  const riskLevel = (getValue("MỨC_RỦI_RO") || "LOW").toUpperCase();
-  const policyNote = getValue("CƠ_SỞ_PHÁP_LÝ") || undefined;
-  const actionSteps = getValue("BƯỚC_TRIỂN_KHAI")
-    ? getValue("BƯỚC_TRIỂN_KHAI").split("|").map((s: string) => s.trim()).filter(Boolean)
-    : [];
-
-  const options: Array<{
-    title: string;
-    pros: string[];
-    cons: string[];
-    score: number;
-  }> = [];
+  const options: Array<{ title: string; pros: string[]; cons: string[]; score: number }> = [];
 
   if (hasOptions) {
     for (let i = 1; i <= 3; i++) {
-      const titleKey = i === 1 ? "PHƯƠNG_ÁN_1" : i === 2 ? "PHƯƠNG_ÁN_2" : "PHƯƠNG_ÁN_3";
-      const sectionStart = lines.findIndex((l: string) => l.includes(titleKey));
+      const titleKey = `PHƯƠNG_ÁN_${i}`;
+      const sectionStart = lines.findIndex(l => l.includes(titleKey));
       if (sectionStart === -1) continue;
 
       const sectionLines = lines.slice(sectionStart, sectionStart + 6);
       const getVal = (key: string) => {
-        const line = sectionLines.find((l: string) => l.includes(key));
+        const line = sectionLines.find(l => l.includes(key));
         return line ? line.split(":").slice(1).join(":").trim() : "";
       };
 
       const title = getVal("TIÊU_ĐỀ") || `Phương án ${i}`;
       const score = parseInt(getVal("ĐIỂM")) || 75;
-      const pros = getVal("ƯU_ĐIỂM") ? getVal("ƯU_ĐIỂM").split("|").map((s: string) => s.trim()).filter(Boolean) : [];
-      const cons = getVal("NHƯỢC_ĐIỂM") ? getVal("NHƯỢC_ĐIỂM").split("|").map((s: string) => s.trim()).filter(Boolean) : [];
+      const pros = getVal("ƯU_ĐIỂM") ? getVal("ƯU_ĐIỂM").split("|").map(s => s.trim()).filter(Boolean) : [];
+      const cons = getVal("NHƯỢC_ĐIỂM") ? getVal("NHƯỢC_ĐIỂM").split("|").map(s => s.trim()).filter(Boolean) : [];
 
       options.push({ title, score, pros, cons });
     }
 
-    // Strip out the raw PHƯƠNG_ÁN block from main text so text is clean markdown
     const optionStartIndex = aiText.indexOf("PHƯƠNG_ÁN_1");
     if (optionStartIndex !== -1) {
       aiText = aiText.substring(0, optionStartIndex).trim();
     }
   }
 
-  // Clean remaining key labels like TÓM_TẮT:
   aiText = aiText.replace(/^TÓM_TẮT:\s*/i, "").replace(/^MỨC_RỦI_RO:\s*\w+\s*/im, "").trim();
 
   return {
@@ -204,7 +97,6 @@ BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
   };
 }
 
-// Save a decision to the log
 export async function saveDecision(input: {
   query: string;
   aiRecommendation: string;
@@ -218,7 +110,7 @@ export async function saveDecision(input: {
         decisionTaken: input.decisionTaken || null,
       },
     });
-    
+
     return {
       success: true,
       data: {
@@ -235,7 +127,6 @@ export async function saveDecision(input: {
   }
 }
 
-// Get all decision logs
 export async function getDecisionLogs() {
   const logs = await prisma.decisionLog.findMany({
     orderBy: { createdAt: "desc" },
@@ -250,7 +141,6 @@ export async function getDecisionLogs() {
   }));
 }
 
-// Get school points info for the sidebar context
 export async function getSchoolPointsContext() {
   const points = await prisma.schoolPoint.findMany({
     include: {
@@ -268,7 +158,7 @@ export async function getSchoolPointsContext() {
     name: p.name,
     distanceKm: p.distanceKm ?? 0,
     studentsCount: p.classRooms.reduce((sum, c) => sum + c.students.length, 0),
-    teacherCount: 0, // Would need a Teacher-SchoolPoint relation
+    teacherCount: 0,
     campusName: p.campus.name,
   }));
 }

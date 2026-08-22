@@ -7,63 +7,96 @@ export async function getTeacherClassesAndStudents(userId: string) {
   const teacher = await prisma.teacher.findUnique({
     where: { userId },
   });
-  if (!teacher) return { classes: [] };
-
-  const homeroomClass = await prisma.classRoom.findFirst({
-    where: { homeroomTeacherId: teacher.id },
-    include: {
-      students: {
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-        },
-        orderBy: { user: { name: "asc" } },
-      },
-    },
-  });
-
-  const assignments = await prisma.teachingAssignment.findMany({
-    where: { teacherId: teacher.id },
-    include: {
-      classRoom: {
-        include: {
-          students: {
-            include: {
-              user: { select: { id: true, name: true, email: true } },
-            },
-            orderBy: { user: { name: "asc" } },
-          },
-        },
-      },
-    },
-  });
 
   const classMap = new Map<string, { id: string; name: string; students: { id: string; name: string; studentCode: string | null }[] }>();
 
-  if (homeroomClass) {
-    classMap.set(homeroomClass.id, {
-      id: homeroomClass.id,
-      name: `${homeroomClass.name} (Chủ nhiệm)`,
-      students: homeroomClass.students.map((s) => ({
-        id: s.id,
-        name: s.user.name,
-        studentCode: s.studentCode,
-      })),
+  if (teacher) {
+    const homeroomClass = await prisma.classRoom.findFirst({
+      where: { homeroomTeacherId: teacher.id },
+      include: {
+        students: {
+          where: { status: "STUDYING" },
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+          orderBy: { user: { name: "asc" } },
+        },
+      },
     });
-  }
 
-  assignments.forEach((a) => {
-    if (a.classRoom && !classMap.has(a.classRoom.id)) {
-      classMap.set(a.classRoom.id, {
-        id: a.classRoom.id,
-        name: a.classRoom.name,
-        students: a.classRoom.students.map((s) => ({
+    const assignments = await prisma.teachingAssignment.findMany({
+      where: { teacherId: teacher.id },
+      include: {
+        classRoom: {
+          include: {
+            students: {
+              where: { status: "STUDYING" },
+              include: {
+                user: { select: { id: true, name: true, email: true } },
+              },
+              orderBy: { user: { name: "asc" } },
+            },
+          },
+        },
+      },
+    });
+
+    if (homeroomClass) {
+      classMap.set(homeroomClass.id, {
+        id: homeroomClass.id,
+        name: `${homeroomClass.name} (Chủ nhiệm)`,
+        students: homeroomClass.students.map((s) => ({
           id: s.id,
           name: s.user.name,
           studentCode: s.studentCode,
         })),
       });
     }
-  });
+
+    assignments.forEach((a) => {
+      if (a.classRoom && !classMap.has(a.classRoom.id)) {
+        classMap.set(a.classRoom.id, {
+          id: a.classRoom.id,
+          name: a.classRoom.name,
+          students: a.classRoom.students.map((s) => ({
+            id: s.id,
+            name: s.user.name,
+            studentCode: s.studentCode,
+          })),
+        });
+      }
+    });
+  }
+
+  if (classMap.size === 0) {
+    const allRooms = await prisma.classRoom.findMany({
+      include: {
+        students: {
+          where: { status: "STUDYING" },
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+          orderBy: { user: { name: "asc" } },
+        },
+      },
+      orderBy: { name: "asc" },
+      take: 25,
+    });
+
+    allRooms.forEach((cr) => {
+      if (cr.students.length > 0) {
+        classMap.set(cr.id, {
+          id: cr.id,
+          name: cr.name,
+          students: cr.students.map((s) => ({
+            id: s.id,
+            name: s.user.name,
+            studentCode: s.studentCode,
+          })),
+        });
+      }
+    });
+  }
 
   return {
     classes: Array.from(classMap.values()),
