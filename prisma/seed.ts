@@ -274,8 +274,15 @@ async function main() {
       const spec = teacherSpecs[tIdx];
       let teacherUser;
       if (sIdx === 0 && tIdx === 2) {
-        // Literature teacher is the default demo teacher
-        teacherUser = defaultTeacherUser;
+        // Literature teacher is the default demo teacher for THCS Tân Xã
+        teacherUser = await prisma.user.update({
+          where: { id: defaultTeacherUser.id },
+          data: {
+            schoolId: school.id,
+            departmentId: dept.id,
+            districtWardId: sConf.districtWardId,
+          },
+        });
       } else {
         teacherUser = await prisma.user.create({
           data: {
@@ -283,6 +290,9 @@ async function main() {
             email: `teacher.${sConf.code.toLowerCase()}.${spec.name.toLowerCase().replace(/ /g, "")}@school.com`,
             password: hashedPassword,
             role: Role.TEACHER,
+            schoolId: school.id,
+            departmentId: dept.id,
+            districtWardId: sConf.districtWardId,
           },
         });
       }
