@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { Clock, MapPin, User, CheckCircle2, CalendarDays } from "lucide-react";
@@ -46,7 +46,7 @@ export function LiveClassTimeline({ schedule, className = "" }: Props) {
       }
     });
 
-    setCurrentPeriod(found || 2);
+    setCurrentPeriod(found);
   }, []);
 
   if (schedule.length === 0) {

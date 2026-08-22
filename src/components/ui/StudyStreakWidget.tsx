@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Flame, Trophy, Star, CheckCircle2, Zap } from "lucide-react";
 import { ConfettiEffect } from "./ConfettiEffect";
 
@@ -12,14 +12,39 @@ type Props = {
 export function StudyStreakWidget({ streakDays = 7, className = "" }: Props) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(streakDays);
-  const [checkedToday, setCheckedToday] = useState(true);
+  const [checkedToday, setCheckedToday] = useState(false);
+
+  useEffect(() => {
+    try {
+      const todayKey = `study_streak_checkin_${new Date().toISOString().split("T")[0]}`;
+      const savedCheckin = localStorage.getItem(todayKey);
+      if (savedCheckin === "true") {
+        setCheckedToday(true);
+      }
+
+      const savedStreak = localStorage.getItem("study_streak_count");
+      if (savedStreak) {
+        setCurrentStreak(parseInt(savedStreak, 10));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const handleCheckIn = () => {
-    if (!checkedToday) {
-      setCurrentStreak((s) => s + 1);
-      setCheckedToday(true);
-    }
     setShowConfetti(true);
+    if (!checkedToday) {
+      const newStreak = currentStreak + 1;
+      setCurrentStreak(newStreak);
+      setCheckedToday(true);
+      try {
+        const todayKey = `study_streak_checkin_${new Date().toISOString().split("T")[0]}`;
+        localStorage.setItem(todayKey, "true");
+        localStorage.setItem("study_streak_count", newStreak.toString());
+      } catch (e) {
+        console.error(e);
+      }
+    }
   };
 
   return (
@@ -47,7 +72,7 @@ export function StudyStreakWidget({ streakDays = 7, className = "" }: Props) {
         </div>
         <button
           onClick={handleCheckIn}
-          className="bg-white text-orange-600 hover:bg-yellow-50 active:scale-95 font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0"
+          className="bg-white text-orange-600 hover:bg-yellow-50 active:scale-95 font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
         >
           <Zap className="w-4 h-4 fill-orange-500" />
           {checkedToday ? "Ăn mừng 🔥" : "Điểm danh ngay!"}
@@ -56,10 +81,10 @@ export function StudyStreakWidget({ streakDays = 7, className = "" }: Props) {
       <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-orange-100">
         <div className="flex items-center gap-1.5">
           <Trophy className="w-4 h-4 text-yellow-300" />
-          <span>Mục tiêu tuần: <strong>7/7 ngày</strong></span>
+          <span>Mục tiêu tuần: <strong>{Math.min(currentStreak, 7)}/7 ngày</strong></span>
         </div>
         <span className="flex items-center gap-1 font-semibold text-yellow-200">
-          <CheckCircle2 className="w-3.5 h-3.5" /> Đã hoàn thành 100%
+          <CheckCircle2 className="w-3.5 h-3.5" /> {checkedToday ? "Đã điểm danh hôm nay" : "Chưa điểm danh"}
         </span>
       </div>
     </div>
