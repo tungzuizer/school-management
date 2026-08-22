@@ -113,6 +113,8 @@ async function main() {
   await prisma.subject.deleteMany();
   await prisma.school.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.districtWard.deleteMany();
+  await prisma.educationDepartment.deleteMany();
 
   const hashedPassword = await bcrypt.hash("123456", 10);
 
