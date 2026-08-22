@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { getMyClasses, getClassStudents, getAttendanceByDate, saveAttendance } from "./actions";
 import { useToast } from "@/components/ui/Toast";
+import { CheckCircle2, UserCheck, Users, ShieldCheck, Save, Calendar, Clock } from "lucide-react";
 
 interface ClassOption {
   classId: string;
@@ -23,17 +24,17 @@ interface AttendanceRecord {
 }
 
 const STATUS_OPTIONS = [
-  { value: "PRESENT", label: "Có mặt", color: "bg-green-100 text-green-800 border-green-300" },
-  { value: "ABSENT_EXCUSED", label: "Vắng CP", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
-  { value: "ABSENT_UNEXCUSED", label: "Vắng KP", color: "bg-red-100 text-red-800 border-red-300" },
-  { value: "LATE", label: "Đi trễ", color: "bg-orange-100 text-orange-800 border-orange-300" },
+  { value: "PRESENT", label: "Có mặt", color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100", activeGlow: "ring-2 ring-emerald-500 bg-emerald-600 text-white font-bold" },
+  { value: "ABSENT_EXCUSED", label: "Vắng CP", color: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100", activeGlow: "ring-2 ring-amber-500 bg-amber-600 text-white font-bold" },
+  { value: "ABSENT_UNEXCUSED", label: "Vắng KP", color: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100", activeGlow: "ring-2 ring-rose-500 bg-rose-600 text-white font-bold" },
+  { value: "LATE", label: "Đi trễ", color: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100", activeGlow: "ring-2 ring-orange-500 bg-orange-600 text-white font-bold" },
 ];
 
 export default function AttendancePage() {
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [selectedPeriod, setSelectedPeriod] = useState<number>(0); // 0 = cả ngày
+  const [selectedPeriod, setSelectedPeriod] = useState<number>(0);
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [records, setRecords] = useState<Record<string, AttendanceRecord>>({});
   const [loading, setLoading] = useState(false);
@@ -41,7 +42,6 @@ export default function AttendancePage() {
   const [hasExisting, setHasExisting] = useState(false);
   const { showToast, ToastComponent } = useToast();
 
-  // Load teacher's classes
   useEffect(() => {
     getMyClasses().then((data) => {
       setClasses(data);
@@ -49,7 +49,6 @@ export default function AttendancePage() {
     });
   }, []);
 
-  // Load students & existing attendance when class/date/period changes
   const loadData = useCallback(async () => {
     if (!selectedClass) return;
     setLoading(true);
@@ -61,7 +60,6 @@ export default function AttendancePage() {
 
     setStudents(studentsData as unknown as StudentItem[]);
 
-    // Build records map
     const recordsMap: Record<string, AttendanceRecord> = {};
     const existingMap = new Map(
       (existingData as any[]).map((a: any) => [a.studentId, a])
@@ -118,7 +116,6 @@ export default function AttendancePage() {
     }
   };
 
-  // Count statistics
   const stats = Object.values(records).reduce(
     (acc, r) => {
       acc[r.status] = (acc[r.status] || 0) + 1;
@@ -128,139 +125,198 @@ export default function AttendancePage() {
   );
 
   return (
-    <div>
+    <div className="space-y-6">
       {ToastComponent}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Điểm danh</h1>
+      
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <UserCheck className="w-6 h-6 text-emerald-600" />
+            Điểm danh Học sinh Lớp học
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">Cập nhật sĩ số, trạng thái hiện diện và lý do vắng học tức thì.</p>
+        </div>
+        <button
+          onClick={setAllPresent}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-extrabold transition-all duration-200 active-press cursor-pointer shadow-2xs"
+        >
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <span>Đánh dấu tất cả Có Mặt</span>
+        </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl mb-6">
-        <div className="flex flex-wrap gap-4 items-end">
+      {/* Filters Bar */}
+      <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
-            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 min-w-[160px]">
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Chọn Lớp Dạy</label>
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-semibold"
+            >
               {classes.length === 0 && <option value="">Chưa có lớp</option>}
               {classes.map((c) => (
                 <option key={c.classId} value={c.classId}>
-                  {c.className} (Khối {c.gradeLevel})
+                  Lớp {c.className} (Khối {c.gradeLevel})
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ngày</label>
-            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" />
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Ngày Điểm Danh</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-semibold"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tiết</label>
-            <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
-              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500">
-              <option value={0}>Cả ngày</option>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Tiết Học</label>
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-semibold"
+            >
+              <option value={0}>Điểm danh cả ngày</option>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((p) => (
                 <option key={p} value={p}>Tiết {p}</option>
               ))}
             </select>
           </div>
-          <div className="flex gap-2">
-            <button onClick={setAllPresent}
-              className="px-3 py-2 bg-green-100 text-green-700 border border-green-300 rounded-lg hover:bg-green-200 text-sm font-medium">
-              ✓ Tất cả có mặt
-            </button>
+          <div className="flex items-center justify-end">
+            <span className="text-xs text-slate-500 font-medium italic">Tự động đồng bộ với Sổ chủ nhiệm & BGH</span>
           </div>
         </div>
       </div>
 
-      {/* Stats bar */}
+      {/* Stats Summary Cards */}
       {students.length > 0 && (
-        <div className="flex gap-4 mb-4">
-          <div className="bg-white px-4 py-2 rounded-lg shadow-sm border flex items-center gap-2">
-            <span className="text-sm text-gray-500">Sĩ số:</span>
-            <span className="font-bold text-gray-900">{students.length}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-white border border-slate-200 p-3.5 rounded-2xl flex items-center gap-3">
+            <div className="p-2 bg-slate-100 text-slate-700 rounded-xl">
+              <Users className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-500 font-bold uppercase">Sĩ số</p>
+              <p className="text-base font-extrabold text-slate-900">{students.length}</p>
+            </div>
           </div>
+
           {STATUS_OPTIONS.map((opt) => (
-            <div key={opt.value} className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${opt.color}`}>
-              <span className="text-sm">{opt.label}:</span>
-              <span className="font-bold">{stats[opt.value] || 0}</span>
+            <div key={opt.value} className="bg-white border border-slate-200 p-3.5 rounded-2xl flex items-center gap-3">
+              <div className={`p-2 rounded-xl border ${opt.color}`}>
+                <span className="text-xs font-bold">{opt.label[0]}</span>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">{opt.label}</p>
+                <p className="text-base font-extrabold text-slate-900">{stats[opt.value] || 0}</p>
+              </div>
             </div>
           ))}
+
           {hasExisting && (
-            <div className="px-4 py-2 rounded-lg bg-blue-50 border border-blue-200 flex items-center gap-2">
-              <span className="text-sm text-blue-700">✓ Đã có dữ liệu</span>
+            <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl flex items-center gap-2 col-span-2 sm:col-span-1">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div>
+                <p className="text-[10px] text-emerald-700 font-bold uppercase">Trạng thái</p>
+                <p className="text-xs font-extrabold text-emerald-800">Đã lưu dữ liệu</p>
+              </div>
             </div>
           )}
         </div>
       )}
 
       {/* Attendance Table */}
-      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl shadow-xl backdrop-blur-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-slate-950/80 border-b">
-            <tr>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase w-12">STT</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Mã HS</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {loading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">Đang tải...</td></tr>
-            ) : students.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                {classes.length === 0 ? "Bạn chưa được phân công lớp nào" : "Lớp chưa có học sinh"}
-              </td></tr>
-            ) : (
-              students.map((s, idx) => (
-                <tr key={s.id} className={`hover:bg-slate-950/80 ${records[s.id]?.status !== "PRESENT" ? "bg-red-50/50" : ""}`}>
-                  <td className="px-4 py-3 text-sm text-gray-500">{idx + 1}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{s.studentCode || "—"}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{s.user.name}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center gap-1">
-                      {STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => updateStatus(s.id, opt.value)}
-                          className={`px-2 py-1 rounded text-xs font-medium border transition-all ${
-                            records[s.id]?.status === opt.value
-                              ? `${opt.color} ring-2 ring-offset-1 ring-gray-400`
-                              : "bg-slate-950/80 text-gray-400 border-gray-200 hover:bg-gray-100"
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                <th className="px-4 py-3.5 w-12 text-center">STT</th>
+                <th className="px-4 py-3.5 w-28">Mã HS</th>
+                <th className="px-4 py-3.5">Họ & Tên Học Sinh</th>
+                <th className="px-4 py-3.5 text-center w-72">Trạng Thái Hiện Diện</th>
+                <th className="px-4 py-3.5">Ghi Chú / Lý Do Vắng</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
+                    <div className="inline-flex items-center gap-2 font-semibold">
+                      <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                      Đang tải danh sách điểm danh...
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <input
-                      type="text"
-                      value={records[s.id]?.note || ""}
-                      onChange={(e) => updateNote(s.id, e.target.value)}
-                      placeholder="Lý do..."
-                      className="w-full px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-emerald-500"
-                    />
+                </tr>
+              ) : students.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-slate-500 font-semibold">
+                    {classes.length === 0 ? "Bạn chưa được phân công lớp nào." : "Lớp hiện chưa có học sinh."}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                students.map((s, idx) => {
+                  const currentStatus = records[s.id]?.status || "PRESENT";
+                  const isAbsence = currentStatus !== "PRESENT";
+
+                  return (
+                    <tr
+                      key={s.id}
+                      className={`transition-colors hover:bg-slate-50 ${
+                        isAbsence ? "bg-rose-50/40" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-3.5 text-center font-bold text-slate-500">{idx + 1}</td>
+                      <td className="px-4 py-3.5 font-mono text-slate-600">{s.studentCode || "—"}</td>
+                      <td className="px-4 py-3.5 font-bold text-slate-900">{s.user.name}</td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {STATUS_OPTIONS.map((opt) => (
+                            <button
+                              key={opt.value}
+                              onClick={() => updateStatus(s.id, opt.value)}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                                currentStatus === opt.value
+                                  ? opt.activeGlow
+                                  : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <input
+                          type="text"
+                          value={records[s.id]?.note || ""}
+                          onChange={(e) => updateNote(s.id, e.target.value)}
+                          placeholder="Lý do vắng / Đi trễ / Ghi chú..."
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Save button */}
       {students.length > 0 && (
-        <div className="mt-4 flex justify-end">
+        <div className="flex items-center justify-end gap-3 pt-2">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 font-medium text-lg shadow-sm"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-extrabold text-sm shadow-md shadow-emerald-500/20 transition-all duration-200 active-press cursor-pointer disabled:opacity-50"
           >
-            {saving ? "Đang lưu..." : hasExisting ? "Cập nhật điểm danh" : "Lưu điểm danh"}
+            <Save className="w-4 h-4" />
+            <span>{saving ? "Đang lưu hệ thống..." : hasExisting ? "Cập Nhật Điểm Danh" : "Lưu Điểm Danh Lớp"}</span>
           </button>
         </div>
       )}

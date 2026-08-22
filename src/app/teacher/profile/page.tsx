@@ -32,7 +32,7 @@ export default function TeacherProfilePage() {
       </div>
 
       {/* Info cards */}
-      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl border-gray-200 divide-y divide-gray-100">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl border-gray-200 divide-y divide-gray-100">
         <InfoRow icon={Mail} label="Email" value={userEmail || "—"} />
         <InfoRow icon={Phone} label="Điện thoại" value="—" />
         <InfoRow icon={BookOpen} label="Chuyên môn" value="—" />
@@ -42,11 +42,11 @@ export default function TeacherProfilePage() {
 
       {/* Actions */}
       <div className="space-y-2">
-        <button className="w-full flex items-center gap-3 px-4 py-3 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl border-gray-200 text-gray-700 hover:bg-slate-950/80 transition">
+        <button className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl border-gray-200 text-gray-700 hover:bg-slate-50 transition">
           <Settings className="w-5 h-5 text-gray-400" />
           <span className="font-medium">Cài đặt tài khoản</span>
         </button>
-        <button className="w-full flex items-center gap-3 px-4 py-3 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl border-gray-200 text-gray-700 hover:bg-slate-950/80 transition">
+        <button className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl border-gray-200 text-gray-700 hover:bg-slate-50 transition">
           <Shield className="w-5 h-5 text-gray-400" />
           <span className="font-medium">Đổi mật khẩu</span>
         </button>

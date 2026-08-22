@@ -200,7 +200,7 @@ export default function HomeroomPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl backdrop-blur-xl shadow-sm">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xl backdrop-blur-xl shadow-sm">
         <h1 className="text-2xl font-bold text-gray-905 flex items-center gap-2">
            <BookOpen className="w-6 h-6 text-emerald-600" /> Sổ Chủ Nhiệm Điện Tử
         </h1>
@@ -214,8 +214,8 @@ export default function HomeroomPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm overflow-hidden">
-        <div className="border-b overflow-x-auto bg-slate-950/80/50">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm overflow-hidden">
+        <div className="border-b overflow-x-auto bg-slate-50/50">
           <div className="flex">
             {TABS.map((t) => {
               const Icon = TAB_ICONS[t.key] || Users;
@@ -226,7 +226,7 @@ export default function HomeroomPage() {
                   className={`px-4 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
                     tab === t.key
                       ? "border-blue-600 text-blue-700 bg-white"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-slate-950/80"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-slate-50"
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${tab === t.key ? "text-blue-605" : "text-gray-450"}`} />
@@ -281,7 +281,7 @@ function OverviewTab({ classId, students }: { classId: string; students: Student
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-slate-950/80">
+              <tr className="bg-slate-50">
                 <th className="border p-2 text-left w-10">STT</th>
                 <th className="border p-2 text-left">Họ tên</th>
                 <th className="border p-2 text-left">Mã HS</th>
@@ -291,7 +291,7 @@ function OverviewTab({ classId, students }: { classId: string; students: Student
             </thead>
             <tbody>
               {students.map((s, i) => (
-                <tr key={s.id} className="hover:bg-slate-950/80">
+                <tr key={s.id} className="hover:bg-slate-50">
                   <td className="border p-2">{i + 1}</td>
                   <td className="border p-2 font-medium">{s.user.name}</td>
                   <td className="border p-2 text-gray-500">{s.studentCode || "—"}</td>
@@ -321,7 +321,7 @@ function OverviewTab({ classId, students }: { classId: string; students: Student
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-slate-950/80">
+                <tr className="bg-slate-50">
                   <th className="border p-2">Giai đoạn</th>
                   <th className="border p-2">Sĩ số</th>
                   <th className="border p-2">HL Giỏi</th>
@@ -335,7 +335,7 @@ function OverviewTab({ classId, students }: { classId: string; students: Student
               </thead>
               <tbody>
                 {periodData.map((pd) => (
-                  <tr key={pd.period} className="hover:bg-slate-950/80">
+                  <tr key={pd.period} className="hover:bg-slate-50">
                     <td className="border p-2 font-medium">
                       {PERIODS.find((p) => p.value === pd.period)?.label}
                     </td>
@@ -467,7 +467,7 @@ function GroupsTab({
 
       {/* Unassigned students */}
       {unassigned.length > 0 && (
-        <div className="border rounded-lg p-4 bg-slate-950/80">
+        <div className="border rounded-lg p-4 bg-slate-50">
           <h4 className="font-semibold text-gray-700 mb-3">Chưa xếp tổ ({unassigned.length} HS)</h4>
           <div className="space-y-2">
             {unassigned.map((s) => (
@@ -726,7 +726,7 @@ function ConductTab({
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="bg-slate-950/80">
+            <tr className="bg-slate-50">
               <th className="border p-2 text-left w-10">STT</th>
               <th className="border p-2 text-left">Họ tên</th>
               <th className="border p-2 text-center w-32">Hạnh kiểm</th>
@@ -775,7 +775,7 @@ function ConductRow({
   const changed = c !== (conductRating || "") || a !== (academicRating || "") || n !== note;
 
   return (
-    <tr className="hover:bg-slate-950/80">
+    <tr className="hover:bg-slate-50">
       <td className="border p-2">{index}</td>
       <td className="border p-2 font-medium">{name}</td>
       <td className="border p-1">
@@ -855,9 +855,9 @@ function GradesTab({ classId }: { classId: string }) {
       <div className="overflow-x-auto">
         <table className="text-xs border-collapse">
           <thead>
-            <tr className="bg-slate-950/80">
-              <th className="border p-2 sticky left-0 bg-slate-950/80 z-10">STT</th>
-              <th className="border p-2 sticky left-8 bg-slate-950/80 z-10 min-w-[150px]">Họ tên</th>
+            <tr className="bg-slate-50">
+              <th className="border p-2 sticky left-0 bg-slate-50 z-10">STT</th>
+              <th className="border p-2 sticky left-8 bg-slate-50 z-10 min-w-[150px]">Họ tên</th>
               {data.subjects.map((sub) => (
                 <th key={sub.id} className="border p-2 text-center min-w-[60px]">{sub.name}</th>
               ))}
@@ -869,7 +869,7 @@ function GradesTab({ classId }: { classId: string }) {
             {data.students.map((st, i) => {
               const avg = getAvg(st.id);
               return (
-                <tr key={st.id} className="hover:bg-slate-950/80">
+                <tr key={st.id} className="hover:bg-slate-50">
                   <td className="border p-2 sticky left-0 bg-white">{i + 1}</td>
                   <td className="border p-2 sticky left-8 bg-white font-medium">{st.name}</td>
                   {data.subjects.map((sub) => {
@@ -945,7 +945,7 @@ function IncidentsTab({
       </button>
 
       {showForm && (
-        <div className="bg-slate-950/80 border rounded-lg p-4 space-y-3">
+        <div className="bg-slate-50 border rounded-lg p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium mb-1">Học sinh</label>
@@ -1221,7 +1221,7 @@ function AIReminderTab({
               Tạo bởi AI Trợ lý GVCN
             </span>
           </div>
-          <div className="prose max-w-none text-sm text-gray-700 whitespace-pre-line leading-relaxed bg-slate-950/80/50 p-4 rounded-lg border">
+          <div className="prose max-w-none text-sm text-gray-700 whitespace-pre-line leading-relaxed bg-slate-50/50 p-4 rounded-lg border">
             {aiReminder}
           </div>
         </div>
@@ -1439,7 +1439,7 @@ function MonthlyPlanTab({
                     className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${
                       activeWeek === wNum
                         ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
-                        : "text-gray-500 hover:bg-slate-950/80"
+                        : "text-gray-500 hover:bg-slate-50"
                     }`}
                   >
                     Tuần {wNum}
@@ -1536,7 +1536,7 @@ function FeedbackTab({
       </button>
 
       {showForm && (
-        <div className="bg-slate-950/80 border rounded-lg p-4 space-y-3">
+        <div className="bg-slate-50 border rounded-lg p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium mb-1">Học sinh</label>
