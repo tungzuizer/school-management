@@ -2,6 +2,14 @@
 
 import { prisma } from "@/lib/prisma";
 import { ParsedScheduleRow } from "@/lib/excel-parser";
+import { revalidatePath } from "next/cache";
+
+function revalidateSchedulePaths() {
+  revalidatePath("/admin/schedule");
+  revalidatePath("/teacher/schedule");
+  revalidatePath("/teacher/attendance");
+  revalidatePath("/student/schedule");
+}
 
 /**
  * Normalizes string for fuzzy matching (lowercased, stripped accents and symbols)
@@ -15,7 +23,75 @@ function normalizeStr(str: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
-export async function getScheduleData(classId?: string, schoolId?: string) {
+export interface ScheduleDayHeader {
+  dayOfWeek: number;
+  label: string;
+  dateStr: string;
+  formattedDate: string;
+  isToday: boolean;
+}
+
+function parseLocalDate(dateStr?: string): Date {
+  if (!dateStr) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+}
+
+function formatDateStr(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getWeekDays(dateStr?: string) {
+  const baseDate = parseLocalDate(dateStr);
+  const todayStr = formatDateStr(new Date());
+
+  const jsDay = baseDate.getDay();
+  const diffToMon = jsDay === 0 ? 6 : jsDay - 1;
+
+  const monday = new Date(baseDate);
+  monday.setDate(baseDate.getDate() - diffToMon);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  const dayLabels = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"];
+
+  const days: ScheduleDayHeader[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dStr = formatDateStr(d);
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    days.push({
+      dayOfWeek: i + 1,
+      label: dayLabels[i],
+      dateStr: dStr,
+      formattedDate: `${dd}/${mm}`,
+      isToday: dStr === todayStr,
+    });
+  }
+
+  return { monday, sunday, days, selectedDateStr: formatDateStr(baseDate) };
+}
+
+export async function getScheduleData(classId?: string, schoolId?: string, dateStr?: string) {
+  const { days, selectedDateStr } = getWeekDays(dateStr);
+
   const schools = await prisma.school.findMany({
     select: { id: true, name: true },
     orderBy: { name: "asc" },
@@ -72,6 +148,8 @@ export async function getScheduleData(classId?: string, schoolId?: string) {
     selectedClass,
     schedules,
     selectedClassId: classId || "",
+    selectedDateStr,
+    days,
     stats: {
       totalPeriods: schedules.length,
       teacherCount: uniqueTeachersCount,
@@ -187,6 +265,7 @@ export async function createScheduleEntry(data: {
     },
   });
 
+  revalidateSchedulePaths();
   return { success: true };
 }
 
@@ -250,11 +329,13 @@ export async function updateScheduleEntry(
     },
   });
 
+  revalidateSchedulePaths();
   return { success: true };
 }
 
 export async function deleteScheduleEntry(id: string) {
   await prisma.schedule.delete({ where: { id } });
+  revalidateSchedulePaths();
   return { success: true };
 }
 
@@ -262,6 +343,7 @@ export async function clearClassSchedule(classId: string) {
   await prisma.schedule.deleteMany({
     where: { classId },
   });
+  revalidateSchedulePaths();
   return { success: true };
 }
 
@@ -368,6 +450,7 @@ export async function bulkImportSchedules(
     }
   }
 
+  revalidateSchedulePaths();
   return {
     success: true,
     importedCount,
