@@ -273,11 +273,12 @@ async function main() {
     for (let tIdx = 0; tIdx < teacherSpecs.length; tIdx++) {
       const spec = teacherSpecs[tIdx];
       let teacherUser;
-      if (sIdx === 0 && tIdx === 2) {
-        // Literature teacher is the default demo teacher for THCS Tân Xã
+      if (sIdx === 0 && tIdx === 0) {
+        // Math teacher is the default demo teacher for THCS Tân Xã
         teacherUser = await prisma.user.update({
           where: { id: defaultTeacherUser.id },
           data: {
+            name: "Trần Thị Hoa (GV Toán)",
             schoolId: school.id,
             departmentId: dept.id,
             districtWardId: sConf.districtWardId,
@@ -306,7 +307,7 @@ async function main() {
         },
       });
 
-      if (sIdx === 0 && tIdx === 2) {
+      if (sIdx === 0 && tIdx === 0) {
         defaultTeacherObj = teacher;
       }
 

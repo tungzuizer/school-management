@@ -45,10 +45,15 @@ export async function getCampusesForSelect(schoolId?: string) {
   }
 }
 
-export async function getTeachersForSelect() {
+export async function getTeachersForSelect(schoolId?: string) {
   try {
     return await prisma.teacher.findMany({
-      select: { id: true, user: { select: { name: true } } },
+      where: schoolId ? { user: { schoolId } } : undefined,
+      select: {
+        id: true,
+        specialty: true,
+        user: { select: { name: true, school: { select: { name: true } } } },
+      },
       orderBy: { user: { name: "asc" } },
     });
   } catch (err) {

@@ -172,16 +172,19 @@ export default function SchedulePage() {
   async function loadData(classId?: string, schoolId?: string) {
     setLoading(true);
     try {
-      const [scheduleRes, formOptions] = await Promise.all([
-        getScheduleData(classId, schoolId),
-        getScheduleFormData(schoolId),
-      ]);
+      const scheduleRes = await getScheduleData(classId, schoolId);
+      const activeSchoolId = schoolId || scheduleRes.selectedClass?.school?.id || "";
+
+      const formOptions = await getScheduleFormData(activeSchoolId);
 
       setSchools(scheduleRes.schools);
       setClasses(scheduleRes.classes);
       setSchedules(scheduleRes.schedules as ScheduleEntry[]);
       setSelectedClassId(scheduleRes.selectedClassId);
       setSelectedClass(scheduleRes.selectedClass as any);
+      if (activeSchoolId) {
+        setSelectedSchoolId(activeSchoolId);
+      }
       setSubjects(formOptions.subjects);
       setTeachers(formOptions.teachers as any);
     } catch (err) {
@@ -198,12 +201,14 @@ export default function SchedulePage() {
     setRefreshing(true);
     try {
       const scheduleRes = await getScheduleData(undefined, schoolId);
+      const activeSchoolId = schoolId || scheduleRes.selectedClass?.school?.id || "";
+
       setClasses(scheduleRes.classes);
       setSchedules(scheduleRes.schedules as ScheduleEntry[]);
       setSelectedClassId(scheduleRes.selectedClassId);
       setSelectedClass(scheduleRes.selectedClass as any);
 
-      const formOptions = await getScheduleFormData(schoolId);
+      const formOptions = await getScheduleFormData(activeSchoolId);
       setSubjects(formOptions.subjects);
       setTeachers(formOptions.teachers as any);
     } catch (err) {
@@ -221,6 +226,12 @@ export default function SchedulePage() {
       const data = await getScheduleData(classId, selectedSchoolId);
       setSchedules(data.schedules as ScheduleEntry[]);
       setSelectedClass(data.selectedClass as any);
+
+      const activeSchoolId = data.selectedClass?.school?.id || selectedSchoolId;
+      if (activeSchoolId) {
+        const formOptions = await getScheduleFormData(activeSchoolId);
+        setTeachers(formOptions.teachers as any);
+      }
     } catch (err) {
       console.error(err);
     } finally {
