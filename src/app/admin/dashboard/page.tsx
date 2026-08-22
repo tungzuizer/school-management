@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -20,10 +20,15 @@ import {
   TrendingUp,
   ShieldCheck,
   Building2,
+  Filter,
+  Check,
+  ChevronRight,
+  MapPin,
 } from "lucide-react";
 import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
 import {
+  getSchoolsList,
   getDashboardStats,
   getAttendanceByWeek,
   getGradesByClass,
@@ -41,11 +46,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
   Cell,
 } from "recharts";
 
+type SchoolItem = Awaited<ReturnType<typeof getSchoolsList>>[number];
 type Stats = Awaited<ReturnType<typeof getDashboardStats>>;
 type WeekData = Awaited<ReturnType<typeof getAttendanceByWeek>>;
 type ClassGrade = Awaited<ReturnType<typeof getGradesByClass>>;
@@ -58,6 +62,9 @@ const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"
 
 export default function AdminDashboardPage() {
   const { isEasyMode } = useEasyMode();
+  const [schools, setSchools] = useState<SchoolItem[]>([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>(undefined);
+  
   const [stats, setStats] = useState<Stats | null>(null);
   const [weekData, setWeekData] = useState<WeekData>([]);
   const [classGrades, setClassGrades] = useState<ClassGrade>([]);
@@ -65,13 +72,16 @@ export default function AdminDashboardPage() {
   const [incidents, setIncidents] = useState<IncidentData>([]);
   const [today, setToday] = useState<TodaySummary | null>(null);
   const [lpAlerts, setLpAlerts] = useState<LPAlertsData | null>(null);
+  
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    async function loadData() {
+    async function initData() {
       try {
-        const [statsData, weekRes, gradesRes, attendanceRes, incidentsRes, todayRes, lpAlertsRes] =
+        const [schoolsRes, statsData, weekRes, gradesRes, attendanceRes, incidentsRes, todayRes, lpAlertsRes] =
           await Promise.all([
+            getSchoolsList(),
             getDashboardStats(),
             getAttendanceByWeek(),
             getGradesByClass(),
@@ -81,6 +91,7 @@ export default function AdminDashboardPage() {
             getLessonPlanAlerts(),
           ]);
 
+        setSchools(schoolsRes);
         setStats(statsData);
         setWeekData(weekRes);
         setClassGrades(gradesRes);
@@ -89,13 +100,42 @@ export default function AdminDashboardPage() {
         setToday(todayRes);
         setLpAlerts(lpAlertsRes);
       } catch (err) {
-        console.error("Failed to load dashboard data:", err);
+        console.error("Failed to load initial dashboard data:", err);
       } finally {
         setLoading(false);
       }
     }
-    loadData();
+    initData();
   }, []);
+
+  const handleSchoolChange = async (schoolId?: string) => {
+    setSelectedSchoolId(schoolId);
+    setRefreshing(true);
+    try {
+      const [statsData, weekRes, gradesRes, attendanceRes, incidentsRes, todayRes, lpAlertsRes] =
+        await Promise.all([
+          getDashboardStats(schoolId),
+          getAttendanceByWeek(schoolId),
+          getGradesByClass(schoolId),
+          getClassAttendanceRanking(schoolId),
+          getRecentIncidents(10, schoolId),
+          getTodaySummary(schoolId),
+          getLessonPlanAlerts(schoolId),
+        ]);
+
+      setStats(statsData);
+      setWeekData(weekRes);
+      setClassGrades(gradesRes);
+      setClassAttendance(attendanceRes);
+      setIncidents(incidentsRes);
+      setToday(todayRes);
+      setLpAlerts(lpAlertsRes);
+    } catch (err) {
+      console.error("Failed to refresh school dashboard data:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -126,6 +166,10 @@ export default function AdminDashboardPage() {
     year: "numeric",
   });
 
+  const activeSchoolName = selectedSchoolId
+    ? schools.find((s) => s.id === selectedSchoolId)?.name || "Trường đã chọn"
+    : "Tất cả các trường thuộc hệ thống";
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
       {/* Hero Welcome Banner */}
@@ -135,11 +179,16 @@ export default function AdminDashboardPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-indigo-300 text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Hệ Thống BGH Trường Học
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> BGH - Ban Giám Hiệu
+              </span>
+              <span className="px-2.5 py-0.5 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-300 text-[11px] font-semibold">
+                {schools.length} Trường Liên Kết
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Tổng Quan Bảng Điều Khiển</h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 capitalize">{todayStr}</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Bảng Điều Khiển Ban Giám Hiệu</h1>
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 capitalize">
+              {todayStr} — <span className="text-amber-300 font-bold">{activeSchoolName}</span>
+            </p>
           </div>
           {isEasyMode && (
             <div className="bg-amber-400/20 border border-amber-400/40 text-amber-200 font-bold px-4 py-2.5 rounded-xl text-xs self-start sm:self-auto flex items-center gap-2 backdrop-blur-md">
@@ -150,109 +199,174 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Easy Mode Help Board */}
-      {isEasyMode && (
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/80 rounded-2xl p-4 sm:p-6 shadow-xs space-y-4">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="p-2.5 bg-amber-100 rounded-2xl text-amber-800 shrink-0 shadow-xs">
-              <Lightbulb className="w-6 h-6 pulse-dot" />
+      {/* School Selection Filter Bar */}
+      <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-indigo-100 text-indigo-700 rounded-xl">
+              <Filter className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-amber-950">Bảng Hướng Dẫn & Thao Tác Nhanh Dành Cho Hiệu Trưởng</h2>
-              <p className="text-xs sm:text-sm text-amber-800 mt-0.5">
-                Hãy nhấn các <strong>Nút To dưới đây</strong> để chuyển nhanh đến công việc mong muốn. Mọi phần đều có chú thích Tiếng Việt rõ ràng.
+              <h2 className="text-sm font-bold text-slate-900">Bộ Lọc Số Liệu Theo Trường</h2>
+              <p className="text-xs text-slate-500">
+                Chọn một trường cụ thể để xem chi tiết hoặc bấm "Tất cả các trường" để tổng hợp
               </p>
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            <Link
-              href="/admin/classes"
-              className="flex items-start gap-3 p-4 bg-white hover:bg-sky-50/80 border border-sky-200 hover:border-sky-400 rounded-2xl transition-all shadow-xs hover-lift group"
-            >
-              <span className="p-2.5 bg-sky-100 text-sky-600 rounded-xl group-hover:scale-110 transition-transform shrink-0">
-                <School className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="font-bold text-sky-950 text-sm sm:text-base">1. Xem Lớp Học</h3>
-                <p className="text-xs text-sky-700 mt-0.5">Danh sách lớp hiện có, thêm bớt lớp hoặc theo dõi từng lớp học.</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/admin/teachers"
-              className="flex items-start gap-3 p-4 bg-white hover:bg-emerald-50/80 border border-emerald-200 hover:border-emerald-400 rounded-2xl transition-all shadow-xs hover-lift group"
-            >
-              <span className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform shrink-0">
-                <GraduationCap className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="font-bold text-emerald-950 text-sm sm:text-base">2. Xem Giáo Viên</h3>
-                <p className="text-xs text-emerald-700 mt-0.5">Hồ sơ giáo viên, thông tin liên lạc và cập nhật danh sách giáo viên.</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/admin/students"
-              className="flex items-start gap-3 p-4 bg-white hover:bg-amber-50/80 border border-amber-200 hover:border-amber-400 rounded-2xl transition-all shadow-xs hover-lift group"
-            >
-              <span className="p-2.5 bg-amber-100 text-amber-600 rounded-xl group-hover:scale-110 transition-transform shrink-0">
-                <Users className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="font-bold text-amber-950 text-sm sm:text-base">3. Xem Học Sinh</h3>
-                <p className="text-xs text-amber-700 mt-0.5">Danh sách toàn bộ học sinh, tra cứu hồ sơ cá nhân hoặc quản lý chuyển lớp.</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/admin/schedule"
-              className="flex items-start gap-3 p-4 bg-white hover:bg-purple-50/80 border border-purple-200 hover:border-purple-400 rounded-2xl transition-all shadow-xs hover-lift group"
-            >
-              <span className="p-2.5 bg-purple-100 text-purple-600 rounded-xl group-hover:scale-110 transition-transform shrink-0">
-                <CalendarDays className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="font-bold text-purple-950 text-sm sm:text-base">4. Thời Khóa Biểu</h3>
-                <p className="text-xs text-purple-700 mt-0.5">Theo dõi hoặc phân chia lịch học, giờ học cho từng lớp học.</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/admin/multi-school"
-              className="flex items-start gap-3 p-4 bg-white hover:bg-rose-50/80 border border-rose-200 hover:border-rose-400 rounded-2xl transition-all shadow-xs hover-lift group"
-            >
-              <span className="p-2.5 bg-rose-100 text-rose-600 rounded-xl group-hover:scale-110 transition-transform shrink-0">
-                <Globe className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="font-bold text-rose-950 text-sm sm:text-base">5. Liên Trường</h3>
-                <p className="text-xs text-rose-700 mt-0.5">So sánh tình hình chuyên cần và học lực ở tất cả các cơ sở liên kết.</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/admin/notifications"
-              className="flex items-start gap-3 p-4 bg-white hover:bg-indigo-50/80 border border-indigo-200 hover:border-indigo-400 rounded-2xl transition-all shadow-xs hover-lift group"
-            >
-              <span className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform shrink-0">
-                <Bell className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="font-bold text-indigo-950 text-sm sm:text-base">6. Thông Báo Chung</h3>
-                <p className="text-xs text-indigo-700 mt-0.5">Tạo và gửi thông tin chỉ đạo chung cho giáo viên, học sinh nhà trường.</p>
-              </div>
-            </Link>
-          </div>
+          {refreshing && (
+            <span className="text-xs text-indigo-600 font-bold animate-pulse flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 animate-spin" /> Đang cập nhật dữ liệu...
+            </span>
+          )}
         </div>
-      )}
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => handleSchoolChange(undefined)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
+              selectedSchoolId === undefined
+                ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Tất Cả Các Trường ({schools.length})</span>
+            {selectedSchoolId === undefined && <Check className="w-3.5 h-3.5 ml-1" />}
+          </button>
+
+          {schools.map((sch) => {
+            const isSelected = selectedSchoolId === sch.id;
+            return (
+              <button
+                key={sch.id}
+                onClick={() => handleSchoolChange(sch.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
+                  isSelected
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                }`}
+              >
+                <School className="w-3.5 h-3.5" />
+                <span>{sch.name}</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] ${
+                    isSelected ? "bg-indigo-500 text-white" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {sch.studentCount} HS
+                </span>
+                {isSelected && <Check className="w-3.5 h-3.5 ml-0.5" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Multi-School Comparison Breakdown Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Globe className="w-5 h-5 text-indigo-600" />
+            <span>Phân Tích Chi Tiết & So Sánh Số Liệu Từng Trường</span>
+          </h2>
+          <span className="text-xs text-slate-500 font-medium">Cập nhật thời gian thực</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {schools.map((sch) => {
+            const isSelected = selectedSchoolId === sch.id;
+            return (
+              <div
+                key={sch.id}
+                className={`bg-white rounded-2xl p-4 border transition-all shadow-xs relative flex flex-col justify-between ${
+                  isSelected
+                    ? "border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/10"
+                    : "border-slate-200/80 hover:border-indigo-300 hover-lift"
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md text-[10px] font-bold">
+                        Trường học
+                      </span>
+                      <h3 className="font-extrabold text-slate-900 text-sm mt-1">{sch.name}</h3>
+                    </div>
+                    {isSelected && (
+                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Đang lọc
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1 mb-3">
+                    <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="truncate">{sch.address}</span>
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center mb-3">
+                    <div>
+                      <p className="text-lg font-extrabold text-indigo-700">{sch.studentCount}</p>
+                      <p className="text-[10px] text-slate-500 font-semibold">Học sinh</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-extrabold text-emerald-700">{sch.classCount}</p>
+                      <p className="text-[10px] text-slate-500 font-semibold">Lớp học</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-extrabold text-purple-700">{sch.teacherCount}</p>
+                      <p className="text-[10px] text-slate-500 font-semibold">Giáo viên</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleSchoolChange(isSelected ? undefined : sch.id)}
+                  className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1 ${
+                    isSelected
+                      ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                      : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                  }`}
+                >
+                  {isSelected ? "Bỏ lọc trường này" : "Xem riêng số liệu trường này"}
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
-        <MetricCard icon={<GraduationCap className="w-5 h-5 text-indigo-600" />} label="Học sinh" value={stats?.totalStudents ?? 0} colorBg="bg-indigo-50" />
-        <MetricCard icon={<Users className="w-5 h-5 text-emerald-600" />} label="Giáo viên" value={stats?.totalTeachers ?? 0} colorBg="bg-emerald-50" />
-        <MetricCard icon={<School className="w-5 h-5 text-sky-600" />} label="Lớp học" value={stats?.totalClasses ?? 0} colorBg="bg-sky-50" />
-        <MetricCard icon={<Building2 className="w-5 h-5 text-purple-600" />} label="Trường học" value={stats?.totalSchools ?? 0} colorBg="bg-purple-50" />
+        <MetricCard
+          icon={<GraduationCap className="w-5 h-5 text-indigo-600" />}
+          label="Học sinh"
+          value={stats?.totalStudents ?? 0}
+          subtext={selectedSchoolId ? "Đang lọc theo trường" : "Toàn bộ hệ thống"}
+          colorBg="bg-indigo-50"
+        />
+        <MetricCard
+          icon={<Users className="w-5 h-5 text-emerald-600" />}
+          label="Giáo viên"
+          value={stats?.totalTeachers ?? 0}
+          subtext={selectedSchoolId ? "Đang lọc theo trường" : "Toàn bộ hệ thống"}
+          colorBg="bg-emerald-50"
+        />
+        <MetricCard
+          icon={<School className="w-5 h-5 text-sky-600" />}
+          label="Lớp học"
+          value={stats?.totalClasses ?? 0}
+          subtext={selectedSchoolId ? "Đang lọc theo trường" : "Toàn bộ hệ thống"}
+          colorBg="bg-sky-50"
+        />
+        <MetricCard
+          icon={<Building2 className="w-5 h-5 text-purple-600" />}
+          label="Trường học"
+          value={stats?.totalSchools ?? 0}
+          subtext="Trường liên kết"
+          colorBg="bg-purple-50"
+        />
         <MetricCard
           icon={<Activity className="w-5 h-5 text-emerald-600" />}
           label="Chuyên cần (30 ngày)"
@@ -262,6 +376,7 @@ export default function AdminDashboardPage() {
               ? "text-rose-600"
               : "text-emerald-700"
           }
+          subtext={selectedSchoolId ? "Trường đã chọn" : "Trung bình các trường"}
           colorBg="bg-amber-50"
         />
       </div>
@@ -269,7 +384,16 @@ export default function AdminDashboardPage() {
       {/* Today Summary Banner */}
       {today && (
         <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-slate-800">
-          <p className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-3">Tình hình hoạt động trong ngày hôm nay</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold text-indigo-300 uppercase tracking-wider">
+              Tình hình hoạt động hôm nay ({selectedSchoolId ? activeSchoolName : "Toàn trường"})
+            </p>
+            {selectedSchoolId && (
+              <span className="px-2 py-0.5 bg-indigo-500/30 border border-indigo-400/30 rounded-full text-indigo-200 text-[11px]">
+                Đang lọc trường
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
               <p className="text-2xl sm:text-3xl font-extrabold text-white">{today.absentToday}</p>
@@ -375,7 +499,7 @@ export default function AdminDashboardPage() {
         {/* Attendance by Week */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
           <h2 className="text-base font-bold text-slate-900 mb-1">
-            Chuyên cần theo tuần
+            Chuyên cần theo tuần {selectedSchoolId ? `(${activeSchoolName})` : ""}
           </h2>
           {isEasyMode && (
             <p className="text-xs text-blue-700 mb-3 bg-blue-50 p-2.5 rounded-xl flex items-start gap-1.5 border border-blue-100">
@@ -404,7 +528,7 @@ export default function AdminDashboardPage() {
         {/* Grade by Class */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
           <h2 className="text-base font-bold text-slate-900 mb-1">
-            Điểm trung bình theo lớp
+            Điểm trung bình theo lớp {selectedSchoolId ? `(${activeSchoolName})` : ""}
           </h2>
           {isEasyMode && (
             <p className="text-xs text-blue-700 mb-3 bg-blue-50 p-2.5 rounded-xl flex items-start gap-1.5 border border-blue-100">
@@ -416,9 +540,9 @@ export default function AdminDashboardPage() {
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={classGrades.filter((c) => c.avgScore > 0)}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="className" fontSize={11} tickLine={false} />
+                <XAxis dataKey="shortClassName" fontSize={11} tickLine={false} />
                 <YAxis domain={[0, 10]} fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(v: any) => [`${v} điểm`, "ĐTB"]} />
+                <Tooltip formatter={(v, _, item) => [`${v} điểm`, item?.payload?.schoolName || "ĐTB"]} />
                 <Bar dataKey="avgScore" name="Điểm trung bình" fill="#6366f1" radius={[4, 4, 0, 0]}>
                   {classGrades.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
