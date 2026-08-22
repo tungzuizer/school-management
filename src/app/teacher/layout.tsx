@@ -9,6 +9,7 @@ import { FloatingAIChatWidget } from "@/components/ui/FloatingAIChatWidget";
 import Header from "@/components/layout/Header";
 import {
   Home,
+  Calendar,
   Users,
   BookOpen,
   UserCheck,
@@ -74,6 +75,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       gradient: "from-blue-600 to-indigo-600",
       items: [
         { label: "Bảng điều khiển 360°", href: "/teacher/dashboard", icon: Home, description: "Tổng quan lịch dạy & tác vụ" },
+        { label: "Thời khóa biểu giảng dạy", href: "/teacher/schedule", icon: Calendar, description: "Ma trận lịch dạy tuần" },
       ],
     },
     {
@@ -132,6 +134,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   // Bottom Nav Bar items
   const bottomTabs = [
     { label: "Tổng quan", href: "/teacher/dashboard", icon: Home },
+    { label: "Lịch dạy", href: "/teacher/schedule", icon: Calendar },
     { label: "Điểm danh", href: "/teacher/attendance", icon: ClipboardCheck },
     { label: "Sổ đầu bài", href: "/teacher/journal", icon: FileSpreadsheet },
     { label: "Nhập điểm", href: "/teacher/grades", icon: Calculator },
