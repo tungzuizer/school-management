@@ -260,17 +260,27 @@ async function main() {
       },
     });
 
-    // Create 5 homeroom teachers for this school
+    // Create 5 subject-specialist teachers for this school
+    const teacherSpecs = [
+      { name: "Toán", specialty: "Toán học" },
+      { name: "Vật Lý", specialty: "Vật lý" },
+      { name: "Ngữ Văn", specialty: "Ngữ văn" },
+      { name: "Tiếng Anh", specialty: "Tiếng Anh" },
+      { name: "Lịch Sử", specialty: "Lịch sử" },
+    ];
+
     const schoolTeachers = [];
-    for (let tIdx = 0; tIdx < 5; tIdx++) {
+    for (let tIdx = 0; tIdx < teacherSpecs.length; tIdx++) {
+      const spec = teacherSpecs[tIdx];
       let teacherUser;
-      if (sIdx === 0 && tIdx === 0) {
+      if (sIdx === 0 && tIdx === 2) {
+        // Literature teacher is the default demo teacher
         teacherUser = defaultTeacherUser;
       } else {
         teacherUser = await prisma.user.create({
           data: {
-            name: `GV. ${sConf.code} Thầy/Cô ${tIdx + 1}`,
-            email: `teacher.${sConf.code.toLowerCase()}${tIdx + 1}@school.com`,
+            name: `GV. ${sConf.code} Cô/Thầy (${spec.name})`,
+            email: `teacher.${sConf.code.toLowerCase()}.${spec.name.toLowerCase().replace(/ /g, "")}@school.com`,
             password: hashedPassword,
             role: Role.TEACHER,
           },
@@ -280,13 +290,13 @@ async function main() {
       const teacher = await prisma.teacher.create({
         data: {
           userId: teacherUser.id,
-          specialty: tIdx % 2 === 0 ? "Toán học" : "Ngữ văn",
+          specialty: spec.specialty,
           phone: `090${sIdx}${tIdx}12345`,
           degree: "Cử nhân",
         },
       });
 
-      if (sIdx === 0 && tIdx === 0) {
+      if (sIdx === 0 && tIdx === 2) {
         defaultTeacherObj = teacher;
       }
 
@@ -383,10 +393,10 @@ async function main() {
 
     for (let cIdx = 0; cIdx < schoolClasses.length; cIdx++) {
       const cls = schoolClasses[cIdx];
-      // Create teaching assignments for each subject
+      // Create teaching assignments for each subject (strictly assigned to subject specialist teacher)
       for (let sIdxSub = 0; sIdxSub < allSubjects.length; sIdxSub++) {
         const sub = allSubjects[sIdxSub];
-        const assignedTeacher = schoolTeachers[(cIdx + sIdxSub) % schoolTeachers.length];
+        const assignedTeacher = schoolTeachers[sIdxSub % schoolTeachers.length]; // Specialist teacher!
 
         await prisma.teachingAssignment.create({
           data: {
@@ -400,8 +410,10 @@ async function main() {
       // Create Timetable Schedules (Monday=1 to Friday=5, Periods 1 to 5)
       for (let day = 1; day <= 5; day++) {
         for (let p = 1; p <= 5; p++) {
-          const sub = allSubjects[(cIdx + day + p) % allSubjects.length];
-          const teacher = schoolTeachers[(cIdx + p) % schoolTeachers.length];
+          const subIdx = (cIdx + day + p) % allSubjects.length;
+          const sub = allSubjects[subIdx];
+          // Always pick teacher matching the subject specialty (Toán -> Toán, Ngữ Văn -> Ngữ Văn)
+          const teacher = schoolTeachers[subIdx % schoolTeachers.length];
 
           await prisma.schedule.create({
             data: {

@@ -114,8 +114,20 @@ type TeacherOption = {
   id: string;
   specialty: string | null;
   user: { id: string; name: string; email: string };
-  teachingAssignments?: { subjectId: string }[];
+  homeroomClasses?: { school?: { id: string; name: string } }[];
+  teachingAssignments?: {
+    subjectId: string;
+    classRoom?: { school?: { id: string; name: string } };
+  }[];
 };
+
+function getTeacherSchoolName(t: TeacherOption): string {
+  const hrSchool = t.homeroomClasses?.[0]?.school?.name;
+  if (hrSchool) return hrSchool;
+  const taSchool = t.teachingAssignments?.find((ta) => ta.classRoom?.school?.name)?.classRoom?.school?.name;
+  if (taSchool) return taSchool;
+  return "";
+}
 
 export default function SchedulePage() {
   const { isEasyMode } = useEasyMode();
@@ -938,12 +950,13 @@ export default function SchedulePage() {
                         const query = teacherSearch.toLowerCase();
                         return (
                           t.user.name.toLowerCase().includes(query) ||
-                          (t.specialty && t.specialty.toLowerCase().includes(query))
+                          (t.specialty && t.specialty.toLowerCase().includes(query)) ||
+                          getTeacherSchoolName(t).toLowerCase().includes(query)
                         );
                       })
                       .map((t) => (
                         <option key={t.id} value={t.id}>
-                          ⭐ {t.user.name} {t.specialty ? `— ${t.specialty}` : ""}
+                          ⭐ {t.user.name} {t.specialty ? `— [Môn: ${t.specialty}]` : ""} {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
                         </option>
                       ))}
                   </optgroup>
@@ -957,12 +970,13 @@ export default function SchedulePage() {
                             const query = teacherSearch.toLowerCase();
                             return (
                               t.user.name.toLowerCase().includes(query) ||
-                              (t.specialty && t.specialty.toLowerCase().includes(query))
+                              (t.specialty && t.specialty.toLowerCase().includes(query)) ||
+                              getTeacherSchoolName(t).toLowerCase().includes(query)
                             );
                           })
                           .map((t) => (
                             <option key={t.id} value={t.id}>
-                              ⭐ {t.user.name} {t.specialty ? `— ${t.specialty}` : ""}
+                              ⭐ {t.user.name} {t.specialty ? `— [Môn: ${t.specialty}]` : ""} {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
                             </option>
                           ))}
                       </optgroup>
@@ -975,12 +989,13 @@ export default function SchedulePage() {
                           const query = teacherSearch.toLowerCase();
                           return (
                             t.user.name.toLowerCase().includes(query) ||
-                            (t.specialty && t.specialty.toLowerCase().includes(query))
+                            (t.specialty && t.specialty.toLowerCase().includes(query)) ||
+                            getTeacherSchoolName(t).toLowerCase().includes(query)
                           );
                         })
                         .map((t) => (
                           <option key={t.id} value={t.id}>
-                            {t.user.name} {t.specialty ? `(${t.specialty})` : ""}
+                            {t.user.name} {t.specialty ? `— [Môn: ${t.specialty}]` : ""} {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
                           </option>
                         ))}
                     </optgroup>
