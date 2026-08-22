@@ -1,7 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { getStudentGrades } from "../actions";
+import { Award, BookOpen, Calculator, CheckCircle2, HelpCircle, Sparkles, Star } from "lucide-react";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 
 type GradeData = {
   studentName: string;
@@ -14,25 +16,18 @@ type GradeData = {
   }[];
 };
 
-const gradeTypeLabels: Record<string, string> = {
-  ORAL: "Miệng",
-  FIFTEEN_MIN: "15 phút",
-  MIDTERM: "Giữa kỳ",
-  FINAL: "Cuối kỳ",
-};
-
 function getScoreColor(score: number) {
-  if (score >= 8) return "text-green-600 font-bold";
-  if (score >= 6.5) return "text-blue-600";
-  if (score >= 5) return "text-yellow-600";
-  return "text-red-600 font-bold";
+  if (score >= 8) return "text-emerald-700 font-extrabold";
+  if (score >= 6.5) return "text-blue-700 font-extrabold";
+  if (score >= 5) return "text-amber-700 font-bold";
+  return "text-rose-700 font-extrabold";
 }
 
-function getRatingLabel(avg: number) {
-  if (avg >= 8) return { label: "Giỏi", color: "bg-green-100 text-green-700" };
-  if (avg >= 6.5) return { label: "Khá", color: "bg-blue-100 text-blue-700" };
-  if (avg >= 5) return { label: "Đạt", color: "bg-yellow-100 text-yellow-700" };
-  return { label: "Chưa đạt", color: "bg-red-100 text-red-700" };
+function getRatingBadge(avg: number) {
+  if (avg >= 8) return { label: "Giỏi", color: "bg-emerald-50 text-emerald-800 border-emerald-200 font-extrabold" };
+  if (avg >= 6.5) return { label: "Khá", color: "bg-blue-50 text-blue-800 border-blue-200 font-extrabold" };
+  if (avg >= 5) return { label: "Đạt", color: "bg-amber-50 text-amber-800 border-amber-200 font-bold" };
+  return { label: "Chưa đạt", color: "bg-rose-50 text-rose-800 border-rose-200 font-extrabold" };
 }
 
 export default function StudentGradesPage() {
@@ -54,9 +49,12 @@ export default function StudentGradesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-500">Đang tải bảng điểm...</span>
+      <div className="space-y-6 animate-fade-in">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+          <div className="h-7 w-48 bg-slate-200 rounded-xl animate-pulse mb-2" />
+          <div className="h-4 w-64 bg-slate-100 rounded-lg animate-pulse" />
+        </div>
+        <TableSkeleton rows={8} cols={7} />
       </div>
     );
   }
@@ -64,107 +62,121 @@ export default function StudentGradesPage() {
   if (!data) {
     return (
       <div className="p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
-          Không tìm thấy thông tin. Vui lòng liên hệ quản trị viên.
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-amber-800 font-semibold flex items-center gap-3">
+          <HelpCircle className="w-5 h-5 text-amber-600 shrink-0" />
+          <span>Không tìm thấy dữ liệu điểm số. Vui lòng liên hệ Giáo viên chủ nhiệm hoặc BGH.</span>
         </div>
       </div>
     );
   }
 
-  // Tính điểm TB tổng
+  // Calculate Overall Average Score
   const overallAvg = data.subjects.length > 0
     ? data.subjects.reduce((sum, s) => sum + s.avgScore, 0) / data.subjects.length
     : 0;
 
+  const roundedOverall = Math.round(overallAvg * 100) / 100;
+  const rating = getRatingBadge(roundedOverall);
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6">
+      {/* Top Banner Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800"> Bảng điểm</h1>
-          <p className="text-gray-500 mt-1">
-            {data.studentName} — Lớp {data.className}
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <Award className="w-6 h-6 text-blue-600" />
+            Bảng Điểm Cá Nhân Môn Học
+          </h1>
+          <p className="text-xs font-semibold text-slate-500 mt-1">
+            Học sinh: <span className="text-slate-900 font-extrabold">{data.studentName}</span> — Lớp: <span className="text-blue-700 font-extrabold">{data.className}</span>
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSelectedTerm(undefined)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              selectedTerm === undefined
-                ? "bg-blue-600 text-white shadow"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Tất cả
-          </button>
-          <button
-            onClick={() => setSelectedTerm(1)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              selectedTerm === 1
-                ? "bg-blue-600 text-white shadow"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Học kỳ 1
-          </button>
-          <button
-            onClick={() => setSelectedTerm(2)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              selectedTerm === 2
-                ? "bg-blue-600 text-white shadow"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Học kỳ 2
-          </button>
+
+        {/* Term Select Buttons */}
+        <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/80 self-start sm:self-auto">
+          {[
+            { label: "Tất cả học kỳ", value: undefined },
+            { label: "Học kỳ I", value: 1 },
+            { label: "Học kỳ II", value: 2 },
+          ].map((item) => (
+            <button
+              key={item.label}
+              onClick={() => setSelectedTerm(item.value)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                selectedTerm === item.value
+                  ? "bg-white text-blue-600 shadow-xs border border-slate-200/80"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Tổng quan */}
+      {/* Summary Stat Cards */}
       {data.subjects.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
-          <div className="flex items-center gap-6 flex-wrap">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-blue-100 p-5 rounded-2xl flex items-center gap-4 shadow-2xs">
+            <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-xs">
+              <Calculator className="w-6 h-6" />
+            </div>
             <div>
-              <p className="text-sm text-gray-500">Điểm trung bình chung</p>
-              <p className={`text-3xl font-bold ${getScoreColor(overallAvg)}`}>
-                {Math.round(overallAvg * 100) / 100}
+              <p className="text-[10px] text-blue-700 font-bold uppercase tracking-wider">ĐTB Chung Môn Học</p>
+              <p className={`text-2xl font-extrabold ${getScoreColor(roundedOverall)}`}>
+                {roundedOverall} <span className="text-xs font-semibold text-slate-400">/ 10</span>
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Xếp loại</p>
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mt-1 ${getRatingLabel(overallAvg).color}`}>
-                {getRatingLabel(overallAvg).label}
-              </span>
+          </div>
+
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-100 p-5 rounded-2xl flex items-center gap-4 shadow-2xs">
+            <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-xs">
+              <Star className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Số môn học</p>
-              <p className="text-2xl font-bold text-gray-800">{data.subjects.length}</p>
+              <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Xếp Loại Học Tập</p>
+              <span className={`inline-block px-3 py-1 rounded-full text-xs border mt-1 shadow-2xs ${rating.color}`}>
+                {rating.label}
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl flex items-center gap-4 shadow-2xs">
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100">
+              <BookOpen className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Số Môn Học Cập Nhật</p>
+              <p className="text-2xl font-extrabold text-slate-900">
+                {data.subjects.length} <span className="text-xs font-semibold text-slate-400">môn</span>
+              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Bảng điểm */}
+      {/* Main Grades Table */}
       {data.subjects.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-          <p className="text-gray-500 text-lg">Chưa có điểm nào được ghi nhận</p>
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-2xs">
+          <Sparkles className="w-8 h-8 text-blue-500 mx-auto mb-2 opacity-60" />
+          <p className="text-slate-600 font-bold">Chưa có điểm thành phần nào được cập nhật trong kỳ này.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left p-4 font-semibold text-gray-700">Môn học</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">Miệng</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">15 phút</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">Giữa kỳ</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">Cuối kỳ</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">TB môn</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">Xếp loại</th>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 min-w-[160px]">Tên Môn Học</th>
+                  <th className="px-4 py-3.5 text-center w-24">Miệng (x1)</th>
+                  <th className="px-4 py-3.5 text-center w-28">15 Phút (x1)</th>
+                  <th className="px-4 py-3.5 text-center w-28">Giữa Kỳ (x2)</th>
+                  <th className="px-4 py-3.5 text-center w-28">Cuối Kỳ (x3)</th>
+                  <th className="px-4 py-3.5 text-center w-28 bg-blue-50/60 text-blue-800">TB Môn</th>
+                  <th className="px-4 py-3.5 text-center w-28 bg-blue-50/60 text-blue-800">Xếp Loại</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 text-xs">
                 {data.subjects.map((subject) => {
                   const gradesByType: Record<string, number[]> = {};
                   subject.grades.forEach((g) => {
@@ -172,45 +184,48 @@ export default function StudentGradesPage() {
                     gradesByType[g.type].push(g.score);
                   });
 
-                  const rating = getRatingLabel(subject.avgScore);
+                  const subjectRating = getRatingBadge(subject.avgScore);
 
                   return (
-                    <tr key={subject.subjectId} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-4 font-medium text-gray-800">{subject.subjectName}</td>
-                      <td className="p-4 text-center">
+                    <tr key={subject.subjectId} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-4 font-extrabold text-slate-900 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                        {subject.subjectName}
+                      </td>
+                      <td className="px-4 py-4 text-center font-medium">
                         {gradesByType["ORAL"]?.map((s, i) => (
-                          <span key={i} className={`${getScoreColor(s)} ${i > 0 ? "ml-1" : ""}`}>
+                          <span key={i} className={`inline-block px-1.5 py-0.5 rounded-lg bg-slate-100 border border-slate-200/80 ${getScoreColor(s)} ${i > 0 ? "ml-1" : ""}`}>
                             {s}
                           </span>
-                        )) || <span className="text-gray-300">—</span>}
+                        )) || <span className="text-slate-300 font-semibold">—</span>}
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-4 py-4 text-center font-medium">
                         {gradesByType["FIFTEEN_MIN"]?.map((s, i) => (
-                          <span key={i} className={`${getScoreColor(s)} ${i > 0 ? "ml-1" : ""}`}>
+                          <span key={i} className={`inline-block px-1.5 py-0.5 rounded-lg bg-slate-100 border border-slate-200/80 ${getScoreColor(s)} ${i > 0 ? "ml-1" : ""}`}>
                             {s}
                           </span>
-                        )) || <span className="text-gray-300">—</span>}
+                        )) || <span className="text-slate-300 font-semibold">—</span>}
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-4 py-4 text-center font-medium">
                         {gradesByType["MIDTERM"]?.map((s, i) => (
-                          <span key={i} className={`${getScoreColor(s)} ${i > 0 ? "ml-1" : ""}`}>
+                          <span key={i} className={`inline-block px-1.5 py-0.5 rounded-lg bg-slate-100 border border-slate-200/80 ${getScoreColor(s)} ${i > 0 ? "ml-1" : ""}`}>
                             {s}
                           </span>
-                        )) || <span className="text-gray-300">—</span>}
+                        )) || <span className="text-slate-300 font-semibold">—</span>}
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="px-4 py-4 text-center font-medium">
                         {gradesByType["FINAL"]?.map((s, i) => (
-                          <span key={i} className={`${getScoreColor(s)} ${i > 0 ? "ml-1" : ""}`}>
+                          <span key={i} className={`inline-block px-1.5 py-0.5 rounded-lg bg-slate-100 border border-slate-200/80 ${getScoreColor(s)} ${i > 0 ? "ml-1" : ""}`}>
                             {s}
                           </span>
-                        )) || <span className="text-gray-300">—</span>}
+                        )) || <span className="text-slate-300 font-semibold">—</span>}
                       </td>
-                      <td className={`p-4 text-center text-lg font-bold ${getScoreColor(subject.avgScore)}`}>
+                      <td className={`px-4 py-4 text-center bg-blue-50/40 text-sm font-extrabold ${getScoreColor(subject.avgScore)}`}>
                         {subject.avgScore}
                       </td>
-                      <td className="p-4 text-center">
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${rating.color}`}>
-                          {rating.label}
+                      <td className="px-4 py-4 text-center">
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs border ${subjectRating.color}`}>
+                          {subjectRating.label}
                         </span>
                       </td>
                     </tr>
@@ -222,13 +237,13 @@ export default function StudentGradesPage() {
         </div>
       )}
 
-      {/* Chú thích */}
-      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-500">
-        <p className="font-medium text-gray-700 mb-2"> Chú thích hệ số:</p>
-        <div className="flex flex-wrap gap-4">
-          <span>Miệng, 15 phút: hệ số 1</span>
-          <span>Giữa kỳ: hệ số 2</span>
-          <span>Cuối kỳ: hệ số 3</span>
+      {/* Grade Guide Footer */}
+      <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex items-start gap-3 text-xs text-slate-600">
+        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-extrabold text-slate-900">Cách tính Điểm Trung Bình môn học (ĐTB):</p>
+          <p>• <strong>ĐTB Môn</strong> = (Miệng×1 + 15 phút×1 + Giữa kỳ×2 + Cuối kỳ×3) ÷ (Tổng hệ số).</p>
+          <p>• Xếp loại môn học: <strong>Giỏi</strong> (≥8.0) | <strong>Khá</strong> (6.5 – 7.9) | <strong>Đạt</strong> (5.0 – 6.4) | <strong>Chưa đạt</strong> (&lt;5.0).</p>
         </div>
       </div>
     </div>
