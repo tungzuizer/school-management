@@ -5,7 +5,11 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
 import Header from "@/components/layout/Header";
-import { FloatingAIChatWidget } from "@/components/ui/FloatingAIChatWidget";
+import dynamic from "next/dynamic";
+const FloatingAIChatWidget = dynamic(
+  () => import("@/components/ui/FloatingAIChatWidget").then((mod) => mod.FloatingAIChatWidget),
+  { ssr: false }
+);
 import {
   Home,
   Award,

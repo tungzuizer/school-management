@@ -40,37 +40,74 @@ export async function getStudentDashboardData() {
     if (!result?.student) return null;
     const { student, userId } = result;
 
-    // Lấy điểm trung bình tất cả môn
-    const grades = await prisma.grade.findMany({
-      where: { studentId: student.id },
-    });
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=CN, 1=T2...
+
+    // Optimized parallel execution via Promise.all
+    const [
+      grades,
+      absentDays,
+      lateDays,
+      commendations,
+      recentNotifications,
+      todaySchedule,
+    ] = await Promise.all([
+      prisma.grade.findMany({
+        where: { studentId: student.id },
+      }),
+      prisma.attendance.count({
+        where: {
+          studentId: student.id,
+          status: { in: ["ABSENT_EXCUSED", "ABSENT_UNEXCUSED"] },
+          date: { gte: thirtyDaysAgo },
+        },
+      }),
+      prisma.attendance.count({
+        where: {
+          studentId: student.id,
+          status: "LATE",
+          date: { gte: thirtyDaysAgo },
+        },
+      }),
+      prisma.incident.findMany({
+        where: {
+          studentId: student.id,
+          type: "COMMENDATION",
+        },
+        orderBy: { date: "desc" },
+        take: 10,
+      }),
+      prisma.notification.findMany({
+        where: { receiverId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          sender: { select: { name: true, role: true } },
+        },
+      }),
+      student.classId
+        ? prisma.schedule.findMany({
+            where: {
+              classId: student.classId,
+              dayOfWeek: dayOfWeek,
+            },
+            include: {
+              subject: true,
+              teacher: { include: { user: true } },
+            },
+            orderBy: { period: "asc" },
+          })
+        : Promise.resolve([]),
+    ]);
 
     let avgScore = 0;
     if (grades.length > 0) {
       avgScore = grades.reduce((sum, g) => sum + g.score, 0) / grades.length;
     }
 
-    // Đếm ngày vắng (30 ngày gần nhất)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const absentDays = await prisma.attendance.count({
-      where: {
-        studentId: student.id,
-        status: { in: ["ABSENT_EXCUSED" as const, "ABSENT_UNEXCUSED" as const] },
-        date: { gte: thirtyDaysAgo },
-      },
-    });
-
-    const lateDays = await prisma.attendance.count({
-      where: {
-        studentId: student.id,
-        status: "LATE" as const,
-        date: { gte: thirtyDaysAgo },
-      },
-    });
-
-    // Xếp loại học lực (dựa trên điểm TB)
     let academicRating = "Chưa xếp loại";
     if (grades.length > 0) {
       if (avgScore >= 8.0) academicRating = "Giỏi";
@@ -78,43 +115,6 @@ export async function getStudentDashboardData() {
       else if (avgScore >= 5.0) academicRating = "Đạt";
       else academicRating = "Chưa đạt";
     }
-
-        // Danh sách tuyên dương khen thưởng của học sinh
-    const commendations = await prisma.incident.findMany({
-      where: {
-        studentId: student.id,
-        type: "COMMENDATION",
-      },
-      orderBy: { date: "desc" },
-      take: 10,
-    });
-
-    // Thông báo mới nhất
-    const recentNotifications = await prisma.notification.findMany({
-      where: { receiverId: userId },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      include: {
-        sender: { select: { name: true, role: true } },
-      },
-    });
-
-    // Lịch hôm nay
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=CN, 1=T2...
-    const todaySchedule = student.classId
-      ? await prisma.schedule.findMany({
-          where: {
-            classId: student.classId,
-            dayOfWeek: dayOfWeek,
-          },
-          include: {
-            subject: true,
-            teacher: { include: { user: true } },
-          },
-          orderBy: { period: "asc" },
-        })
-      : [];
 
     return {
       student: {
