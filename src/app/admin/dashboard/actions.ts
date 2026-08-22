@@ -1,15 +1,97 @@
-"use server";
+﻿"use server";
 
 import { prisma } from "@/lib/prisma";
 import { AttendanceStatus, StudentStatus, ReportStatus } from "@prisma/client";
 
-export async function getDashboardStats() {
+export async function getSchoolsList() {
   try {
+    const schools = await prisma.school.findMany({
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        phone: true,
+        email: true,
+        campuses: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            classRooms: true,
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    const enrichedSchools = await Promise.all(
+      schools.map(async (sch) => {
+        const studentCount = await prisma.student.count({
+          where: {
+            status: StudentStatus.STUDYING,
+            classRoom: { schoolId: sch.id },
+          },
+        });
+
+        const teacherCount = await prisma.teacher.count({
+          where: {
+            OR: [
+              { user: { schoolId: sch.id } },
+              { homeroomClasses: { some: { schoolId: sch.id } } },
+              { teachingAssignments: { some: { classRoom: { schoolId: sch.id } } } },
+            ],
+          },
+        });
+
+        return {
+          id: sch.id,
+          name: sch.name,
+          address: sch.address,
+          phone: sch.phone,
+          email: sch.email,
+          campusCount: sch.campuses.length,
+          classCount: sch._count.classRooms,
+          studentCount,
+          teacherCount,
+        };
+      })
+    );
+
+    return enrichedSchools;
+  } catch (error) {
+    console.error("Error in getSchoolsList:", error);
+    return [];
+  }
+}
+
+export async function getDashboardStats(schoolId?: string) {
+  try {
+    const studentWhere = schoolId
+      ? { status: StudentStatus.STUDYING, classRoom: { schoolId } }
+      : { status: StudentStatus.STUDYING };
+
+    const classWhere = schoolId ? { schoolId } : {};
+
+    const teacherCountPromise = schoolId
+      ? prisma.teacher.count({
+          where: {
+            OR: [
+              { user: { schoolId } },
+              { homeroomClasses: { some: { schoolId } } },
+              { teachingAssignments: { some: { classRoom: { schoolId } } } },
+            ],
+          },
+        })
+      : prisma.teacher.count();
+
     const [totalStudents, totalTeachers, totalClasses, totalSchools] =
       await Promise.all([
-        prisma.student.count({ where: { status: StudentStatus.STUDYING } }),
-        prisma.teacher.count(),
-        prisma.classRoom.count(),
+        prisma.student.count({ where: studentWhere }),
+        teacherCountPromise,
+        prisma.classRoom.count({ where: classWhere }),
         prisma.school.count(),
       ]);
 
@@ -17,13 +99,17 @@ export async function getDashboardStats() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    const attendanceWhere = schoolId
+      ? { date: { gte: thirtyDaysAgo }, classRoom: { schoolId } }
+      : { date: { gte: thirtyDaysAgo } };
+
     const [totalAttendance, presentAttendance] = await Promise.all([
       prisma.attendance.count({
-        where: { date: { gte: thirtyDaysAgo } },
+        where: attendanceWhere,
       }),
       prisma.attendance.count({
         where: {
-          date: { gte: thirtyDaysAgo },
+          ...attendanceWhere,
           status: AttendanceStatus.PRESENT,
         },
       }),
@@ -32,7 +118,7 @@ export async function getDashboardStats() {
     const attendanceRate =
       totalAttendance > 0
         ? Math.round((presentAttendance / totalAttendance) * 100 * 10) / 10
-        : 0;
+        : 100;
 
     return {
       totalStudents,
@@ -53,14 +139,18 @@ export async function getDashboardStats() {
   }
 }
 
-export async function getAttendanceByWeek() {
+export async function getAttendanceByWeek(schoolId?: string) {
   try {
     const eightWeeksAgo = new Date();
     eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
     eightWeeksAgo.setHours(0, 0, 0, 0);
 
+    const whereClause = schoolId
+      ? { date: { gte: eightWeeksAgo }, classRoom: { schoolId } }
+      : { date: { gte: eightWeeksAgo } };
+
     const records = await prisma.attendance.findMany({
-      where: { date: { gte: eightWeeksAgo } },
+      where: whereClause,
       select: { date: true, status: true },
     });
 
@@ -111,13 +201,17 @@ export async function getAttendanceByWeek() {
   }
 }
 
-export async function getGradesByClass() {
+export async function getGradesByClass(schoolId?: string) {
   try {
+    const whereClause = schoolId ? { schoolId } : {};
+
     const classes = await prisma.classRoom.findMany({
+      where: whereClause,
       select: {
         id: true,
         name: true,
         gradeLevel: true,
+        school: { select: { name: true } },
         students: {
           where: { status: StudentStatus.STUDYING },
           select: {
@@ -142,7 +236,9 @@ export async function getGradesByClass() {
           : 0;
       return {
         classId: cls.id,
-        className: cls.name,
+        className: `${cls.name} (${cls.school?.name || ""})`,
+        shortClassName: cls.name,
+        schoolName: cls.school?.name || "",
         gradeLevel: cls.gradeLevel,
         studentCount: cls.students.length,
         avgScore: avg,
@@ -154,17 +250,24 @@ export async function getGradesByClass() {
   }
 }
 
-export async function getClassAttendanceRanking() {
+export async function getClassAttendanceRanking(schoolId?: string) {
   try {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    const classWhere = schoolId ? { schoolId } : {};
+    const attendanceWhere = schoolId
+      ? { date: { gte: sevenDaysAgo }, classRoom: { schoolId } }
+      : { date: { gte: sevenDaysAgo } };
+
     const [classes, attendanceRecords] = await Promise.all([
       prisma.classRoom.findMany({
+        where: classWhere,
         select: {
           id: true,
           name: true,
           gradeLevel: true,
+          school: { select: { name: true } },
           _count: {
             select: { students: true },
           },
@@ -172,7 +275,7 @@ export async function getClassAttendanceRanking() {
         orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
       }),
       prisma.attendance.findMany({
-        where: { date: { gte: sevenDaysAgo } },
+        where: attendanceWhere,
         select: { classId: true, status: true },
       }),
     ]);
@@ -197,6 +300,7 @@ export async function getClassAttendanceRanking() {
 
       return {
         className: cls.name,
+        schoolName: cls.school?.name || "",
         gradeLevel: cls.gradeLevel,
         studentCount: cls._count.students,
         attendanceRate: rate,
@@ -210,9 +314,14 @@ export async function getClassAttendanceRanking() {
   }
 }
 
-export async function getRecentIncidents(limit = 10) {
+export async function getRecentIncidents(limit = 10, schoolId?: string) {
   try {
+    const whereClause = schoolId
+      ? { student: { classRoom: { schoolId } } }
+      : {};
+
     const incidents = await prisma.incident.findMany({
+      where: whereClause,
       take: limit,
       orderBy: { date: "desc" },
       select: {
@@ -223,7 +332,7 @@ export async function getRecentIncidents(limit = 10) {
         student: {
           select: {
             user: { select: { name: true } },
-            classRoom: { select: { name: true } },
+            classRoom: { select: { name: true, school: { select: { name: true } } } },
           },
         },
       },
@@ -235,6 +344,7 @@ export async function getRecentIncidents(limit = 10) {
       type: inc.type,
       studentName: inc.student?.user?.name || "Học sinh",
       className: inc.student?.classRoom?.name || "—",
+      schoolName: inc.student?.classRoom?.school?.name || "—",
       description: inc.description,
     }));
   } catch (error) {
@@ -243,38 +353,47 @@ export async function getRecentIncidents(limit = 10) {
   }
 }
 
-export async function getTodaySummary() {
+export async function getTodaySummary(schoolId?: string) {
   try {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
+    const attendanceWhere = schoolId
+      ? { date: { gte: todayStart, lte: todayEnd }, classRoom: { schoolId } }
+      : { date: { gte: todayStart, lte: todayEnd } };
+
+    const incidentWhere = schoolId
+      ? { date: { gte: todayStart, lte: todayEnd }, student: { classRoom: { schoolId } } }
+      : { date: { gte: todayStart, lte: todayEnd } };
+
+    const classWhere = schoolId ? { schoolId } : {};
+
+    const reportWhere = schoolId
+      ? { date: { gte: todayStart, lte: todayEnd }, status: ReportStatus.SENT, classRoom: { schoolId } }
+      : { date: { gte: todayStart, lte: todayEnd }, status: ReportStatus.SENT };
+
     const [absentToday, lateToday, incidentsToday, totalClasses, reportsSubmitted] =
       await Promise.all([
         prisma.attendance.count({
           where: {
-            date: { gte: todayStart, lte: todayEnd },
+            ...attendanceWhere,
             status: { in: [AttendanceStatus.ABSENT_EXCUSED, AttendanceStatus.ABSENT_UNEXCUSED] },
           },
         }),
         prisma.attendance.count({
           where: {
-            date: { gte: todayStart, lte: todayEnd },
+            ...attendanceWhere,
             status: AttendanceStatus.LATE,
           },
         }),
         prisma.incident.count({
-          where: {
-            date: { gte: todayStart, lte: todayEnd },
-          },
+          where: incidentWhere,
         }),
-        prisma.classRoom.count(),
+        prisma.classRoom.count({ where: classWhere }),
         prisma.dailyReport.count({
-          where: {
-            date: { gte: todayStart, lte: todayEnd },
-            status: ReportStatus.SENT,
-          },
+          where: reportWhere,
         }),
       ]);
 
@@ -297,18 +416,20 @@ export async function getTodaySummary() {
   }
 }
 
-export async function getAdminDashboardData() {
-  const [stats, weekData, classGrades, classAttendance, incidents, today] =
+export async function getAdminDashboardData(schoolId?: string) {
+  const [schools, stats, weekData, classGrades, classAttendance, incidents, today] =
     await Promise.all([
-      getDashboardStats(),
-      getAttendanceByWeek(),
-      getGradesByClass(),
-      getClassAttendanceRanking(),
-      getRecentIncidents(),
-      getTodaySummary(),
+      getSchoolsList(),
+      getDashboardStats(schoolId),
+      getAttendanceByWeek(schoolId),
+      getGradesByClass(schoolId),
+      getClassAttendanceRanking(schoolId),
+      getRecentIncidents(10, schoolId),
+      getTodaySummary(schoolId),
     ]);
 
   return {
+    schools,
     stats,
     weekData,
     classGrades,
@@ -320,9 +441,8 @@ export async function getAdminDashboardData() {
 
 // ==================== AI CẢNH BÁO GIÁO ÁN ====================
 
-export async function getLessonPlanAlerts() {
+export async function getLessonPlanAlerts(schoolId?: string) {
   try {
-    // Tìm kỳ nộp đang active
     const activePeriods = await prisma.lessonPlanPeriod.findMany({
       where: { isActive: true },
       orderBy: { deadline: "desc" },
@@ -334,9 +454,19 @@ export async function getLessonPlanAlerts() {
 
     const period = activePeriods[0];
 
-    // Lấy tất cả GV đang có phân công dạy và giáo án đã nộp SONG SONG
+    const assignmentWhere = schoolId
+      ? {
+          OR: [
+            { teacher: { user: { schoolId } } },
+            { teacher: { homeroomClasses: { some: { schoolId } } } },
+            { classRoom: { schoolId } },
+          ],
+        }
+      : {};
+
     const [assignments, submittedPlans] = await Promise.all([
       prisma.teachingAssignment.findMany({
+        where: assignmentWhere,
         select: {
           teacherId: true,
           subjectId: true,
@@ -359,13 +489,11 @@ export async function getLessonPlanAlerts() {
       }),
     ]);
 
-    // Map: teacherId::subjectId → plan info
     const submittedMap = new Map<string, { createdAt: Date; status: string }>();
     for (const p of submittedPlans) {
       submittedMap.set(`${p.teacherId}::${p.subjectId}`, { createdAt: p.createdAt, status: p.status });
     }
 
-    // So sánh
     type Alert = {
       teacherName: string;
       subjectName: string;
@@ -398,7 +526,6 @@ export async function getLessonPlanAlerts() {
       }
     }
 
-    // Sắp xếp: chưa nộp trước, nộp muộn tiếp, nộp đúng hạn sau
     const order = { NOT_SUBMITTED: 0, LATE: 1, ON_TIME: 2 };
     alerts.sort((a, b) => {
       const d = order[a.status] - order[b.status];
