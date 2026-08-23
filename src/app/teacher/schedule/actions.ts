@@ -110,6 +110,12 @@ export async function getTeacherSchedule(
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
 
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isApproved: true },
+  });
+  if (!user || user.isApproved === false) return null;
+
   const teacher = await prisma.teacher.findUnique({
     where: { userId: session.user.id },
     include: {

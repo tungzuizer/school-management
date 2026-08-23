@@ -7,6 +7,12 @@ import { LessonPlanStatus } from "@prisma/client";
 
 // Helper to get current teacher id from user session
 async function getTeacherId(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+  if (!user || user.isApproved === false) return undefined;
+
   const teacher = await prisma.teacher.findUnique({
     where: { userId },
   });

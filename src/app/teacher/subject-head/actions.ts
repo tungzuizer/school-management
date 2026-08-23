@@ -7,9 +7,19 @@ import { authOptions } from "@/lib/auth";
 import { LessonPlanStatus } from "@prisma/client";
 import { recordAuditLog } from "@/lib/audit-logger";
 
+async function isApprovedUser(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+  return user?.isApproved !== false;
+}
+
+
 export async function checkIsSubjectHead() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { isSubjectHead: false, pendingCount: 0 };
+  if (!(await isApprovedUser(session.user.id))) return { isSubjectHead: false, pendingCount: 0 };
 
   const teacher = await prisma.teacher.findUnique({
     where: { userId: session.user.id },
@@ -42,9 +52,8 @@ export async function checkIsSubjectHead() {
 
 export async function getHeadSubjectsAndRequests() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { headSubjects: [], requests: [] };
-  }
+  if (!session?.user?.id) return { headSubjects: [], requests: [] };
+  if (!(await isApprovedUser(session.user.id))) return { headSubjects: [], requests: [] };
 
   const teacher = await prisma.teacher.findUnique({
     where: { userId: session.user.id },
@@ -104,9 +113,8 @@ export async function reviewTeacherChangeRequest(input: {
   reviewNote?: string;
 }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, error: "Bạn chưa đăng nhập" };
-  }
+  if (!session?.user?.id) return { success: false, error: "Bạn chưa đăng nhập" };
+  if (!(await isApprovedUser(session.user.id))) return { success: false, error: "Tài khoản chưa được phê duyệt." };
 
   const teacher = await prisma.teacher.findUnique({
     where: { userId: session.user.id },
@@ -188,6 +196,7 @@ export async function reviewTeacherChangeRequest(input: {
 export async function getHeadLessonPlans() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
 
   const teacher = await prisma.teacher.findUnique({
     where: { userId: session.user.id },
@@ -270,6 +279,7 @@ export async function headReviewLessonPlan(data: {
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
+  if (!(await isApprovedUser(session.user.id))) return { success: false, error: "Tài khoản chưa được phê duyệt." };
 
   const teacher = await prisma.teacher.findUnique({
     where: { userId: session.user.id },

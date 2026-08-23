@@ -5,6 +5,15 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 
+async function isApprovedUser(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+  return user?.isApproved !== false;
+}
+
+
 export interface TeacherSlotOption {
   slotKey: string; // Key unique for dropdown: e.g. "classId_period_subjectId"
   classId: string;
@@ -50,6 +59,8 @@ const PERIOD_TIMES: Record<number, string> = {
 export async function getTeacherScheduleForDate(date: string): Promise<TeacherSlotOption[]> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return [];
+
+  if (!(await isApprovedUser(session.user.id))) return [];
 
   const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
   if (!teacher) return [];
@@ -155,6 +166,8 @@ export async function getClassStudents(classId: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return [];
 
+  if (!(await isApprovedUser(session.user.id))) return [];
+
   const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
   if (!teacher) return [];
 
@@ -180,6 +193,8 @@ export async function getClassStudents(classId: string) {
 export async function getAttendanceByDateAndPeriod(classId: string, date: string, period: number) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { isLocked: false, existingData: [], lockedAt: null };
+
+  if (!(await isApprovedUser(session.user.id))) return { isLocked: false, existingData: [], lockedAt: null };
 
   const { dateObj } = parseLocalDate(date);
 
@@ -212,6 +227,10 @@ export async function saveAttendance(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
+
+  if (!(await isApprovedUser(session.user.id))) {
+    return { success: false, error: "Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt và cấp quyền dữ liệu." };
+  }
 
   if (!period || period < 1 || period > 10) {
     return { success: false, error: "Vui lòng chọn Tiết học cụ thể để điểm danh" };
