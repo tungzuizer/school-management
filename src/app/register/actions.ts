@@ -8,6 +8,7 @@ export interface RegisterTeacherInput {
   email: string;
   phone: string;
   password: string;
+  role?: "TEACHER" | "ADMIN" | "VICE_PRINCIPAL";
   schoolId: string;
   districtWardId?: string;
   departmentId?: string;
@@ -64,7 +65,7 @@ export async function getRegistrationFormData() {
 
 export async function registerTeacher(input: RegisterTeacherInput) {
   try {
-    const { name, email, phone, password, schoolId, districtWardId, departmentId, specialty } = input;
+    const { name, email, phone, password, role = "TEACHER", schoolId, districtWardId, departmentId, specialty } = input;
 
     if (!name || !name.trim()) {
       return { success: false, error: "Vui lòng nhập Họ và tên." };
@@ -113,14 +114,14 @@ export async function registerTeacher(input: RegisterTeacherInput) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user and teacher in a transaction
+    // Create user and teacher record if TEACHER
     const newUser = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           name: name.trim(),
           email: cleanEmail,
           password: hashedPassword,
-          role: "TEACHER",
+          role,
           isApproved: false,
           schoolId: targetSchool.id,
           departmentId: finalDepartmentId,
@@ -128,20 +129,28 @@ export async function registerTeacher(input: RegisterTeacherInput) {
         },
       });
 
-      await tx.teacher.create({
-        data: {
-          userId: user.id,
-          phone: phone ? phone.trim() : null,
-          specialty: specialty ? specialty.trim() : "Toán",
-        },
-      });
+      if (role === "TEACHER") {
+        await tx.teacher.create({
+          data: {
+            userId: user.id,
+            phone: phone ? phone.trim() : null,
+            specialty: specialty ? specialty.trim() : "Toán",
+          },
+        });
+      }
 
       return user;
     });
 
+    const isPrincipalRole = role === "ADMIN" || role === "VICE_PRINCIPAL";
+    const roleTitle = role === "ADMIN" ? "Hiệu trưởng" : role === "VICE_PRINCIPAL" ? "Phó Hiệu trưởng" : "Giáo viên";
+    const approvalNotice = isPrincipalRole
+      ? `Đăng ký tài khoản ${roleTitle} thành công! Tài khoản của bạn đang chờ Sở GD&ĐT / Admin Hệ thống phê duyệt và cấp quyền quản lý.`
+      : `Đăng ký tài khoản Giáo viên thành công! Tài khoản của bạn đang chờ Hiệu trưởng trường phê duyệt trước khi được cấp quyền truy cập dữ liệu.`;
+
     return {
       success: true,
-      message: "Đăng ký tài khoản Giáo viên thành công! Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt trước khi có thể đăng nhập.",
+      message: approvalNotice,
       user: {
         id: newUser.id,
         email: newUser.email,

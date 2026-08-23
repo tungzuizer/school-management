@@ -71,6 +71,7 @@ const menuGroups: MenuGroup[] = [
     title: "Quản lý",
     icon: Settings,
     items: [
+      { label: "Hiệu trưởng & Cán bộ", href: "/admin/principals", icon: Landmark },
       { label: "Trường học", href: "/admin/schools", icon: Building2 },
       { label: "Lớp học", href: "/admin/classes", icon: School },
       { label: "Giáo viên", href: "/admin/teachers", icon: UserCog },
@@ -125,7 +126,7 @@ const mobileMainTabs = [
 ];
 
 const aiPaths = ["/admin/principal-ai", "/admin/substitute-dispatch", "/admin/early-warnings", "/admin/daily-summary"];
-const quanlyPaths = ["/admin/schools", "/admin/classes", "/admin/teachers", "/admin/students", "/admin/subjects", "/admin/subject-groups"];
+const quanlyPaths = ["/admin/principals", "/admin/schools", "/admin/classes", "/admin/teachers", "/admin/students", "/admin/subjects", "/admin/subject-groups"];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

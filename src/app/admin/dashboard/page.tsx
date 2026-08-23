@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useEasyMode } from "@/lib/useEasyMode";
+import { useSession } from "next-auth/react";
 import {
   GraduationCap,
   School,
@@ -61,6 +62,7 @@ type LPAlertsData = Awaited<ReturnType<typeof getLessonPlanAlerts>>;
 const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
 export default function AdminDashboardPage() {
+  const { data: session } = useSession();
   const { isEasyMode } = useEasyMode();
   const [schools, setSchools] = useState<SchoolItem[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>(undefined);
@@ -198,6 +200,21 @@ export default function AdminDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Unapproved Account Warning Banner */}
+      {session?.user?.isApproved === false && (
+        <div className="bg-amber-50 border-2 border-amber-300 p-5 rounded-2xl shadow-sm text-amber-900 flex items-start gap-4">
+          <div className="p-3 bg-amber-100 rounded-xl text-amber-700 shrink-0 mt-0.5">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-bold text-base text-amber-950">Tài Khoản Đang Chờ Phê Duyệt Cấp Quyền</h3>
+            <p className="text-xs sm:text-sm text-amber-800 mt-1 leading-relaxed">
+              Tài khoản Hiệu trưởng / Phó Hiệu trưởng của bạn đã được khởi tạo thành công nhưng đang chờ <strong>Sở GD&ĐT / Admin Hệ thống</strong> duyệt và phân quyền quản lý trường. Trong thời gian này, các tính năng chỉnh sửa dữ liệu nâng cao sẽ tạm thời ở chế độ xem an toàn.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* School Selection Filter Bar */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3">
