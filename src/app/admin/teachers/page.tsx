@@ -13,7 +13,7 @@ interface TeacherData {
   specialty: string | null;
   phone: string | null;
   degree: string | null;
-  user: { id: string; name: string; email: string; isApproved?: boolean; school?: { id: string; name: string } | null };
+  user: { id: string; name: string; email: string; role?: string; isApproved?: boolean; school?: { id: string; name: string } | null };
   homeroomClasses: { id: string; name: string; gradeLevel: number }[];
   teachingAssignments: { id: string; subject: { name: string }; classRoom: { name: string; gradeLevel?: number } }[];
 }
@@ -372,9 +372,19 @@ export default function TeachersPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800">
-                        {t.specialty || "Giáo viên"}
-                      </span>
+                      {t.user?.role === "ADMIN" ? (
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800">
+                          👑 Hiệu trưởng
+                        </span>
+                      ) : t.user?.role === "VICE_PRINCIPAL" ? (
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                          🏛️ Phó Hiệu trưởng
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800">
+                          {t.specialty || "Giáo viên"}
+                        </span>
+                      )}
                       {t.user?.isApproved === false ? (
                         <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
                           ⏳ Chờ duyệt
