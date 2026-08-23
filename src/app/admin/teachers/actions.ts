@@ -30,7 +30,7 @@ export async function getTeachers(search?: string, specialty?: string, schoolId?
   return prisma.teacher.findMany({
     where,
     include: {
-      user: { select: { id: true, name: true, email: true, school: { select: { id: true, name: true } } } },
+      user: { select: { id: true, name: true, email: true, isApproved: true, school: { select: { id: true, name: true } } } },
       homeroomClasses: { select: { id: true, name: true, gradeLevel: true } },
       teachingAssignments: {
         select: {

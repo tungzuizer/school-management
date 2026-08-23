@@ -31,6 +31,8 @@ export default function ApprovalsPage() {
   const [lessonPlans, setLessonPlans] = useState<LessonPlanItem[]>([]);
   const [changeRequests, setChangeRequests] = useState<ChangeRequestItem[]>([]);
   const [teacherRegistrations, setTeacherRegistrations] = useState<TeacherRegistrationItem[]>([]);
+  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
+  const [schoolFilter, setSchoolFilter] = useState<string>("ALL");
   const [principalOrg, setPrincipalOrg] = useState<{
     schoolName: string;
     districtWardName: string;
@@ -64,6 +66,7 @@ export default function ApprovalsPage() {
     setChangeRequests(data.changeRequests);
     setTeacherRegistrations(data.teacherRegistrations || []);
     if (data.principalOrg) setPrincipalOrg(data.principalOrg);
+    if (data.schools) setSchools(data.schools);
     setLoading(false);
   }, []);
 
@@ -83,6 +86,9 @@ export default function ApprovalsPage() {
   const filtered = allItems.filter((item) => {
     // Category filter
     if (categoryFilter !== "ALL" && item.type !== categoryFilter) return false;
+
+    // School filter
+    if (schoolFilter !== "ALL" && (item as any).schoolId && (item as any).schoolId !== schoolFilter) return false;
 
     // Status tab filter
     if (activeTab === "PENDING" && !isPending(item.status)) return false;
@@ -123,7 +129,7 @@ export default function ApprovalsPage() {
     });
     setSubmitting(false);
     if (res.success) {
-      showToast(`Đã PHÊ DUYỆT thành công: ${title}`, "success");
+      showToast(`Đã PHÊ DUYỆT & CẤP QUYỀN CẬP NHẬT DỮ LIỆU thành công: ${title}`, "success");
       loadData(true);
     } else {
       showToast(res.error || "Phê duyệt thất bại", "error");
@@ -309,6 +315,19 @@ export default function ApprovalsPage() {
             <option value="LESSON_PLAN">📘 Giáo án giảng dạy ({lessonPlans.length})</option>
             <option value="CHANGE_REQUEST">🔄 Đổi giáo viên ({changeRequests.length})</option>
           </select>
+
+          <select
+            value={schoolFilter}
+            onChange={(e) => setSchoolFilter(e.target.value)}
+            className="px-3.5 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white font-semibold text-slate-700 outline-none"
+          >
+            <option value="ALL">🏫 Tất cả các Trường học</option>
+            {schools.map((s) => (
+              <option key={s.id} value={s.id}>
+                🏫 {s.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold self-end sm:self-auto">
@@ -461,7 +480,7 @@ export default function ApprovalsPage() {
                       className="flex-1 py-2.5 px-3 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-xs hover:shadow transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      Phê Duyệt
+                      {isTeacherReg ? "Phê Duyệt & Cấp Quyền Dữ Liệu" : "Phê Duyệt"}
                     </button>
 
                     <button
@@ -572,7 +591,7 @@ export default function ApprovalsPage() {
                               disabled={submitting}
                               className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition cursor-pointer"
                             >
-                              Phê duyệt
+                              {isTeacherReg ? "Phê duyệt & Cấp quyền" : "Phê duyệt"}
                             </button>
                             <button
                               onClick={() => openRejectModal(item.id, item.type, item.title)}

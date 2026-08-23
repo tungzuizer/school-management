@@ -12,6 +12,31 @@ export async function GET(request: Request) {
   }
 
   try {
+
+    const superHashedPassword = await bcrypt.hash("SuperAdmin@2026!", 10);
+    await prisma.user.upsert({
+      where: { email: "superadmin@school.com" },
+      update: {
+        name: "Quản Trị Viên Tối Cao (Super Admin)",
+        password: superHashedPassword,
+        role: Role.ADMIN,
+        isApproved: true,
+        schoolId: null,
+        districtWardId: null,
+        departmentId: null,
+      },
+      create: {
+        name: "Quản Trị Viên Tối Cao (Super Admin)",
+        email: "superadmin@school.com",
+        password: superHashedPassword,
+        role: Role.ADMIN,
+        isApproved: true,
+        schoolId: null,
+        districtWardId: null,
+        departmentId: null,
+      },
+    });
+
     const hashedPassword = await bcrypt.hash("123456", 10);
 
     const defaultDept = await prisma.educationDepartment.findFirst();

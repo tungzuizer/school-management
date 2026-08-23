@@ -1,5 +1,6 @@
 "use client";
 
+import { checkUserApprovalStatus } from "@/app/register/actions";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";

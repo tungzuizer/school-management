@@ -156,3 +156,19 @@ export async function registerTeacher(input: RegisterTeacherInput) {
     };
   }
 }
+
+export async function checkUserApprovalStatus(email: string) {
+  try {
+    if (!email || !email.trim()) return { isUnapproved: false };
+    const user = await prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+      select: { isApproved: true, role: true },
+    });
+    if (user && user.isApproved === false) {
+      return { isUnapproved: true };
+    }
+    return { isUnapproved: false };
+  } catch {
+    return { isUnapproved: false };
+  }
+}
