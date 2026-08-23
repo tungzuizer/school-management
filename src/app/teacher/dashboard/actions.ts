@@ -1,6 +1,17 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+async function isApprovedUser(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+  return user?.isApproved !== false;
+}
+
 
 // ============ Get teacher info + homeroom class ============
 export async function getTeacherDashboardData(userId: string) {
@@ -51,6 +62,8 @@ export async function getTeacherDashboardData(userId: string) {
 
 // ============ Today's attendance stats for homeroom class ============
 export async function getTodayAttendance(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return { totalStudents: 0, presentCount: 0, absentCount: 0, lateCount: 0, unmarkedCount: 0, absentList: [], lateList: [], attendanceRate: 0 };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -129,7 +142,15 @@ export async function getTodayAttendance(classId: string) {
 }
 
 // ============ Today's schedule for teacher ============
-export async function getTodaySchedule(teacherId: string) {
+export async function getTodaySchedule(teacherIdParam?: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return [];
+  let teacherId = teacherIdParam;
+  if (!teacherId) {
+    const t = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
+    if (!t) return [];
+    teacherId = t.id;
+  }
   const today = new Date();
   // dayOfWeek: 1=Monday ... 7=Sunday (match JS: 0=Sun, 1=Mon...)
   const jsDow = today.getDay(); // 0=Sun
@@ -182,6 +203,8 @@ export async function getTodaySchedule(teacherId: string) {
 
 // ============ At-risk students (academic) ============
 export async function getAtRiskAcademic(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return [];
   // Students with average FINAL grade < 5.0 across subjects
   const students = await prisma.student.findMany({
     where: { classId, status: "STUDYING" },
@@ -213,6 +236,8 @@ export async function getAtRiskAcademic(classId: string) {
 
 // ============ At-risk students (violations) ============
 export async function getAtRiskViolations(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return [];
   // Students with 3+ violations in last 30 days
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -257,6 +282,8 @@ export async function getAtRiskViolations(classId: string) {
 
 // ============ Students needing counseling (EarlyWarning) ============
 export async function getStudentsNeedingCounseling(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return [];
   // EarlyWarning uses className (string) not a relation, and level instead of riskScore
   // First get the class name to filter
   const classRoom = await prisma.classRoom.findUnique({
@@ -295,6 +322,8 @@ export async function getStudentsNeedingCounseling(classId: string) {
 
 // ============ Unread parent notifications ============
 export async function getUnreadParentFeedbacks(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return [];
   // Recent feedbacks without response
   const feedbacks = await prisma.parentFeedback.findMany({
     where: {
@@ -319,6 +348,8 @@ export async function getUnreadParentFeedbacks(classId: string) {
 
 // ============ Today's daily report status ============
 export async function getDailyReportStatus(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return { exists: false, status: null, sentAt: null };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -338,6 +369,8 @@ export async function getDailyReportStatus(classId: string) {
 
 // ============ Class competition/thi đua quick stats ============
 export async function getClassCompetitionStats(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return { weekAttendanceRate: 100, weekAbsences: 0, weekViolations: 0 };
   // Get this week's attendance rate + violation count
   const startOfWeek = new Date();
   startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
@@ -380,7 +413,15 @@ export async function getClassCompetitionStats(classId: string) {
 }
 
 // ============ Week schedule for timetable view ============
-export async function getWeekSchedule(teacherId: string, weekStartDate?: string) {
+export async function getWeekSchedule(teacherIdParam?: string, weekStartDate?: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return { weekStart: "", weekEnd: "", weekDates: [], grid: [], totalSlots: 0 };
+  let teacherId = teacherIdParam;
+  if (!teacherId) {
+    const t = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
+    if (!t) return { weekStart: "", weekEnd: "", weekDates: [], grid: [], totalSlots: 0 };
+    teacherId = t.id;
+  }
   // Calculate the Monday of the requested week
   const baseDate = weekStartDate ? new Date(weekStartDate) : new Date();
   const dayOfWeek = baseDate.getDay(); // 0=Sun
@@ -475,7 +516,15 @@ export async function getWeekSchedule(teacherId: string, weekStartDate?: string)
 }
 
 // ============ Get teacher's courses/subjects for current term ============
-export async function getTeacherCourses(teacherId: string) {
+export async function getTeacherCourses(teacherIdParam?: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return [];
+  let teacherId = teacherIdParam;
+  if (!teacherId) {
+    const t = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
+    if (!t) return [];
+    teacherId = t.id;
+  }
   const assignments = await prisma.teachingAssignment.findMany({
     where: { teacherId },
     include: {
@@ -518,6 +567,8 @@ export async function getTeacherCourses(teacherId: string) {
 
 // ============ Incomplete records check ============
 export async function getIncompleteRecords(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !(await isApprovedUser(session.user.id))) return [];
   const incomplete: { label: string; count: number; href: string }[] = [];
 
   // Check today's attendance

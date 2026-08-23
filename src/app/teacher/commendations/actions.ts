@@ -2,8 +2,26 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-export async function getTeacherClassesAndStudents(userId: string) {
+async function isApprovedUser(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+  return user?.isApproved !== false;
+}
+
+export async function getTeacherClassesAndStudents(userIdParam?: string) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id || userIdParam;
+  if (!userId) return { classes: [] };
+
+  if (!(await isApprovedUser(userId))) {
+    return { classes: [] };
+  }
+
   const teacher = await prisma.teacher.findUnique({
     where: { userId },
   });
@@ -68,36 +86,6 @@ export async function getTeacherClassesAndStudents(userId: string) {
     });
   }
 
-  if (classMap.size === 0) {
-    const allRooms = await prisma.classRoom.findMany({
-      include: {
-        students: {
-          where: { status: "STUDYING" },
-          include: {
-            user: { select: { id: true, name: true, email: true } },
-          },
-          orderBy: { user: { name: "asc" } },
-        },
-      },
-      orderBy: { name: "asc" },
-      take: 25,
-    });
-
-    allRooms.forEach((cr) => {
-      if (cr.students.length > 0) {
-        classMap.set(cr.id, {
-          id: cr.id,
-          name: cr.name,
-          students: cr.students.map((s) => ({
-            id: s.id,
-            name: s.user.name,
-            studentCode: s.studentCode,
-          })),
-        });
-      }
-    });
-  }
-
   return {
     classes: Array.from(classMap.values()),
   };
@@ -110,9 +98,17 @@ export async function createStudentCommendation(data: {
   badgeTitle: string;
   description: string;
 }) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id || data.teacherUserId;
+  if (!userId) return { success: false, error: "Bạn chưa đăng nhập." };
+
+  if (!(await isApprovedUser(userId))) {
+    return { success: false, error: "Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt và cấp quyền dữ liệu." };
+  }
+
   try {
     const teacherUser = await prisma.user.findUnique({
-      where: { id: data.teacherUserId },
+      where: { id: userId },
       select: { id: true, name: true },
     });
     if (!teacherUser) {
@@ -163,7 +159,13 @@ export async function createStudentCommendation(data: {
   }
 }
 
-export async function getRecentCommendations(userId: string) {
+export async function getRecentCommendations(userIdParam?: string) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id || userIdParam;
+  if (!userId) return [];
+
+  if (!(await isApprovedUser(userId))) return [];
+
   const teacher = await prisma.teacher.findUnique({
     where: { userId },
   });

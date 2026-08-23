@@ -1,10 +1,25 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+async function isApprovedUser(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+  return user?.isApproved !== false;
+}
+
 import { aiChatCompletion } from "@/lib/ai-provider";
 
 // Get homeroom class for current teacher
-export async function getHomeroomClass(userId: string) {
+export async function getHomeroomClass(userIdParam?: string) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id || userIdParam;
+  if (!userId) return null;
+  if (!(await isApprovedUser(userId))) return null;
   const teacher = await prisma.teacher.findFirst({ where: { userId } });
   if (!teacher) return null;
   return prisma.classRoom.findFirst({
@@ -15,6 +30,9 @@ export async function getHomeroomClass(userId: string) {
 
 // Get daily report for a class on a specific date
 export async function getDailyReport(classId: string, date: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+  if (!(await isApprovedUser(session.user.id))) return null;
   return prisma.dailyReport.findFirst({
     where: { classId, date: new Date(date) },
   });
@@ -22,6 +40,9 @@ export async function getDailyReport(classId: string, date: string) {
 
 // Get all daily reports for a class (history)
 export async function getDailyReportHistory(classId: string, limit = 30) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
   return prisma.dailyReport.findMany({
     where: { classId },
     orderBy: { date: "desc" },
@@ -31,6 +52,9 @@ export async function getDailyReportHistory(classId: string, limit = 30) {
 
 // Collect daily data for report generation
 export async function collectDailyData(classId: string, date: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { totalStudents: 0, absentCount: 0, lateCount: 0, absentList: [], lateList: [], violations: [], commendations: [], parentFeedbacks: [] };
+  if (!(await isApprovedUser(session.user.id))) return { totalStudents: 0, absentCount: 0, lateCount: 0, absentList: [], lateList: [], violations: [], commendations: [], parentFeedbacks: [] };
   const dateObj = new Date(date);
   const startOfDay = new Date(dateObj);
   startOfDay.setHours(0, 0, 0, 0);
@@ -109,6 +133,9 @@ export async function collectDailyData(classId: string, date: string) {
 
 // Generate AI report using OpenAI-compatible API (OmniRoute)
 export async function generateAIReport(classId: string, date: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, text: null, error: "Chưa đăng nhập", data: null };
+  if (!(await isApprovedUser(session.user.id))) return { success: false, text: null, error: "Tài khoản chưa được phê duyệt.", data: null };
   const data = await collectDailyData(classId, date);
   const classInfo = await prisma.classRoom.findUnique({
     where: { id: classId },
@@ -167,6 +194,9 @@ export async function saveDailyReport(input: {
   editedText?: string;
   status: "DRAFT" | "SENT";
 }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
   const dateObj = new Date(input.date);
 
   const existing = await prisma.dailyReport.findFirst({
@@ -207,6 +237,9 @@ export async function saveDailyReport(input: {
 
 // Get all reports for admin view (all classes, specific date)
 export async function getAllDailyReports(date: string, schoolId?: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
   const dateObj = new Date(date);
   const startOfDay = new Date(dateObj);
   startOfDay.setHours(0, 0, 0, 0);

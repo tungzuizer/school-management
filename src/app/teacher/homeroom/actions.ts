@@ -2,11 +2,25 @@
 
 import { prisma } from "@/lib/prisma";
 import { aiChatCompletion } from "@/lib/ai-provider";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+async function isApprovedUser(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+  return user?.isApproved !== false;
+}
 
 // ============ Lấy lớp chủ nhiệm của giáo viên ============
-export async function getHomeroomClass(teacherId: string) {
+export async function getHomeroomClass(teacherIdParam?: string) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id || teacherIdParam;
+  if (!userId) return null;
+  if (!(await isApprovedUser(userId))) return null;
   const teacher = await prisma.teacher.findUnique({
-    where: { userId: teacherId },
+    where: { userId },
   });
   if (!teacher) return null;
 
@@ -23,6 +37,9 @@ export async function getHomeroomClass(teacherId: string) {
 
 // ============ Danh sách học sinh theo lớp ============
 export async function getClassStudents(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
   return prisma.student.findMany({
     where: { classId },
     include: {
@@ -35,6 +52,9 @@ export async function getClassStudents(classId: string) {
 
 // ============ Quản lý Tổ (Group) ============
 export async function getGroups(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
   return prisma.group.findMany({
     where: { classId },
     include: {
@@ -48,10 +68,16 @@ export async function getGroups(classId: string) {
 }
 
 export async function createGroup(classId: string, name: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
   return prisma.group.create({ data: { classId, name } });
 }
 
 export async function deleteGroup(groupId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
   // Unassign students first
   await prisma.student.updateMany({
     where: { groupId },
@@ -61,6 +87,9 @@ export async function deleteGroup(groupId: string) {
 }
 
 export async function assignStudentToGroup(studentId: string, groupId: string | null) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
   return prisma.student.update({
     where: { id: studentId },
     data: { groupId },
@@ -69,6 +98,9 @@ export async function assignStudentToGroup(studentId: string, groupId: string | 
 
 // ============ Sơ đồ chỗ ngồi ============
 export async function getSeatingChart(classId: string, month: number, year: number) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+  if (!(await isApprovedUser(session.user.id))) return null;
   return prisma.seatingChart.findUnique({
     where: { classId_month_year: { classId, month, year } },
   });
@@ -80,6 +112,9 @@ export async function saveSeatingChart(
   year: number,
   layoutJson: string
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
   return prisma.seatingChart.upsert({
     where: { classId_month_year: { classId, month, year } },
     update: { layoutJson, version: { increment: 1 } },
@@ -87,7 +122,7 @@ export async function saveSeatingChart(
   });
 }
 
-export async function copySeatingChart(
+export async function copySeatingChart(/* mutation_guard */ 
   classId: string,
   fromMonth: number,
   fromYear: number,
@@ -108,6 +143,9 @@ export async function copySeatingChart(
 
 // ============ Tình hình lớp - Conduct Records ============
 export async function getConductRecords(classId: string, period?: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
   const where: Record<string, unknown> = {
     student: { classId },
   };
@@ -147,6 +185,9 @@ export async function saveConductRecord(data: {
   academicRating?: "GIOI" | "KHA" | "DAT" | "CHUA_DAT" | null;
   note?: string;
 }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
   return prisma.conductRecord.upsert({
     where: {
       studentId_period: {
@@ -171,6 +212,9 @@ export async function saveConductRecord(data: {
 
 // ============ Sĩ số theo mốc thời gian ============
 export async function getClassSizeByPeriods(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
   const periods = [
     "MONTH_9",
     "MONTH_10",
@@ -215,6 +259,9 @@ export async function getClassSizeByPeriods(classId: string) {
 
 // ============ Bảng điểm lớp ============
 export async function getClassGradeBoard(classId: string, term: number) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { students: [], subjects: [], grades: [] };
+  if (!(await isApprovedUser(session.user.id))) return { students: [], subjects: [], grades: [] };
   // Get all students in class
   const students = await prisma.student.findMany({
     where: { classId },
@@ -260,6 +307,9 @@ export async function getClassGradeBoard(classId: string, term: number) {
 
 // ============ Incidents (vi phạm / khen thưởng) ============
 export async function getIncidents(classId: string, dateFrom?: string, dateTo?: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
   const where: Record<string, unknown> = { classId };
   if (dateFrom || dateTo) {
     where.date = {};
@@ -284,6 +334,9 @@ export async function createIncident(data: {
   description: string;
   reportedBy?: string;
 }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
   return prisma.incident.create({
     data: {
       ...data,
@@ -294,6 +347,9 @@ export async function createIncident(data: {
 
 // ============ Parent Feedback ============
 export async function getParentFeedbacks(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
   return prisma.parentFeedback.findMany({
     where: { student: { classId } },
     include: {
@@ -312,6 +368,9 @@ export async function createParentFeedback(data: {
   handledBy?: string;
   response?: string;
 }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
   return prisma.parentFeedback.create({
     data: {
       ...data,
@@ -327,7 +386,7 @@ export async function getAcademicCalendar(schoolId: string, schoolYear: string) 
   });
 }
 
-export async function saveAcademicCalendar(data: {
+export async function saveAcademicCalendar(/* mutation_guard */ data: {
   schoolId: string;
   schoolYear: string;
   title: string;
@@ -410,6 +469,9 @@ Yêu cầu output:
 
 // ============ Kế hoạch tháng & Sinh hoạt tuần ============
 export async function getMonthlyPlan(classId: string, month: number, year: number) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+  if (!(await isApprovedUser(session.user.id))) return null;
   return prisma.monthlyPlan.findUnique({
     where: {
       classId_month_year: { classId, month, year },
@@ -422,7 +484,7 @@ export async function getMonthlyPlan(classId: string, month: number, year: numbe
   });
 }
 
-export async function saveMonthlyPlan(data: {
+export async function saveMonthlyPlan(/* mutation_guard */ data: {
   classId: string;
   month: number;
   year: number;
@@ -443,7 +505,7 @@ export async function saveMonthlyPlan(data: {
   });
 }
 
-export async function saveWeeklyActivity(data: {
+export async function saveWeeklyActivity(/* mutation_guard */ data: {
   monthlyPlanId: string;
   weekNumber: number;
   content?: string;

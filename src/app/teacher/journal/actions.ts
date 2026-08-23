@@ -7,14 +7,16 @@ import { authOptions } from "@/lib/auth";
 // Get teacher id from session
 async function getTeacherId(userId: string) {
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isApproved: true },
+    });
+    if (!user || user.isApproved === false) return null;
+
     const teacher = await prisma.teacher.findFirst({
       where: { userId },
     });
     if (teacher) return teacher.id;
-
-    // Fallback: get first available teacher from DB if logged in
-    const firstTeacher = await prisma.teacher.findFirst();
-    if (firstTeacher) return firstTeacher.id;
 
     return null;
   } catch (err) {
@@ -28,7 +30,10 @@ export async function getJournalMetadata() {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    const teacherId = userId ? await getTeacherId(userId) : null;
+    if (!userId) return { classes: [], subjects: [], teacherId: null, homeroomClassIds: [], assignments: [] };
+
+    const teacherId = await getTeacherId(userId);
+    if (!teacherId) return { classes: [], subjects: [], teacherId: null, homeroomClassIds: [], assignments: [] };
 
     const classes = await prisma.classRoom.findMany({
       orderBy: { name: "asc" },
@@ -80,6 +85,10 @@ export async function getJournalMetadata() {
 // Get journal entries for a class on a specific date
 export async function getJournalEntries(classId: string, dateStr: string) {
   if (!classId || !dateStr) return [];
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  const teacherId = await getTeacherId(session.user.id);
+  if (!teacherId) return [];
   
   try {
     const date = new Date(dateStr);
@@ -150,6 +159,21 @@ export async function saveJournalEntry(data: {
   if (dayOfWeek === 0) dayOfWeek = 7; // Map JS Sunday (0) to schema Sunday (7)
 
   try {
+    // Check DataLock for JOURNAL
+    const classRoom = await prisma.classRoom.findUnique({ where: { id: data.classId } });
+    if (classRoom?.schoolId) {
+      const isLocked = await prisma.dataLock.findFirst({
+        where: {
+          schoolId: classRoom.schoolId,
+          lockType: "JOURNAL",
+          isLocked: true,
+        },
+      });
+      if (isLocked) {
+        return { success: false, error: "Sổ đầu bài đã bị Ban Giám Hiệu khóa sổ, không thể chỉnh sửa." };
+      }
+    }
+
     // If updating, verify teacher owner or homeroom context
     if (data.id) {
       const existing = await prisma.classJournalEntry.findUnique({

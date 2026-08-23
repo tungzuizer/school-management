@@ -4,10 +4,21 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+async function isApprovedUser(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+  return user?.isApproved !== false;
+}
+
 // Get teacher's teaching assignments (class + subject combos)
 export async function getMyAssignments() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return [];
+
+  const userApproved = await isApprovedUser(session.user.id);
+  if (!userApproved) return [];
 
   const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
 
@@ -30,36 +41,17 @@ export async function getMyAssignments() {
     }
   }
 
-  // Fallback: If no teaching assignments found, return available classes in teacher's school
-  const user = session?.user;
-  const allClasses = await prisma.classRoom.findMany({
-    where: user?.schoolId ? { schoolId: user.schoolId } : undefined,
-    take: 10,
-    orderBy: { name: "asc" },
-  });
-  const allSubjects = await prisma.subject.findMany({ take: 5, orderBy: { name: "asc" } });
-
-  const result: { id: string; classId: string; className: string; gradeLevel: number; subjectId: string; subjectName: string }[] = [];
-  allClasses.forEach((c) => {
-    allSubjects.forEach((s) => {
-      result.push({
-        id: `${c.id}-${s.id}`,
-        classId: c.id,
-        className: c.name,
-        gradeLevel: c.gradeLevel,
-        subjectId: s.id,
-        subjectName: s.name,
-      });
-    });
-  });
-
-  return result;
+  // If teacher has no explicit assignments or is unapproved, return empty array
+  return [];
 }
 
 // Get students with their grades for a class+subject+term
 export async function getStudentGrades(classId: string, subjectId: string, term: number) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return [];
+
+  const userApproved = await isApprovedUser(session.user.id);
+  if (!userApproved) return [];
 
   const students = await prisma.student.findMany({
     where: { classId, status: "STUDYING" },
@@ -145,6 +137,11 @@ export async function saveGrade(
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
 
+  const userApproved = await isApprovedUser(session.user.id);
+  if (!userApproved) {
+    return { success: false, error: "Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt và cấp quyền dữ liệu." };
+  }
+
   if (score < 0 || score > 10) return { success: false, error: "Điểm phải từ 0 đến 10" };
 
   try {
@@ -152,6 +149,22 @@ export async function saveGrade(
       where: { id: studentId },
       include: { classRoom: true },
     });
+    if (!student) return { success: false, error: "Không tìm thấy thông tin học sinh" };
+
+    const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
+    if (!teacher && session.user.role !== "ADMIN" && session.user.role !== "PRINCIPAL") {
+      return { success: false, error: "Không tìm thấy hồ sơ giáo viên" };
+    }
+
+    if (teacher) {
+      const isHomeroom = student.classRoom?.homeroomTeacherId === teacher.id;
+      const isAssigned = await prisma.teachingAssignment.findFirst({
+        where: { teacherId: teacher.id, classId: student.classId || undefined, subjectId },
+      });
+      if (!isAssigned && !isHomeroom && session.user.role !== "ADMIN" && session.user.role !== "PRINCIPAL") {
+        return { success: false, error: "Bạn không được phân công giảng dạy môn học này cho lớp của học sinh." };
+      }
+    }
 
     if (student?.classRoom?.schoolId) {
       const isLocked = await prisma.dataLock.findFirst({
@@ -217,6 +230,11 @@ export async function saveAllGrades(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
+
+  const userApproved = await isApprovedUser(session.user.id);
+  if (!userApproved) {
+    return { success: false, error: "Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt và cấp quyền dữ liệu." };
+  }
 
   try {
     for (const g of grades) {
