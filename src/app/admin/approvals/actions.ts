@@ -59,7 +59,6 @@ export async function getApprovalItems() {
       }),
       prisma.user.findMany({
         where: {
-          role: Role.TEACHER,
           isApproved: false,
         },
         include: {
@@ -103,21 +102,30 @@ export async function getApprovalItems() {
         approvedByName: r.approvedBy?.user?.name || null,
         createdAt: r.createdAt.toISOString(),
       })),
-      teacherRegistrations: pendingTeachers.map((t) => ({
-        id: t.id,
-        type: "TEACHER_REGISTRATION" as const,
-        title: `Đăng ký tài khoản Giáo viên: ${t.name}`,
-        teacherName: t.name,
-        email: t.email,
-        phone: t.teacher?.phone || "Chưa cung cấp SĐT",
-        specialty: t.teacher?.specialty || "Môn học chưa chọn",
-        schoolId: t.schoolId || null,
-        schoolName: t.school?.name || "Trường THCS Tân Xã",
-        districtWardName: t.districtWard?.name || "Phòng GD&ĐT Thạch Thất",
-        departmentName: t.department?.name || "Sở GD&ĐT Hà Nội",
-        status: "PENDING",
-        createdAt: t.createdAt.toISOString(),
-      })),
+      teacherRegistrations: pendingTeachers.map((t) => {
+        let roleTitle = "Giáo viên";
+        if (t.role === Role.ADMIN) roleTitle = "Hiệu trưởng";
+        else if (t.role === "VICE_PRINCIPAL") roleTitle = "Phó Hiệu trưởng";
+        else if (t.role === "DEPARTMENT_ADMIN") roleTitle = "Cán bộ Sở GD&ĐT";
+        else if (t.role === "WARD_ADMIN") roleTitle = "Cán bộ Phòng GD&ĐT";
+
+        return {
+          id: t.id,
+          type: "TEACHER_REGISTRATION" as const,
+          title: `Đăng ký tài khoản ${roleTitle}: ${t.name}`,
+          teacherName: t.name,
+          email: t.email,
+          role: t.role,
+          phone: t.teacher?.phone || "Chưa cung cấp SĐT",
+          specialty: t.role === Role.TEACHER ? (t.teacher?.specialty || "Môn học chưa chọn") : roleTitle,
+          schoolId: t.schoolId || null,
+          schoolName: t.school?.name || "Chưa gán Trường",
+          districtWardName: t.districtWard?.name || "Chưa gán Phòng GD&ĐT",
+          departmentName: t.department?.name || "Chưa gán Sở GD&ĐT",
+          status: "PENDING",
+          createdAt: t.createdAt.toISOString(),
+        };
+      }),
     };
   } catch (error) {
     console.error("Error in getApprovalItems:", error);

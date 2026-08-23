@@ -56,6 +56,7 @@ export default function RegisterTeacherPage() {
   const router = useRouter();
 
   // Form states
+  const [accountRole, setAccountRole] = useState<"TEACHER" | "ADMIN" | "VICE_PRINCIPAL">("TEACHER");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -190,10 +191,11 @@ export default function RegisterTeacherPage() {
         email,
         phone,
         password,
+        role: accountRole,
         schoolId: selectedSchoolId,
         districtWardId: selectedDistrictWardId || undefined,
         departmentId: selectedDeptId || undefined,
-        specialty: finalSpecialty,
+        specialty: accountRole === "TEACHER" ? finalSpecialty : undefined,
       });
 
       if (!res.success) {
@@ -231,7 +233,7 @@ export default function RegisterTeacherPage() {
               <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Đăng ký Tài khoản Giáo viên
+              Đăng ký Tài khoản Giáo viên & Hiệu trưởng
             </h1>
             <p className="text-emerald-100 text-sm sm:text-base mt-2 max-w-md mx-auto">
               Hệ thống Quản lý Giáo dục liên thông Trường - Phòng - Sở GD&ĐT
@@ -266,6 +268,51 @@ export default function RegisterTeacherPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Role selection */}
+                <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100 space-y-2">
+                  <label className="block text-sm font-bold text-gray-800">
+                    Chọn loại tài khoản muốn đăng ký <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setAccountRole("TEACHER")}
+                      className={`p-3 rounded-xl border text-xs sm:text-sm font-bold text-center transition-all cursor-pointer ${
+                        accountRole === "TEACHER"
+                          ? "bg-teal-600 text-white border-teal-600 shadow-md"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      👨🏫 Giáo viên bộ môn / CN
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAccountRole("ADMIN")}
+                      className={`p-3 rounded-xl border text-xs sm:text-sm font-bold text-center transition-all cursor-pointer ${
+                        accountRole === "ADMIN"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      🏫 Hiệu trưởng (ADMIN)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAccountRole("VICE_PRINCIPAL")}
+                      className={`p-3 rounded-xl border text-xs sm:text-sm font-bold text-center transition-all cursor-pointer ${
+                        accountRole === "VICE_PRINCIPAL"
+                          ? "bg-purple-600 text-white border-purple-600 shadow-md"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      🏛️ Phó Hiệu trưởng (VP)
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-gray-500 italic mt-1">
+                    * Tài khoản Giáo viên sẽ do Hiệu trưởng trường phê duyệt. Tài khoản Hiệu trưởng/Phó Hiệu trưởng sẽ do Sở GD&ĐT / Admin Hệ thống phê duyệt.
+                  </p>
+                </div>
+
                 {/* Personal & Contact Section */}
                 <div>
                   <h3 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
@@ -384,37 +431,39 @@ export default function RegisterTeacherPage() {
                     </div>
 
                     {/* Specialty selection */}
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        Chuyên môn giảng dạy chính <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <BookOpen className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <select
-                          value={specialty}
-                          onChange={(e) => setSpecialty(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base bg-white transition-colors"
-                        >
-                          {COMMON_SPECIALTIES.map((spec) => (
-                            <option key={spec} value={spec}>
-                              Môn {spec}
-                            </option>
-                          ))}
-                          <option value="OTHER">Môn khác (Tự nhập...)</option>
-                        </select>
-                      </div>
+                    {accountRole === "TEACHER" && (
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                          Chuyên môn giảng dạy chính <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <BookOpen className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <select
+                            value={specialty}
+                            onChange={(e) => setSpecialty(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base bg-white transition-colors"
+                          >
+                            {COMMON_SPECIALTIES.map((spec) => (
+                              <option key={spec} value={spec}>
+                                Môn {spec}
+                              </option>
+                            ))}
+                            <option value="OTHER">Môn khác (Tự nhập...)</option>
+                          </select>
+                        </div>
 
-                      {specialty === "OTHER" && (
-                        <input
-                          type="text"
-                          value={customSpecialty}
-                          onChange={(e) => setCustomSpecialty(e.target.value)}
-                          placeholder="Nhập tên môn học chuyên môn..."
-                          required
-                          className="mt-2.5 w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none text-base"
-                        />
-                      )}
-                    </div>
+                        {specialty === "OTHER" && (
+                          <input
+                            type="text"
+                            value={customSpecialty}
+                            onChange={(e) => setCustomSpecialty(e.target.value)}
+                            placeholder="Nhập tên môn học chuyên môn..."
+                            required
+                            className="mt-2.5 w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none text-base"
+                          />
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
