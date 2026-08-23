@@ -104,7 +104,7 @@ export async function getApprovalItems() {
       teacherRegistrations: pendingTeachers.map((t) => ({
         id: t.id,
         type: "TEACHER_REGISTRATION" as const,
-        title: `Đăng ký tài khoản Giáo viên mới: ${t.name}`,
+        title: `Đăng ký tài khoản Giáo viên: ${t.name}`,
         teacherName: t.name,
         email: t.email,
         phone: t.teacher?.phone || "Chưa cung cấp SĐT",

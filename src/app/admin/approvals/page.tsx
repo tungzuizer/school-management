@@ -179,7 +179,7 @@ export default function ApprovalsPage() {
               Trung Tâm Phê Duyệt & Quản Lý Tài Khoản
             </h1>
             <p className="text-blue-100 text-sm mt-1 max-w-2xl leading-relaxed">
-              Duyệt tài khoản Giáo viên đăng ký mới, Phê duyệt Giáo án & Đơn từ phân công giảng dạy.
+              Duyệt đăng ký tài khoản Giáo viên, Phê duyệt Giáo án & Đơn từ phân công giảng dạy.
             </p>
           </div>
 
@@ -305,7 +305,7 @@ export default function ApprovalsPage() {
             className="px-3.5 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white font-semibold text-slate-700 outline-none"
           >
             <option value="ALL">📁 Tất cả thể loại</option>
-            <option value="TEACHER_REGISTRATION">👤 Đăng ký Giáo viên mới ({teacherRegistrations.length})</option>
+            <option value="TEACHER_REGISTRATION">👤 Đăng ký tài khoản ({teacherRegistrations.length})</option>
             <option value="LESSON_PLAN">📘 Giáo án giảng dạy ({lessonPlans.length})</option>
             <option value="CHANGE_REQUEST">🔄 Đổi giáo viên ({changeRequests.length})</option>
           </select>
@@ -364,7 +364,7 @@ export default function ApprovalsPage() {
                       >
                         {isTeacherReg ? (
                           <>
-                            <UserPlus className="w-3 h-3 text-teal-600" /> Đăng ký Giáo viên
+                            <UserPlus className="w-3 h-3 text-teal-600" /> Đăng ký tài khoản
                           </>
                         ) : item.type === "LESSON_PLAN" ? (
                           "📘 Giáo án"
@@ -526,7 +526,7 @@ export default function ApprovalsPage() {
                                 : "bg-purple-100 text-purple-800"
                             }`}
                           >
-                            {isTeacherReg ? "Đăng ký GV" : item.type === "LESSON_PLAN" ? "Giáo án" : "Đổi GV"}
+                            {isTeacherReg ? "Đăng ký tài khoản" : item.type === "LESSON_PLAN" ? "Giáo án" : "Đổi GV"}
                           </span>
                         </td>
                         <td className="px-4 py-3 font-bold text-slate-900">{item.title}</td>

@@ -243,7 +243,7 @@ function LoginFormContent() {
                 className="inline-flex items-center justify-center gap-2 text-base font-semibold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-4 py-3 rounded-xl w-full transition-colors"
               >
                 <UserPlus className="w-5 h-5 text-teal-600" />
-                Đăng ký Tài khoản Giáo viên mới
+                Đăng ký Tài khoản Giáo viên
               </Link>
             </div>
 
