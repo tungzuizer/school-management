@@ -35,7 +35,8 @@ export async function getApprovalItems() {
       departmentName: currentAdmin?.department?.name || "Sở GD&ĐT Hà Nội",
     };
 
-    const [lessonPlans, changeRequests, pendingTeachers] = await Promise.all([
+    const [allSchools, lessonPlans, changeRequests, pendingTeachers] = await Promise.all([
+      prisma.school.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.lessonPlan.findMany({
         include: {
           teacher: { include: { user: { select: { name: true, email: true } } } },
@@ -73,6 +74,7 @@ export async function getApprovalItems() {
 
     return {
       principalOrg,
+      schools: allSchools,
       lessonPlans: lessonPlans.map((p) => ({
         id: p.id,
         type: "LESSON_PLAN" as const,
@@ -109,6 +111,7 @@ export async function getApprovalItems() {
         email: t.email,
         phone: t.teacher?.phone || "Chưa cung cấp SĐT",
         specialty: t.teacher?.specialty || "Môn học chưa chọn",
+        schoolId: t.schoolId || null,
         schoolName: t.school?.name || "Trường THCS Tân Xã",
         districtWardName: t.districtWard?.name || "Phòng GD&ĐT Thạch Thất",
         departmentName: t.department?.name || "Sở GD&ĐT Hà Nội",
@@ -166,7 +169,7 @@ export async function processApproval(data: {
         entityName: "TeacherRegistration",
         entityId: data.itemId,
         description: `${reviewerName} ${
-          data.action === "APPROVE" ? "phê duyệt" : "từ chối & hủy"
+          data.action === "APPROVE" ? "phê duyệt & cấp quyền cập nhật dữ liệu" : "từ chối & hủy"
         } đăng ký tài khoản của Giáo viên: ${targetUser.name} (${targetUser.email})`,
       });
     } else if (data.itemType === "LESSON_PLAN") {

@@ -13,7 +13,7 @@ interface TeacherData {
   specialty: string | null;
   phone: string | null;
   degree: string | null;
-  user: { id: string; name: string; email: string; school?: { id: string; name: string } | null };
+  user: { id: string; name: string; email: string; isApproved?: boolean; school?: { id: string; name: string } | null };
   homeroomClasses: { id: string; name: string; gradeLevel: number }[];
   teachingAssignments: { id: string; subject: { name: string }; classRoom: { name: string; gradeLevel?: number } }[];
 }
@@ -371,9 +371,20 @@ export default function TeachersPage() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-                      {t.specialty || "Giáo viên"}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800">
+                        {t.specialty || "Giáo viên"}
+                      </span>
+                      {t.user?.isApproved === false ? (
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
+                          ⏳ Chờ duyệt
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                          🟢 Đang hoạt động
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <p className="text-xs text-slate-500 truncate">
