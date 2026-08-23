@@ -1,0 +1,72 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEasyMode } from "@/lib/useEasyMode";
+import { useSession } from "next-auth/react";
+import {
+  GraduationCap,
+  School,
+  Users,
+  CalendarDays,
+  Globe,
+  Bell,
+  Info,
+  Lightbulb,
+  AlertTriangle,
+  FileText,
+  CheckCircle,
+  Clock,
+  Activity,
+  TrendingUp,
+  ShieldCheck,
+  Building2,
+  Filter,
+  Check,
+  ChevronRight,
+  MapPin,
+  Crown,
+  Landmark,
+  Building,
+  UserCheck,
+  Bot,
+  ScrollText,
+  Lock,
+  Zap,
+  SlidersHorizontal,
+  Sparkles,
+} from "lucide-react";
+import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
+import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
+import {
+  getSchoolsList,
+  getDashboardStats,
+  getAttendanceByWeek,
+  getGradesByClass,
+  getClassAttendanceRanking,
+  getRecentIncidents,
+  getTodaySummary,
+  getLessonPlanAlerts,
+} from "./actions";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+
+type SchoolItem = Awaited<ReturnType<typeof getSchoolsList>>[number];
+type Stats = Awaited<ReturnType<typeof getDashboardStats>>;
+type WeekData = Awaited<ReturnType<typeof getAttendanceByWeek>>;
+type ClassGrade = Awaited<ReturnType<typeof getGradesByClass>>;
+type ClassAttendance = Awaited<ReturnType<typeof getClassAttendanceRanking>>;
+type IncidentData = Awaited<ReturnType<typeof getRecentIncidents>>;
+type TodaySummary = Awaited<ReturnType<typeof getTodaySummary>>;
+type LPAlertsData = Awaited<ReturnType<typeof getLessonPlanAlerts>>;
+
+const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];

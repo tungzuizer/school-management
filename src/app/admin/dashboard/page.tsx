@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -25,6 +25,11 @@ import {
   Check,
   ChevronRight,
   MapPin,
+  Crown,
+  Lock,
+  Radio,
+  Sliders,
+  Sparkles,
 } from "lucide-react";
 import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
@@ -66,7 +71,7 @@ export default function AdminDashboardPage() {
   const { isEasyMode } = useEasyMode();
   const [schools, setSchools] = useState<SchoolItem[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>(undefined);
-  
+
   const [stats, setStats] = useState<Stats | null>(null);
   const [weekData, setWeekData] = useState<WeekData>([]);
   const [classGrades, setClassGrades] = useState<ClassGrade>([]);
@@ -74,7 +79,7 @@ export default function AdminDashboardPage() {
   const [incidents, setIncidents] = useState<IncidentData>([]);
   const [today, setToday] = useState<TodaySummary | null>(null);
   const [lpAlerts, setLpAlerts] = useState<LPAlertsData | null>(null);
-  
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -168,38 +173,135 @@ export default function AdminDashboardPage() {
     year: "numeric",
   });
 
+  const isSuperAdmin =
+    session?.user?.email === "superadmin@school.com" ||
+    session?.user?.role === "DEPARTMENT_ADMIN" ||
+    (!session?.user?.schoolId && (session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN"));
+
   const activeSchoolName = selectedSchoolId
     ? schools.find((s) => s.id === selectedSchoolId)?.name || "Trường đã chọn"
+    : isSuperAdmin
+    ? "Toàn bộ các Trường (Hệ thống Quốc Gia)"
     : "Tất cả các trường thuộc hệ thống";
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
-      {/* Hero Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-slate-800">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-60 h-60 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-indigo-300 text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> BGH - Ban Giám Hiệu
-              </span>
-              <span className="px-2.5 py-0.5 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-300 text-[11px] font-semibold">
-                {schools.length} Trường Liên Kết
-              </span>
+      {/* Super Admin Executive Command Header */}
+      {isSuperAdmin ? (
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-6 sm:p-8 shadow-2xl border border-amber-500/30">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 -mb-10 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="px-3.5 py-1 bg-gradient-to-r from-amber-500/30 to-amber-600/30 border border-amber-400/50 rounded-full text-amber-300 text-xs font-black flex items-center gap-1.5 backdrop-blur-md shadow-inner">
+                  <Crown className="w-4 h-4 text-amber-400 fill-amber-400 animate-pulse" /> TRUNG TÂM ĐIỀU HÀNH GIÁO DỤC QUỐC GIA
+                </span>
+                <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-indigo-200 text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
+                  <Radio className="w-3.5 h-3.5 text-emerald-400 animate-ping" /> Quyền Hạn Toàn Quốc (All Scope)
+                </span>
+                <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-300 text-xs font-bold">
+                  {schools.length} Trường Đã Kết Nối
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
+                Bảng Điều Khiển Quản Trị Viên Tối Cao (Super Admin)
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 mt-2 flex items-center gap-2 flex-wrap">
+                <span>{todayStr}</span>
+                <span className="text-slate-600">•</span>
+                <span className="text-amber-300 font-bold flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5" /> Phạm vi hoạt động: {activeSchoolName}
+                </span>
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Bảng Điều Khiển Ban Giám Hiệu</h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 capitalize">
-              {todayStr} — <span className="text-amber-300 font-bold">{activeSchoolName}</span>
-            </p>
+
+            {/* Quick Executive Stats Badge */}
+            <div className="flex items-center gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 backdrop-blur-md shrink-0">
+              <div className="text-center px-3 border-r border-slate-800">
+                <p className="text-xl font-black text-amber-400">{stats?.totalSchools ?? 0}</p>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase">Trường Học</p>
+              </div>
+              <div className="text-center px-3 border-r border-slate-800">
+                <p className="text-xl font-black text-emerald-400">{(stats?.totalStudents ?? 0).toLocaleString()}</p>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase">Học Sinh</p>
+              </div>
+              <div className="text-center px-3">
+                <p className="text-xl font-black text-indigo-400">{(stats?.totalTeachers ?? 0).toLocaleString()}</p>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase">Giáo Viên</p>
+              </div>
+            </div>
           </div>
-          {isEasyMode && (
-            <div className="bg-amber-400/20 border border-amber-400/40 text-amber-200 font-bold px-4 py-2.5 rounded-xl text-xs self-start sm:self-auto flex items-center gap-2 backdrop-blur-md">
-              <Lightbulb className="w-4 h-4 text-amber-300 shrink-0 pulse-dot" />
-              <span>Đang Bật Chế Độ Dễ Dùng</span>
-            </div>
-          )}
+
+          {/* Super Admin Executive Quick Action Toolbar */}
+          <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
+            <Link
+              href="/admin/users"
+              className="p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl transition-all flex items-center gap-2.5 text-amber-200 text-xs font-bold group"
+            >
+              <Crown className="w-4 h-4 text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>Quản Lý Hiệu Trưởng</span>
+            </Link>
+            <Link
+              href="/admin/schools"
+              className="p-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl transition-all flex items-center gap-2.5 text-indigo-200 text-xs font-bold group"
+            >
+              <Building2 className="w-4 h-4 text-indigo-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>Cấu Hình Các Trường</span>
+            </Link>
+            <Link
+              href="/admin/security"
+              className="p-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl transition-all flex items-center gap-2.5 text-rose-200 text-xs font-bold group"
+            >
+              <Lock className="w-4 h-4 text-rose-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>Giám Sát An Ninh</span>
+            </Link>
+            <Link
+              href="/admin/ai-assistant"
+              className="p-3 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-xl transition-all flex items-center gap-2.5 text-purple-200 text-xs font-bold group"
+            >
+              <Sparkles className="w-4 h-4 text-purple-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>Trợ Lý AI Quốc Gia</span>
+            </Link>
+            <Link
+              href="/admin/settings"
+              className="p-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl transition-all flex items-center gap-2.5 text-emerald-200 text-xs font-bold group col-span-2 sm:col-span-1"
+            >
+              <Sliders className="w-4 h-4 text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>Tham Số Hệ Thống</span>
+            </Link>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Principal Standard Banner */
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-slate-800">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-60 h-60 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-indigo-300 text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Ban Giám Hiệu Trường
+                </span>
+                <span className="px-2.5 py-0.5 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-300 text-[11px] font-semibold">
+                  {schools.length} Trường Liên Kết
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Bảng Điều Khiển Ban Giám Hiệu
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1 capitalize">
+                {todayStr} — <span className="text-amber-300 font-bold">{activeSchoolName}</span>
+              </p>
+            </div>
+            {isEasyMode && (
+              <div className="bg-amber-400/20 border border-amber-400/40 text-amber-200 font-bold px-4 py-2.5 rounded-xl text-xs self-start sm:self-auto flex items-center gap-2 backdrop-blur-md">
+                <Lightbulb className="w-4 h-4 text-amber-300 shrink-0 pulse-dot" />
+                <span>Đang Bật Chế Độ Dễ Dùng</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Unapproved Account Warning Banner */}
       {session?.user?.isApproved === false && (
@@ -210,7 +312,7 @@ export default function AdminDashboardPage() {
           <div>
             <h3 className="font-bold text-base text-amber-950">Tài Khoản Đang Chờ Phê Duyệt Cấp Quyền</h3>
             <p className="text-xs sm:text-sm text-amber-800 mt-1 leading-relaxed">
-              Tài khoản Hiệu trưởng / Phó Hiệu trưởng của bạn đã được khởi tạo thành công nhưng đang chờ <strong>Sở GD&ĐT / Admin Hệ thống</strong> duyệt và phân quyền quản lý trường. Trong thời gian này, các tính năng chỉnh sửa dữ liệu nâng cao sẽ tạm thời ở chế độ xem an toàn.
+              Tài khoản Quản trị / Hiệu trưởng của bạn đã được khởi tạo thành công nhưng đang chờ <strong>Bộ GD&ĐT / Sở GD&ĐT / Admin Hệ thống</strong> duyệt và phân quyền quản lý trường. Trong thời gian này, các tính năng chỉnh sửa dữ liệu nâng cao sẽ tạm thời ở chế độ xem an toàn.
             </p>
           </div>
         </div>
@@ -224,9 +326,9 @@ export default function AdminDashboardPage() {
               <Filter className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Bộ Lọc Số Liệu Theo Trường</h2>
+              <h2 className="text-sm font-bold text-slate-900">Bộ Lọc Số Liệu Theo Trường (Toàn Quốc)</h2>
               <p className="text-xs text-slate-500">
-                Chọn một trường cụ thể để xem chi tiết hoặc bấm "Tất cả các trường" để tổng hợp
+                Chọn một trường cụ thể để xem chi tiết hoặc bấm "Tất cả các trường" để tổng hợp dữ liệu toàn quốc
               </p>
             </div>
           </div>
@@ -284,7 +386,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <Globe className="w-5 h-5 text-indigo-600" />
-            <span>Phân Tích Chi Tiết & So Sánh Số Liệu Từng Trường</span>
+            <span>Phân Tích Chi Tiết & So Sánh Số Liệu Từng Trường Toàn Quốc</span>
           </h2>
           <span className="text-xs text-slate-500 font-medium">Cập nhật thời gian thực</span>
         </div>
@@ -381,7 +483,7 @@ export default function AdminDashboardPage() {
           icon={<Building2 className="w-5 h-5 text-purple-600" />}
           label="Trường học"
           value={stats?.totalSchools ?? 0}
-          subtext="Trường liên kết"
+          subtext="Trường liên kết toàn quốc"
           colorBg="bg-purple-50"
         />
         <MetricCard
@@ -403,7 +505,7 @@ export default function AdminDashboardPage() {
         <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-slate-800">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold text-indigo-300 uppercase tracking-wider">
-              Tình hình hoạt động hôm nay ({selectedSchoolId ? activeSchoolName : "Toàn trường"})
+              Tình hình hoạt động hôm nay ({selectedSchoolId ? activeSchoolName : "Toàn hệ thống"})
             </p>
             {selectedSchoolId && (
               <span className="px-2 py-0.5 bg-indigo-500/30 border border-indigo-400/30 rounded-full text-indigo-200 text-[11px]">
