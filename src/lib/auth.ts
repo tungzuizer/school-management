@@ -37,14 +37,12 @@ export const authOptions: NextAuthOptions = {
               user.password
             );
             if (isPasswordValid) {
-              if (user.isApproved === false) {
-                throw new Error("Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt. Vui lòng liên hệ BGH nhà trường.");
-              }
               return {
                 id: user.id,
                 email: user.email,
                 name: user.name,
                 role: user.role,
+                isApproved: user.isApproved,
                 departmentId: user.departmentId || undefined,
                 districtWardId: user.districtWardId || undefined,
                 schoolId: user.schoolId || undefined,
@@ -107,6 +105,7 @@ export const authOptions: NextAuthOptions = {
                   email: user.email,
                   name: user.name,
                   role: user.role,
+                  isApproved: user.isApproved,
                 };
               }
             } catch {
@@ -118,6 +117,7 @@ export const authOptions: NextAuthOptions = {
               email,
               name,
               role,
+              isApproved: true,
             };
           }
         }
@@ -131,6 +131,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.isApproved = user.isApproved;
         token.departmentId = user.departmentId;
         token.districtWardId = user.districtWardId;
         token.schoolId = user.schoolId;
@@ -142,6 +143,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
+        session.user.isApproved = token.isApproved as boolean | undefined;
         session.user.departmentId = token.departmentId as string | undefined;
         session.user.districtWardId = token.districtWardId as string | undefined;
         session.user.schoolId = token.schoolId as string | undefined;
