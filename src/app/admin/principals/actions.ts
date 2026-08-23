@@ -332,3 +332,49 @@ export async function deletePrincipalAccount(userId: string) {
     return { success: false, error: error.message || "Lỗi khi xóa tài khoản" };
   }
 }
+
+export async function resetUserPassword(userId: string, newPassword?: string) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
+
+    const userRole = session.user.role;
+    const isSuperAdmin =
+      session.user.email === "superadmin@school.com" ||
+      userRole === "SUPER_ADMIN" ||
+      userRole === "ADMIN";
+
+    if (!isSuperAdmin) {
+      return { success: false, error: "Chỉ Quản trị viên cấp cao mới có quyền đặt lại mật khẩu" };
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return { success: false, error: "Không tìm thấy tài khoản" };
+
+    const passwordToSet = newPassword && newPassword.trim() ? newPassword.trim() : "123456";
+    if (passwordToSet.length < 6) {
+      return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
+    }
+
+    const hashedPassword = await bcrypt.hash(passwordToSet, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    await recordAuditLog({
+      userId: session.user.id,
+      userName: session.user.name || "Admin",
+      userRole: session.user.role || "ADMIN",
+      action: "UPDATE",
+      entityName: "UserPassword",
+      entityId: userId,
+      description: `Đổi/Đặt lại mật khẩu cho tài khoản: ${user.name} (${user.email})`,
+    });
+
+    revalidatePath("/admin/principals");
+    return { success: true, newPassword: passwordToSet };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Lỗi khi đặt lại mật khẩu" };
+  }
+}

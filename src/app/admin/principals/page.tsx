@@ -20,8 +20,11 @@ import {
   ArrowRightLeft,
   Users,
   Eye,
+  EyeOff,
   Mail,
   Lock,
+  KeyRound,
+  ShieldAlert,
 } from "lucide-react";
 import {
   getPrincipalsAndAdmins,
@@ -29,6 +32,7 @@ import {
   updatePrincipalAssignment,
   createPrincipalAccount,
   deletePrincipalAccount,
+  resetUserPassword,
   PrincipalUserItem,
 } from "./actions";
 
@@ -60,6 +64,7 @@ export default function AdminPrincipalsPage() {
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [activeUser, setActiveUser] = useState<PrincipalUserItem | null>(null);
 
   // Form states for Create
@@ -77,6 +82,12 @@ export default function AdminPrincipalsPage() {
   const [transferSchoolId, setTransferSchoolId] = useState("");
   const [transferDeptId, setTransferDeptId] = useState("");
   const [transferWardId, setTransferWardId] = useState("");
+
+  // Form states for Password Reset
+  const [resetUser, setResetUser] = useState<PrincipalUserItem | null>(null);
+  const [customPasswordInput, setCustomPasswordInput] = useState("");
+  const [showPasswordText, setShowPasswordText] = useState(false);
+  const [resetSuccessInfo, setResetSuccessInfo] = useState("");
 
   const loadData = async () => {
     setLoading(true);
@@ -141,6 +152,31 @@ export default function AdminPrincipalsPage() {
     setTransferDeptId(u.departmentId || "");
     setTransferWardId(u.districtWardId || "");
     setShowTransferModal(true);
+  };
+
+  const openPasswordModal = (u: PrincipalUserItem) => {
+    setResetUser(u);
+    setCustomPasswordInput("123456");
+    setShowPasswordText(true);
+    setResetSuccessInfo("");
+    setShowPasswordModal(true);
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetUser) return;
+    setIsSubmitting(true);
+    const pwdToSet = customPasswordInput.trim() || "123456";
+    const res = await resetUserPassword(resetUser.id, pwdToSet);
+    setIsSubmitting(false);
+
+    if (res.success) {
+      setResetSuccessInfo(`Đã đặt lại mật khẩu thành công cho ${resetUser.name}: "${pwdToSet}"`);
+      setSuccessMsg(`Đã đổi mật khẩu tài khoản ${resetUser.email} thành "${pwdToSet}"`);
+      setTimeout(() => setSuccessMsg(""), 4000);
+    } else {
+      setErrorMsg(res.error || "Đặt lại mật khẩu thất bại.");
+    }
   };
 
   const handleSaveTransfer = async (e: React.FormEvent) => {
@@ -212,6 +248,15 @@ export default function AdminPrincipalsPage() {
       default:
         return { label: role, color: "bg-gray-100 text-gray-800" };
     }
+  };
+
+  const getKnownPassword = (email: string) => {
+    if (email === "superadmin@school.com") return "SuperAdmin@2026!";
+    if (email.includes("admin")) return "123456";
+    if (email.includes("vp")) return "123456";
+    if (email.includes("teacher")) return "123456";
+    if (email.includes("student")) return "123456";
+    return "123456 (hoặc mật khẩu khởi tạo)";
   };
 
   const filteredWards = selectedDeptId
@@ -458,6 +503,7 @@ export default function AdminPrincipalsPage() {
                   <th className="py-3.5 px-4">Chức vụ / Vai trò</th>
                   <th className="py-3.5 px-4">Trường công tác</th>
                   <th className="py-3.5 px-4">Đơn vị Quản lý (Phòng / Sở)</th>
+                  <th className="py-3.5 px-4">Mật khẩu khởi tạo</th>
                   <th className="py-3.5 px-4 text-center">Trạng thái Duyệt</th>
                   <th className="py-3.5 px-4 text-right">Thao tác</th>
                 </tr>
@@ -465,6 +511,7 @@ export default function AdminPrincipalsPage() {
               <tbody className="divide-y divide-gray-100 text-sm">
                 {users.map((u) => {
                   const roleStyle = getRoleLabel(u.role);
+                  const defaultPwd = getKnownPassword(u.email);
                   return (
                     <tr key={u.id} className="hover:bg-blue-50/30 transition-colors">
                       {/* Name & Email */}
@@ -509,6 +556,14 @@ export default function AdminPrincipalsPage() {
                         </div>
                       </td>
 
+                      {/* Password Info */}
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 font-semibold inline-flex items-center gap-1">
+                          <KeyRound className="w-3 h-3 text-amber-600" />
+                          {defaultPwd}
+                        </span>
+                      </td>
+
                       {/* Status Approval */}
                       <td className="py-3.5 px-4 text-center">
                         {u.isApproved ? (
@@ -524,6 +579,14 @@ export default function AdminPrincipalsPage() {
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right space-x-1.5">
+                        {/* Password Reset */}
+                        <button
+                          onClick={() => openPasswordModal(u)}
+                          title="Xem / Đổi mật khẩu tài khoản"
+                          className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <Lock className="w-4 h-4" />
+                        </button>
                         {/* Approval Toggle */}
                         <button
                           onClick={() => handleToggleApproval(u.id, u.isApproved)}
@@ -563,6 +626,107 @@ export default function AdminPrincipalsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal: View & Reset Password */}
+      {showPasswordModal && resetUser && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 border border-gray-100">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                  <KeyRound className="w-5 h-5 text-amber-600" /> Quyền Quản Trị: Xem & Đổi Mật Khẩu
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">Tài khoản: <span className="font-semibold text-gray-800">{resetUser.name}</span></p>
+              </div>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {resetSuccessInfo ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-sm space-y-2">
+                <div className="flex items-center gap-2 font-bold text-emerald-700">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <span>{resetSuccessInfo}</span>
+                </div>
+                <p className="text-xs text-emerald-600">Bạn có thể cung cấp mật khẩu mới này cho người dùng để đăng nhập.</p>
+              </div>
+            ) : null}
+
+            <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2 text-xs text-amber-900">
+              <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
+                <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" /> Thông tin tài khoản
+              </div>
+              <p>• <strong>Email:</strong> <span className="font-mono">{resetUser.email}</span></p>
+              <p>• <strong>Chức vụ:</strong> {resetUser.role}</p>
+              <p>• <strong>Mật khẩu mặc định hệ thống:</strong> <span className="font-mono font-bold text-amber-800">{getKnownPassword(resetUser.email)}</span></p>
+            </div>
+
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Nhập mật khẩu mới (hoặc bấm Đặt về 123456)
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPasswordText ? "text" : "password"}
+                    value={customPasswordInput}
+                    onChange={(e) => setCustomPasswordInput(e.target.value)}
+                    placeholder="Nhập mật khẩu mới..."
+                    required
+                    minLength={6}
+                    className="w-full text-sm p-3 pr-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 font-mono outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordText(!showPasswordText)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPasswordText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomPasswordInput("123456")}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+                >
+                  Đặt 123456
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomPasswordInput("SuperAdmin@2026!")}
+                  className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold rounded-lg"
+                >
+                  Đặt SuperAdmin@2026!
+                </button>
+              </div>
+
+              <div className="pt-3 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="flex-1 py-3 border border-gray-300 hover:bg-gray-50 rounded-xl text-sm font-semibold text-gray-700"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Đặt Lại Mật Khẩu"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Transfer / Reassign Principal */}
       {showTransferModal && activeUser && (
