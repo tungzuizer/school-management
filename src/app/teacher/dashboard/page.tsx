@@ -157,6 +157,7 @@ export default function TeacherDashboardPage() {
   // Extra Views
   const [weekGrid, setWeekGrid] = useState<WeekGridItem[]>([]);
   const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [isApproved, setIsApproved] = useState<boolean>(true);
 
   const loadDashboardData = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -168,6 +169,13 @@ export default function TeacherDashboardPage() {
         setLoading(false);
         return;
       }
+
+      if (dbData.isApproved === false || session?.user?.isApproved === false) {
+        setIsApproved(false);
+        setLoading(false);
+        return;
+      }
+      setIsApproved(true);
 
       setHomeroom(dbData.homeroomClass);
 
@@ -254,6 +262,40 @@ export default function TeacherDashboardPage() {
   return (
     <div className="space-y-6">
       <ConfettiEffect trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
+
+      {(!isApproved || session?.user?.isApproved === false) && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-6 shadow-xl space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="p-3.5 bg-amber-500/15 text-amber-700 rounded-2xl shrink-0 shadow-inner">
+              <Clock className="w-8 h-8 animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1 bg-amber-200/80 text-amber-900 rounded-full text-xs font-bold uppercase tracking-wider border border-amber-300">
+                  ⏳ Đã Đăng Ký Thành Công — Chờ Hiệu Trưởng Phê Duyệt & Cấp Quyền Dữ Liệu
+                </span>
+              </div>
+              <h2 className="text-xl font-extrabold text-amber-950">
+                Tài khoản của Thầy/Cô đang trong hàng chờ phê duyệt của Ban Giám Hiệu
+              </h2>
+              <p className="text-sm text-amber-800 leading-relaxed font-medium">
+                Chào mừng Thầy/Cô <strong>{userName}</strong>! Bạn đã đăng ký và đăng nhập thành công vào hệ thống.
+                Hiện tại, tài khoản của bạn đang ở trạng thái <strong>Chờ phê duyệt</strong>.
+                Khi Hiệu trưởng/Ban Giám Hiệu nhà trường bấm <strong>"Phê Duyệt & Cấp Quyền Dữ Liệu"</strong>, toàn bộ thông tin phân công giảng dạy, thời khóa biểu và danh sách lớp sẽ tự động được kích hoạt.
+              </p>
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  onClick={() => loadDashboardData()}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Kiểm tra lại trạng thái duyệt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== GREETING & POSITIVITY HEADER ===== */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/10">

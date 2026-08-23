@@ -4,8 +4,22 @@ import prisma from "@/lib/prisma";
 
 // ============ Get teacher info + homeroom class ============
 export async function getTeacherDashboardData(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true, name: true, school: { select: { name: true } } },
+  });
+
   const teacher = await prisma.teacher.findFirst({ where: { userId } });
   if (!teacher) return null;
+
+  if (user && user.isApproved === false) {
+    return {
+      isApproved: false,
+      teacherId: teacher.id,
+      schoolName: user.school?.name || null,
+      homeroomClass: null,
+    };
+  }
 
   // Get homeroom class
   const homeroomClass = await prisma.classRoom.findFirst({
@@ -18,8 +32,10 @@ export async function getTeacherDashboardData(userId: string) {
   });
 
   return {
+    isApproved: true,
     teacherId: teacher.id,
-    teacherName: teacher.id, // will use session name instead
+    teacherName: user?.name || "Giáo viên",
+    schoolName: user?.school?.name || homeroomClass?.school?.name || null,
     homeroomClass: homeroomClass
       ? {
           id: homeroomClass.id,

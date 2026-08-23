@@ -5,6 +5,7 @@ declare module "next-auth" {
     user: {
       id: string;
       role: string;
+      isApproved?: boolean;
       departmentId?: string;
       districtWardId?: string;
       schoolId?: string;
@@ -14,6 +15,7 @@ declare module "next-auth" {
 
   interface User {
     role: string;
+    isApproved?: boolean;
     departmentId?: string;
     districtWardId?: string;
     schoolId?: string;
@@ -25,6 +27,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     role: string;
     id: string;
+    isApproved?: boolean;
     departmentId?: string;
     districtWardId?: string;
     schoolId?: string;
