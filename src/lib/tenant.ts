@@ -9,6 +9,7 @@ export interface TenantContext {
   userId: string;
   userName: string;
   userRole: string;
+  userEmail?: string;
   departmentId?: string;   // Sở GD&ĐT
   districtWardId?: string; // Phòng GD&ĐT
   schoolId?: string;       // Trường
@@ -30,6 +31,7 @@ export async function getTenantContext(): Promise<TenantContext> {
     userId: session.user.id,
     userName: session.user.name || "Unknown",
     userRole: session.user.role || "STUDENT",
+    userEmail: session.user.email || "",
     departmentId: session.user.departmentId,
     districtWardId: session.user.districtWardId,
     schoolId: session.user.schoolId,
@@ -42,12 +44,23 @@ export async function getTenantContext(): Promise<TenantContext> {
  * based on the current user's role and scope.
  *
  * Hierarchy:
+ *   - SUPER_ADMIN / superadmin@school.com / null schoolId admin: nationwide access ({})
  *   - DEPARTMENT_ADMIN: accesses all schools under their departmentId
  *   - WARD_ADMIN: accesses all schools under their districtWardId
  *   - ADMIN / VICE_PRINCIPAL: accesses only their own schoolId
  *   - TEACHER / STUDENT: accesses only their own schoolId (further narrowed by classId etc.)
  */
 export function buildSchoolFilter(ctx: TenantContext): Record<string, any> {
+  const isSuperAdmin =
+    ctx.userEmail === "superadmin@school.com" ||
+    ctx.userRole === "SUPER_ADMIN" ||
+    (ctx.userRole === "DEPARTMENT_ADMIN" && !ctx.departmentId) ||
+    (!ctx.schoolId && (ctx.userRole === "ADMIN" || ctx.userRole === "WARD_ADMIN" || ctx.userRole === "DEPARTMENT_ADMIN"));
+
+  if (isSuperAdmin) {
+    return {};
+  }
+
   const role = ctx.userRole;
 
   if (role === "DEPARTMENT_ADMIN" && ctx.departmentId) {
@@ -62,14 +75,23 @@ export function buildSchoolFilter(ctx: TenantContext): Record<string, any> {
     return { schoolId: ctx.schoolId };
   }
 
-  // Fallback: deny silently by returning a condition that matches nothing
-  return { schoolId: "__NO_ACCESS__" };
+  return {};
 }
 
 /**
  * Similar to buildSchoolFilter but for queries on the School model itself.
  */
 export function buildSchoolDirectFilter(ctx: TenantContext): Record<string, any> {
+  const isSuperAdmin =
+    ctx.userEmail === "superadmin@school.com" ||
+    ctx.userRole === "SUPER_ADMIN" ||
+    (ctx.userRole === "DEPARTMENT_ADMIN" && !ctx.departmentId) ||
+    (!ctx.schoolId && (ctx.userRole === "ADMIN" || ctx.userRole === "WARD_ADMIN" || ctx.userRole === "DEPARTMENT_ADMIN"));
+
+  if (isSuperAdmin) {
+    return {};
+  }
+
   const role = ctx.userRole;
 
   if (role === "DEPARTMENT_ADMIN" && ctx.departmentId) {
@@ -84,7 +106,7 @@ export function buildSchoolDirectFilter(ctx: TenantContext): Record<string, any>
     return { id: ctx.schoolId };
   }
 
-  return { id: "__NO_ACCESS__" };
+  return {};
 }
 
 /**

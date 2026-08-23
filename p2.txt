@@ -1,0 +1,118 @@
+
+export default function AdminDashboardPage() {
+  const { data: session } = useSession();
+  const { isEasyMode } = useEasyMode();
+  const [schools, setSchools] = useState<SchoolItem[]>([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>(undefined);
+
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [weekData, setWeekData] = useState<WeekData>([]);
+  const [classGrades, setClassGrades] = useState<ClassGrade>([]);
+  const [classAttendance, setClassAttendance] = useState<ClassAttendance>([]);
+  const [incidents, setIncidents] = useState<IncidentData>([]);
+  const [today, setToday] = useState<TodaySummary | null>(null);
+  const [lpAlerts, setLpAlerts] = useState<LPAlertsData | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    async function initData() {
+      try {
+        const [schoolsRes, statsData, weekRes, gradesRes, attendanceRes, incidentsRes, todayRes, lpAlertsRes] =
+          await Promise.all([
+            getSchoolsList(),
+            getDashboardStats(),
+            getAttendanceByWeek(),
+            getGradesByClass(),
+            getClassAttendanceRanking(),
+            getRecentIncidents(),
+            getTodaySummary(),
+            getLessonPlanAlerts(),
+          ]);
+
+        setSchools(schoolsRes);
+        setStats(statsData);
+        setWeekData(weekRes);
+        setClassGrades(gradesRes);
+        setClassAttendance(attendanceRes);
+        setIncidents(incidentsRes);
+        setToday(todayRes);
+        setLpAlerts(lpAlertsRes);
+      } catch (err) {
+        console.error("Failed to load initial dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    initData();
+  }, []);
+
+  const handleSchoolChange = async (schoolId?: string) => {
+    setSelectedSchoolId(schoolId);
+    setRefreshing(true);
+    try {
+      const [statsData, weekRes, gradesRes, attendanceRes, incidentsRes, todayRes, lpAlertsRes] =
+        await Promise.all([
+          getDashboardStats(schoolId),
+          getAttendanceByWeek(schoolId),
+          getGradesByClass(schoolId),
+          getClassAttendanceRanking(schoolId),
+          getRecentIncidents(10, schoolId),
+          getTodaySummary(schoolId),
+          getLessonPlanAlerts(schoolId),
+        ]);
+
+      setStats(statsData);
+      setWeekData(weekRes);
+      setClassGrades(gradesRes);
+      setClassAttendance(attendanceRes);
+      setIncidents(incidentsRes);
+      setToday(todayRes);
+      setLpAlerts(lpAlertsRes);
+    } catch (err) {
+      console.error("Failed to refresh school dashboard data:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <TableSkeleton rows={4} cols={4} />
+          <TableSkeleton rows={4} cols={4} />
+        </div>
+      </div>
+    );
+  }
+
+  const todayStr = new Date().toLocaleDateString("vi-VN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const isSuperAdmin =
+    session?.user?.email === "superadmin@school.com" ||
+    session?.user?.role === "DEPARTMENT_ADMIN" ||
+    (!session?.user?.schoolId && session?.user?.role === "ADMIN");
+
+  const activeSchoolName = selectedSchoolId
+    ? schools.find((s) => s.id === selectedSchoolId)?.name || "Trường đã chọn"
+    : isSuperAdmin
+    ? "Toàn bộ các Trường (Hệ thống Toàn quốc)"
+    : "Tất cả các trường thuộc hệ thống";

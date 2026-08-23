@@ -120,16 +120,17 @@ function LoginFormContent() {
 
   const quickLogin = async (demoEmail: string) => {
     setEmail(demoEmail);
-    setPassword("123456");
+    const demoPassword = demoEmail === "superadmin@school.com" ? "SuperAdmin@2026!" : "123456";
+    setPassword(demoPassword);
     setLoading(true);
     setError("");
     try {
-      let result = await signIn("credentials", { email: demoEmail, password: "123456", redirect: false });
+      let result = await signIn("credentials", { email: demoEmail, password: demoPassword, redirect: false });
       if (result?.error) {
         try {
           const seedRes = await fetch("/api/db-seed?secret=seed123");
           if (seedRes.ok) {
-            result = await signIn("credentials", { email: demoEmail, password: "123456", redirect: false });
+            result = await signIn("credentials", { email: demoEmail, password: demoPassword, redirect: false });
           }
         } catch {
           // ignore seed fetch error
@@ -249,42 +250,53 @@ function LoginFormContent() {
             </div>
 
             {/* Quick Demo Login */}
-            <div className="mt-8 pt-6 border-t border-gray-100">
-              <p className="text-sm text-gray-400 text-center mb-4 font-semibold uppercase tracking-wider">
-                Đăng nhập nhanh (demo)
+            <div className="mt-8 pt-6 border-t border-gray-100 space-y-3">
+              <p className="text-xs text-gray-400 text-center font-semibold uppercase tracking-wider">
+                Đăng nhập nhanh dùng thử (Demo Roles)
               </p>
-              <div className="grid grid-cols-2 gap-3">
+
+              {/* Super Admin Highlighted Button */}
+              <button
+                onClick={() => quickLogin("superadmin@school.com")}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 p-3.5 rounded-xl border-2 border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-amber-950 font-bold transition-all disabled:opacity-50 shadow-xs cursor-pointer"
+              >
+                <ShieldCheck className="w-5 h-5 text-amber-600" />
+                <span>👑 Quản Trị Viên Tối Cao (Super Admin Toàn Quốc)</span>
+              </button>
+
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   onClick={() => quickLogin("admin@school.com")}
                   disabled={loading}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors disabled:opacity-50 group"
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors disabled:opacity-50 group cursor-pointer"
                 >
-                  <ShieldCheck className="w-7 h-7 text-indigo-500 group-hover:text-indigo-600" />
-                  <span className="text-sm font-semibold text-gray-600 group-hover:text-indigo-700">Hiệu trưởng</span>
+                  <ShieldCheck className="w-5 h-5 text-indigo-500 group-hover:text-indigo-600" />
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-indigo-700">Hiệu trưởng (Trường)</span>
                 </button>
                 <button
                   onClick={() => quickLogin("vp1@school.com")}
                   disabled={loading}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-colors disabled:opacity-50 group"
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-colors disabled:opacity-50 group cursor-pointer"
                 >
-                  <Building2 className="w-7 h-7 text-teal-500 group-hover:text-teal-600" />
-                  <span className="text-sm font-semibold text-gray-600 group-hover:text-teal-700">Phó Hiệu trưởng</span>
+                  <Building2 className="w-5 h-5 text-teal-500 group-hover:text-teal-600" />
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-teal-700">Phó Hiệu trưởng</span>
                 </button>
                 <button
                   onClick={() => quickLogin("teacher@school.com")}
                   disabled={loading}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-colors disabled:opacity-50 group"
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-colors disabled:opacity-50 group cursor-pointer"
                 >
-                  <BookOpen className="w-7 h-7 text-emerald-500 group-hover:text-emerald-600" />
-                  <span className="text-sm font-semibold text-gray-600 group-hover:text-emerald-700">Giáo viên</span>
+                  <BookOpen className="w-5 h-5 text-emerald-500 group-hover:text-emerald-600" />
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-emerald-700">Giáo viên</span>
                 </button>
                 <button
                   onClick={() => quickLogin("student@school.com")}
                   disabled={loading}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-colors disabled:opacity-50 group"
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-colors disabled:opacity-50 group cursor-pointer"
                 >
-                  <User className="w-7 h-7 text-amber-500 group-hover:text-amber-600" />
-                  <span className="text-sm font-semibold text-gray-600 group-hover:text-amber-700">Học sinh</span>
+                  <User className="w-5 h-5 text-amber-500 group-hover:text-amber-600" />
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-amber-700">Học sinh</span>
                 </button>
               </div>
             </div>
