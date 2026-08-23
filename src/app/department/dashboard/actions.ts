@@ -7,17 +7,41 @@ import { authOptions } from "@/lib/auth";
 // Dashboard thống kê cho Sở GD&ĐT
 export async function getDepartmentDashboard() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.departmentId) return null;
+  if (!session?.user?.id) return null;
 
-  const departmentId = session.user.departmentId;
+  let departmentId = session.user.departmentId;
+  const userRole = session.user.role;
+  const isSuperAdmin =
+    session.user.email === "superadmin@school.com" ||
+    userRole === "SUPER_ADMIN" ||
+    userRole === "ADMIN" ||
+    (!departmentId && userRole === "DEPARTMENT_ADMIN");
+
+  if (!departmentId && isSuperAdmin) {
+    const firstDept = await prisma.educationDepartment.findFirst({ orderBy: { name: "asc" } });
+    if (firstDept) {
+      departmentId = firstDept.id;
+    }
+  }
+
+  if (!departmentId && !isSuperAdmin) return null;
+
+  const deptWhere = departmentId ? { id: departmentId } : {};
+  const wardWhere = departmentId ? { departmentId } : {};
+  const wardSchoolWhere: any = departmentId ? { departmentId, branchType: "WARD" } : { branchType: "WARD" };
+  const thptSchoolWhere: any = departmentId ? { departmentId, branchType: "THPT" } : { branchType: "THPT" };
+  const studentWhere = departmentId ? { classRoom: { school: { departmentId } } } : {};
+  const teacherWhere = departmentId ? { user: { school: { departmentId } } } : {};
 
   const [department, wards, wardSchools, thptSchools, totalStudents, totalTeachers] = await Promise.all([
-    prisma.educationDepartment.findUnique({ where: { id: departmentId }, select: { id: true, name: true, code: true } }),
-    prisma.districtWard.findMany({ where: { departmentId }, select: { id: true, name: true, _count: { select: { schools: true } } }, orderBy: { name: "asc" } }),
-    prisma.school.count({ where: { departmentId, branchType: "WARD" } }),
-    prisma.school.count({ where: { departmentId, branchType: "THPT" } }),
-    prisma.student.count({ where: { classRoom: { school: { departmentId } } } }),
-    prisma.teacher.count({ where: { user: { school: { departmentId } } } }),
+    departmentId
+      ? prisma.educationDepartment.findUnique({ where: { id: departmentId }, select: { id: true, name: true, code: true } })
+      : { id: "all", name: "Sở GD&ĐT (Toàn Quốc)", code: "BGD" },
+    prisma.districtWard.findMany({ where: wardWhere, select: { id: true, name: true, _count: { select: { schools: true } } }, orderBy: { name: "asc" } }),
+    prisma.school.count({ where: wardSchoolWhere }),
+    prisma.school.count({ where: thptSchoolWhere }),
+    prisma.student.count({ where: studentWhere }),
+    prisma.teacher.count({ where: teacherWhere }),
   ]);
 
   return {
@@ -34,10 +58,20 @@ export async function getDepartmentDashboard() {
 // Danh sách Phòng GD&ĐT thuộc Sở
 export async function getDepartmentWards() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.departmentId) return [];
+  if (!session?.user?.id) return [];
+
+  let departmentId = session.user.departmentId;
+  const userRole = session.user.role;
+  const isSuperAdmin =
+    session.user.email === "superadmin@school.com" ||
+    userRole === "SUPER_ADMIN" ||
+    userRole === "ADMIN" ||
+    (!departmentId && userRole === "DEPARTMENT_ADMIN");
+
+  const where = (!departmentId && isSuperAdmin) ? {} : { departmentId: departmentId || "" };
 
   return prisma.districtWard.findMany({
-    where: { departmentId: session.user.departmentId },
+    where,
     include: {
       _count: { select: { schools: true, users: true } },
     },
@@ -48,10 +82,23 @@ export async function getDepartmentWards() {
 // Danh sách trường THPT trực thuộc Sở
 export async function getDepartmentThptSchools() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.departmentId) return [];
+  if (!session?.user?.id) return [];
+
+  let departmentId = session.user.departmentId;
+  const userRole = session.user.role;
+  const isSuperAdmin =
+    session.user.email === "superadmin@school.com" ||
+    userRole === "SUPER_ADMIN" ||
+    userRole === "ADMIN" ||
+    (!departmentId && userRole === "DEPARTMENT_ADMIN");
+
+  const where: any = { branchType: "THPT" };
+  if (departmentId || !isSuperAdmin) {
+    where.departmentId = departmentId || "";
+  }
 
   return prisma.school.findMany({
-    where: { departmentId: session.user.departmentId, branchType: "THPT" },
+    where,
     include: {
       _count: { select: { classRooms: true, users: true } },
     },
