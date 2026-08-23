@@ -14,14 +14,26 @@ export async function GET(request: Request) {
   try {
     const hashedPassword = await bcrypt.hash("123456", 10);
 
+    const defaultDept = await prisma.educationDepartment.findFirst();
+    const defaultWard = await prisma.districtWard.findFirst();
+    const defaultSchool = await prisma.school.findFirst();
+
     await prisma.user.upsert({
       where: { email: "admin@school.com" },
-      update: { password: hashedPassword },
+      update: {
+        password: hashedPassword,
+        schoolId: defaultSchool?.id,
+        districtWardId: defaultWard?.id,
+        departmentId: defaultDept?.id,
+      },
       create: {
-        name: "Nguyễn Văn Admin",
+        name: "TS. Nguyễn Văn Hùng",
         email: "admin@school.com",
         password: hashedPassword,
         role: Role.ADMIN,
+        schoolId: defaultSchool?.id,
+        districtWardId: defaultWard?.id,
+        departmentId: defaultDept?.id,
       },
     });
 

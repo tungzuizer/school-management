@@ -37,6 +37,9 @@ export const authOptions: NextAuthOptions = {
               user.password
             );
             if (isPasswordValid) {
+              if (user.isApproved === false) {
+                throw new Error("Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt. Vui lòng liên hệ BGH nhà trường.");
+              }
               return {
                 id: user.id,
                 email: user.email,

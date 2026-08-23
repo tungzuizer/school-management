@@ -12,27 +12,46 @@ import {
   UserCheck,
   Search,
   ExternalLink,
-  MessageSquare,
-  AlertCircle,
   RefreshCw,
+  UserPlus,
+  Building2,
+  MapPin,
+  Landmark,
+  Phone,
+  Mail,
+  Award,
 } from "lucide-react";
 
 type LessonPlanItem = Awaited<ReturnType<typeof getApprovalItems>>["lessonPlans"][number];
 type ChangeRequestItem = Awaited<ReturnType<typeof getApprovalItems>>["changeRequests"][number];
-type ApprovalItem = LessonPlanItem | ChangeRequestItem;
+type TeacherRegistrationItem = Awaited<ReturnType<typeof getApprovalItems>>["teacherRegistrations"][number];
+type ApprovalItem = LessonPlanItem | ChangeRequestItem | TeacherRegistrationItem;
 
 export default function ApprovalsPage() {
   const [lessonPlans, setLessonPlans] = useState<LessonPlanItem[]>([]);
   const [changeRequests, setChangeRequests] = useState<ChangeRequestItem[]>([]);
+  const [teacherRegistrations, setTeacherRegistrations] = useState<TeacherRegistrationItem[]>([]);
+  const [principalOrg, setPrincipalOrg] = useState<{
+    schoolName: string;
+    districtWardName: string;
+    departmentName: string;
+  } | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"PENDING" | "APPROVED" | "REJECTED" | "ALL">("PENDING");
-  const [categoryFilter, setCategoryFilter] = useState<"ALL" | "LESSON_PLAN" | "CHANGE_REQUEST">("ALL");
+  const [categoryFilter, setCategoryFilter] = useState<
+    "ALL" | "LESSON_PLAN" | "CHANGE_REQUEST" | "TEACHER_REGISTRATION"
+  >("ALL");
   const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
 
   // Rejection modal
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [targetItem, setTargetItem] = useState<{ id: string; type: "LESSON_PLAN" | "CHANGE_REQUEST"; title: string } | null>(null);
+  const [targetItem, setTargetItem] = useState<{
+    id: string;
+    type: "LESSON_PLAN" | "CHANGE_REQUEST" | "TEACHER_REGISTRATION";
+    title: string;
+  } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -43,6 +62,8 @@ export default function ApprovalsPage() {
     const data = await getApprovalItems();
     setLessonPlans(data.lessonPlans);
     setChangeRequests(data.changeRequests);
+    setTeacherRegistrations(data.teacherRegistrations || []);
+    if (data.principalOrg) setPrincipalOrg(data.principalOrg);
     setLoading(false);
   }, []);
 
@@ -51,7 +72,7 @@ export default function ApprovalsPage() {
   }, [loadData]);
 
   // Combine items
-  const allItems: ApprovalItem[] = [...lessonPlans, ...changeRequests];
+  const allItems: ApprovalItem[] = [...teacherRegistrations, ...lessonPlans, ...changeRequests];
 
   // Helper status predicate
   const isPending = (status: string) => ["SUBMITTED", "HEAD_APPROVED", "VP_APPROVED", "PENDING"].includes(status);
@@ -73,8 +94,12 @@ export default function ApprovalsPage() {
       const q = search.toLowerCase();
       const titleMatch = item.title.toLowerCase().includes(q);
       const teacherMatch = item.teacherName.toLowerCase().includes(q);
-      const classMatch = item.className.toLowerCase().includes(q);
-      return titleMatch || teacherMatch || classMatch;
+      const extraMatch =
+        item.type === "TEACHER_REGISTRATION"
+          ? (item as TeacherRegistrationItem).email.toLowerCase().includes(q) ||
+            (item as TeacherRegistrationItem).phone.toLowerCase().includes(q)
+          : (item as LessonPlanItem | ChangeRequestItem).className.toLowerCase().includes(q);
+      return titleMatch || teacherMatch || extraMatch;
     }
 
     return true;
@@ -84,19 +109,32 @@ export default function ApprovalsPage() {
   const approvedCount = allItems.filter((i) => isApproved(i.status)).length;
   const rejectedCount = allItems.filter((i) => isRejected(i.status)).length;
 
-  const handleApproveDirect = async (id: string, type: "LESSON_PLAN" | "CHANGE_REQUEST", title: string) => {
+  const handleApproveDirect = async (
+    id: string,
+    type: "LESSON_PLAN" | "CHANGE_REQUEST" | "TEACHER_REGISTRATION",
+    title: string
+  ) => {
     setSubmitting(true);
-    const res = await processApproval({ itemId: id, itemType: type, action: "APPROVE", reviewNote: "Phê duyệt thành công" });
+    const res = await processApproval({
+      itemId: id,
+      itemType: type,
+      action: "APPROVE",
+      reviewNote: "Phê duyệt tài khoản Giáo viên / Yêu cầu thành công",
+    });
     setSubmitting(false);
     if (res.success) {
-      showToast(`Đã PHÊ DUYỆT: ${title}`, "success");
+      showToast(`Đã PHÊ DUYỆT thành công: ${title}`, "success");
       loadData(true);
     } else {
       showToast(res.error || "Phê duyệt thất bại", "error");
     }
   };
 
-  const openRejectModal = (id: string, type: "LESSON_PLAN" | "CHANGE_REQUEST", title: string) => {
+  const openRejectModal = (
+    id: string,
+    type: "LESSON_PLAN" | "CHANGE_REQUEST" | "TEACHER_REGISTRATION",
+    title: string
+  ) => {
     setTargetItem({ id, type, title });
     setRejectReason("");
     setRejectModalOpen(true);
@@ -104,20 +142,16 @@ export default function ApprovalsPage() {
 
   const handleConfirmReject = async () => {
     if (!targetItem) return;
-    if (!rejectReason.trim()) {
-      showToast("Vui lòng nhập lý do từ chối để giáo viên biết và sửa đổi", "error");
-      return;
-    }
     setSubmitting(true);
     const res = await processApproval({
       itemId: targetItem.id,
       itemType: targetItem.type,
       action: "REJECT",
-      reviewNote: rejectReason.trim(),
+      reviewNote: rejectReason.trim() || "Từ chối phê duyệt",
     });
     setSubmitting(false);
     if (res.success) {
-      showToast(`Đã TỪ CHỐI thành công: ${targetItem.title}`, "success");
+      showToast(`Đã TỪ CHỐI & XỬ LÝ: ${targetItem.title}`, "success");
       setRejectModalOpen(false);
       setTargetItem(null);
       setRejectReason("");
@@ -131,22 +165,61 @@ export default function ApprovalsPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {ToastComponent}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Trung Tâm Phê Duyệt & Từ Chối</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Xét duyệt hoặc Từ chối kèm lý do đối với Giáo án, Đơn từ & Phân công giảng dạy
-          </p>
+      {/* Header & Principal Organization Banner */}
+      <div className="bg-gradient-to-r from-indigo-900 via-blue-900 to-indigo-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-200 text-xs font-semibold mb-3 border border-white/10 backdrop-blur-md">
+              <Landmark className="w-3.5 h-3.5 text-teal-300" />
+              <span>Phân hệ Phê duyệt BGH & Ban Quản lý Trực thuộc</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Trung Tâm Phê Duyệt & Quản Lý Tài Khoản
+            </h1>
+            <p className="text-blue-100 text-sm mt-1 max-w-2xl leading-relaxed">
+              Duyệt tài khoản Giáo viên đăng ký mới, Phê duyệt Giáo án & Đơn từ phân công giảng dạy.
+            </p>
+          </div>
+
+          <button
+            onClick={() => loadData()}
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-800 bg-white hover:bg-blue-50 rounded-xl shadow-md transition self-start md:self-auto shrink-0 cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 text-indigo-600 ${loading ? "animate-spin" : ""}`} />
+            Làm mới dữ liệu
+          </button>
         </div>
 
-        <button
-          onClick={() => loadData()}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-2xs transition self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          Làm mới dữ liệu
-        </button>
+        {/* Principal School & Area Affiliation Identity */}
+        {principalOrg && (
+          <div className="mt-6 pt-5 border-t border-white/15 grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10">
+              <Landmark className="w-5 h-5 text-amber-300 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-blue-200">Sở Giáo dục & Đào tạo</p>
+                <p className="text-xs font-extrabold text-white truncate">{principalOrg.departmentName}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10">
+              <MapPin className="w-5 h-5 text-teal-300 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-blue-200">Phòng GD&ĐT Quản lý</p>
+                <p className="text-xs font-extrabold text-white truncate">{principalOrg.districtWardName}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10">
+              <Building2 className="w-5 h-5 text-emerald-300 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-blue-200">Trường học công tác</p>
+                <p className="text-xs font-extrabold text-white truncate">{principalOrg.schoolName}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Metric Cards */}
@@ -213,31 +286,32 @@ export default function ApprovalsPage() {
       </div>
 
       {/* Toolbar Filters & View Switcher */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-gray-400" />
             <input
               type="text"
-              placeholder="Tìm theo tiêu đề, GV, lớp..."
+              placeholder="Tìm theo tên GV, email, SĐT..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
 
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as any)}
-            className="px-3 py-1.5 border rounded-xl text-xs bg-slate-50 focus:bg-white font-medium text-slate-700"
+            className="px-3.5 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white font-semibold text-slate-700 outline-none"
           >
             <option value="ALL">📁 Tất cả thể loại</option>
-            <option value="LESSON_PLAN">📘 Giáo án giảng dạy</option>
-            <option value="CHANGE_REQUEST">🔄 Đổi giáo viên / Phân công</option>
+            <option value="TEACHER_REGISTRATION">👤 Đăng ký Giáo viên mới ({teacherRegistrations.length})</option>
+            <option value="LESSON_PLAN">📘 Giáo án giảng dạy ({lessonPlans.length})</option>
+            <option value="CHANGE_REQUEST">🔄 Đổi giáo viên ({changeRequests.length})</option>
           </select>
         </div>
 
-        <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold self-end sm:self-auto">
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold self-end sm:self-auto">
           <button
             onClick={() => setViewMode("GRID")}
             className={`px-3 py-1.5 rounded-lg transition-all ${
@@ -259,32 +333,44 @@ export default function ApprovalsPage() {
 
       {/* Grid View */}
       {viewMode === "GRID" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-in">
           {loading ? (
-            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Đang tải danh sách chờ duyệt...</div>
+            <div className="col-span-full py-16 text-center text-slate-400 text-sm">Đang tải danh sách chờ duyệt...</div>
           ) : filtered.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Không có mục nào phù hợp.</div>
+            <div className="col-span-full py-16 text-center text-slate-400 text-sm">Không có mục nào phù hợp.</div>
           ) : (
             filtered.map((item) => {
               const pending = isPending(item.status);
               const approved = isApproved(item.status);
-              const rejected = isRejected(item.status);
+              const isTeacherReg = item.type === "TEACHER_REGISTRATION";
 
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs hover:shadow-md transition space-y-4 flex flex-col justify-between"
+                  className={`bg-white rounded-2xl p-5 border transition flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md ${
+                    isTeacherReg ? "border-teal-200 ring-1 ring-teal-100" : "border-slate-200/80"
+                  }`}
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <span
-                        className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg ${
-                          item.type === "LESSON_PLAN"
+                        className={`text-[10px] font-extrabold px-3 py-1 rounded-lg flex items-center gap-1 ${
+                          isTeacherReg
+                            ? "bg-teal-100 text-teal-800"
+                            : item.type === "LESSON_PLAN"
                             ? "bg-blue-100 text-blue-800"
                             : "bg-purple-100 text-purple-800"
                         }`}
                       >
-                        {item.type === "LESSON_PLAN" ? "📘 Giáo án" : "🔄 Đổi GV"}
+                        {isTeacherReg ? (
+                          <>
+                            <UserPlus className="w-3 h-3 text-teal-600" /> Đăng ký Giáo viên
+                          </>
+                        ) : item.type === "LESSON_PLAN" ? (
+                          "📘 Giáo án"
+                        ) : (
+                          "🔄 Đổi GV"
+                        )}
                       </span>
 
                       <span
@@ -296,23 +382,51 @@ export default function ApprovalsPage() {
                             : "bg-rose-100 text-rose-800"
                         }`}
                       >
-                        {pending
-                          ? "⏳ Chờ duyệt"
-                          : approved
-                          ? "✅ Đã phê duyệt"
-                          : "❌ Đã từ chối"}
+                        {pending ? "⏳ Chờ duyệt" : approved ? "✅ Đã phê duyệt" : "❌ Đã từ chối"}
                       </span>
                     </div>
 
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-base leading-snug">{item.title}</h3>
-                      <p className="text-xs text-slate-500 mt-1">
-                        <span className="font-semibold text-slate-700">Người nộp/Yêu cầu:</span> {item.teacherName}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        <span className="font-semibold text-slate-700">Môn & Lớp:</span> {item.subjectName} — {item.className}
-                      </p>
-                    </div>
+                    {isTeacherReg ? (
+                      <div className="space-y-2 pt-1">
+                        <h3 className="font-extrabold text-slate-900 text-lg leading-snug">{item.teacherName}</h3>
+                        <div className="p-3 bg-teal-50/60 rounded-xl border border-teal-100 space-y-1.5 text-xs text-slate-700">
+                          <p className="flex items-center gap-2 font-medium">
+                            <Mail className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                            <span className="truncate">{item.email}</span>
+                          </p>
+                          <p className="flex items-center gap-2 font-medium">
+                            <Phone className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                            <span>{(item as TeacherRegistrationItem).phone}</span>
+                          </p>
+                          <p className="flex items-center gap-2 font-semibold text-teal-900">
+                            <Award className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                            <span>Chuyên môn: {(item as TeacherRegistrationItem).specialty}</span>
+                          </p>
+                        </div>
+                        <div className="text-[11px] text-slate-500 space-y-0.5 pt-1">
+                          <p>
+                            <span className="font-semibold text-slate-700">Đơn vị:</span>{" "}
+                            {(item as TeacherRegistrationItem).schoolName}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Phòng / Sở:</span>{" "}
+                            {(item as TeacherRegistrationItem).districtWardName} — {(item as TeacherRegistrationItem).departmentName}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base leading-snug">{item.title}</h3>
+                        <p className="text-xs text-slate-500 mt-1">
+                          <span className="font-semibold text-slate-700">Người nộp/Yêu cầu:</span> {item.teacherName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          <span className="font-semibold text-slate-700">Môn & Lớp:</span>{" "}
+                          {(item as LessonPlanItem | ChangeRequestItem).subjectName} —{" "}
+                          {(item as LessonPlanItem | ChangeRequestItem).className}
+                        </p>
+                      </div>
+                    )}
 
                     {item.type === "CHANGE_REQUEST" && (
                       <div className="p-2.5 bg-slate-50 rounded-xl text-xs border border-slate-200 space-y-1">
@@ -337,15 +451,6 @@ export default function ApprovalsPage() {
                         <ExternalLink className="w-3.5 h-3.5" /> Xem File Giáo án (Drive)
                       </a>
                     )}
-
-                    {item.reviewNote && (
-                      <div className="p-2.5 bg-slate-100/70 rounded-xl text-xs border text-slate-700 space-y-0.5">
-                        <span className="font-semibold block text-slate-900">
-                          Nhận xét / Lý do:
-                        </span>
-                        <p className="italic text-slate-600">"{item.reviewNote}"</p>
-                      </div>
-                    )}
                   </div>
 
                   {/* Dual Action Buttons: Phê duyệt & Từ chối */}
@@ -353,7 +458,7 @@ export default function ApprovalsPage() {
                     <button
                       onClick={() => handleApproveDirect(item.id, item.type, item.title)}
                       disabled={submitting}
-                      className="flex-1 py-2 px-3 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-xs hover:shadow transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      className="flex-1 py-2.5 px-3 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-xs hover:shadow transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
                     >
                       <CheckCircle className="w-4 h-4" />
                       Phê Duyệt
@@ -362,7 +467,7 @@ export default function ApprovalsPage() {
                     <button
                       onClick={() => openRejectModal(item.id, item.type, item.title)}
                       disabled={submitting}
-                      className="flex-1 py-2 px-3 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-xs hover:shadow transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      className="flex-1 py-2.5 px-3 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-xs hover:shadow transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
                     >
                       <XCircle className="w-4 h-4" />
                       Từ Chối
@@ -383,9 +488,9 @@ export default function ApprovalsPage() {
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr className="text-left text-slate-500 font-semibold text-xs">
                   <th className="px-4 py-3">Thể loại</th>
-                  <th className="px-4 py-3">Nội dung / Tiêu đề</th>
-                  <th className="px-4 py-3">Người gửi</th>
-                  <th className="px-4 py-3">Môn & Lớp</th>
+                  <th className="px-4 py-3">Họ tên / Nội dung</th>
+                  <th className="px-4 py-3">Liên hệ / Thông tin</th>
+                  <th className="px-4 py-3">Đơn vị & Chuyên môn</th>
                   <th className="px-4 py-3">Trạng thái</th>
                   <th className="px-4 py-3 text-right">Thao tác</th>
                 </tr>
@@ -407,24 +512,45 @@ export default function ApprovalsPage() {
                   filtered.map((item) => {
                     const pending = isPending(item.status);
                     const approved = isApproved(item.status);
+                    const isTeacherReg = item.type === "TEACHER_REGISTRATION";
 
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/80 transition">
                         <td className="px-4 py-3">
                           <span
                             className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-                              item.type === "LESSON_PLAN"
+                              isTeacherReg
+                                ? "bg-teal-100 text-teal-800"
+                                : item.type === "LESSON_PLAN"
                                 ? "bg-blue-100 text-blue-800"
                                 : "bg-purple-100 text-purple-800"
                             }`}
                           >
-                            {item.type === "LESSON_PLAN" ? "Giáo án" : "Đổi GV"}
+                            {isTeacherReg ? "Đăng ký GV" : item.type === "LESSON_PLAN" ? "Giáo án" : "Đổi GV"}
                           </span>
                         </td>
                         <td className="px-4 py-3 font-bold text-slate-900">{item.title}</td>
-                        <td className="px-4 py-3 text-slate-600">{item.teacherName}</td>
                         <td className="px-4 py-3 text-slate-600">
-                          {item.subjectName} — {item.className}
+                          {isTeacherReg ? (
+                            <div>
+                              <p className="font-semibold text-slate-800">{(item as TeacherRegistrationItem).email}</p>
+                              <p className="text-xs text-slate-500">{(item as TeacherRegistrationItem).phone}</p>
+                            </div>
+                          ) : (
+                            item.teacherName
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {isTeacherReg ? (
+                            <div>
+                              <p className="font-semibold text-teal-800">{(item as TeacherRegistrationItem).specialty}</p>
+                              <p className="text-xs text-slate-500">{(item as TeacherRegistrationItem).schoolName}</p>
+                            </div>
+                          ) : (
+                            `${(item as LessonPlanItem | ChangeRequestItem).subjectName} — ${
+                              (item as LessonPlanItem | ChangeRequestItem).className
+                            }`
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -444,14 +570,14 @@ export default function ApprovalsPage() {
                             <button
                               onClick={() => handleApproveDirect(item.id, item.type, item.title)}
                               disabled={submitting}
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition"
+                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition cursor-pointer"
                             >
-                              Duyệt
+                              Phê duyệt
                             </button>
                             <button
                               onClick={() => openRejectModal(item.id, item.type, item.title)}
                               disabled={submitting}
-                              className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition"
+                              className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition cursor-pointer"
                             >
                               Từ chối
                             </button>
@@ -471,26 +597,27 @@ export default function ApprovalsPage() {
       <Modal
         isOpen={rejectModalOpen}
         onClose={() => setRejectModalOpen(false)}
-        title="Từ chối & Gửi yêu cầu chỉnh sửa"
+        title="Từ chối & Xử lý Yêu cầu / Đăng ký"
         size="md"
       >
         <div className="space-y-4">
           <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs leading-relaxed">
             <strong className="block mb-1">Mục từ chối: {targetItem?.title}</strong>
-            Nhập lý do từ chối hoặc hướng dẫn sửa đổi cụ thể để giáo viên biết và thực hiện lại.
+            {targetItem?.type === "TEACHER_REGISTRATION"
+              ? "Từ chối đăng ký này sẽ hủy bỏ yêu cầu tạo tài khoản Giáo viên và giải phóng email để đăng ký lại nếu cần."
+              : "Nhập lý do từ chối hoặc hướng dẫn sửa đổi cụ thể để giáo viên biết và thực hiện lại."}
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Lý do từ chối / Nhận xét phản hồi *
+              Lý do từ chối / Phản hồi của BGH
             </label>
             <textarea
               rows={4}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="VD: Nội dung bài giảng tuần 12 chưa chuẩn hóa phương pháp mới; cần bổ sung giáo án đồ dùng dạy học..."
-              className="w-full p-3 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 bg-white"
-              required
+              placeholder="VD: Thông tin đơn vị công tác không khớp; cần cập nhật lại số điện thoại chính chủ..."
+              className="w-full p-3 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 bg-white outline-none"
             />
           </div>
 
@@ -504,8 +631,8 @@ export default function ApprovalsPage() {
 
             <button
               onClick={handleConfirmReject}
-              disabled={submitting || !rejectReason.trim()}
-              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
+              disabled={submitting}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               <XCircle className="w-4 h-4" />
               Xác Nhận Từ Chối
