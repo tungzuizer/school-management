@@ -10,14 +10,32 @@ import { revalidatePath } from "next/cache";
 export async function getApprovalItems() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return { lessonPlans: [], changeRequests: [] };
+    if (!session?.user?.id)
+      return { lessonPlans: [], changeRequests: [], teacherRegistrations: [], principalOrg: null };
 
     const isAllowed =
       session.user.role === Role.ADMIN || session.user.role === "VICE_PRINCIPAL";
 
-    if (!isAllowed) return { lessonPlans: [], changeRequests: [] };
+    if (!isAllowed)
+      return { lessonPlans: [], changeRequests: [], teacherRegistrations: [], principalOrg: null };
 
-    const [lessonPlans, changeRequests] = await Promise.all([
+    // Fetch principal/admin user organization details
+    const currentAdmin = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        school: { select: { id: true, name: true } },
+        districtWard: { select: { id: true, name: true } },
+        department: { select: { id: true, name: true } },
+      },
+    });
+
+    const principalOrg = {
+      schoolName: currentAdmin?.school?.name || "Trường THCS Tân Xã",
+      districtWardName: currentAdmin?.districtWard?.name || "Phòng GD&ĐT Thạch Thất",
+      departmentName: currentAdmin?.department?.name || "Sở GD&ĐT Hà Nội",
+    };
+
+    const [lessonPlans, changeRequests, pendingTeachers] = await Promise.all([
       prisma.lessonPlan.findMany({
         include: {
           teacher: { include: { user: { select: { name: true, email: true } } } },
@@ -38,9 +56,23 @@ export async function getApprovalItems() {
         },
         orderBy: { createdAt: "desc" },
       }),
+      prisma.user.findMany({
+        where: {
+          role: Role.TEACHER,
+          isApproved: false,
+        },
+        include: {
+          school: { select: { id: true, name: true } },
+          districtWard: { select: { id: true, name: true } },
+          department: { select: { id: true, name: true } },
+          teacher: { select: { phone: true, specialty: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
     return {
+      principalOrg,
       lessonPlans: lessonPlans.map((p) => ({
         id: p.id,
         type: "LESSON_PLAN" as const,
@@ -69,16 +101,30 @@ export async function getApprovalItems() {
         approvedByName: r.approvedBy?.user?.name || null,
         createdAt: r.createdAt.toISOString(),
       })),
+      teacherRegistrations: pendingTeachers.map((t) => ({
+        id: t.id,
+        type: "TEACHER_REGISTRATION" as const,
+        title: `Đăng ký tài khoản Giáo viên mới: ${t.name}`,
+        teacherName: t.name,
+        email: t.email,
+        phone: t.teacher?.phone || "Chưa cung cấp SĐT",
+        specialty: t.teacher?.specialty || "Môn học chưa chọn",
+        schoolName: t.school?.name || "Trường THCS Tân Xã",
+        districtWardName: t.districtWard?.name || "Phòng GD&ĐT Thạch Thất",
+        departmentName: t.department?.name || "Sở GD&ĐT Hà Nội",
+        status: "PENDING",
+        createdAt: t.createdAt.toISOString(),
+      })),
     };
   } catch (error) {
     console.error("Error in getApprovalItems:", error);
-    return { lessonPlans: [], changeRequests: [] };
+    return { lessonPlans: [], changeRequests: [], teacherRegistrations: [], principalOrg: null };
   }
 }
 
 export async function processApproval(data: {
   itemId: string;
-  itemType: "LESSON_PLAN" | "CHANGE_REQUEST";
+  itemType: "LESSON_PLAN" | "CHANGE_REQUEST" | "TEACHER_REGISTRATION";
   action: "APPROVE" | "REJECT";
   reviewNote?: string;
 }) {
@@ -93,21 +139,50 @@ export async function processApproval(data: {
       return { success: false, error: "Không có quyền thực hiện chức năng này" };
     }
 
-    const reviewerName = session.user.name || (session.user.role === Role.ADMIN ? "Hiệu trưởng" : "Phó Hiệu trưởng");
+    const reviewerName =
+      session.user.name || (session.user.role === Role.ADMIN ? "Hiệu trưởng" : "Phó Hiệu trưởng");
     const reviewerRole = session.user.role === Role.ADMIN ? "ADMIN" : "VICE_PRINCIPAL";
 
-    if (data.itemType === "LESSON_PLAN") {
+    if (data.itemType === "TEACHER_REGISTRATION") {
+      const targetUser = await prisma.user.findUnique({ where: { id: data.itemId } });
+      if (!targetUser) return { success: false, error: "Không tìm thấy tài khoản giáo viên đăng ký" };
+
+      if (data.action === "APPROVE") {
+        await prisma.user.update({
+          where: { id: data.itemId },
+          data: { isApproved: true },
+        });
+      } else {
+        await prisma.user.delete({
+          where: { id: data.itemId },
+        });
+      }
+
+      await recordAuditLog({
+        userId: session.user.id,
+        userName: reviewerName,
+        userRole: reviewerRole,
+        action: data.action,
+        entityName: "TeacherRegistration",
+        entityId: data.itemId,
+        description: `${reviewerName} ${
+          data.action === "APPROVE" ? "phê duyệt" : "từ chối & hủy"
+        } đăng ký tài khoản của Giáo viên: ${targetUser.name} (${targetUser.email})`,
+      });
+    } else if (data.itemType === "LESSON_PLAN") {
       const plan = await prisma.lessonPlan.findUnique({ where: { id: data.itemId } });
       if (!plan) return { success: false, error: "Không tìm thấy giáo án" };
 
-      const newStatus = data.action === "APPROVE" ? LessonPlanStatus.APPROVED : LessonPlanStatus.REJECTED;
+      const newStatus =
+        data.action === "APPROVE" ? LessonPlanStatus.APPROVED : LessonPlanStatus.REJECTED;
 
       await prisma.$transaction([
         prisma.lessonPlan.update({
           where: { id: data.itemId },
           data: {
             status: newStatus,
-            reviewNote: data.reviewNote || (data.action === "APPROVE" ? "Đã phê duyệt" : "Đã từ chối"),
+            reviewNote:
+              data.reviewNote || (data.action === "APPROVE" ? "Đã phê duyệt" : "Đã từ chối"),
             reviewedBy: reviewerName,
             reviewedAt: new Date(),
           },
@@ -118,7 +193,8 @@ export async function processApproval(data: {
             reviewerName,
             reviewerRole,
             action: newStatus,
-            comment: data.reviewNote || (data.action === "APPROVE" ? "Đã phê duyệt" : "Đã từ chối"),
+            comment:
+              data.reviewNote || (data.action === "APPROVE" ? "Đã phê duyệt" : "Đã từ chối"),
           },
         }),
       ]);
@@ -130,7 +206,9 @@ export async function processApproval(data: {
         action: data.action,
         entityName: "LessonPlan",
         entityId: data.itemId,
-        description: `${reviewerName} ${data.action === "APPROVE" ? "phê duyệt" : "từ chối"} giáo án: ${plan.title}`,
+        description: `${reviewerName} ${
+          data.action === "APPROVE" ? "phê duyệt" : "từ chối"
+        } giáo án: ${plan.title}`,
       });
     } else if (data.itemType === "CHANGE_REQUEST") {
       const req = await prisma.teacherChangeRequest.findUnique({ where: { id: data.itemId } });
@@ -142,13 +220,13 @@ export async function processApproval(data: {
         where: { id: data.itemId },
         data: {
           status: newStatus,
-          reviewNote: data.reviewNote || (data.action === "APPROVE" ? "Đã phê duyệt" : "Đã từ chối"),
+          reviewNote:
+            data.reviewNote || (data.action === "APPROVE" ? "Đã phê duyệt" : "Đã từ chối"),
           approvedById: session.user.id,
         },
       });
 
       if (data.action === "APPROVE") {
-        // Cập nhật phân công giảng dạy
         await prisma.teachingAssignment.updateMany({
           where: {
             classId: req.classId,
@@ -167,11 +245,14 @@ export async function processApproval(data: {
         action: data.action,
         entityName: "TeacherChangeRequest",
         entityId: data.itemId,
-        description: `${reviewerName} ${data.action === "APPROVE" ? "phê duyệt" : "từ chối"} yêu cầu đổi GV`,
+        description: `${reviewerName} ${
+          data.action === "APPROVE" ? "phê duyệt" : "từ chối"
+        } yêu cầu đổi GV`,
       });
     }
 
     revalidatePath("/admin/approvals");
+    revalidatePath("/admin/teachers");
     revalidatePath("/admin/lesson-plans");
     revalidatePath("/vice-principal/lesson-plans");
     revalidatePath("/teacher/subject-head");

@@ -165,6 +165,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{userName}</p>
               <p className="text-[11px] text-blue-200 truncate">{userEmail || "Hieu truong"}</p>
+              <div className="mt-1 pt-1 border-t border-white/10 text-[10px] text-teal-200 font-medium space-y-0.5">
+                <p className="truncate font-bold text-white flex items-center gap-1"><Building2 className="w-3 h-3 text-teal-300 shrink-0" /> Trường THCS Tân Xã</p>
+                <p className="truncate text-blue-200 opacity-90">Phòng GD&ĐT Thạch Thất</p>
+                <p className="truncate text-blue-300 opacity-75">Sở GD&ĐT Hà Nội</p>
+              </div>
             </div>
           </div>
         </div>

@@ -1,16 +1,43 @@
 "use client";
 
 import { signIn, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { GraduationCap, Mail, Lock, Loader2, ShieldCheck, BookOpen, User, Building2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  ShieldCheck,
+  BookOpen,
+  User,
+  Building2,
+  UserPlus,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [successNotice, setSuccessNotice] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const isRegistered = searchParams.get("registered");
+    const registeredEmail = searchParams.get("email");
+
+    if (registeredEmail) {
+      setEmail(registeredEmail);
+    }
+    if (isRegistered === "1") {
+      setSuccessNotice("Đăng ký tài khoản Giáo viên thành công! Vui lòng nhập mật khẩu để đăng nhập.");
+    }
+  }, [searchParams]);
 
   const redirectByRole = async (targetEmail?: string) => {
     let session = await getSession();
@@ -64,7 +91,6 @@ export default function LoginPage() {
     try {
       let result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error) {
-        // Auto-seed database if demo accounts do not exist yet in remote database
         try {
           const seedRes = await fetch("/api/db-seed?secret=seed123");
           if (seedRes.ok) {
@@ -76,7 +102,11 @@ export default function LoginPage() {
       }
 
       if (result?.error) {
-        setError("Email hoặc mật khẩu không chính xác. Vui lòng thử lại.");
+        if (result.error.includes("phê duyệt")) {
+          setError(result.error);
+        } else {
+          setError("Email hoặc mật khẩu không chính xác. Vui lòng thử lại.");
+        }
         setLoading(false);
         return;
       }
@@ -95,7 +125,6 @@ export default function LoginPage() {
     try {
       let result = await signIn("credentials", { email: demoEmail, password: "123456", redirect: false });
       if (result?.error) {
-        // Auto-seed database if demo accounts do not exist yet
         try {
           const seedRes = await fetch("/api/db-seed?secret=seed123");
           if (seedRes.ok) {
@@ -135,11 +164,19 @@ export default function LoginPage() {
           </div>
 
           <div className="p-6 sm:p-8">
+            {/* Registration Success Banner */}
+            {successNotice && (
+              <div className="mb-5 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
+                <span className="font-medium">{successNotice}</span>
+              </div>
+            )}
+
             {/* Error */}
             {error && (
               <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-base flex items-center gap-2">
-                <span className="shrink-0 w-2 h-2 bg-red-500 rounded-full" />
-                {error}
+                <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
+                <span>{error}</span>
               </div>
             )}
 
@@ -199,6 +236,17 @@ export default function LoginPage() {
               </button>
             </form>
 
+            {/* Teacher Registration Link */}
+            <div className="mt-5 text-center">
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center gap-2 text-base font-semibold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-4 py-3 rounded-xl w-full transition-colors"
+              >
+                <UserPlus className="w-5 h-5 text-teal-600" />
+                Đăng ký Tài khoản Giáo viên mới
+              </Link>
+            </div>
+
             {/* Quick Demo Login */}
             <div className="mt-8 pt-6 border-t border-gray-100">
               <p className="text-sm text-gray-400 text-center mb-4 font-semibold uppercase tracking-wider">
@@ -243,5 +291,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }
