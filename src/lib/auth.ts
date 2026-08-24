@@ -119,7 +119,7 @@ export const authOptions: NextAuthOptions = {
                   name: user.name,
                   role: user.role,
                   isApproved: user.isApproved,
-                  mustChangePassword: true,
+                  mustChangePassword: isDefaultPass,
                 };
               }
             } catch {
@@ -132,7 +132,7 @@ export const authOptions: NextAuthOptions = {
               name,
               role,
               isApproved: true,
-              mustChangePassword: true,
+              mustChangePassword: isDefaultPass,
             };
           }
         }
@@ -142,7 +142,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = user.role;
         token.id = user.id;
@@ -153,6 +153,13 @@ export const authOptions: NextAuthOptions = {
         token.schoolId = user.schoolId;
         token.campusId = user.campusId;
       }
+
+      if (trigger === "update" && session) {
+        if (typeof session.mustChangePassword === "boolean") {
+          token.mustChangePassword = session.mustChangePassword;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
