@@ -65,12 +65,19 @@ export async function createTeacher(data: {
 
     const rawPassword = data.password && data.password.trim() ? data.password.trim() : "abc123";
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    let schoolIdToUse: string | undefined = undefined;
+    try {
+      const ctx = await getTenantContext();
+      if (ctx.schoolId) schoolIdToUse = ctx.schoolId;
+    } catch {}
+
     await prisma.user.create({
       data: {
         name: data.name,
         email: data.email,
         password: hashedPassword,
         role: "TEACHER",
+        schoolId: schoolIdToUse,
         teacher: {
           create: {
             specialty: data.specialty,
@@ -218,6 +225,12 @@ export async function createBulkTeachers(teachersData: BulkTeacherInput[]) {
         continue;
       }
 
+      let schoolIdToUse: string | undefined = undefined;
+      try {
+        const ctx = await getTenantContext();
+        if (ctx.schoolId) schoolIdToUse = ctx.schoolId;
+      } catch {}
+
       try {
         await prisma.user.create({
           data: {
@@ -225,6 +238,7 @@ export async function createBulkTeachers(teachersData: BulkTeacherInput[]) {
             email,
             password: defaultPasswordHash,
             role: "TEACHER",
+            schoolId: schoolIdToUse,
             teacher: {
               create: {
                 specialty: t.specialty || undefined,

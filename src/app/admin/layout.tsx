@@ -104,6 +104,7 @@ const superAdminMenuGroups: MenuGroup[] = [
     title: "🛡️ An ninh, Kiểm toán & Hệ thống",
     icon: ShieldCheck,
     items: [
+      { label: "Duyệt & Khóa Học bạ", href: "/admin/transcripts", icon: Lock },
       { label: "Nhật ký Kiểm toán An ninh", href: "/admin/audit-log", icon: ScrollText },
       { label: "Khóa sổ Dữ liệu Toàn ngành", href: "/admin/data-lock", icon: Lock },
       { label: "Cấu hình Drive & Ký nộp", href: "/admin/drive-config", icon: HardDrive },
@@ -146,6 +147,7 @@ const principalMenuGroups: MenuGroup[] = [
     icon: CalendarDays,
     items: [
       { label: "Thời khóa biểu", href: "/admin/schedule", icon: CalendarDays },
+      { label: "Phê duyệt Học bạ", href: "/admin/transcripts", icon: Lock },
       { label: "Thông báo", href: "/admin/notifications", icon: Bell },
       { label: "Sổ đầu bài", href: "/admin/journals", icon: FileBarChart },
       { label: "Duyệt giáo án", href: "/admin/lesson-plans", icon: BookOpen },
@@ -213,13 +215,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen bg-slate-100/70 text-slate-900 font-sans">
       {/* ===== Sidebar - Desktop ===== */}
       <aside
         className={`hidden lg:flex flex-col w-72 text-white shrink-0 shadow-2xl transition-all border-r ${
           isSuperAdmin
-            ? "bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 border-amber-500/20"
-            : "bg-gradient-to-b from-[#1a237e] to-[#283593] border-white/10"
+            ? "bg-slate-900 border-r border-amber-500/20"
+            : "bg-slate-900 border-r border-slate-800"
         }`}
       >
         {/* User Profile Header */}
@@ -321,7 +323,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             isActive
                               ? isSuperAdmin
                                 ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold shadow-lg shadow-amber-500/20"
-                                : "bg-white text-[#1a237e] font-bold shadow-md"
+                                : "bg-indigo-600 text-white font-bold shadow-md"
                               : isSuperAdmin
                               ? "text-slate-300 hover:bg-slate-800/80 hover:text-white"
                               : "text-blue-100 hover:bg-white/10 hover:text-white"
@@ -360,7 +362,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* ===== Main Content Area ===== */}
-      <div className="flex-1 flex flex-col min-h-screen bg-slate-950 text-slate-100">
+      <div className="flex-1 flex flex-col min-h-screen bg-slate-50 text-slate-900">
         {/* Mobile Top Bar */}
         <header className="lg:hidden bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between shrink-0 shadow-md">
           <div className="flex items-center gap-2.5">
@@ -470,7 +472,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto pb-20 lg:pb-6 p-4 md:p-6 bg-slate-950">
+        <main className="flex-1 overflow-y-auto pb-20 lg:pb-6 p-4 md:p-6 bg-slate-50">
           {children}
         </main>
 

@@ -1,13 +1,21 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getTenantContext } from "@/lib/tenant";
 
 
 export async function getClasses(search?: string, schoolId?: string, gradeLevel?: number) {
   try {
     const where: any = {};
     if (search) where.name = { contains: search, mode: "insensitive" };
-    if (schoolId) where.schoolId = schoolId;
+    if (schoolId) {
+      where.schoolId = schoolId;
+    } else {
+      try {
+        const ctx = await getTenantContext();
+        if (ctx.schoolId) where.schoolId = ctx.schoolId;
+      } catch {}
+    }
     if (gradeLevel) where.gradeLevel = gradeLevel;
 
     return await prisma.classRoom.findMany({

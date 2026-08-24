@@ -289,6 +289,7 @@ model ClassRoom {
   lessonPlans         LessonPlan[]
   journalEntries      ClassJournalEntry[]
   monthlyPlans        MonthlyPlan[]
+  academicTranscripts AcademicTranscript[]
   teacherChangeRequests TeacherChangeRequest[]
 
   @@index([schoolId])
@@ -376,6 +377,7 @@ model Student {
   conductRecords  ConductRecord[]
   incidents       Incident[]
   parentFeedbacks ParentFeedback[]
+  academicTranscripts AcademicTranscript[]
 
   @@index([userId])
   @@index([classId])
@@ -429,6 +431,7 @@ model Subject {
   lessonPlans         LessonPlan[]
   journalEntries      ClassJournalEntry[]
   changeRequests      TeacherChangeRequest[]
+  transcriptSubjectGrades TranscriptSubjectGrade[]
 
   @@index([name])
   @@index([gradeLevel])
@@ -1411,4 +1414,94 @@ model SystemSetting {
   value     String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+
+// ==================== HỌC BẠ ĐIỆN TỬ (ACADEMIC TRANSCRIPT) ====================
+
+enum TranscriptStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED_LOCKED
+  UNLOCK_REQUESTED
+}
+
+enum UnlockStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model AcademicTranscript {
+  id                     String                  @id @default(cuid())
+  studentId              String
+  classId                String
+  schoolYear             String                  // "2025-2026"
+  gradeLevel             Int                     // Khối lớp (6-12)
+  status                 TranscriptStatus        @default(DRAFT)
+
+  term1GPA               Float?
+  term2GPA               Float?
+  fullYearGPA            Float?
+
+  term1Conduct           ConductRating?
+  term2Conduct           ConductRating?
+  fullYearConduct        ConductRating?
+
+  term1Academic          AcademicRating?
+  term2Academic          AcademicRating?
+  fullYearAcademic       AcademicRating?
+
+  homeroomTeacherComment String?                 @db.Text
+  promotionStatus        String?                 // "Lên lớp", "Thi lại", "Ở lại lớp", "Hoàn thành CT"
+  rewardsAwarded         String?                 // Khen thưởng
+
+  submittedAt            DateTime?
+  submittedById          String?
+  approvedAt             DateTime?
+  approvedById           String?
+
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  student                Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classRoom              ClassRoom               @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectGrades          TranscriptSubjectGrade[]
+  unlockRequests         TranscriptUnlockRequest[]
+
+  @@unique([studentId, schoolYear])
+  @@index([studentId])
+  @@index([classId])
+  @@index([status])
+}
+
+model TranscriptSubjectGrade {
+  id                String             @id @default(cuid())
+  transcriptId      String
+  subjectId         String
+  subjectName       String             // Lưu cố định tên môn
+  term1AvgScore     Float?
+  term2AvgScore     Float?
+  fullYearAvgScore  Float?
+  evaluationComment String?            // Nhận xét môn học
+
+  transcript        AcademicTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  subject           Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([transcriptId, subjectId])
+}
+
+model TranscriptUnlockRequest {
+  id            String             @id @default(cuid())
+  transcriptId  String
+  requestedById String             // Mã ID GVCN
+  reason        String             @db.Text
+  status        UnlockStatus       @default(PENDING)
+  reviewedById  String?            // Mã ID Hiệu trưởng/Admin
+  reviewedAt    DateTime?
+  reviewNote    String?            @db.Text
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  transcript    AcademicTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
 }
