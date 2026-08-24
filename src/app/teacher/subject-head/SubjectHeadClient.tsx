@@ -115,7 +115,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
     <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto px-2 sm:px-4">
       {ToastComponent}
 
-      <div className="bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white shadow-md">
+      <div className="bg-gradient-to-r from-blue-800 via-indigo-800 to-purple-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white shadow-md">
         <div className="flex items-center gap-3 mb-2">
           <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-300 shrink-0" />
           <h1 className="text-lg sm:text-2xl font-bold">Quản lý Bộ môn (Tổ Trưởng Chuyên Môn)</h1>
@@ -126,19 +126,19 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
       </div>
 
       {/* Tabs with scroll for mobile */}
-      <div className="flex overflow-x-auto whitespace-nowrap gap-1 bg-gray-100 rounded-xl p-1 no-scrollbar">
+      <div className="flex overflow-x-auto whitespace-nowrap gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80">
         <button onClick={() => setActiveTab("lesson-plans")}
-          className={`flex-1 min-w-[130px] px-3.5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition shrink-0 ${activeTab === "lesson-plans" ? "bg-white text-indigo-700 shadow-2xs" : "text-gray-600 hover:bg-gray-200"}`}>
+          className={`flex-1 min-w-[130px] px-3.5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition shrink-0 ${activeTab === "lesson-plans" ? "bg-white text-indigo-700 shadow-2xs" : "text-slate-700 hover:bg-gray-200"}`}>
           <FileText className="inline w-4 h-4 mr-1.5" />
           Giáo án chờ duyệt {pendingLPCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] rounded-full font-bold">{pendingLPCount}</span>}
         </button>
         <button onClick={() => setActiveTab("requests")}
-          className={`flex-1 min-w-[130px] px-3.5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition shrink-0 ${activeTab === "requests" ? "bg-white text-indigo-700 shadow-2xs" : "text-gray-600 hover:bg-gray-200"}`}>
+          className={`flex-1 min-w-[130px] px-3.5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition shrink-0 ${activeTab === "requests" ? "bg-white text-indigo-700 shadow-2xs" : "text-slate-700 hover:bg-gray-200"}`}>
           <Clock className="inline w-4 h-4 mr-1.5" />
           Đổi giáo viên
         </button>
         <button onClick={() => setActiveTab("subjects")}
-          className={`flex-1 min-w-[130px] px-3.5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition shrink-0 ${activeTab === "subjects" ? "bg-white text-indigo-700 shadow-2xs" : "text-gray-600 hover:bg-gray-200"}`}>
+          className={`flex-1 min-w-[130px] px-3.5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition shrink-0 ${activeTab === "subjects" ? "bg-white text-indigo-700 shadow-2xs" : "text-slate-700 hover:bg-gray-200"}`}>
           <BookOpen className="inline w-4 h-4 mr-1.5" />
           Môn học phụ trách
         </button>
@@ -148,7 +148,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
       {activeTab === "lesson-plans" && (
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xs border p-3.5 sm:p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
               <FileText className="w-5 h-5 text-indigo-600" />
               Giáo án Chuyên môn chờ Duyệt
             </h2>
@@ -161,11 +161,11 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
 
           {loading ? (
             <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b border-indigo-600 mx-auto"></div>
               <p className="text-xs text-slate-500 mt-2 font-semibold">Đang tải danh sách giáo án...</p>
             </div>
           ) : lessonPlans.length === 0 ? (
-            <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl text-gray-400 text-xs sm:text-sm">Không có giáo án nào thuộc môn bạn phụ trách</div>
+            <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl text-slate-500 text-xs sm:text-sm">Không có giáo án nào thuộc môn bạn phụ trách</div>
           ) : (
             <div className="space-y-3">
               {lessonPlans.map(p => {
@@ -177,12 +177,12 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
                   <div key={p.id} className="border rounded-xl overflow-hidden bg-white">
                     <button onClick={() => setExpandedLP(isExpanded ? null : p.id)} className="w-full text-left p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-slate-50/80 transition-colors">
                       <div className="space-y-1">
-                        <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight">{p.title}</h3>
-                        <p className="text-xs text-gray-500">GV: <strong>{p.teacherName}</strong> • {p.subjectName} • Lớp {p.className} • Tuần {p.weekNumber}</p>
+                        <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-tight">{p.title}</h3>
+                        <p className="text-xs text-slate-600">GV: <strong>{p.teacherName}</strong> • {p.subjectName} • Lớp {p.className} • Tuần {p.weekNumber}</p>
                       </div>
                       <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                         <span className={`text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-bold ${statusInfo.color}`}>{statusInfo.label}</span>
-                        {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                       </div>
                     </button>
 
@@ -205,16 +205,16 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                          <div><span className="text-xs font-bold text-gray-500 block mb-1">Mục tiêu bài dạy:</span><p className="text-gray-700 text-xs whitespace-pre-wrap bg-white p-3 rounded-xl border border-slate-200 min-h-[40px]">{p.objectives || "—"}</p></div>
-                          <div><span className="text-xs font-bold text-gray-500 block mb-1">Nội dung học tập:</span><p className="text-gray-700 text-xs whitespace-pre-wrap bg-white p-3 rounded-xl border border-slate-200 min-h-[40px]">{p.content || "—"}</p></div>
+                          <div><span className="text-xs font-bold text-slate-600 block mb-1">Mục tiêu bài dạy:</span><p className="text-slate-800 text-xs whitespace-pre-wrap bg-white p-3 rounded-xl border border-slate-200 min-h-[40px]">{p.objectives || "—"}</p></div>
+                          <div><span className="text-xs font-bold text-slate-600 block mb-1">Nội dung học tập:</span><p className="text-slate-800 text-xs whitespace-pre-wrap bg-white p-3 rounded-xl border border-slate-200 min-h-[40px]">{p.content || "—"}</p></div>
                         </div>
 
                         {p.reviews && p.reviews.length > 0 && (
                           <div>
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> Lịch sử duyệt</h4>
+                            <h4 className="text-xs font-bold text-slate-600 uppercase mb-2 flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> Lịch sử duyệt</h4>
                             {p.reviews.map(r => (
                               <div key={r.id} className="text-xs bg-white rounded-xl p-3 border border-slate-200 mb-1.5">
-                                <span className="font-bold text-gray-700">{r.reviewerName}</span>: {r.comment || "(không có nhận xét)"}
+                                <span className="font-bold text-slate-800">{r.reviewerName}</span>: {r.comment || "(không có nhận xét)"}
                               </div>
                             ))}
                           </div>
@@ -250,12 +250,12 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
       {/* ====== TAB: MÔN HỌC PHỤ TRÁCH ====== */}
       {activeTab === "subjects" && (
       <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xs border p-3.5 sm:p-5">
-        <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-indigo-600" />
           Môn học phụ trách ({headSubjects.length})
         </h2>
         {loading ? (
-          <p className="text-gray-500 text-xs">Đang tải...</p>
+          <p className="text-slate-600 text-xs">Đang tải...</p>
         ) : headSubjects.length === 0 ? (
           <div className="p-4 bg-amber-50 rounded-xl text-amber-800 text-xs flex items-center gap-2">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-600" />
@@ -272,7 +272,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
                       {s.gradeLevel ? `Khối ${s.gradeLevel}` : "Tất cả khối"}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-600 mt-2">👑 Trưởng bộ môn: Phụ trách chuyên môn & phân công</p>
+                  <p className="text-xs text-slate-700 mt-2">👑 Trưởng bộ môn: Phụ trách chuyên môn & phân công</p>
                 </div>
                 <div className="mt-3 pt-2 border-t border-indigo-100 text-xs text-indigo-700 font-medium">
                   {s._count.teachingAssignments} phân công dạy
@@ -288,7 +288,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
       {activeTab === "requests" && (
       <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xs border p-3.5 sm:p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
             <Clock className="w-5 h-5 text-purple-600" />
             Yêu cầu thay đổi Giáo viên
           </h2>
@@ -299,7 +299,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-slate-50 border-b text-[10px] sm:text-xs text-gray-500 uppercase">
+            <thead className="bg-slate-50 border-b text-[10px] sm:text-xs text-slate-600 uppercase">
               <tr>
                 <th className="px-3 sm:px-4 py-2.5">Môn học</th>
                 <th className="px-3 sm:px-4 py-2.5">Lớp học</th>
@@ -311,14 +311,14 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
             </thead>
             <tbody className="divide-y text-xs sm:text-sm">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Đang tải...</td></tr>
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-600">Đang tải...</td></tr>
               ) : requests.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Chưa có yêu cầu</td></tr>
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-600">Chưa có yêu cầu</td></tr>
               ) : (
                 requests.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50">
-                    <td className="px-3 sm:px-4 py-3 font-semibold text-gray-900">{r.subject.name}</td>
-                    <td className="px-3 sm:px-4 py-3 text-gray-600">{r.classRoom.name}</td>
+                    <td className="px-3 sm:px-4 py-3 font-semibold text-slate-900">{r.subject.name}</td>
+                    <td className="px-3 sm:px-4 py-3 text-slate-700">{r.classRoom.name}</td>
                     <td className="px-3 sm:px-4 py-3 text-rose-600 font-semibold">{r.currentTeacher.user.name}</td>
                     <td className="px-3 sm:px-4 py-3 text-emerald-600 font-semibold">{r.newTeacher.user.name}</td>
                     <td className="px-3 sm:px-4 py-3">
@@ -333,7 +333,7 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
                           Xem xét
                         </button>
                       ) : (
-                        <span className="text-xs text-gray-400">Đã xử lý</span>
+                        <span className="text-xs text-slate-500">Đã xử lý</span>
                       )}
                     </td>
                   </tr>
@@ -351,19 +351,19 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
           <div className="space-y-4">
             <div className="p-3.5 bg-slate-50 rounded-xl space-y-2 text-xs sm:text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Môn học:</span>
-                <span className="font-semibold text-gray-900">{selectedReq.subject.name}</span>
+                <span className="text-slate-600">Môn học:</span>
+                <span className="font-semibold text-slate-900">{selectedReq.subject.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">GV hiện tại:</span>
+                <span className="text-slate-600">GV hiện tại:</span>
                 <span className="font-semibold text-rose-600">{selectedReq.currentTeacher.user.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">GV mới:</span>
+                <span className="text-slate-600">GV mới:</span>
                 <span className="font-semibold text-emerald-600">{selectedReq.newTeacher.user.name}</span>
               </div>
               <div className="flex justify-between border-t pt-2 mt-2">
-                <span className="text-gray-500">Lý do:</span>
+                <span className="text-slate-600">Lý do:</span>
                 <span className="text-gray-800 italic">{selectedReq.reason || "Không có"}</span>
               </div>
             </div>

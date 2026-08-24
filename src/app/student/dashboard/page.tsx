@@ -75,8 +75,8 @@ export default function StudentDashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-500 text-lg font-medium">Đang tải bảng điều khiển...</span>
+        <div className="animate-spin rounded-full h-10 w-10 border-b border-blue-600"></div>
+        <span className="ml-3 text-slate-600 text-lg font-medium">Đang tải bảng điều khiển...</span>
       </div>
     );
   }
@@ -236,13 +236,13 @@ export default function StudentDashboardPage() {
       {/* Schedule & Notifications Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Lịch học hôm nay */}
-        <div className="bg-white rounded-3xl border border-gray-200/90 shadow-sm p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
                 <CalendarDays className="w-4 h-4" />
               </div>
-              <h2 className="text-base md:text-lg font-extrabold text-gray-900">Lịch Học Hôm Nay</h2>
+              <h2 className="text-base md:text-lg font-extrabold text-slate-900">Lịch Học Hôm Nay</h2>
             </div>
             <Link href="/student/schedule" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-0.5">
               Xem tuần <ChevronRight className="w-3.5 h-3.5" />
@@ -252,13 +252,13 @@ export default function StudentDashboardPage() {
         </div>
 
         {/* Thông báo mới */}
-        <div className="bg-white rounded-3xl border border-gray-200/90 shadow-sm p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
                 <Bell className="w-4 h-4" />
               </div>
-              <h2 className="text-base md:text-lg font-extrabold text-gray-900">Thông Báo Mới Nhất</h2>
+              <h2 className="text-base md:text-lg font-extrabold text-slate-900">Thông Báo Mới Nhất</h2>
             </div>
             <span className="text-xs bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full">
               {data.recentNotifications.length} mới
@@ -267,18 +267,18 @@ export default function StudentDashboardPage() {
 
           <div>
             {data.recentNotifications.length === 0 ? (
-              <p className="text-gray-500 text-center py-10 text-sm font-medium">Không có thông báo mới nào từ nhà trường 🔔</p>
+              <p className="text-slate-600 text-center py-10 text-sm font-medium">Không có thông báo mới nào từ nhà trường 🔔</p>
             ) : (
               <div className="space-y-3">
                 {data.recentNotifications.map((n) => (
-                  <div key={n.id} className="p-4 bg-gray-50/80 rounded-2xl border border-gray-100 hover:bg-blue-50/50 hover:border-blue-200 transition-all duration-200 group">
+                  <div key={n.id} className="p-4 bg-gray-50/80 rounded-2xl border border-slate-100 hover:bg-blue-50/50 hover:border-blue-200 transition-all duration-200 group">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-gray-900 text-sm md:text-base group-hover:text-blue-600 transition-colors">{n.title}</h3>
-                      <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap mt-0.5 bg-white px-2 py-0.5 rounded-md border border-gray-200">
+                      <h3 className="font-bold text-slate-900 text-sm md:text-base group-hover:text-blue-600 transition-colors">{n.title}</h3>
+                      <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap mt-0.5 bg-white px-2 py-0.5 rounded-md border border-slate-200">
                         {new Date(n.createdAt).toLocaleDateString("vi-VN")}
                       </span>
                     </div>
-                    <p className="text-xs md:text-sm text-gray-600 mt-1.5 leading-relaxed line-clamp-2">{n.content}</p>
+                    <p className="text-xs md:text-sm text-slate-700 mt-1.5 leading-relaxed line-clamp-2">{n.content}</p>
                     <p className="text-xs text-indigo-600 font-semibold mt-2">Từ: {n.senderName}</p>
                   </div>
                 ))}

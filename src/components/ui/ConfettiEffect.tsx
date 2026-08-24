@@ -26,6 +26,12 @@ export function ConfettiEffect({ trigger = true, onComplete, duration = 3000 }: 
   useEffect(() => {
     if (!trigger) return;
 
+    // Respect prefers-reduced-motion
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (onComplete) onComplete();
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 

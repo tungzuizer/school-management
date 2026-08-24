@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Header from "@/components/layout/Header";
 import dynamic from "next/dynamic";
 const FloatingAIChatWidget = dynamic(
@@ -37,6 +37,30 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userName = session?.user?.name || "Học sinh";
+  const drawerRef = useRef<HTMLDivElement>(null);
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
+  // Handle Escape key to close drawer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileMenuOpen]);
+
 
   const getInitials = (name: string) => {
     const parts = name.split(" ").filter(Boolean);
@@ -66,7 +90,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-blue-950 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
       {/* Background Ambient Glow */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl" />
@@ -85,12 +109,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           </div>
           <div className="min-w-0">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Đang xem</span>
-            <h2 className="text-xs font-extrabold text-slate-900 truncate mt-0.5">{activeItem?.label}</h2>
+            <h2 className="text-xs font-extrabold text-blue-950 truncate mt-0.5">{activeItem?.label}</h2>
           </div>
         </div>
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-blue-500/20 active-press cursor-pointer shrink-0"
+          aria-label="Mở mục lục menu chức năng" className="px-3.5 py-2 min-h-[44px] bg-blue-600 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-xs active-press cursor-pointer shrink-0"
         >
           <Menu className="w-3.5 h-3.5" />
           <span>Mục lục</span>
@@ -107,7 +131,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 {getInitials(userName)}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-xs font-extrabold text-slate-900 truncate">{userName}</h3>
+                <h3 className="text-xs font-extrabold text-blue-950 truncate">{userName}</h3>
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded-full border border-blue-200 mt-0.5">
                   <Sparkles className="w-2.5 h-2.5 text-blue-600" />
                   Học sinh
@@ -132,7 +156,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-200 ${
                       isActive
                         ? "bg-blue-600 text-white font-extrabold shadow-md shadow-blue-500/20"
-                        : "bg-slate-50/60 border border-slate-200/50 text-slate-700 hover:bg-blue-50/80 hover:text-blue-900 hover:border-blue-200 hover:translate-x-1"
+                        : "bg-slate-50/60 border border-slate-200/50 text-blue-900 hover:bg-blue-50/80 hover:text-blue-900 hover:border-blue-200 hover:translate-x-1"
                     }`}
                   >
                     <div className={`p-1.5 rounded-xl ${isActive ? "bg-white/20 text-white" : "bg-white text-slate-500 border border-slate-200 group-hover:text-blue-600"} transition-colors`}>
@@ -178,7 +202,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl relative transition-all duration-200 flex-1 ${
                   isActive
                     ? "text-blue-600 font-extrabold bg-blue-50/80"
-                    : "text-slate-500 font-medium hover:text-slate-800"
+                    : "text-slate-500 font-medium hover:text-blue-950"
                 }`}
               >
                 {isActive && (
@@ -196,7 +220,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             className="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-slate-500 hover:text-blue-600 font-medium transition-all flex-1 cursor-pointer active-press"
           >
             <Menu className="w-5 h-5 text-slate-600" />
-            <span className="text-[10px] mt-0.5 font-bold text-slate-700 tracking-tight">Mục lục</span>
+            <span className="text-[10px] mt-0.5 font-bold text-blue-900 tracking-tight">Mục lục</span>
           </button>
         </div>
       </nav>
@@ -209,7 +233,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             onClick={() => setMobileMenuOpen(false)}
           />
 
-          <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-white z-50 flex flex-col shadow-2xl overflow-hidden animate-modal-pop border-r border-slate-200/80">
+          <div ref={drawerRef} role="dialog" aria-modal="true" aria-label="Mục lục học sinh" className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-white z-50 flex flex-col shadow-2xl overflow-hidden animate-modal-pop border-r border-slate-200/80">
             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-5 text-white flex items-center justify-between shrink-0 shadow-md">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md text-white font-extrabold text-sm flex items-center justify-center shrink-0 border border-white/30 shadow-xs">
@@ -226,7 +250,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer active-press shrink-0 ml-2"
-                title="Đóng mục lục"
+                aria-label="Đóng mục lục điều hướng" title="Đóng mục lục"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -234,7 +258,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-50/50">
               <div className="flex items-center justify-between px-1 pb-1 border-b border-slate-200/60">
-                <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="text-xs font-extrabold text-blue-950 uppercase tracking-wider flex items-center gap-1.5">
                   <Compass className="w-4 h-4 text-blue-600" />
                   Mục lục Học Sinh
                 </span>
@@ -252,7 +276,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                       className={`flex items-center gap-3 p-3 rounded-2xl text-xs transition-all duration-200 ${
                         isActive
                           ? "bg-blue-600 text-white font-extrabold shadow-md shadow-blue-500/20"
-                          : "bg-white border border-slate-200/80 text-slate-800 hover:bg-blue-50/80 hover:border-blue-200 font-semibold shadow-2xs"
+                          : "bg-white border border-slate-200/80 text-blue-950 hover:bg-blue-50/80 hover:border-blue-200 font-semibold shadow-2xs"
                       }`}
                     >
                       <div className={`p-2 rounded-xl shrink-0 ${isActive ? "bg-white/20 text-white" : "bg-blue-50 text-blue-600"}`}>

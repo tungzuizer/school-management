@@ -201,25 +201,25 @@ export default function TeacherDailyReportPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <FileText className="w-6 h-6 text-indigo-600" /> Báo cáo hàng ngày
           </h1>
-          <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
-            <Building2 className="w-4 h-4 text-gray-400" />
+          <p className="text-sm text-slate-600 mt-1 flex items-center gap-1.5">
+            <Building2 className="w-4 h-4 text-slate-500" />
             <span>Lớp {classInfo.name} — Trường {classInfo.school.name}
             {classInfo.campus ? ` (${classInfo.campus.name})` : ""}</span>
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="border rounded-lg pl-8 pr-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+              className="border border-slate-300 rounded-xl pl-8 pr-3 py-2 min-h-[44px] text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none bg-slate-50"
             />
           </div>
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors border border-gray-200"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-slate-800 font-semibold rounded-lg transition-colors border border-gray-200"
           >
             <History className="w-4 h-4" />
             {showHistory ? "Ẩn lịch sử" : "Lịch sử"}
@@ -263,7 +263,7 @@ export default function TeacherDailyReportPage() {
             )}
           </span>
           {existingReport.sentAt && (
-            <span className="text-xs text-gray-500 font-medium">
+            <span className="text-xs text-slate-600 font-medium">
               Thời gian gửi: {new Date(existingReport.sentAt).toLocaleString("vi-VN")}
             </span>
           )}
@@ -272,8 +272,8 @@ export default function TeacherDailyReportPage() {
 
       {loading ? (
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-2 text-gray-500">Đang tải dữ liệu...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b border-indigo-500 mx-auto"></div>
+          <p className="mt-2 text-slate-600">Đang tải dữ liệu...</p>
         </div>
       ) : (
         <>
@@ -282,14 +282,14 @@ export default function TeacherDailyReportPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold">Sĩ số</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-0.5">{dailyData.totalStudents}</p>
+                  <p className="text-xs text-slate-600 uppercase font-semibold">Sĩ số</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-0.5">{dailyData.totalStudents}</p>
                 </div>
                 <Users className="w-8 h-8 text-gray-450" />
               </div>
               <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold">Vắng</p>
+                  <p className="text-xs text-slate-600 uppercase font-semibold">Vắng</p>
                   <p className={`text-2xl font-bold mt-0.5 ${dailyData.absentCount > 0 ? "text-red-600" : "text-green-600"}`}>
                     {dailyData.absentCount}
                   </p>
@@ -298,7 +298,7 @@ export default function TeacherDailyReportPage() {
               </div>
               <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold">Đi muộn</p>
+                  <p className="text-xs text-slate-600 uppercase font-semibold">Đi muộn</p>
                   <p className={`text-2xl font-bold mt-0.5 ${dailyData.lateCount > 0 ? "text-amber-600" : "text-green-600"}`}>
                     {dailyData.lateCount}
                   </p>
@@ -307,7 +307,7 @@ export default function TeacherDailyReportPage() {
               </div>
               <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold">Vi phạm</p>
+                  <p className="text-xs text-slate-600 uppercase font-semibold">Vi phạm</p>
                   <p className={`text-2xl font-bold mt-0.5 ${dailyData.violations.length > 0 ? "text-red-650" : "text-green-600"}`}>
                     {dailyData.violations.length}
                   </p>
@@ -330,7 +330,7 @@ export default function TeacherDailyReportPage() {
                   <ul className="space-y-1 text-sm">
                     {dailyData.absentList.map((a, i) => (
                       <li key={i} className="flex justify-between items-center py-1 border-b last:border-0">
-                        <span className="font-medium text-gray-700">{a.name}</span>
+                        <span className="font-medium text-slate-800">{a.name}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
                           a.status === "ABSENT_EXCUSED" ? "bg-blue-105 text-blue-700" : "bg-red-105 text-red-700"
                         }`}>
@@ -340,7 +340,7 @@ export default function TeacherDailyReportPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-400 text-sm">Không có học sinh vắng</p>
+                  <p className="text-slate-500 text-sm">Không có học sinh vắng</p>
                 )}
               </div>
 
@@ -354,13 +354,13 @@ export default function TeacherDailyReportPage() {
                   <ul className="space-y-1 text-sm">
                     {dailyData.lateList.map((a, i) => (
                       <li key={i} className="py-1 border-b last:border-0">
-                        <span className="font-medium text-gray-700">{a.name}</span>
-                        {a.note && <span className="text-gray-500 text-xs"> — {a.note}</span>}
+                        <span className="font-medium text-slate-800">{a.name}</span>
+                        {a.note && <span className="text-slate-600 text-xs"> — {a.note}</span>}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-400 text-sm">Không có học sinh đi muộn</p>
+                  <p className="text-slate-500 text-sm">Không có học sinh đi muộn</p>
                 )}
               </div>
 
@@ -379,7 +379,7 @@ export default function TeacherDailyReportPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-400 text-sm">Không có vi phạm</p>
+                  <p className="text-slate-500 text-sm">Không có vi phạm</p>
                 )}
               </div>
 
@@ -398,14 +398,14 @@ export default function TeacherDailyReportPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-400 text-sm">Không có khen thưởng</p>
+                  <p className="text-slate-500 text-sm">Không có khen thưởng</p>
                 )}
               </div>
 
               {/* Parent feedbacks */}
               {dailyData.parentFeedbacks.length > 0 && (
                 <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl md:col-span-2 shadow-sm">
-                  <h3 className="font-semibold text-sm mb-3 text-indigo-700 flex items-center gap-1.5">
+                  <h3 className="font-semibold text-sm mb-3 text-slate-900 flex items-center gap-1.5">
                     <MessageSquare className="w-4 h-4 shrink-0" />
                     <span>Phản hồi phụ huynh ({dailyData.parentFeedbacks.length})</span>
                   </h3>
@@ -413,7 +413,7 @@ export default function TeacherDailyReportPage() {
                     {dailyData.parentFeedbacks.map((f, i) => (
                       <li key={i} className="py-1 border-b last:border-0">
                         <strong>PH {f.studentName}</strong>
-                        {f.channel && <span className="text-gray-500"> ({f.channel})</span>}: {f.content}
+                        {f.channel && <span className="text-slate-600"> ({f.channel})</span>}: {f.content}
                       </li>
                     ))}
                   </ul>
@@ -463,18 +463,18 @@ export default function TeacherDailyReportPage() {
               onChange={(e) => setReportText(e.target.value)}
               disabled={status === "SENT"}
               placeholder="Nhập nội dung báo cáo hoặc bấm 'Tạo báo cáo bằng AI' để tự động tạo..."
-              className="w-full h-64 border border-gray-200 rounded-lg p-4 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-gray-500 leading-relaxed font-medium"
+              className="w-full h-64 border border-gray-200 rounded-lg p-4 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-600 leading-relaxed font-medium"
             />
 
             <div className="flex items-center justify-between mt-4">
-              <p className="text-xs text-gray-400 font-medium">
+              <p className="text-xs text-slate-500 font-medium">
                 {reportText.length > 0 ? `${reportText.split(/\s+/).filter(Boolean).length} từ` : "Chưa có nội dung"}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => handleSave("DRAFT")}
                   disabled={saving || !reportText || status === "SENT"}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-150 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-sm disabled:opacity-50 transition-colors border"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-150 hover:bg-gray-200 text-slate-800 font-semibold rounded-lg text-sm disabled:opacity-50 transition-colors border"
                 >
                   <Save className="w-4 h-4" />
                   <span>{saving ? "Đang lưu..." : "Lưu nháp"}</span>
@@ -501,11 +501,11 @@ export default function TeacherDailyReportPage() {
       {showHistory && (
         <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xl backdrop-blur-xl shadow-sm">
           <h3 className="font-semibold text-lg mb-4 flex items-center gap-1.5">
-            <History className="w-5 h-5 text-gray-500" />
+            <History className="w-5 h-5 text-slate-600" />
             <span>Lịch sử báo cáo</span>
           </h3>
           {history.length === 0 ? (
-            <p className="text-gray-400 text-sm">Chưa có báo cáo nào</p>
+            <p className="text-slate-500 text-sm">Chưa có báo cáo nào</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -520,7 +520,7 @@ export default function TeacherDailyReportPage() {
                 </thead>
                 <tbody>
                   {history.map((r) => (
-                    <tr key={r.id} className="border-b hover:bg-slate-50 text-gray-700">
+                    <tr key={r.id} className="border-b hover:bg-slate-50 text-slate-800">
                       <td className="p-3 font-medium">{new Date(r.date).toLocaleDateString("vi-VN")}</td>
                       <td className="p-3 text-center">
                         <span className={r.absentCount > 0 ? "text-red-600 font-bold" : ""}>

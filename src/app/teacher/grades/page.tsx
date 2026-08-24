@@ -252,7 +252,7 @@ export default function GradesPage() {
                               step={0.25}
                               defaultValue={currentValue !== null ? currentValue : ""}
                               onBlur={(e) => handleCellBlur(s.studentId, col.key, col.type, existingId, e.target.value)}
-                              className={`w-full text-center px-2 py-2 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                              className={`w-full text-center px-2 py-2 min-h-[44px] bg-white border border-slate-300 rounded-xl text-xs font-extrabold text-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 transition-all ${
                                 savingCell === cellKey ? "bg-amber-50 text-amber-700" : ""
                               } ${currentValue !== null ? "bg-emerald-50/50 border-emerald-200 text-emerald-900 font-bold" : "placeholder-slate-300"}`}
                               placeholder="—"

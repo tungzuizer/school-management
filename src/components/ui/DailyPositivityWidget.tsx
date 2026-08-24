@@ -64,23 +64,23 @@ export function DailyPositivityWidget({ role = "student", className = "" }: Prop
         </div>
         <button
           onClick={nextQuote}
-          className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-white/80 transition"
+          className="p-1.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-white/80 transition"
           title="Đổi câu truyền cảm hứng"
         >
           <RefreshCw className={`w-4 h-4 ${isSpinning ? "animate-spin" : ""}`} />
         </button>
       </div>
 
-      <p className="text-gray-800 font-medium text-sm md:text-base italic leading-relaxed my-2">
+      <p className="text-slate-900 font-medium text-sm md:text-base italic leading-relaxed my-2">
         "{current.text}"
       </p>
 
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200/50 text-xs">
-        <span className="text-gray-500 font-semibold">— {current.author}</span>
+        <span className="text-slate-600 font-semibold">— {current.author}</span>
         <button
           onClick={toggleLike}
           className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition ${
-            isLiked ? "bg-rose-100 text-rose-600 scale-105" : "bg-white/80 text-gray-600 hover:bg-rose-50 hover:text-rose-500"
+            isLiked ? "bg-rose-100 text-rose-600 scale-105" : "bg-white/80 text-slate-700 hover:bg-rose-50 hover:text-rose-500"
           }`}
         >
           <Heart className={`w-3.5 h-3.5 ${isLiked ? "fill-rose-500 text-rose-500" : ""}`} />
