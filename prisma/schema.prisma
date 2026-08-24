@@ -27,6 +27,13 @@ enum ManagementBranch {
   THPT
 }
 
+enum SchoolType {
+  TIEU_HOC
+  THCS
+  THPT
+  LIEN_CAP
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT_EXCUSED
@@ -193,6 +200,7 @@ model School {
   departmentId   String?
   districtWardId String?
   branchType     ManagementBranch @default(WARD)
+  schoolType     SchoolType       @default(THCS)
   name           String
   address        String?
   phone          String?

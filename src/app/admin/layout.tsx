@@ -58,9 +58,11 @@ const superAdminMenuGroups: MenuGroup[] = [
     icon: Crown,
     items: [
       { label: "Bảng điều khiển Tối cao", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Bảng điều khiển Sở GD&ĐT", href: "/department/dashboard", icon: Landmark },
+      { label: "Bảng điều khiển Phòng GD&ĐT", href: "/ward/dashboard", icon: Building },
       { label: "Hiệu trưởng & Cán bộ", href: "/admin/principals", icon: Landmark, badge: "FULL" },
       { label: "Tất cả Trường học", href: "/admin/schools", icon: Building2 },
-      { label: "Sở & Phòng GD&ĐT", href: "/department/wards", icon: Building },
+      { label: "Danh sách Phòng GD&ĐT", href: "/department/wards", icon: Building },
       { label: "Trung tâm Phê duyệt", href: "/admin/approvals", icon: ShieldCheck },
     ],
   },

@@ -8,12 +8,14 @@ import {
   getSchoolsForSelect,
   createStudent,
   updateStudent,
+  resetStudentPassword,
   deleteStudent,
   createBulkStudents,
   BulkStudentInput,
 } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { KeyRound, Lock, Loader2 } from "lucide-react";
 
 interface StudentData {
   id: string;
@@ -73,6 +75,12 @@ export default function StudentsPage() {
   const [form, setForm] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
   const { showToast, ToastComponent } = useToast();
+
+  // Password Reset state
+  const [pwdModalOpen, setPwdModalOpen] = useState(false);
+  const [selectedStudentForPwd, setSelectedStudentForPwd] = useState<StudentData | null>(null);
+  const [newPwdInput, setNewPwdInput] = useState("abc123");
+  const [resettingPwd, setResettingPwd] = useState(false);
 
   // Dynamic grade options derived from active classes
   const uniqueGrades = Array.from(new Set(classes.map((c) => c.gradeLevel))).filter(Boolean).sort((a, b) => a - b);
@@ -219,6 +227,25 @@ export default function StudentsPage() {
       showToast("Xóa học sinh thành công");
       loadData(true);
     } else showToast(result.error || "Không thể xóa", "error");
+  };
+
+  const openPasswordModal = (s: StudentData) => {
+    setSelectedStudentForPwd(s);
+    setNewPwdInput("abc123");
+    setPwdModalOpen(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedStudentForPwd) return;
+    setResettingPwd(true);
+    const res = await resetStudentPassword(selectedStudentForPwd.user.id, newPwdInput);
+    setResettingPwd(false);
+    if (res.success) {
+      showToast(`Đã đặt lại mật khẩu cho ${selectedStudentForPwd.user.name}: ${res.newPassword}`, "success");
+      setPwdModalOpen(false);
+    } else {
+      showToast(res.error || "Không thể đặt lại mật khẩu", "error");
+    }
   };
 
   const parseBulkText = (text: string, classId: string) => {
@@ -542,9 +569,14 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <button onClick={() => openEdit(s)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-                    Chỉnh sửa
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openEdit(s)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                      Chỉnh sửa
+                    </button>
+                    <button onClick={() => openPasswordModal(s)} className="text-xs font-semibold text-amber-700 hover:text-amber-900 inline-flex items-center gap-1">
+                      <Lock className="w-3.5 h-3.5" /> Đổi MK
+                    </button>
+                  </div>
                   <button onClick={() => setDeleteConfirm(s.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">
                     Xóa
                   </button>
@@ -568,6 +600,7 @@ export default function StudentsPage() {
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Ngày sinh</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Giới tính</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">SĐT</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Mật khẩu</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
                   <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
                 </tr>
@@ -613,6 +646,11 @@ export default function StudentsPage() {
                         {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{s.phone || "—"}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        <span className="font-mono text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1 font-semibold">
+                          <KeyRound className="w-3 h-3 text-amber-600" /> abc123
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded text-xs ${statusColor[s.status] || ""}`}>
                           {statusLabel[s.status] || s.status}
@@ -624,6 +662,12 @@ export default function StudentsPage() {
                           className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                         >
                           Sửa
+                        </button>
+                        <button
+                          onClick={() => openPasswordModal(s)}
+                          className="text-amber-700 hover:text-amber-900 text-sm font-medium"
+                        >
+                          Đổi MK
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(s.id)}
@@ -675,13 +719,13 @@ export default function StudentsPage() {
           </div>
           {!editing && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu (mặc định: abc123)</label>
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                required
+                placeholder="Để trống sẽ tự động đặt là abc123"
               />
             </div>
           )}
@@ -860,6 +904,67 @@ export default function StudentsPage() {
         </div>
       </Modal>
 
+      {/* Password Reset Modal */}
+      <Modal
+        isOpen={pwdModalOpen}
+        onClose={() => setPwdModalOpen(false)}
+        title={`Đặt lại mật khẩu - ${selectedStudentForPwd?.user.name || ""}`}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+            <p className="font-semibold mb-1">🔑 Quản lý Mật khẩu Học sinh</p>
+            <p>Mật khẩu mặc định hiện tại của tài khoản: <strong className="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">abc123</strong></p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Mật khẩu mới</label>
+            <input
+              type="text"
+              value={newPwdInput}
+              onChange={(e) => setNewPwdInput(e.target.value)}
+              placeholder="Nhập mật khẩu mới..."
+              className="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-amber-500 font-mono font-medium"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setNewPwdInput("abc123")}
+              className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+            >
+              Gán: abc123
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewPwdInput("123456")}
+              className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+            >
+              Gán: 123456
+            </button>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <button
+              type="button"
+              onClick={() => setPwdModalOpen(false)}
+              className="px-4 py-2 border rounded-xl text-xs hover:bg-gray-50 font-semibold"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={handleResetPassword}
+              disabled={resettingPwd}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs disabled:opacity-50"
+            >
+              {resettingPwd ? "Đang lưu..." : "Cập nhật mật khẩu"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Bulk Import Modal */}
       <Modal
         isOpen={bulkModalOpen}
@@ -874,7 +979,7 @@ export default function StudentsPage() {
               <p>1. Copy hàng loạt từ Excel / Google Sheets hoặc tải file CSV mẫu.</p>
               <p>
                 2. Mật khẩu mặc định của các học sinh sẽ là:{" "}
-                <code className="bg-blue-100 px-1 py-0.5 rounded font-mono font-bold">123456</code>
+                <code className="bg-blue-100 px-1 py-0.5 rounded font-mono font-bold">abc123</code>
               </p>
               <p>
                 3. Thứ tự cột chuẩn:{" "}

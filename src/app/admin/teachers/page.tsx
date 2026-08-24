@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
-import { getTeachers, getSchoolsForTeacherSelect, createTeacher, updateTeacher, deleteTeacher, createBulkTeachers, BulkTeacherInput } from "./actions";
+import { getTeachers, getSchoolsForTeacherSelect, createTeacher, updateTeacher, resetTeacherPassword, deleteTeacher, createBulkTeachers, BulkTeacherInput } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, KeyRound, Lock, CheckCircle2 } from "lucide-react";
 
 interface TeacherData {
   id: string;
@@ -33,6 +33,12 @@ export default function TeachersPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", specialty: "", phone: "", degree: "" });
   const [submitting, setSubmitting] = useState(false);
   const { showToast, ToastComponent } = useToast();
+
+  // Password Reset state
+  const [pwdModalOpen, setPwdModalOpen] = useState(false);
+  const [selectedTeacherForPwd, setSelectedTeacherForPwd] = useState<TeacherData | null>(null);
+  const [newPwdInput, setNewPwdInput] = useState("abc123");
+  const [resettingPwd, setResettingPwd] = useState(false);
 
   // Bulk import state
   const [driveModalOpen, setDriveModalOpen] = useState(false);
@@ -191,7 +197,6 @@ export default function TeachersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) { showToast("Vui lòng điền tên và email", "error"); return; }
-    if (!editing && !form.password) { showToast("Vui lòng nhập mật khẩu", "error"); return; }
     setSubmitting(true);
 
     let result;
@@ -228,6 +233,25 @@ export default function TeachersPage() {
     setDeleteConfirm(null);
     if (result.success) { showToast("Xóa giáo viên thành công"); loadData(true); }
     else showToast(result.error || "Không thể xóa", "error");
+  };
+
+  const openPasswordModal = (t: TeacherData) => {
+    setSelectedTeacherForPwd(t);
+    setNewPwdInput("abc123");
+    setPwdModalOpen(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedTeacherForPwd) return;
+    setResettingPwd(true);
+    const res = await resetTeacherPassword(selectedTeacherForPwd.user.id, newPwdInput);
+    setResettingPwd(false);
+    if (res.success) {
+      showToast(`Đã đặt lại mật khẩu cho ${selectedTeacherForPwd.user.name}: ${res.newPassword}`, "success");
+      setPwdModalOpen(false);
+    } else {
+      showToast(res.error || "Không thể đặt lại mật khẩu", "error");
+    }
   };
 
   const handleDriveImportTeachers = async (validData: any[]) => {
@@ -426,9 +450,14 @@ export default function TeachersPage() {
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <button onClick={() => openEdit(t)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-                    Chỉnh sửa
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openEdit(t)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                      Chỉnh sửa
+                    </button>
+                    <button onClick={() => openPasswordModal(t)} className="text-xs font-semibold text-amber-700 hover:text-amber-900 inline-flex items-center gap-1">
+                      <Lock className="w-3.5 h-3.5" /> Đổi MK
+                    </button>
+                  </div>
                   <button onClick={() => setDeleteConfirm(t.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">
                     Xóa
                   </button>
@@ -448,6 +477,7 @@ export default function TeachersPage() {
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Chuyên môn</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Mật khẩu</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Bằng cấp</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">SĐT</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Chủ nhiệm</th>
@@ -478,6 +508,11 @@ export default function TeachersPage() {
                     </td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{t.user?.email || "—"}</td>
                     <td className="px-6 py-4 text-gray-600">{t.specialty || "—"}</td>
+                    <td className="px-6 py-4 text-gray-600">
+                      <span className="font-mono text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1 font-semibold">
+                        <KeyRound className="w-3 h-3 text-amber-600" /> abc123
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-gray-600">{t.degree || "—"}</td>
                     <td className="px-6 py-4 text-gray-600">{t.phone || "—"}</td>
                     <td className="px-6 py-4">
@@ -505,6 +540,7 @@ export default function TeachersPage() {
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button onClick={() => openEdit(t)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Sửa</button>
+                      <button onClick={() => openPasswordModal(t)} className="text-amber-700 hover:text-amber-900 text-sm font-medium">Đổi MK</button>
                       <button onClick={() => setDeleteConfirm(t.id)} className="text-red-600 hover:text-red-800 text-sm font-medium">Xóa</button>
                     </td>
                   </tr>
@@ -532,9 +568,9 @@ export default function TeachersPage() {
           </div>
           {!editing && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu (mặc định: abc123)</label>
               <input type="password" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" required />
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Để trống sẽ tự đặt là abc123" />
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
@@ -569,6 +605,67 @@ export default function TeachersPage() {
         <div className="flex justify-end gap-3">
           <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
           <button onClick={() => deleteConfirm && handleDelete(deleteConfirm)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Xóa</button>
+        </div>
+      </Modal>
+
+      {/* Password Reset Modal */}
+      <Modal
+        isOpen={pwdModalOpen}
+        onClose={() => setPwdModalOpen(false)}
+        title={`Đặt lại mật khẩu - ${selectedTeacherForPwd?.user.name || ""}`}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+            <p className="font-semibold mb-1">🔑 Quản lý Mật khẩu Giáo viên</p>
+            <p>Mật khẩu mặc định hiện tại của tài khoản: <strong className="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">abc123</strong></p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Mật khẩu mới</label>
+            <input
+              type="text"
+              value={newPwdInput}
+              onChange={(e) => setNewPwdInput(e.target.value)}
+              placeholder="Nhập mật khẩu mới..."
+              className="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-amber-500 font-mono font-medium"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setNewPwdInput("abc123")}
+              className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+            >
+              Gán: abc123
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewPwdInput("123456")}
+              className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+            >
+              Gán: 123456
+            </button>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <button
+              type="button"
+              onClick={() => setPwdModalOpen(false)}
+              className="px-4 py-2 border rounded-xl text-xs hover:bg-gray-50 font-semibold"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={handleResetPassword}
+              disabled={resettingPwd}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs disabled:opacity-50"
+            >
+              {resettingPwd ? "Đang lưu..." : "Cập nhật mật khẩu"}
+            </button>
+          </div>
         </div>
       </Modal>
 

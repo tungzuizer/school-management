@@ -259,7 +259,7 @@ export default function ClassesPage() {
           <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)}
             className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs">
             <option value="">Tất cả khối</option>
-            {[6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Khối {g}</option>)}
+            {[1,2,3,4,5,6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Khối {g}</option>)}
           </select>
         </div>
 

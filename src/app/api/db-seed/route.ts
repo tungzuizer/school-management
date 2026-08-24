@@ -12,13 +12,20 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Tải thông tin đơn vị mặc định
+    const defaultDept = await prisma.educationDepartment.findFirst();
+    const defaultWard = await prisma.districtWard.findFirst();
+    const defaultSchool = await prisma.school.findFirst();
 
-    const superHashedPassword = await bcrypt.hash("SuperAdmin@2026!", 10);
+    // Mật khẩu mặc định chuẩn hệ thống là abc123
+    const defaultPasswordHash = await bcrypt.hash("abc123", 10);
+
+    // 1. Super Admin (Quản Trị Viên Tối Cao)
     await prisma.user.upsert({
       where: { email: "superadmin@school.com" },
       update: {
         name: "Quản Trị Viên Tối Cao (Super Admin)",
-        password: superHashedPassword,
+        password: defaultPasswordHash,
         role: Role.ADMIN,
         isApproved: true,
         schoolId: null,
@@ -28,7 +35,7 @@ export async function GET(request: Request) {
       create: {
         name: "Quản Trị Viên Tối Cao (Super Admin)",
         email: "superadmin@school.com",
-        password: superHashedPassword,
+        password: defaultPasswordHash,
         role: Role.ADMIN,
         isApproved: true,
         schoolId: null,
@@ -37,16 +44,11 @@ export async function GET(request: Request) {
       },
     });
 
-    const hashedPassword = await bcrypt.hash("123456", 10);
-
-    const defaultDept = await prisma.educationDepartment.findFirst();
-    const defaultWard = await prisma.districtWard.findFirst();
-    const defaultSchool = await prisma.school.findFirst();
-
+    // 2. Admin (Hiệu Trưởng)
     await prisma.user.upsert({
       where: { email: "admin@school.com" },
       update: {
-        password: hashedPassword,
+        password: defaultPasswordHash,
         schoolId: defaultSchool?.id,
         districtWardId: defaultWard?.id,
         departmentId: defaultDept?.id,
@@ -54,7 +56,7 @@ export async function GET(request: Request) {
       create: {
         name: "TS. Nguyễn Văn Hùng",
         email: "admin@school.com",
-        password: hashedPassword,
+        password: defaultPasswordHash,
         role: Role.ADMIN,
         schoolId: defaultSchool?.id,
         districtWardId: defaultWard?.id,
@@ -62,41 +64,80 @@ export async function GET(request: Request) {
       },
     });
 
+    // 3. Cán bộ Sở GD&ĐT
     await prisma.user.upsert({
-      where: { email: "teacher@school.com" },
-      update: { password: hashedPassword },
+      where: { email: "dept@school.com" },
+      update: {
+        password: defaultPasswordHash,
+        departmentId: defaultDept?.id,
+      },
       create: {
-        name: "Trần Thị Hoa",
-        email: "teacher@school.com",
-        password: hashedPassword,
-        role: Role.TEACHER,
+        name: "Lãnh đạo Sở GD&ĐT",
+        email: "dept@school.com",
+        password: defaultPasswordHash,
+        role: Role.DEPARTMENT_ADMIN,
+        departmentId: defaultDept?.id,
       },
     });
 
+    // 4. Cán bộ Phòng GD&ĐT
+    await prisma.user.upsert({
+      where: { email: "ward@school.com" },
+      update: {
+        password: defaultPasswordHash,
+        districtWardId: defaultWard?.id,
+        departmentId: defaultDept?.id,
+      },
+      create: {
+        name: "Cán bộ Phòng GD&ĐT",
+        email: "ward@school.com",
+        password: defaultPasswordHash,
+        role: Role.WARD_ADMIN,
+        districtWardId: defaultWard?.id,
+        departmentId: defaultDept?.id,
+      },
+    });
+
+    // 5. Phó Hiệu Trưởng
+    await prisma.user.upsert({
+      where: { email: "vp1@school.com" },
+      update: { password: defaultPasswordHash },
+      create: {
+        name: "Nguyễn Thị Phó Hiệu Trưởng",
+        email: "vp1@school.com",
+        password: defaultPasswordHash,
+        role: Role.VICE_PRINCIPAL,
+        schoolId: defaultSchool?.id,
+      },
+    });
+
+    // 6. Giáo viên
+    await prisma.user.upsert({
+      where: { email: "teacher@school.com" },
+      update: { password: defaultPasswordHash },
+      create: {
+        name: "Trần Thị Hoa",
+        email: "teacher@school.com",
+        password: defaultPasswordHash,
+        role: Role.TEACHER,
+        schoolId: defaultSchool?.id,
+      },
+    });
+
+    // 7. Học sinh
     await prisma.user.upsert({
       where: { email: "student@school.com" },
-      update: { password: hashedPassword },
+      update: { password: defaultPasswordHash },
       create: {
         name: "Phạm Quang Huy",
         email: "student@school.com",
-        password: hashedPassword,
+        password: defaultPasswordHash,
         role: Role.STUDENT,
       },
     });
 
-    await prisma.user.upsert({
-      where: { email: "vp1@school.com" },
-      update: { password: hashedPassword },
-      create: {
-        name: "Nguyen Thi VP1",
-        email: "vp1@school.com",
-        password: hashedPassword,
-        role: Role.VICE_PRINCIPAL,
-      },
-    });
-
-    return NextResponse.json({ success: true, message: "Database seeded successfully" });
+    return NextResponse.json({ success: true, message: "Khởi tạo tài khoản hệ thống thành công với mật khẩu abc123" });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to seed database" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Lỗi khi khởi tạo tài khoản hệ thống" }, { status: 500 });
   }
 }

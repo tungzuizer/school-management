@@ -6,6 +6,7 @@ declare module "next-auth" {
       id: string;
       role: string;
       isApproved?: boolean;
+      mustChangePassword?: boolean;
       departmentId?: string;
       districtWardId?: string;
       schoolId?: string;
@@ -16,6 +17,7 @@ declare module "next-auth" {
   interface User {
     role: string;
     isApproved?: boolean;
+    mustChangePassword?: boolean;
     departmentId?: string;
     districtWardId?: string;
     schoolId?: string;
@@ -28,6 +30,7 @@ declare module "next-auth/jwt" {
     role: string;
     id: string;
     isApproved?: boolean;
+    mustChangePassword?: boolean;
     departmentId?: string;
     districtWardId?: string;
     schoolId?: string;

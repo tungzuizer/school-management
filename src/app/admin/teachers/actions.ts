@@ -54,7 +54,7 @@ export async function getSchoolsForTeacherSelect() {
 export async function createTeacher(data: {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   specialty?: string;
   phone?: string;
   degree?: string;
@@ -63,7 +63,8 @@ export async function createTeacher(data: {
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) return { success: false, error: "Email đã tồn tại" };
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const rawPassword = data.password && data.password.trim() ? data.password.trim() : "abc123";
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
     await prisma.user.create({
       data: {
         name: data.name,
@@ -80,7 +81,7 @@ export async function createTeacher(data: {
       },
     });
     
-    return { success: true };
+    return { success: true, defaultPassword: rawPassword };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi tạo giáo viên" };
   }
@@ -108,6 +109,32 @@ export async function updateTeacher(
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi cập nhật" };
+  }
+}
+
+export async function resetTeacherPassword(userId: string, newPassword?: string) {
+  try {
+    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
+    if (rawPassword.length < 6) return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
+
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    try {
+      const ctx = await getTenantContext();
+      await recordAuditLog({
+        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
+        action: "UPDATE", entityName: "TeacherPassword", entityId: userId,
+        description: `Đặt lại mật khẩu cho Giáo viên`,
+      });
+    } catch { /* skip */ }
+
+    return { success: true, newPassword: rawPassword };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Lỗi khi đổi mật khẩu giáo viên" };
   }
 }
 
@@ -156,7 +183,7 @@ export async function createBulkTeachers(teachersData: BulkTeacherInput[]) {
       return { success: false, error: "Danh sách nhập rỗng", count: 0 };
     }
 
-    const defaultPasswordHash = await bcrypt.hash("123456", 10);
+    const defaultPasswordHash = await bcrypt.hash("abc123", 10);
 
     const existingUsers = await prisma.user.findMany({ select: { email: true } });
     const existingEmails = new Set(existingUsers.map((u) => u.email.toLowerCase()));

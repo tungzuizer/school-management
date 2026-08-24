@@ -15,19 +15,21 @@ type MenuGroup = { title: string; icon: LucideIcon; items: MenuItem[] };
 
 const menuGroups: MenuGroup[] = [
   {
-    title: "Tổng quan",
+    title: "Tổng quan & Điều hành",
     icon: LayoutDashboard,
     items: [
-      { label: "Dashboard Sở", href: "/department/dashboard", icon: LayoutDashboard },
+      { label: "Dashboard Sở GD&ĐT", href: "/department/dashboard", icon: LayoutDashboard },
+      { label: "Bảng Quản trị Trung tâm", href: "/admin/dashboard", icon: GraduationCap },
+      { label: "Dashboard Phòng GD&ĐT", href: "/ward/dashboard", icon: Landmark },
     ],
   },
   {
-    title: "Quản lý",
+    title: "Quản lý Đơn vị",
     icon: Building2,
     items: [
-      { label: "Phòng GD&ĐT", href: "/department/wards", icon: Landmark },
-      { label: "Trường THPT", href: "/department/thpt-schools", icon: School },
-      { label: "Tất cả Trường", href: "/department/all-schools", icon: Building2 },
+      { label: "Phòng GD&ĐT thuộc Sở", href: "/department/wards", icon: Landmark },
+      { label: "Trường THPT trực thuộc", href: "/department/thpt-schools", icon: School },
+      { label: "Tất cả Trường học", href: "/department/all-schools", icon: Building2 },
     ],
   },
   {

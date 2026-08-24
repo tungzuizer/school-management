@@ -5,38 +5,54 @@ export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
+    const role = token?.role as string;
+    const email = token?.email as string;
 
-    // Khu vực Sở GD&ĐT: chỉ DEPARTMENT_ADMIN
-    if (path.startsWith("/department") && token?.role !== "DEPARTMENT_ADMIN") {
+    const isSuperAdmin =
+      email === "superadmin@school.com" ||
+      role === "SUPER_ADMIN" ||
+      role === "ADMIN" ||
+      role === "DEPARTMENT_ADMIN" ||
+      role === "WARD_ADMIN";
+
+    // Quản trị viên tối cao / Admin / Cán bộ Sở / Cán bộ Phòng được phép truy cập tất cả các khu vực điều hành
+    if (isSuperAdmin) {
+      return NextResponse.next();
+    }
+
+    // Khu vực Sở GD&ĐT: DEPARTMENT_ADMIN
+    const departmentRoles = ["DEPARTMENT_ADMIN"];
+    if (path.startsWith("/department") && !departmentRoles.includes(role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Phòng GD&ĐT: chỉ WARD_ADMIN
-    if (path.startsWith("/ward") && token?.role !== "WARD_ADMIN") {
+    // Khu vực Phòng GD&ĐT: WARD_ADMIN
+    const wardRoles = ["WARD_ADMIN"];
+    if (path.startsWith("/ward") && !wardRoles.includes(role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Admin (Hiệu trưởng & Phó Hiệu trưởng): ADMIN, VICE_PRINCIPAL, DEPARTMENT_ADMIN, WARD_ADMIN
+    // Khu vực Admin: ADMIN, VICE_PRINCIPAL, DEPARTMENT_ADMIN, WARD_ADMIN
     const adminRoles = ["ADMIN", "VICE_PRINCIPAL", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
-    if (path.startsWith("/admin") && !adminRoles.includes(token?.role as string)) {
+    if (path.startsWith("/admin") && !adminRoles.includes(role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Phó Hiệu trưởng: VICE_PRINCIPAL và ADMIN
+    // Khu vực Phó Hiệu trưởng: VICE_PRINCIPAL, ADMIN, DEPARTMENT_ADMIN, WARD_ADMIN
     const vpRoles = ["VICE_PRINCIPAL", "ADMIN", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
-    if (path.startsWith("/vice-principal") && !vpRoles.includes(token?.role as string)) {
+    if (path.startsWith("/vice-principal") && !vpRoles.includes(role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Giáo viên: TEACHER và ADMIN
+    // Khu vực Giáo viên: TEACHER, ADMIN, VICE_PRINCIPAL
     const teacherRoles = ["TEACHER", "ADMIN", "VICE_PRINCIPAL"];
-    if (path.startsWith("/teacher") && !teacherRoles.includes(token?.role as string)) {
+    if (path.startsWith("/teacher") && !teacherRoles.includes(role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Học sinh: STUDENT, TEACHER, ADMIN, VICE_PRINCIPAL
+    // Khu vực Học sinh: STUDENT, TEACHER, ADMIN, VICE_PRINCIPAL, DEPARTMENT_ADMIN, WARD_ADMIN
     const studentRoles = ["STUDENT", "TEACHER", "ADMIN", "VICE_PRINCIPAL", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
-    if (path.startsWith("/student") && !studentRoles.includes(token?.role as string)) {
+    if (path.startsWith("/student") && !studentRoles.includes(role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
