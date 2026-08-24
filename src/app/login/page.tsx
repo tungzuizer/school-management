@@ -126,6 +126,25 @@ function LoginFormContent() {
     }
   };
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (status === "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
+        <div className="flex items-center gap-3 text-indigo-700 font-bold text-sm">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Đã đăng nhập - Đang chuyển hướng...</span>
+        </div>
+      </div>
+    );
+  }
+
   const quickLogin = async (demoEmail: string) => {
     setEmail(demoEmail);
     let demoPassword = "abc123";

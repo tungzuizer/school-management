@@ -73,6 +73,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const navItems: NavItem[] = [
     { label: "Góc Học Tập 360°", href: "/student/dashboard", icon: Home, description: "Tổng quan kết quả & động lực" },
     { label: "Bảng Điểm Môn Học", href: "/student/grades", icon: Award, description: "Chi tiết điểm số các môn" },
+    { label: "Học Bạ Điện Tử", href: "/student/transcript", icon: Award, description: "Học bạ chuẩn Bộ GD&ĐT" },
     { label: "Nhật Ký Chuyên Cần", href: "/student/attendance", icon: CalendarCheck, description: "Xem lịch sử điểm danh do Thầy/Cô ghi" },
     { label: "Thời Khóa Biểu Tuần", href: "/student/schedule", icon: Calendar, description: "Lịch học & giáo viên bộ môn" },
   ];

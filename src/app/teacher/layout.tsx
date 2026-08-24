@@ -109,6 +109,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       gradient: "from-emerald-600 to-teal-600",
       items: [
         { label: "Sổ chủ nhiệm", href: "/teacher/homeroom", icon: NotebookPen, description: "Quản lý nếp sống & thi đua" },
+        { label: "Học bạ điện tử", href: "/teacher/transcript", icon: FileSpreadsheet, description: "Tổng kết & nộp học bạ" },
         { label: "Điểm danh học sinh", href: "/teacher/attendance", icon: ClipboardCheck, description: "Báo cáo sĩ số hằng ngày" },
         { label: "Báo cáo ngày BGH", href: "/teacher/daily-report", icon: Sparkles, description: "Nộp tổng kết ngày" },
       ],
