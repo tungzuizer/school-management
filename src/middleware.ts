@@ -12,8 +12,7 @@ export default withAuth(
       email === "superadmin@school.com" ||
       role === "SUPER_ADMIN" ||
       role === "ADMIN" ||
-      role === "DEPARTMENT_ADMIN" ||
-      role === "WARD_ADMIN";
+      role === "DEPARTMENT_ADMIN";
 
     // Quản trị viên tối cao / Admin / Cán bộ Sở / Cán bộ Phòng được phép truy cập tất cả các khu vực điều hành
     if (isSuperAdmin) {

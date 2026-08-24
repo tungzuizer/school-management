@@ -188,7 +188,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isSuperAdmin =
     profile?.isSuperAdmin ||
     session?.user?.email === "superadmin@school.com" ||
-    session?.user?.role === "DEPARTMENT_ADMIN";
+    session?.user?.role === "DEPARTMENT_ADMIN" ||
+    session?.user?.role === "ADMIN";
 
   const menuGroups = isSuperAdmin ? superAdminMenuGroups : principalMenuGroups;
 
