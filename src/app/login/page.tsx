@@ -1,8 +1,7 @@
 "use client";
 
-import { checkUserApprovalStatus } from "@/app/register/actions";
 import { signIn, getSession, useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import {
@@ -19,7 +18,6 @@ import {
 } from "lucide-react";
 
 function LoginFormContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
@@ -98,17 +96,7 @@ function LoginFormContent() {
     setLoading(true);
     setError("");
     try {
-      let result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) {
-        try {
-          const seedRes = await fetch("/api/db-seed?secret=seed123");
-          if (seedRes.ok) {
-            result = await signIn("credentials", { email, password, redirect: false });
-          }
-        } catch {
-          // ignore fetch error
-        }
-      }
+      const result = await signIn("credentials", { email, password, redirect: false });
 
       if (result?.error) {
         if (result.error.includes("phê duyệt")) {
@@ -147,31 +135,23 @@ function LoginFormContent() {
 
   const quickLogin = async (demoEmail: string) => {
     setEmail(demoEmail);
-    let demoPassword = "abc123";
+    const demoPassword = "abc123";
     setPassword(demoPassword);
     setLoading(true);
     setError("");
     try {
+      // Thử đăng nhập với mật khẩu mặc định abc123
       let result = await signIn("credentials", { email: demoEmail, password: demoPassword, redirect: false });
+
+      // Nếu thất bại, thử với mật khẩu 123456 (từ prisma seed)
       if (result?.error) {
-        demoPassword = demoEmail === "superadmin@school.com" ? "SuperAdmin@2026!" : "123456";
-        setPassword(demoPassword);
-        result = await signIn("credentials", { email: demoEmail, password: demoPassword, redirect: false });
+        const fallbackPassword = "123456";
+        setPassword(fallbackPassword);
+        result = await signIn("credentials", { email: demoEmail, password: fallbackPassword, redirect: false });
       }
 
       if (result?.error) {
-        try {
-          const seedRes = await fetch("/api/db-seed?secret=seed123");
-          if (seedRes.ok) {
-            result = await signIn("credentials", { email: demoEmail, password: demoPassword, redirect: false });
-          }
-        } catch {
-          // ignore seed fetch error
-        }
-      }
-
-      if (result?.error) {
-        setError("Không thể đăng nhập tài khoản demo. Vui lòng kiểm tra lại cơ sở dữ liệu.");
+        setError("Không thể đăng nhập tài khoản demo. Hãy chạy seed database trước (npx prisma db seed).");
         setLoading(false);
         return;
       }

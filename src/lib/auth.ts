@@ -60,6 +60,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Demo Mode Fallback (Enabled only when ALLOW_DEMO_LOGIN === "true" or Development)
+        // CHỈ chạy khi user KHÔNG tồn tại trong DB (không tìm thấy email)
+        // Nếu user tồn tại nhưng password sai → return null (không tạo user mới)
         if (!user && isDemoAllowed) {
           const isDefaultPass =
             credentials.password === "abc123" ||

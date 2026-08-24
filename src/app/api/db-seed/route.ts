@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const defaultWard = await prisma.districtWard.findFirst();
     const defaultSchool = await prisma.school.findFirst();
 
-    // Mật khẩu mặc định chuẩn hệ thống là abc123
+    // Mật khẩu mặc định chuẩn hệ thống là abc123 (thống nhất cho tất cả demo accounts)
     const defaultPasswordHash = await bcrypt.hash("abc123", 10);
 
     // 1. Super Admin (Quản Trị Viên Tối Cao)
@@ -27,6 +27,7 @@ export async function GET(request: Request) {
         name: "Quản Trị Viên Tối Cao (Super Admin)",
         role: Role.ADMIN,
         isApproved: true,
+        password: defaultPasswordHash,
         schoolId: null,
         districtWardId: null,
         departmentId: null,
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "admin@school.com" },
       update: {
+        password: defaultPasswordHash,
         schoolId: defaultSchool?.id,
         districtWardId: defaultWard?.id,
         departmentId: defaultDept?.id,
@@ -66,6 +68,7 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "dept@school.com" },
       update: {
+        password: defaultPasswordHash,
         departmentId: defaultDept?.id,
       },
       create: {
@@ -81,6 +84,7 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "ward@school.com" },
       update: {
+        password: defaultPasswordHash,
         districtWardId: defaultWard?.id,
         departmentId: defaultDept?.id,
       },
@@ -97,7 +101,7 @@ export async function GET(request: Request) {
     // 5. Phó Hiệu Trưởng
     await prisma.user.upsert({
       where: { email: "vp1@school.com" },
-      update: {},
+      update: { password: defaultPasswordHash },
       create: {
         name: "Nguyễn Thị Phó Hiệu Trưởng",
         email: "vp1@school.com",
@@ -110,7 +114,7 @@ export async function GET(request: Request) {
     // 6. Giáo viên
     await prisma.user.upsert({
       where: { email: "teacher@school.com" },
-      update: {},
+      update: { password: defaultPasswordHash },
       create: {
         name: "Trần Thị Hoa",
         email: "teacher@school.com",
@@ -123,7 +127,7 @@ export async function GET(request: Request) {
     // 7. Học sinh
     await prisma.user.upsert({
       where: { email: "student@school.com" },
-      update: {},
+      update: { password: defaultPasswordHash },
       create: {
         name: "Phạm Quang Huy",
         email: "student@school.com",

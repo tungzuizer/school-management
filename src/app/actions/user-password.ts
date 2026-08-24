@@ -22,26 +22,48 @@ export async function changeOwnPassword(newPassword: string) {
     }
 
     const hashedPassword = await bcrypt.hash(trimmed, 10);
-    const existingUser = await prisma.user.findUnique({
-      where: { id: session.user.id }
-    });
 
-    if (existingUser) {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { password: hashedPassword },
+    // Kiểm tra nếu user có ID giả từ demo mode (bắt đầu bằng "demo-")
+    const isDemoId = session.user.id.startsWith("demo-");
+
+    if (!isDemoId) {
+      // User thật trong DB — update trực tiếp bằng ID
+      const existingUser = await prisma.user.findUnique({
+        where: { id: session.user.id }
       });
+
+      if (existingUser) {
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: { password: hashedPassword },
+        });
+      } else {
+        return { success: false, error: "Không tìm thấy tài khoản trong hệ thống" };
+      }
     } else if (session.user.email) {
-      await prisma.user.upsert({
-        where: { email: session.user.email },
-        update: { password: hashedPassword },
-        create: {
-          email: session.user.email,
-          password: hashedPassword,
-          name: session.user.name || "User",
-          role: (session.user.role as any) || "TEACHER",
-        },
+      // Demo user — tìm bằng email
+      const existingByEmail = await prisma.user.findUnique({
+        where: { email: session.user.email }
       });
+
+      if (existingByEmail) {
+        await prisma.user.update({
+          where: { email: session.user.email },
+          data: { password: hashedPassword },
+        });
+      } else {
+        // Tạo user mới trong DB cho demo user
+        await prisma.user.create({
+          data: {
+            email: session.user.email,
+            password: hashedPassword,
+            name: session.user.name || "User",
+            role: (session.user.role as any) || "TEACHER",
+          },
+        });
+      }
+    } else {
+      return { success: false, error: "Không có thông tin email để cập nhật mật khẩu" };
     }
 
     return { success: true };
