@@ -234,41 +234,41 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Super Admin Executive Quick Action Toolbar */}
-          <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
+          <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
             <Link
-              href="/admin/users"
-              className="p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl transition-all flex items-center gap-2.5 text-amber-200 text-xs font-bold group"
+              href="/department/dashboard"
+              className="p-3 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-400/40 rounded-xl transition-all flex items-center gap-2.5 text-indigo-200 text-xs font-bold group"
+            >
+              <Globe className="w-4 h-4 text-indigo-300 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>🏛️ Phân Hệ Sở GD&ĐT</span>
+            </Link>
+            <Link
+              href="/ward/dashboard"
+              className="p-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 rounded-xl transition-all flex items-center gap-2.5 text-emerald-200 text-xs font-bold group"
+            >
+              <Building2 className="w-4 h-4 text-emerald-300 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>📍 Phân Hệ Phòng GD&ĐT</span>
+            </Link>
+            <Link
+              href="/admin/principals"
+              className="p-3 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/40 rounded-xl transition-all flex items-center gap-2.5 text-amber-200 text-xs font-bold group"
             >
               <Crown className="w-4 h-4 text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
-              <span>Quản Lý Hiệu Trưởng</span>
+              <span>🔑 Tài Khoản & Mật Khẩu</span>
             </Link>
             <Link
               href="/admin/schools"
-              className="p-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl transition-all flex items-center gap-2.5 text-indigo-200 text-xs font-bold group"
+              className="p-3 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-400/40 rounded-xl transition-all flex items-center gap-2.5 text-purple-200 text-xs font-bold group"
             >
-              <Building2 className="w-4 h-4 text-indigo-400 shrink-0 group-hover:scale-110 transition-transform" />
-              <span>Cấu Hình Các Trường</span>
+              <School className="w-4 h-4 text-purple-300 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>🏫 Quản Lý Các Trường</span>
             </Link>
             <Link
-              href="/admin/security"
-              className="p-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl transition-all flex items-center gap-2.5 text-rose-200 text-xs font-bold group"
+              href="/admin/students"
+              className="p-3 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/40 rounded-xl transition-all flex items-center gap-2.5 text-rose-200 text-xs font-bold group col-span-2 sm:col-span-1"
             >
-              <Lock className="w-4 h-4 text-rose-400 shrink-0 group-hover:scale-110 transition-transform" />
-              <span>Giám Sát An Ninh</span>
-            </Link>
-            <Link
-              href="/admin/ai-assistant"
-              className="p-3 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-xl transition-all flex items-center gap-2.5 text-purple-200 text-xs font-bold group"
-            >
-              <Sparkles className="w-4 h-4 text-purple-400 shrink-0 group-hover:scale-110 transition-transform" />
-              <span>Trợ Lý AI Quốc Gia</span>
-            </Link>
-            <Link
-              href="/admin/settings"
-              className="p-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl transition-all flex items-center gap-2.5 text-emerald-200 text-xs font-bold group col-span-2 sm:col-span-1"
-            >
-              <Sliders className="w-4 h-4 text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
-              <span>Tham Số Hệ Thống</span>
+              <Users className="w-4 h-4 text-rose-300 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>👨🎓 Quản Lý Học Sinh</span>
             </Link>
           </div>
         </div>
