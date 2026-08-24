@@ -188,7 +188,7 @@ export default function ReportsClient({
       {/* Toast Notification */}
       {feedback && (
         <div
-          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-2 animate-bounce ${
+          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-2 animate-pulse ${
             feedback.type === "success" ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
           }`}
         >
@@ -304,7 +304,7 @@ export default function ReportsClient({
 
         {/* Data Table Section */}
         <div className="space-y-3 font-sans">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-blue-900 border-l-4 border-blue-900 pl-2">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-blue-900 border border-slate-200 shadow-xs border-blue-900 pl-2">
             I. Bảng tổng hợp Mục tiêu & Chỉ số Chất lượng (Data Summary Table)
           </h2>
 
@@ -350,7 +350,7 @@ export default function ReportsClient({
 
         {/* Appendices & Related Evidence Files */}
         <div className="space-y-3 font-sans pt-2">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-blue-900 border-l-4 border-blue-900 pl-2">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-blue-900 border border-slate-200 shadow-xs border-blue-900 pl-2">
             II. Phụ lục & Danh mục Tệp Minh chứng Đính kèm
           </h2>
           <div className="space-y-1.5 text-xs text-gray-700">

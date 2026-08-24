@@ -375,7 +375,7 @@ export default function AdminLessonPlansPage() {
       <div className="space-y-3 sm:space-y-4">
         {loading ? (
           <div className="text-center py-12 bg-white rounded-2xl border">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border border-slate-200 border-indigo-600 mx-auto"></div>
             <p className="text-xs text-slate-400 mt-2 font-semibold">Đang tải danh sách giáo án...</p>
           </div>
         ) : filteredPlans.length === 0 ? (

@@ -72,7 +72,7 @@ export default function AIConfigPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border border-slate-200 border-indigo-600"></div>
         <span className="ml-3 text-slate-500 text-sm font-semibold">Đang tải cấu hình AI...</span>
       </div>
     );
@@ -99,7 +99,7 @@ export default function AIConfigPage() {
           disabled={testing}
           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs rounded-xl shadow transition active:scale-95 disabled:opacity-50 shrink-0"
         >
-          <Zap className={`w-4 h-4 ${testing ? "animate-bounce" : ""}`} />
+          <Zap className={`w-4 h-4 ${testing ? "animate-pulse" : ""}`} />
           {testing ? "Đang test API..." : "⚡ Thử kết nối AI"}
         </button>
       </div>
