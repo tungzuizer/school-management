@@ -22,10 +22,27 @@ export async function changeOwnPassword(newPassword: string) {
     }
 
     const hashedPassword = await bcrypt.hash(trimmed, 10);
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { password: hashedPassword },
+    const existingUser = await prisma.user.findUnique({
+      where: { id: session.user.id }
     });
+
+    if (existingUser) {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { password: hashedPassword },
+      });
+    } else if (session.user.email) {
+      await prisma.user.upsert({
+        where: { email: session.user.email },
+        update: { password: hashedPassword },
+        create: {
+          email: session.user.email,
+          password: hashedPassword,
+          name: session.user.name || "User",
+          role: (session.user.role as any) || "TEACHER",
+        },
+      });
+    }
 
     return { success: true };
   } catch (error: any) {
