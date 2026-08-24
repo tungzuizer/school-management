@@ -25,7 +25,6 @@ export async function GET(request: Request) {
       where: { email: "superadmin@school.com" },
       update: {
         name: "Quản Trị Viên Tối Cao (Super Admin)",
-        password: defaultPasswordHash,
         role: Role.ADMIN,
         isApproved: true,
         schoolId: null,
@@ -48,7 +47,6 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "admin@school.com" },
       update: {
-        password: defaultPasswordHash,
         schoolId: defaultSchool?.id,
         districtWardId: defaultWard?.id,
         departmentId: defaultDept?.id,
@@ -68,7 +66,6 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "dept@school.com" },
       update: {
-        password: defaultPasswordHash,
         departmentId: defaultDept?.id,
       },
       create: {
@@ -84,7 +81,6 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "ward@school.com" },
       update: {
-        password: defaultPasswordHash,
         districtWardId: defaultWard?.id,
         departmentId: defaultDept?.id,
       },
@@ -101,7 +97,7 @@ export async function GET(request: Request) {
     // 5. Phó Hiệu Trưởng
     await prisma.user.upsert({
       where: { email: "vp1@school.com" },
-      update: { password: defaultPasswordHash },
+      update: {},
       create: {
         name: "Nguyễn Thị Phó Hiệu Trưởng",
         email: "vp1@school.com",
@@ -114,7 +110,7 @@ export async function GET(request: Request) {
     // 6. Giáo viên
     await prisma.user.upsert({
       where: { email: "teacher@school.com" },
-      update: { password: defaultPasswordHash },
+      update: {},
       create: {
         name: "Trần Thị Hoa",
         email: "teacher@school.com",
@@ -127,7 +123,7 @@ export async function GET(request: Request) {
     // 7. Học sinh
     await prisma.user.upsert({
       where: { email: "student@school.com" },
-      update: { password: defaultPasswordHash },
+      update: {},
       create: {
         name: "Phạm Quang Huy",
         email: "student@school.com",

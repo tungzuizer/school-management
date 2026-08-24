@@ -1,7 +1,7 @@
 "use client";
 
 import { checkUserApprovalStatus } from "@/app/register/actions";
-import { signIn, getSession } from "next-auth/react";
+import { signIn, getSession, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
@@ -39,6 +39,14 @@ function LoginFormContent() {
       setSuccessNotice("Đăng ký tài khoản Giáo viên thành công! Vui lòng nhập mật khẩu để đăng nhập.");
     }
   }, [searchParams]);
+
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      redirectByRole(session.user.email || undefined);
+    }
+  }, [status, session]);
 
   const redirectByRole = async (targetEmail?: string) => {
     let session = await getSession();
