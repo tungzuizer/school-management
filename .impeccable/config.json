@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/app/login/page.tsx"
+        ],
+        "createdAt": "2026-08-24T17:47:35.065Z",
+        "reason": "Existing project color scheme (indigo/blue), not AI-generated - pre-existing design"
+      }
+    ]
+  }
+}
