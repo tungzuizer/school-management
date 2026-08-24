@@ -375,8 +375,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
           <button
-            onClick={() => setMobileMenuOpen(false)}
-            className="p-2 rounded-xl text-slate-300 hover:bg-slate-800 transition"
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            aria-label="Toggle navigation menu"
+            className="p-2 rounded-xl text-slate-300 hover:bg-slate-800 transition focus:outline-hidden focus:ring-2 focus:ring-amber-400"
           >
             <Menu className="w-6 h-6" />
           </button>
