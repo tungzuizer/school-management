@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Clock, MapPin, User, CheckCircle2, CalendarDays } from "lucide-react";
@@ -51,10 +51,10 @@ export function LiveClassTimeline({ schedule, className = "" }: Props) {
 
   if (schedule.length === 0) {
     return (
-      <div className={`p-8 text-center bg-gray-50/80 rounded-2xl border border-gray-200/60 ${className}`}>
-        <CalendarDays className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-        <p className="text-gray-500 font-medium">Hôm nay bạn không có lịch học nào!</p>
-        <p className="text-xs text-gray-400 mt-1">Hãy tận dụng thời gian để nghỉ ngơi hoặc ôn tập nhé ✨</p>
+      <div className={`p-8 text-center bg-slate-50/80 rounded-2xl border border-slate-200/80 ${className}`}>
+        <CalendarDays className="w-10 h-10 text-slate-400 mx-auto mb-2" aria-hidden="true" />
+        <p className="text-slate-800 font-extrabold text-sm">Hôm nay bạn không có lịch học nào!</p>
+        <p className="text-xs text-slate-600 font-semibold mt-1">Hãy tận dụng thời gian để nghỉ ngơi hoặc ôn tập nhé ✨</p>
       </div>
     );
   }
@@ -69,55 +69,55 @@ export function LiveClassTimeline({ schedule, className = "" }: Props) {
         return (
           <div
             key={item.period}
-            className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 ${
+            className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-200 ${
               isActive
-                ? "bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border-blue-500/50 shadow-md ring-2 ring-blue-400/30 scale-[1.01]"
+                ? "bg-indigo-50/80 border-indigo-300 shadow-xs ring-2 ring-indigo-400/30"
                 : isPast
-                ? "bg-gray-50/60 border-gray-200/60 opacity-80"
-                : "bg-white border-gray-200/90 hover:border-blue-300 hover:shadow-sm"
+                ? "bg-slate-50/70 border-slate-200/70"
+                : "bg-white border-slate-200/90 hover:border-indigo-300 hover:shadow-2xs"
             }`}
           >
             {isActive && (
-              <div className="absolute top-0 right-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-bl-xl shadow-xs flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <div className="absolute top-0 right-0 bg-indigo-700 text-white text-[11px] font-extrabold px-3 py-1 rounded-bl-xl shadow-2xs flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true" />
                 ĐANG DIỄN RA
               </div>
             )}
 
             <div className="flex items-center gap-4">
               <div
-                className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-bold shrink-0 transition-transform ${
+                className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-extrabold shrink-0 transition-transform ${
                   isActive
-                    ? "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md scale-105"
+                    ? "bg-indigo-600 text-white shadow-xs"
                     : isPast
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-blue-50 text-blue-700"
+                    ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
+                    : "bg-indigo-50 text-indigo-900 border border-indigo-100"
                 }`}
               >
-                <span className="text-xs opacity-90 uppercase">Tiết</span>
+                <span className="text-[10px] uppercase opacity-90">Tiết</span>
                 <span className="text-lg leading-none">{item.period}</span>
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h4 className="font-extrabold text-gray-900 text-base md:text-lg truncate">
+                  <h3 className="font-extrabold text-slate-900 text-base md:text-lg truncate">
                     {item.subjectName}
-                  </h4>
-                  {isPast && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
+                  </h3>
+                  {isPast && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-600 mt-1">
-                  <span className="flex items-center gap-1 font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
-                    <Clock className="w-3.5 h-3.5" />
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-slate-700 mt-1 font-semibold">
+                  <span className="flex items-center gap-1 font-extrabold text-indigo-900 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                    <Clock className="w-3.5 h-3.5 text-indigo-700" aria-hidden="true" />
                     {timeSlot.start} - {timeSlot.end}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="flex items-center gap-1 text-slate-700 font-bold">
+                    <User className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
                     {item.teacherName}
                   </span>
                   {item.room && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                    <span className="flex items-center gap-1 text-slate-700 font-bold">
+                      <MapPin className="w-3.5 h-3.5 text-rose-600" aria-hidden="true" />
                       Phòng {item.room}
                     </span>
                   )}

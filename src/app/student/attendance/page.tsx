@@ -95,7 +95,7 @@ export default function StudentAttendancePage() {
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer"
+            className="px-3.5 py-2.5 min-h-[44px] bg-white border border-slate-300 rounded-xl text-xs font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 transition cursor-pointer"
           />
         </div>
       </div>

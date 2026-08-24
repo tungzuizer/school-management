@@ -245,13 +245,13 @@ export default function ClassJournalPage() {
   const periods = [1, 2, 3, 4, 5, 6, 7, 8];
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {ToastComponent}
 
       {/* Header section */}
       <div>
-        <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">Sổ Đầu Bài</h1>
-        <p className="text-xs text-gray-500 mt-1">Ghi nhận thông tin bài học và đánh giá hoạt động học tập hàng ngày</p>
+        <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Sổ Đầu Bài</h1>
+        <p className="text-xs text-red-700 mt-1">Ghi nhận thông tin bài học và đánh giá hoạt động học tập hàng ngày</p>
       </div>
 
       {/* Easy mode notification bar */}
@@ -272,11 +272,11 @@ export default function ClassJournalPage() {
       <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl p-4 space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase">Lớp học</label>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Lớp học</label>
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full bg-slate-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 font-medium"
+              className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 font-medium"
             >
               <option value="" disabled>--- Chọn lớp ---</option>
               {classes.map((c) => (
@@ -287,12 +287,12 @@ export default function ClassJournalPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase">Ngày học</label>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Ngày học</label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-slate-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none focus:border-blue-500 font-medium"
+              className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-3 py-2 outline-none focus:border-blue-500 font-medium"
             />
           </div>
         </div>
@@ -311,17 +311,17 @@ export default function ClassJournalPage() {
 
       {/* Periods list */}
       <div className="space-y-4">
-        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide px-1">Danh sách tiết học trong ngày</h2>
+        <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide px-1">Danh sách tiết học trong ngày</h2>
         
         {initializing || loading ? (
           <div className="py-8 flex flex-col items-center justify-center gap-2 bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl p-6">
             <ListRestart className="w-8 h-8 text-blue-500 animate-spin" />
-            <p className="text-xs text-gray-400">Đang tải sổ đầu bài...</p>
+            <p className="text-xs text-red-700">Đang tải sổ đầu bài...</p>
           </div>
         ) : classes.length === 0 ? (
           <div className="py-8 text-center bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl p-6 space-y-1">
-            <p className="text-sm font-semibold text-gray-700">Chưa có lớp học nào trong hệ thống</p>
-            <p className="text-xs text-gray-400">Vui lòng liên hệ Quản trị viên để cập nhật danh sách lớp.</p>
+            <p className="text-sm font-semibold text-slate-700">Chưa có lớp học nào trong hệ thống</p>
+            <p className="text-xs text-red-700">Vui lòng liên hệ Quản trị viên để cập nhật danh sách lớp.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -346,29 +346,29 @@ export default function ClassJournalPage() {
                           ? entry.isConfirmed
                             ? "bg-emerald-100 text-emerald-700" 
                             : "bg-blue-100 text-blue-700"
-                          : "bg-gray-150 text-gray-500"
+                          : "bg-gray-150 text-red-700"
                       }`}>
                         T{periodNum}
                       </span>
                       <div>
                         {entry ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-bold text-gray-800">{entry.subjectName}</span>
+                            <span className="text-sm font-bold text-slate-800">{entry.subjectName}</span>
                             {entry.isConfirmed ? (
                               <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5">
                                 <Check className="w-2.5 h-2.5 stroke-[3]" /> Đã ký
                               </span>
                             ) : (
-                              <span className="text-[11px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">
+                              <span className="text-[11px] bg-gray-100 text-red-700 px-1.5 py-0.5 rounded-full font-medium">
                                 Chờ ký duyệt
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-sm font-medium text-gray-400">Tiết học trống</span>
+                          <span className="text-sm font-medium text-red-700">Tiết học trống</span>
                         )}
                         {entry && (
-                          <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                          <div className="text-xs text-red-700 flex items-center gap-1 mt-0.5">
                             <User className="w-3.5 h-3.5" />
                             <span>GV: {entry.teacherName}</span>
                           </div>
@@ -395,7 +395,7 @@ export default function ClassJournalPage() {
                             <>
                               <button
                                 onClick={() => handleOpenEditModal(entry)}
-                                className="p-2 border border-gray-200 hover:bg-slate-50 rounded-lg text-gray-500 hover:text-blue-600 transition"
+                                className="p-2 border border-gray-200 hover:bg-slate-50 rounded-lg text-red-700 hover:text-blue-600 transition"
                                 title="Sửa bài ghi"
                               >
                                 <Edit2 className="w-4 h-4" />
@@ -403,7 +403,7 @@ export default function ClassJournalPage() {
                               {entry.teacherId === teacherId && (
                                 <button
                                   onClick={() => handleDelete(entry.id)}
-                                  className="p-2 border border-gray-200 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500 transition"
+                                  className="p-2 border border-gray-200 hover:bg-red-50 rounded-lg text-red-700 hover:text-red-500 transition"
                                   title="Xóa bài ghi"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -424,14 +424,14 @@ export default function ClassJournalPage() {
                   </div>
 
                   {entry && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-700">
+                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs text-slate-700">
                       <div>
-                        <span className="font-bold text-gray-500 mr-1">Tên bài học:</span>
+                        <span className="font-bold text-red-700 mr-1">Tên bài học:</span>
                         <span className="font-semibold text-gray-805">{entry.lessonTitle}</span>
                       </div>
                       {entry.content && (
                         <div>
-                          <span className="font-bold text-gray-500 mr-1">Nội dung học:</span>
+                          <span className="font-bold text-red-700 mr-1">Nội dung học:</span>
                           <span>{entry.content}</span>
                         </div>
                       )}
@@ -462,23 +462,23 @@ export default function ClassJournalPage() {
           <div className="bg-white rounded-2xl w-full max-w-sm border border-gray-100 shadow-2xl p-5 relative">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-red-700 hover:bg-gray-100 hover:text-slate-600 transition"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="font-extrabold text-gray-900 text-lg mb-2">
+            <h3 className="font-extrabold text-slate-900 text-lg mb-2">
               {editingEntry ? "Cập Nhật Bài Dạy" : `Ghi Sổ Đầu Bài`}
             </h3>
-            <p className="text-xs text-gray-400 mb-4">Các thông tin được lưu trực tiếp vào hệ thống sổ đầu bài của lớp.</p>
+            <p className="text-xs text-red-700 mb-4">Các thông tin được lưu trực tiếp vào hệ thống sổ đầu bài của lớp.</p>
 
             <form onSubmit={handleSaveEntry} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Môn học</label>
+                <label className="block text-[11px] font-bold text-red-700 uppercase mb-1">Môn học</label>
                 <select
                   value={formSubjectId}
                   onChange={(e) => setFormSubjectId(e.target.value)}
-                  className="w-full bg-slate-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
+                  className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-3 py-2 outline-none"
                   required
                 >
                   <option value="" disabled>--- Chọn môn học ---</option>
@@ -489,61 +489,61 @@ export default function ClassJournalPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Tiết học</label>
+                <label className="block text-[11px] font-bold text-red-700 uppercase mb-1">Tiết học</label>
                 <input
                   type="number"
                   min="1"
                   max="10"
                   value={formPeriod}
                   onChange={(e) => setFormPeriod(Number(e.target.value))}
-                  className="w-full bg-slate-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2.5 outline-none font-medium"
+                  className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-3 py-2.5 outline-none font-medium"
                   required
                   disabled={!!editingEntry}
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Tên bài dạy / Chủ đề</label>
+                <label className="block text-[11px] font-bold text-red-700 uppercase mb-1">Tên bài dạy / Chủ đề</label>
                 <input
                   type="text"
                   placeholder="Ví dụ: Đại số: Bài 1 - Phép cộng phân số"
                   value={formLessonTitle}
                   onChange={(e) => setFormLessonTitle(e.target.value)}
-                  className="w-full bg-slate-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none font-medium"
+                  className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-3 py-2 outline-none font-medium"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Nội dung chi tiết (Không bắt buộc)</label>
+                <label className="block text-[11px] font-bold text-red-700 uppercase mb-1">Nội dung chi tiết (Không bắt buộc)</label>
                 <textarea
                   rows={2}
                   placeholder="Các nội dung bài giảng chính, bài thực hành..."
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
-                  className="w-full bg-slate-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
+                  className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-3 py-2 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Học sinh vắng (Không bắt buộc)</label>
+                <label className="block text-[11px] font-bold text-red-700 uppercase mb-1">Học sinh vắng (Không bắt buộc)</label>
                 <input
                   type="text"
                   placeholder="Ví dụ: Nguyễn Văn A (P), Trần Thị B (KP)"
                   value={formAbsentees}
                   onChange={(e) => setFormAbsentees(e.target.value)}
-                  className="w-full bg-slate-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
+                  className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-3 py-2 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Nhận xét bài / Ghi chú</label>
+                <label className="block text-[11px] font-bold text-red-700 uppercase mb-1">Nhận xét bài / Ghi chú</label>
                 <input
                   type="text"
                   placeholder="Ví dụ: Học sinh làm bài kiểm tra 15 phút tốt, lớp học sôi nổi"
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
-                  className="w-full bg-slate-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none"
+                  className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-3 py-2 outline-none"
                 />
               </div>
 
@@ -551,7 +551,7 @@ export default function ClassJournalPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-500 hover:bg-slate-50 active:scale-95 transition"
+                  className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-red-700 hover:bg-slate-50 active:scale-95 transition"
                 >
                   Hủy bỏ
                 </button>

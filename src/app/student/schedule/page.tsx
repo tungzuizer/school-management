@@ -166,7 +166,7 @@ export default function StudentSchedulePage() {
         <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
-              <Bell className="w-4 h-4 animate-bounce" />
+              <Bell className="w-4 h-4 bell-swing" />
             </div>
             <div>
               <h2 className="text-sm font-extrabold text-white flex items-center gap-2">

@@ -183,7 +183,7 @@ export default function HomeroomPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b border-blue-600" />
       </div>
     );
   }
@@ -204,37 +204,36 @@ export default function HomeroomPage() {
         <h1 className="text-2xl font-bold text-gray-905 flex items-center gap-2">
            <BookOpen className="w-6 h-6 text-emerald-600" /> Sổ Chủ Nhiệm Điện Tử
         </h1>
-        <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-500 font-medium">
-          <span className="flex items-center gap-1"><Users className="w-4 h-4 text-gray-400" /> Lớp: {classInfo.name}</span>
-          <span className="flex items-center gap-1"><BookOpen className="w-4 h-4 text-gray-400" /> Khối: {classInfo.gradeLevel}</span>
-          <span className="flex items-center gap-1"><Building className="w-4 h-4 text-gray-400" /> Trường: {classInfo.school.name}</span>
-          {classInfo.campus && <span className="flex items-center gap-1"><Building className="w-4 h-4 text-gray-400" /> Phân hiệu: {classInfo.campus.name}</span>}
-          <span className="flex items-center gap-1"><Users className="w-4 h-4 text-gray-400" /> Sĩ số: {classInfo._count.students} học sinh</span>
+        <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-600 font-medium">
+          <span className="flex items-center gap-1"><Users className="w-4 h-4 text-blue-800" /> Lớp: {classInfo.name}</span>
+          <span className="flex items-center gap-1"><BookOpen className="w-4 h-4 text-blue-800" /> Khối: {classInfo.gradeLevel}</span>
+          <span className="flex items-center gap-1"><Building className="w-4 h-4 text-blue-800" /> Trường: {classInfo.school.name}</span>
+          {classInfo.campus && <span className="flex items-center gap-1"><Building className="w-4 h-4 text-blue-800" /> Phân hiệu: {classInfo.campus.name}</span>}
+          <span className="flex items-center gap-1"><Users className="w-4 h-4 text-blue-800" /> Sĩ số: {classInfo._count.students} học sinh</span>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl shadow-sm overflow-hidden">
-        <div className="border-b overflow-x-auto bg-slate-50/50">
-          <div className="flex">
-            {TABS.map((t) => {
-              const Icon = TAB_ICONS[t.key] || Users;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`px-4 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
-                    tab === t.key
-                      ? "border-blue-600 text-blue-700 bg-white"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${tab === t.key ? "text-blue-605" : "text-gray-450"}`} />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto">
+          {TABS.map((t) => {
+            const Icon = TAB_ICONS[t.key] || Users;
+            const isActive = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-extrabold transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? "bg-white text-indigo-950 shadow-xs border border-indigo-200"
+                    : "text-slate-700 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? "text-indigo-700" : "text-blue-800"}`} />
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="p-6">
@@ -294,7 +293,7 @@ function OverviewTab({ classId, students }: { classId: string; students: Student
                 <tr key={s.id} className="hover:bg-slate-50">
                   <td className="border p-2">{i + 1}</td>
                   <td className="border p-2 font-medium">{s.user.name}</td>
-                  <td className="border p-2 text-gray-500">{s.studentCode || "—"}</td>
+                  <td className="border p-2 text-slate-600">{s.studentCode || "—"}</td>
                   <td className="border p-2">{s.group?.name || "Chưa xếp tổ"}</td>
                   <td className="border p-2">
                     <span className={`px-2 py-0.5 rounded text-xs ${
@@ -453,7 +452,7 @@ function GroupsTab({
                   <span>{s.user.name}</span>
                   <button
                     onClick={() => handleAssign(s.id, null)}
-                    className="text-gray-400 hover:text-red-500 text-xs"
+                    className="text-blue-800 hover:text-red-500 text-xs"
                     title="Bỏ khỏi tổ"
                   >
                     X
@@ -468,7 +467,7 @@ function GroupsTab({
       {/* Unassigned students */}
       {unassigned.length > 0 && (
         <div className="border rounded-lg p-4 bg-slate-50">
-          <h4 className="font-semibold text-gray-700 mb-3">Chưa xếp tổ ({unassigned.length} HS)</h4>
+          <h4 className="font-semibold text-white mb-3">Chưa xếp tổ ({unassigned.length} HS)</h4>
           <div className="space-y-2">
             {unassigned.map((s) => (
               <div key={s.id} className="flex items-center gap-2 text-sm">
@@ -630,7 +629,7 @@ function SeatingTab({
       </div>
 
       {/* Grid - Bảng giáo */}
-      <div className="text-center text-xs text-gray-500 font-semibold bg-gray-200 py-1 rounded-t">BẢNG</div>
+      <div className="text-center text-xs text-slate-600 font-semibold bg-gray-200 py-1 rounded-t">BẢNG</div>
       <div className="overflow-x-auto">
         <div className="inline-block">
           {Array.from({ length: rows }).map((_, r) => (
@@ -643,7 +642,7 @@ function SeatingTab({
                     key={c}
                     onClick={() => handleCellClick(r, c)}
                     className={`w-24 h-16 border border-gray-300 flex items-center justify-center text-xs cursor-pointer transition-colors ${
-                      name ? "bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium" : "bg-white hover:bg-gray-100 text-gray-400"
+                      name ? "bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium" : "bg-white hover:bg-gray-100 text-blue-800"
                     }`}
                     title={name ? `Click để xóa: ${name}` : "Click để thêm HS"}
                   >
@@ -655,7 +654,7 @@ function SeatingTab({
           ))}
         </div>
       </div>
-      <p className="text-xs text-gray-500">Click vào ô trống để thêm học sinh, click vào ô có tên để xóa.</p>
+      <p className="text-xs text-slate-600">Click vào ô trống để thêm học sinh, click vào ô có tên để xóa.</p>
     </div>
   );
 }
@@ -978,7 +977,7 @@ function IncidentsTab({
       )}
 
       <div className="space-y-2">
-        {incidents.length === 0 && <p className="text-gray-500 text-sm">Chưa có ghi nhận nào.</p>}
+        {incidents.length === 0 && <p className="text-slate-600 text-sm">Chưa có ghi nhận nào.</p>}
         {incidents.map((inc) => (
           <div key={inc.id} className={`border rounded-lg p-3 ${inc.type === "VIOLATION" ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}`}>
             <div className="flex justify-between items-start">
@@ -990,9 +989,9 @@ function IncidentsTab({
                 </span>
                 <span className="ml-2 text-sm font-medium">{inc.student.user.name}</span>
               </div>
-              <span className="text-xs text-gray-500">{new Date(inc.date).toLocaleDateString("vi-VN")}</span>
+              <span className="text-xs text-slate-600">{new Date(inc.date).toLocaleDateString("vi-VN")}</span>
             </div>
-            <p className="text-sm mt-1 text-gray-700">{inc.description}</p>
+            <p className="text-sm mt-1 text-white">{inc.description}</p>
           </div>
         ))}
       </div>
@@ -1123,11 +1122,11 @@ function AIReminderTab({
             <button
               onClick={handleGenerateAI}
               disabled={loadingAI}
-              className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 shadow"
+              className="bg-gradient-to-r from-blue-700 to-blue-600 text-white font-semibold px-4 py-2 rounded-lg text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 shadow"
             >
               {loadingAI ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b border-white" />
                   Đang phân tích...
                 </>
               ) : (
@@ -1221,15 +1220,15 @@ function AIReminderTab({
               Tạo bởi AI Trợ lý GVCN
             </span>
           </div>
-          <div className="prose max-w-none text-sm text-gray-700 whitespace-pre-line leading-relaxed bg-slate-50/50 p-4 rounded-lg border">
+          <div className="prose max-w-none text-sm text-white whitespace-pre-line leading-relaxed bg-slate-50/50 p-4 rounded-lg border">
             {aiReminder}
           </div>
         </div>
       ) : (
         <div className="text-center py-12 bg-white border border-dashed rounded-xl p-6">
           <Sparkles className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <h4 className="text-gray-600 font-medium">Chưa có bản tổng hợp nhắc việc AI</h4>
-          <p className="text-xs text-gray-400 mt-1">
+          <h4 className="text-slate-700 font-medium">Chưa có bản tổng hợp nhắc việc AI</h4>
+          <p className="text-xs text-blue-800 mt-1">
             Nhấn nút "Phân tích & Nhắc việc AI" ở trên để AI tạo danh sách công việc tự động cho Tháng {month}/{year}.
           </p>
         </div>
@@ -1353,14 +1352,14 @@ function MonthlyPlanTab({
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" /> Kế Hoạch Tháng & Nội Dung Sinh Hoạt Tuần
           </h3>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-slate-600 mt-0.5">
             Lập kế hoạch làm việc tháng và chuẩn bị nội dung sinh hoạt chủ nhiệm theo từng tuần.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Tháng:</label>
+            <label className="text-xs font-medium text-slate-700">Tháng:</label>
             <select
               value={month}
               onChange={(e) => setMonth(+e.target.value)}
@@ -1374,7 +1373,7 @@ function MonthlyPlanTab({
             </select>
           </div>
           <div className="flex items-center gap-1.5">
-            <label className="text-xs font-medium text-gray-600">Năm:</label>
+            <label className="text-xs font-medium text-slate-700">Năm:</label>
             <input
               type="number"
               value={year}
@@ -1387,7 +1386,7 @@ function MonthlyPlanTab({
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b border-blue-600" />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1400,7 +1399,7 @@ function MonthlyPlanTab({
                 </h4>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Mục tiêu, nhiệm vụ trọng tâm & hoạt động chủ yếu trong tháng
                 </label>
                 <textarea
@@ -1438,8 +1437,8 @@ function MonthlyPlanTab({
                     onClick={() => setActiveWeek(wNum)}
                     className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors ${
                       activeWeek === wNum
-                        ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
-                        : "text-gray-500 hover:bg-slate-50"
+                        ? "bg-blue-600 text-white font-black shadow-xs"
+                        : "text-slate-600 hover:bg-slate-100"
                     }`}
                   >
                     Tuần {wNum}
@@ -1450,7 +1449,7 @@ function MonthlyPlanTab({
               {/* Weekly Form */}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
                     Nội dung sinh hoạt chủ nhiệm Tuần {activeWeek}
                   </label>
                   <textarea
@@ -1462,7 +1461,7 @@ function MonthlyPlanTab({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
                     Ghi chú & Đánh giá kết quả thực hiện
                   </label>
                   <textarea
@@ -1576,7 +1575,7 @@ function FeedbackTab({
       )}
 
       <div className="space-y-2">
-        {feedbacks.length === 0 && <p className="text-gray-500 text-sm">Chưa có phản hồi nào.</p>}
+        {feedbacks.length === 0 && <p className="text-slate-600 text-sm">Chưa có phản hồi nào.</p>}
         {feedbacks.map((fb) => (
           <div key={fb.id} className="border rounded-lg p-3 bg-white">
             <div className="flex justify-between items-start">
@@ -1584,9 +1583,9 @@ function FeedbackTab({
                 <span className="text-sm font-medium">{fb.student.user.name}</span>
                 <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{fb.channel}</span>
               </div>
-              <span className="text-xs text-gray-500">{new Date(fb.date).toLocaleDateString("vi-VN")}</span>
+              <span className="text-xs text-slate-600">{new Date(fb.date).toLocaleDateString("vi-VN")}</span>
             </div>
-            <p className="text-sm mt-1 text-gray-700">{fb.content}</p>
+            <p className="text-sm mt-1 text-white">{fb.content}</p>
             {fb.response && (
               <p className="text-sm mt-1 text-green-700 italic">↳ {fb.response}</p>
             )}

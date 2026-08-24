@@ -53,7 +53,7 @@ export function StudyStreakWidget({ streakDays = 7, className = "" }: Props) {
       <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-yellow-300/20 rounded-full blur-2xl pointer-events-none" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-yellow-300 shadow-inner animate-bounce">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-yellow-300 shadow-inner hover:scale-105 transition-transform">
             <Flame className="w-7 h-7 fill-yellow-400 stroke-yellow-400" />
           </div>
           <div>
@@ -72,7 +72,7 @@ export function StudyStreakWidget({ streakDays = 7, className = "" }: Props) {
         </div>
         <button
           onClick={handleCheckIn}
-          className="bg-white text-orange-600 hover:bg-yellow-50 active:scale-95 font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+          className="bg-white text-orange-700 hover:bg-yellow-50 active:scale-95 font-black text-xs md:text-sm px-4 py-2.5 min-h-[44px] rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
         >
           <Zap className="w-4 h-4 fill-orange-500" />
           {checkedToday ? "Ăn mừng 🔥" : "Điểm danh ngay!"}

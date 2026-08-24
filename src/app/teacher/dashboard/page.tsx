@@ -298,17 +298,17 @@ export default function TeacherDashboardPage() {
       )}
 
       {/* ===== GREETING & POSITIVITY HEADER ===== */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/10">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-700 via-indigo-800 to-slate-900 p-6 sm:p-8 text-white shadow-lg border border-indigo-800">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-extrabold tracking-wide uppercase border border-white/20">
+              <span className="px-3 py-1 bg-white/15 backdrop-blur-md text-white rounded-full text-xs font-black tracking-wide uppercase border border-white/20 shadow-2xs">
                 Hệ Thống Quản Lý Giáo Dục Thông Minh
               </span>
               {homeroom && (
-                <span className="px-3 py-1 bg-emerald-400/30 backdrop-blur-md text-emerald-100 rounded-full text-xs font-extrabold border border-emerald-300/30">
+                <span className="px-3 py-1 bg-emerald-500/30 backdrop-blur-md text-emerald-200 rounded-full text-xs font-black border border-emerald-400/40 shadow-2xs">
                   GVCN Lớp {homeroom.name}
                 </span>
               )}
@@ -316,7 +316,7 @@ export default function TeacherDashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Kính chào {userName}! 🌟
             </h1>
-            <p className="text-xs sm:text-sm text-indigo-100 max-w-2xl font-medium leading-relaxed">
+            <p className="text-xs sm:text-sm text-indigo-100 max-w-2xl font-semibold leading-relaxed">
               {schedules.length > 0
                 ? `Hôm nay Thầy/Cô có ${schedules.length} tiết giảng dạy. ${currentPeriodItem ? `Hiện tại đang diễn ra tiết ${currentPeriodItem.period} môn ${currentPeriodItem.subjectName}.` : "Chúc Thầy/Cô một ngày làm việc hiệu quả và tràn đầy niềm vui!"}`
                 : "Hôm nay Thầy/Cô không có lịch dạy trên thời khóa biểu. Hãy dành thời gian soạn bài và đồng hành cùng học sinh!"}
@@ -326,9 +326,9 @@ export default function TeacherDashboardPage() {
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => setPraiseModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-extrabold rounded-2xl text-xs shadow-lg shadow-orange-500/30 transition-all duration-200 active-press cursor-pointer hover:scale-105"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-black rounded-2xl text-xs shadow-md transition-all duration-200 active-press cursor-pointer"
             >
-              <Award className="w-4 h-4 text-slate-950" />
+              <Award className="w-4 h-4 text-amber-950" />
               <span>Tuyên Dương Học Sinh 🌟</span>
             </button>
 
@@ -342,9 +342,9 @@ export default function TeacherDashboardPage() {
             {homeroom && (
               <Link
                 href="/teacher/attendance"
-                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-indigo-900 font-extrabold text-xs shadow-lg hover:bg-indigo-50 transition-all active-press cursor-pointer"
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-slate-900 font-black text-xs shadow-md hover:bg-slate-100 transition-all active-press cursor-pointer border border-indigo-100"
               >
-                <ClipboardCheck className="w-4 h-4 text-indigo-600" />
+                <ClipboardCheck className="w-4 h-4 text-slate-900" />
                 <span>Điểm Danh Lớp {homeroom.name}</span>
               </Link>
             )}
@@ -361,11 +361,11 @@ export default function TeacherDashboardPage() {
           onClick={() => setActiveTab("360")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-200 cursor-pointer whitespace-nowrap ${
             activeTab === "360"
-              ? "bg-white text-indigo-700 shadow-sm border border-slate-200/80"
-              : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+              ? "bg-white text-slate-900 font-black shadow-xs border border-indigo-200"
+              : "text-slate-700 font-extrabold hover:text-slate-900 hover:bg-white/60"
           }`}
         >
-          <Zap className="w-4 h-4 text-indigo-600" />
+          <Zap className="w-4 h-4 text-slate-900" />
           <span>Bảng Điều Khiển 360°</span>
         </button>
 
@@ -417,11 +417,11 @@ export default function TeacherDashboardPage() {
               <div>
                 <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Tiết Dạy Hôm Nay</p>
                 <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{schedules.length} tiết</h3>
-                <p className="text-[11px] text-indigo-600 font-semibold mt-0.5">
+                <p className="text-[11px] text-slate-900 font-semibold mt-0.5">
                   {currentPeriodItem ? `Đang học: Tiết ${currentPeriodItem.period}` : "Không có tiết đang dạy"}
                 </p>
               </div>
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100">
+              <div className="p-3 bg-slate-100 text-slate-900 rounded-2xl border border-indigo-100">
                 <Clock className="w-6 h-6" />
               </div>
             </div>
@@ -481,7 +481,7 @@ export default function TeacherDashboardPage() {
             <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-indigo-600" />
+                  <Clock className="w-5 h-5 text-slate-900" />
                   Lịch Giảng Dạy Hôm Nay
                 </h2>
                 <span className="text-xs font-bold text-slate-500">
@@ -501,7 +501,7 @@ export default function TeacherDashboardPage() {
                       key={s.period}
                       className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
                         s.status === "current"
-                          ? "bg-indigo-50/80 border-indigo-200 ring-2 ring-indigo-500/20"
+                          ? "bg-slate-100/80 border-indigo-200 ring-2 ring-indigo-500/20"
                           : s.status === "done"
                           ? "bg-slate-50/50 border-slate-200/60 opacity-60"
                           : "bg-white border-slate-200 hover:border-indigo-200"
@@ -513,7 +513,7 @@ export default function TeacherDashboardPage() {
                             ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
                             : s.status === "done"
                             ? "bg-slate-200 text-slate-600"
-                            : "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                            : "bg-slate-100 text-indigo-700 border border-indigo-100"
                         }`}>
                           T{s.period}
                         </div>
@@ -543,7 +543,7 @@ export default function TeacherDashboardPage() {
                         )}
                         <Link
                           href="/teacher/journal"
-                          className="p-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition"
+                          className="p-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 hover:border-indigo-200 transition"
                           title="Vào sổ đầu bài"
                         >
                           <NotebookPen className="w-4 h-4" />
@@ -593,40 +593,40 @@ export default function TeacherDashboardPage() {
               {/* Quick Actions Shortcuts */}
               <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
                 <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <Zap className="w-4 h-4 text-indigo-600" />
+                  <Zap className="w-4 h-4 text-slate-900" />
                   Thao Tác Nhanh
                 </h3>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <Link
                     href="/teacher/attendance"
-                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50 hover:border-indigo-200 transition text-center space-y-1 group"
+                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 hover:border-indigo-200 transition text-center space-y-1 group"
                   >
-                    <ClipboardCheck className="w-5 h-5 text-indigo-600 mx-auto group-hover:scale-110 transition-transform" />
+                    <ClipboardCheck className="w-5 h-5 text-slate-900 mx-auto group-hover:scale-110 transition-transform" />
                     <p className="text-xs font-extrabold text-slate-800">Điểm danh</p>
                   </Link>
 
                   <Link
                     href="/teacher/journal"
-                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50 hover:border-indigo-200 transition text-center space-y-1 group"
+                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 hover:border-indigo-200 transition text-center space-y-1 group"
                   >
-                    <NotebookPen className="w-5 h-5 text-indigo-600 mx-auto group-hover:scale-110 transition-transform" />
+                    <NotebookPen className="w-5 h-5 text-slate-900 mx-auto group-hover:scale-110 transition-transform" />
                     <p className="text-xs font-extrabold text-slate-800">Sổ đầu bài</p>
                   </Link>
 
                   <Link
                     href="/teacher/grades"
-                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50 hover:border-indigo-200 transition text-center space-y-1 group"
+                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 hover:border-indigo-200 transition text-center space-y-1 group"
                   >
-                    <Calculator className="w-5 h-5 text-indigo-600 mx-auto group-hover:scale-110 transition-transform" />
+                    <Calculator className="w-5 h-5 text-slate-900 mx-auto group-hover:scale-110 transition-transform" />
                     <p className="text-xs font-extrabold text-slate-800">Nhập điểm</p>
                   </Link>
 
                   <Link
                     href="/teacher/daily-report"
-                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50 hover:border-indigo-200 transition text-center space-y-1 group"
+                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 hover:border-indigo-200 transition text-center space-y-1 group"
                   >
-                    <Sparkles className="w-5 h-5 text-indigo-600 mx-auto group-hover:scale-110 transition-transform" />
+                    <Sparkles className="w-5 h-5 text-slate-900 mx-auto group-hover:scale-110 transition-transform" />
                     <p className="text-xs font-extrabold text-slate-800">Báo cáo ngày</p>
                   </Link>
                 </div>
@@ -641,7 +641,7 @@ export default function TeacherDashboardPage() {
         <div className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-indigo-600" />
+              <Calendar className="w-5 h-5 text-slate-900" />
               Thời Khóa Biểu Giảng Dạy Tuần
             </h2>
             <span className="text-xs font-bold text-slate-500">Thứ 2 — Chủ Nhật</span>
@@ -677,7 +677,7 @@ export default function TeacherDashboardPage() {
                       {row.slots.map((slot, idx) => (
                         <td key={idx} className="p-2 border-r border-slate-100">
                           {slot ? (
-                            <div className="p-2.5 bg-indigo-50/80 border border-indigo-200/80 rounded-xl text-indigo-900 text-left space-y-0.5">
+                            <div className="p-2.5 bg-slate-100/80 border border-indigo-200/80 rounded-xl text-indigo-900 text-left space-y-0.5">
                               <p className="font-extrabold text-xs">{slot.subjectName}</p>
                               <p className="text-[10px] text-indigo-700 font-bold">Lớp {slot.className}</p>
                               {slot.room && <p className="text-[9px] text-slate-500 font-medium">P. {slot.room}</p>}
@@ -700,7 +700,7 @@ export default function TeacherDashboardPage() {
       {activeTab === "courses" && (
         <div className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
           <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
+            <BookOpen className="w-5 h-5 text-slate-900" />
             Danh Sách Môn Giảng Dạy
           </h2>
 
@@ -726,7 +726,7 @@ export default function TeacherDashboardPage() {
                     {c.classes.map((cls) => (
                       <div key={cls.classId} className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800">
                         <span>Lớp {cls.className} (Khối {cls.gradeLevel})</span>
-                        <Link href="/teacher/grades" className="text-indigo-600 hover:underline">Sổ điểm →</Link>
+                        <Link href="/teacher/grades" className="text-slate-900 hover:underline">Sổ điểm →</Link>
                       </div>
                     ))}
                   </div>
@@ -757,10 +757,10 @@ export default function TeacherDashboardPage() {
               <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Chuyên Cần Tuần Này</p>
-                  <h3 className="text-xl font-extrabold text-indigo-600 mt-1">{competition.weekAttendanceRate}%</h3>
+                  <h3 className="text-xl font-extrabold text-slate-900 mt-1">{competition.weekAttendanceRate}%</h3>
                   <p className="text-xs text-slate-500 font-medium">{competition.weekAbsences} lượt vắng • {competition.weekViolations} vi phạm</p>
                 </div>
-                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100">
+                <div className="p-3 bg-slate-100 text-slate-900 rounded-2xl border border-indigo-100">
                   <Award className="w-6 h-6" />
                 </div>
               </div>
@@ -783,7 +783,7 @@ export default function TeacherDashboardPage() {
           {/* Parent Feedbacks list */}
           <div className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
             <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <MessageSquare className="w-4 h-4 text-indigo-600" />
+              <MessageSquare className="w-4 h-4 text-slate-900" />
               Phản Hồi Phụ Huynh Chưa Xử Lý ({unreadFeedbacks.length})
             </h3>
 

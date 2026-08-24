@@ -102,7 +102,7 @@ export default function StudentGradesPage() {
             <button
               key={item.label}
               onClick={() => setSelectedTerm(item.value)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              className={`px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                 selectedTerm === item.value
                   ? "bg-white text-blue-600 shadow-xs border border-slate-200/80"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/50"

@@ -51,14 +51,14 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
           {onMobileMenuToggle && (
             <button
               onClick={onMobileMenuToggle}
-              className="lg:hidden p-2 rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-700 hover:bg-indigo-100 transition-all active-press cursor-pointer flex items-center gap-1.5 shadow-2xs"
-              title="Mở mục lục menu"
+              aria-label="Mở mục lục điều hướng"
+              className="lg:hidden px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-indigo-50/90 border border-indigo-200 text-indigo-900 hover:bg-indigo-100 transition-all active-press cursor-pointer flex items-center gap-1.5 shadow-2xs font-extrabold text-xs"
             >
-              <Menu className="w-4 h-4 text-indigo-600" />
-              <span className="text-[11px] font-extrabold hidden xs:inline">Mục lục</span>
+              <Menu className="w-4 h-4 text-indigo-700" aria-hidden="true" />
+              <span className="hidden xs:inline">Mục lục</span>
             </button>
           )}
-          <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain rounded-xl shadow-xs transition-transform duration-300 hover:scale-105" />
+          <img src="/logo.png" alt="Logo Nhà Trường" className="w-8 h-8 object-contain rounded-xl shadow-xs transition-transform duration-300 hover:scale-105" />
         </div>
 
         {/* Right: Search + Notifications + User Menu */}
@@ -66,23 +66,25 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
           {/* Quick Search Button (Ctrl + K) */}
           <button
             onClick={() => setCommandPaletteOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/80 bg-slate-50/80 text-slate-500 text-xs hover:bg-white hover:border-indigo-300 hover:text-indigo-600 hover:shadow-xs transition-all active-press cursor-pointer"
+            aria-label="Tìm kiếm nhanh (Ctrl K)"
+            className="flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-xl border border-slate-200/80 bg-slate-50/90 text-slate-700 text-xs hover:bg-white hover:border-indigo-300 hover:text-indigo-900 hover:shadow-xs transition-all active-press cursor-pointer"
           >
-            <Search className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="hidden md:inline font-medium">Tìm nhanh...</span>
-            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-bold text-slate-400 bg-white rounded-md border border-slate-200 shadow-2xs">
+            <Search className="w-4 h-4 text-indigo-600" aria-hidden="true" />
+            <span className="hidden md:inline font-bold">Tìm nhanh...</span>
+            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-extrabold text-slate-600 bg-white rounded-md border border-slate-200 shadow-2xs">
               Ctrl K
             </kbd>
           </button>
 
           {/* Notification Bell */}
           <button
-            className="relative p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-all bell-swing active-press"
+            aria-label={`Thông báo ${notificationCount > 0 ? `(${notificationCount} mới)` : ''}`}
+            className="relative p-2.5 min-h-[44px] min-w-[44px] rounded-xl text-slate-700 hover:bg-slate-100 hover:text-indigo-900 transition-all bell-swing active-press flex items-center justify-center"
             title="Thông báo"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-4 h-4" aria-hidden="true" />
             {notificationCount > 0 && (
-              <span className="absolute top-1 right-1 bg-rose-500 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white animate-pulse">
+              <span className="absolute top-1 right-1 bg-rose-600 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
                 {notificationCount > 9 ? "9+" : notificationCount}
               </span>
             )}
@@ -92,39 +94,41 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
           <div className="relative border-l border-slate-200/80 pl-2.5">
             <button
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100/80 transition-all active-press"
+              aria-label={`Tài khoản: ${userName}`}
+              aria-expanded={userDropdownOpen}
+              className="flex items-center gap-2 p-1.5 min-h-[44px] rounded-xl hover:bg-slate-100/80 transition-all active-press cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center font-extrabold text-xs shadow-xs ring-2 ring-indigo-100">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xs shadow-xs ring-2 ring-indigo-100">
                 {userName.charAt(0).toUpperCase()}
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-xs font-bold text-slate-800 leading-tight">{userName}</p>
-                <p className="text-[10px] text-indigo-600 font-semibold leading-tight">{userRole}</p>
+                <p className="text-xs font-extrabold text-slate-900 leading-tight">{userName}</p>
+                <p className="text-[10px] text-indigo-700 font-bold leading-tight">{userRole}</p>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden md:block" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 hidden md:block" aria-hidden="true" />
             </button>
 
             {/* Dropdown Menu */}
             {userDropdownOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setUserDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-56 glass-card rounded-2xl shadow-2xl border border-slate-200/80 p-2 z-20 animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-10" onClick={() => setUserDropdownOpen(false)} aria-hidden="true" />
+                <div className="absolute right-0 mt-2 w-56 glass-card rounded-2xl shadow-2xl border border-slate-200/80 p-2 z-20 animate-modal-pop">
                   <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="text-xs font-bold text-slate-800">{userName}</p>
-                    <p className="text-[10px] text-slate-400">{session?.user?.email || "Account"}</p>
+                    <p className="text-xs font-extrabold text-slate-900">{userName}</p>
+                    <p className="text-[10px] text-slate-600 font-medium">{session?.user?.email || "Account"}</p>
                   </div>
                   <div className="py-1">
-                    <div className="px-3 py-1.5 text-[11px] text-slate-500 font-medium flex items-center gap-2">
-                      <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Vai trò: <strong>{userRole}</strong></span>
+                    <div className="px-3 py-1.5 text-[11px] text-slate-700 font-semibold flex items-center gap-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" aria-hidden="true" />
+                      <span>Vai trò: <strong className="text-indigo-900 font-extrabold">{userRole}</strong></span>
                     </div>
                   </div>
                   <div className="border-t border-slate-100 pt-1">
                     <button
                       onClick={() => signOut({ callbackUrl: "/login" })}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 font-bold rounded-xl hover:bg-rose-50 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-rose-700 font-extrabold rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
                     >
-                      <LogOut className="w-3.5 h-3.5" />
+                      <LogOut className="w-4 h-4 text-rose-600" aria-hidden="true" />
                       <span>Đăng xuất</span>
                     </button>
                   </div>

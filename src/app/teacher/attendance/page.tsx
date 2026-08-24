@@ -437,11 +437,11 @@ export default function AttendancePage() {
                               key={opt.value}
                               disabled={isLocked}
                               onClick={() => updateStatus(s.id, opt.value)}
-                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                              className={`px-3 py-2 min-h-[44px] rounded-xl text-xs font-extrabold border transition-all ${
                                 currentStatus === opt.value
                                   ? opt.activeGlow
-                                  : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                              } ${isLocked ? "opacity-75 cursor-not-allowed" : "cursor-pointer"}`}
+                                  : "bg-slate-50 border-slate-200/90 text-slate-800 hover:bg-slate-100 hover:text-slate-950"
+                              } ${isLocked ? "opacity-75 cursor-not-allowed" : "cursor-pointer active-press"}`}
                             >
                               {opt.label}
                             </button>
