@@ -68,7 +68,7 @@ export async function getSchoolsForSelect() {
 export async function createStudent(data: {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   studentCode?: string;
   classId?: string;
   dob?: string;
@@ -90,7 +90,8 @@ export async function createStudent(data: {
       if (existingCode) return { success: false, error: "Mã học sinh đã tồn tại" };
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const rawPassword = data.password && data.password.trim() ? data.password.trim() : "abc123";
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
     await prisma.user.create({
       data: {
         name: data.name,
@@ -114,7 +115,7 @@ export async function createStudent(data: {
         },
       },
     });
-    
+
 
     // Audit Log
     try {
@@ -127,9 +128,35 @@ export async function createStudent(data: {
       });
     } catch { /* skip audit if no session */ }
 
-    return { success: true };
+    return { success: true, defaultPassword: rawPassword };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi tạo học sinh" };
+  }
+}
+
+export async function resetStudentPassword(userId: string, newPassword?: string) {
+  try {
+    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
+    if (rawPassword.length < 6) return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
+
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    try {
+      const ctx = await getTenantContext();
+      await recordAuditLog({
+        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
+        action: "UPDATE", entityName: "StudentPassword", entityId: userId,
+        description: `Đặt lại mật khẩu cho Học sinh`,
+      });
+    } catch { /* skip */ }
+
+    return { success: true, newPassword: rawPassword };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Lỗi khi đổi mật khẩu học sinh" };
   }
 }
 
@@ -247,7 +274,7 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
       return { success: false, error: "Danh sách nhập rỗng", count: 0 };
     }
 
-    const defaultPasswordHash = await bcrypt.hash("123456", 10);
+    const defaultPasswordHash = await bcrypt.hash("abc123", 10);
 
     const existingUsers = await prisma.user.findMany({ select: { email: true } });
     const existingEmails = new Set(existingUsers.map((u) => u.email.toLowerCase()));

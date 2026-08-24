@@ -7,6 +7,7 @@ import { Building2, School } from "lucide-react";
 interface SchoolRow {
   id: string;
   name: string;
+  schoolType?: string;
   address: string | null;
   phone: string | null;
   _count: { classRooms: number; users: number; campuses: number };
@@ -37,6 +38,7 @@ export default function WardSchoolsPage() {
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Tên trường</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Loại trường / Cấp</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Địa chỉ</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">SĐT</th>
               <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Cơ sở</th>
@@ -46,12 +48,23 @@ export default function WardSchoolsPage() {
           </thead>
           <tbody className="divide-y">
             {loading ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Đang tải...</td></tr>
+              <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">Đang tải...</td></tr>
             ) : schools.length === 0 ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Chưa có trường nào</td></tr>
+              <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">Chưa có trường nào</td></tr>
             ) : schools.map(s => (
               <tr key={s.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{s.name}</td>
+                <td className="px-6 py-4 text-sm font-medium">
+                  {s.schoolType === "TIEU_HOC" ? (
+                    <span className="bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">🏫 Tiểu học (Cấp 1)</span>
+                  ) : s.schoolType === "THPT" ? (
+                    <span className="bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">🎓 THPT (Cấp 3)</span>
+                  ) : s.schoolType === "LIEN_CAP" ? (
+                    <span className="bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">🌟 Liên cấp</span>
+                  ) : (
+                    <span className="bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">🏛️ THCS (Cấp 2)</span>
+                  )}
+                </td>
                 <td className="px-6 py-4 text-sm text-gray-500">{s.address || "—"}</td>
                 <td className="px-6 py-4 text-sm text-gray-500">{s.phone || "—"}</td>
                 <td className="px-6 py-4 text-center text-sm text-gray-600">{s._count.campuses}</td>

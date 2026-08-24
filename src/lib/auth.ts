@@ -37,12 +37,17 @@ export const authOptions: NextAuthOptions = {
               user.password
             );
             if (isPasswordValid) {
+              const isDefaultPassword =
+                (await bcrypt.compare("abc123", user.password)) ||
+                (await bcrypt.compare("123456", user.password));
+
               return {
                 id: user.id,
                 email: user.email,
                 name: user.name,
                 role: user.role,
                 isApproved: user.isApproved,
+                mustChangePassword: isDefaultPassword,
                 departmentId: user.departmentId || undefined,
                 districtWardId: user.districtWardId || undefined,
                 schoolId: user.schoolId || undefined,
@@ -56,9 +61,15 @@ export const authOptions: NextAuthOptions = {
 
         // Demo Mode Fallback (Enabled only when ALLOW_DEMO_LOGIN === "true" or Development)
         if (!user && isDemoAllowed) {
+          const isDefaultPass =
+            credentials.password === "abc123" ||
+            credentials.password === "123456" ||
+            credentials.password === "SuperAdmin@2026!";
+
           if (
-            credentials.password === "123456" &&
+            isDefaultPass &&
             (email.includes("admin") ||
+              email.includes("superadmin") ||
               email.includes("teacher") ||
               email.includes("student") ||
               email.includes("vp") ||
@@ -77,7 +88,9 @@ export const authOptions: NextAuthOptions = {
               ? "TEACHER"
               : "STUDENT";
 
-            const name = email.includes("dept")
+            const name = email.includes("superadmin")
+              ? "Quản Trị Viên Tối Cao (Super Admin)"
+              : email.includes("dept")
               ? "Lãnh đạo Sở GD&ĐT"
               : email.includes("ward")
               ? "Cán bộ Phòng GD&ĐT"
@@ -89,7 +102,7 @@ export const authOptions: NextAuthOptions = {
               ? "Trần Thị Hoa"
               : "Phạm Quang Huy";
 
-            const hashedPassword = await bcrypt.hash("123456", 10);
+            const hashedPassword = await bcrypt.hash(credentials.password, 10);
             try {
               user = await prisma.user.create({
                 data: {
@@ -106,6 +119,7 @@ export const authOptions: NextAuthOptions = {
                   name: user.name,
                   role: user.role,
                   isApproved: user.isApproved,
+                  mustChangePassword: true,
                 };
               }
             } catch {
@@ -118,6 +132,7 @@ export const authOptions: NextAuthOptions = {
               name,
               role,
               isApproved: true,
+              mustChangePassword: true,
             };
           }
         }
@@ -132,6 +147,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.id = user.id;
         token.isApproved = user.isApproved;
+        token.mustChangePassword = user.mustChangePassword;
         token.departmentId = user.departmentId;
         token.districtWardId = user.districtWardId;
         token.schoolId = user.schoolId;
@@ -144,6 +160,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
         session.user.isApproved = token.isApproved as boolean | undefined;
+        session.user.mustChangePassword = token.mustChangePassword as boolean | undefined;
         session.user.departmentId = token.departmentId as string | undefined;
         session.user.districtWardId = token.districtWardId as string | undefined;
         session.user.schoolId = token.schoolId as string | undefined;

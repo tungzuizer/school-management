@@ -11,7 +11,7 @@ interface DashboardData {
   totalSchools: number;
   totalStudents: number;
   totalTeachers: number;
-  schools: { id: string; name: string; address: string | null; classCount: number; userCount: number; campusCount: number }[];
+  schools: { id: string; name: string; schoolType?: string; address: string | null; classCount: number; userCount: number; campusCount: number }[];
 }
 
 export default function WardDashboardPage() {
@@ -88,6 +88,7 @@ export default function WardDashboardPage() {
           <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase font-semibold">
             <tr>
               <th className="px-5 py-3">Tên trường</th>
+              <th className="px-5 py-3">Cấp học</th>
               <th className="px-5 py-3">Địa chỉ</th>
               <th className="px-5 py-3 text-center">Cơ sở</th>
               <th className="px-5 py-3 text-center">Lớp</th>
@@ -96,10 +97,21 @@ export default function WardDashboardPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {data.schools.length === 0 ? (
-              <tr><td colSpan={5} className="px-5 py-8 text-center text-slate-400">Chưa có trường nào</td></tr>
+              <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-400">Chưa có trường nào</td></tr>
             ) : data.schools.map(s => (
               <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
                 <td className="px-5 py-3.5 font-bold text-slate-900">{s.name}</td>
+                <td className="px-5 py-3.5 font-medium">
+                  {s.schoolType === "TIEU_HOC" ? (
+                    <span className="bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full text-xs">🏫 Tiểu học</span>
+                  ) : s.schoolType === "THPT" ? (
+                    <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs">🎓 THPT</span>
+                  ) : s.schoolType === "LIEN_CAP" ? (
+                    <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-xs">🌟 Liên cấp</span>
+                  ) : (
+                    <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-xs">🏛️ THCS</span>
+                  )}
+                </td>
                 <td className="px-5 py-3.5 text-slate-500">{s.address || "—"}</td>
                 <td className="px-5 py-3.5 text-center font-semibold text-slate-700">{s.campusCount}</td>
                 <td className="px-5 py-3.5 text-center">

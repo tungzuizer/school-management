@@ -120,12 +120,18 @@ function LoginFormContent() {
 
   const quickLogin = async (demoEmail: string) => {
     setEmail(demoEmail);
-    const demoPassword = demoEmail === "superadmin@school.com" ? "SuperAdmin@2026!" : "123456";
+    let demoPassword = "abc123";
     setPassword(demoPassword);
     setLoading(true);
     setError("");
     try {
       let result = await signIn("credentials", { email: demoEmail, password: demoPassword, redirect: false });
+      if (result?.error) {
+        demoPassword = demoEmail === "superadmin@school.com" ? "SuperAdmin@2026!" : "123456";
+        setPassword(demoPassword);
+        result = await signIn("credentials", { email: demoEmail, password: demoPassword, redirect: false });
+      }
+
       if (result?.error) {
         try {
           const seedRes = await fetch("/api/db-seed?secret=seed123");
@@ -267,6 +273,22 @@ function LoginFormContent() {
 
               <div className="grid grid-cols-2 gap-2.5">
                 <button
+                  onClick={() => quickLogin("dept@school.com")}
+                  disabled={loading}
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-colors disabled:opacity-50 group cursor-pointer"
+                >
+                  <Building2 className="w-5 h-5 text-purple-600 group-hover:text-purple-700" />
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-purple-800">Cán bộ Sở GD&ĐT</span>
+                </button>
+                <button
+                  onClick={() => quickLogin("ward@school.com")}
+                  disabled={loading}
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-colors disabled:opacity-50 group cursor-pointer"
+                >
+                  <Building2 className="w-5 h-5 text-amber-600 group-hover:text-amber-700" />
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-amber-800">Cán bộ Phòng GD&ĐT</span>
+                </button>
+                <button
                   onClick={() => quickLogin("admin@school.com")}
                   disabled={loading}
                   className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors disabled:opacity-50 group cursor-pointer"
@@ -293,10 +315,10 @@ function LoginFormContent() {
                 <button
                   onClick={() => quickLogin("student@school.com")}
                   disabled={loading}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-colors disabled:opacity-50 group cursor-pointer"
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors disabled:opacity-50 group cursor-pointer"
                 >
-                  <User className="w-5 h-5 text-amber-500 group-hover:text-amber-600" />
-                  <span className="text-xs font-semibold text-gray-700 group-hover:text-amber-700">Học sinh</span>
+                  <User className="w-5 h-5 text-blue-500 group-hover:text-blue-600" />
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-blue-700">Học sinh</span>
                 </button>
               </div>
             </div>

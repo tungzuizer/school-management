@@ -55,6 +55,7 @@ export async function getWardDashboard() {
     schools: schools.map(s => ({
       id: s.id,
       name: s.name,
+      schoolType: s.schoolType,
       address: s.address,
       classCount: s._count.classRooms,
       userCount: s._count.users,

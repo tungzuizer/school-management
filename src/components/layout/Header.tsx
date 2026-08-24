@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Bell, Search, LogOut, ChevronDown, ShieldCheck, Menu } from "lucide-react";
 import dynamic from "next/dynamic";
+import ForcePasswordChangeModal from "@/components/auth/ForcePasswordChangeModal";
 const CommandPalette = dynamic(() => import("@/components/ui/CommandPalette"), { ssr: false });
 
 const roleLabels: Record<string, string> = {
@@ -136,6 +137,8 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
 
       {/* Command Palette Component */}
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      {/* Force Password Change Modal */}
+      <ForcePasswordChangeModal />
     </>
   );
 }
