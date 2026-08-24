@@ -331,7 +331,7 @@ export default function PendingApprovalsClient({
       {/* Toast Notification */}
       {feedback && (
         <div
-          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-2 animate-bounce ${
+          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-2 animate-pulse ${
             feedback.type === "success"
               ? "bg-emerald-600 text-white"
               : "bg-rose-600 text-white"

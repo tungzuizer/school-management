@@ -301,7 +301,7 @@ export default function StrategyOverviewPage() {
           {data?.featureCards?.map((card: any) => (
             <div
               key={card.id}
-              className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group border-l-4 border-l-blue-600"
+              className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group border border-slate-200 shadow-xs"
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">

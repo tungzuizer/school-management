@@ -191,7 +191,7 @@ export default function ApprovalsPage() {
 
           <button
             onClick={() => loadData()}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-800 bg-white hover:bg-blue-50 rounded-xl shadow-md transition self-start md:self-auto shrink-0 cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-blue-950 bg-white hover:bg-blue-50 rounded-xl shadow-md transition self-start md:self-auto shrink-0 cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 text-indigo-600 ${loading ? "animate-spin" : ""}`} />
             Làm mới dữ liệu
@@ -308,7 +308,7 @@ export default function ApprovalsPage() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as any)}
-            className="px-3.5 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white font-semibold text-slate-700 outline-none"
+            className="px-3.5 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white font-semibold text-teal-950 outline-none"
           >
             <option value="ALL">📁 Tất cả thể loại</option>
             <option value="TEACHER_REGISTRATION">👤 Đăng ký tài khoản ({teacherRegistrations.length})</option>
@@ -319,7 +319,7 @@ export default function ApprovalsPage() {
           <select
             value={schoolFilter}
             onChange={(e) => setSchoolFilter(e.target.value)}
-            className="px-3.5 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white font-semibold text-slate-700 outline-none"
+            className="px-3.5 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white font-semibold text-teal-950 outline-none"
           >
             <option value="ALL">🏫 Tất cả các Trường học</option>
             {schools.map((s) => (
@@ -408,7 +408,7 @@ export default function ApprovalsPage() {
                     {isTeacherReg ? (
                       <div className="space-y-2 pt-1">
                         <h3 className="font-extrabold text-slate-900 text-lg leading-snug">{item.teacherName}</h3>
-                        <div className="p-3 bg-teal-50/60 rounded-xl border border-teal-100 space-y-1.5 text-xs text-slate-700">
+                        <div className="p-3 bg-teal-50/60 rounded-xl border border-teal-100 space-y-1.5 text-xs text-teal-950">
                           <p className="flex items-center gap-2 font-medium">
                             <Mail className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                             <span className="truncate">{item.email}</span>
@@ -424,11 +424,11 @@ export default function ApprovalsPage() {
                         </div>
                         <div className="text-[11px] text-slate-500 space-y-0.5 pt-1">
                           <p>
-                            <span className="font-semibold text-slate-700">Đơn vị:</span>{" "}
+                            <span className="font-semibold text-teal-950">Đơn vị:</span>{" "}
                             {(item as TeacherRegistrationItem).schoolName}
                           </p>
                           <p>
-                            <span className="font-semibold text-slate-700">Phòng / Sở:</span>{" "}
+                            <span className="font-semibold text-teal-950">Phòng / Sở:</span>{" "}
                             {(item as TeacherRegistrationItem).districtWardName} — {(item as TeacherRegistrationItem).departmentName}
                           </p>
                         </div>
@@ -437,10 +437,10 @@ export default function ApprovalsPage() {
                       <div>
                         <h3 className="font-extrabold text-slate-900 text-base leading-snug">{item.title}</h3>
                         <p className="text-xs text-slate-500 mt-1">
-                          <span className="font-semibold text-slate-700">Người nộp/Yêu cầu:</span> {item.teacherName}
+                          <span className="font-semibold text-teal-950">Người nộp/Yêu cầu:</span> {item.teacherName}
                         </p>
                         <p className="text-xs text-slate-500">
-                          <span className="font-semibold text-slate-700">Môn & Lớp:</span>{" "}
+                          <span className="font-semibold text-teal-950">Môn & Lớp:</span>{" "}
                           {(item as LessonPlanItem | ChangeRequestItem).subjectName} —{" "}
                           {(item as LessonPlanItem | ChangeRequestItem).className}
                         </p>
@@ -450,11 +450,11 @@ export default function ApprovalsPage() {
                     {item.type === "CHANGE_REQUEST" && (
                       <div className="p-2.5 bg-slate-50 rounded-xl text-xs border border-slate-200 space-y-1">
                         <p className="text-slate-600">
-                          <span className="font-semibold text-slate-800">GV mới thay thế:</span>{" "}
+                          <span className="font-semibold text-blue-950">GV mới thay thế:</span>{" "}
                           {(item as ChangeRequestItem).newTeacherName}
                         </p>
                         <p className="text-slate-600">
-                          <span className="font-semibold text-slate-800">Lý do đổi:</span>{" "}
+                          <span className="font-semibold text-blue-950">Lý do đổi:</span>{" "}
                           {(item as ChangeRequestItem).reason}
                         </p>
                       </div>
@@ -552,7 +552,7 @@ export default function ApprovalsPage() {
                         <td className="px-4 py-3 text-slate-600">
                           {isTeacherReg ? (
                             <div>
-                              <p className="font-semibold text-slate-800">{(item as TeacherRegistrationItem).email}</p>
+                              <p className="font-semibold text-blue-950">{(item as TeacherRegistrationItem).email}</p>
                               <p className="text-xs text-slate-500">{(item as TeacherRegistrationItem).phone}</p>
                             </div>
                           ) : (
@@ -628,7 +628,7 @@ export default function ApprovalsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-teal-950 mb-1">
               Lý do từ chối / Phản hồi của BGH
             </label>
             <textarea

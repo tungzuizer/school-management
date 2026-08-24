@@ -190,7 +190,7 @@ export default function AdminDailyReportsPage() {
       {/* Reports Table */}
       {loading ? (
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border border-slate-200 border-indigo-600 mx-auto"></div>
           <p className="mt-2 text-gray-500">Đang tải...</p>
         </div>
       ) : reports.length === 0 ? (
