@@ -174,7 +174,6 @@ function LoginFormContent() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@school.com"
                     required
                     autoComplete="email"
                     className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-base"
@@ -224,7 +223,7 @@ function LoginFormContent() {
                 className="inline-flex items-center justify-center gap-2 text-base font-semibold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-4 py-3 rounded-xl w-full transition-colors"
               >
                 <UserPlus className="w-5 h-5 text-teal-600" />
-                Đăng ký Tài khoản Giáo viên
+                Đăng ký Tài khoản Mới
               </Link>
             </div>
           </div>
