@@ -32,7 +32,6 @@ import {
   ScrollText,
   HardDrive,
   Crown,
-  Building,
   SlidersHorizontal,
   Zap,
 } from "lucide-react";
@@ -54,15 +53,12 @@ type MenuGroup = {
 // Menu Group for Super Admin (Quản Trị Viên Tối Cao / Bộ GD&ĐT & Sở GD&ĐT)
 const superAdminMenuGroups: MenuGroup[] = [
   {
-    title: "👑 Bộ & Sở GD&ĐT - Quản trị Tối cao",
+    title: "👑 Quản trị Tối cao",
     icon: Crown,
     items: [
       { label: "Bảng điều khiển Tối cao", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Bảng điều khiển Sở GD&ĐT", href: "/department/dashboard", icon: Landmark },
-      { label: "Bảng điều khiển Phòng GD&ĐT", href: "/ward/dashboard", icon: Building },
       { label: "Hiệu trưởng & Cán bộ", href: "/admin/principals", icon: Landmark, badge: "FULL" },
       { label: "Tất cả Trường học", href: "/admin/schools", icon: Building2 },
-      { label: "Danh sách Phòng GD&ĐT", href: "/department/wards", icon: Building },
       { label: "Trung tâm Phê duyệt", href: "/admin/approvals", icon: ShieldCheck },
     ],
   },
@@ -187,11 +183,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     fetchProfile();
   }, [session]);
 
+  // Super Admin = không gắn với trường cụ thể (superadmin@school.com, Sở GD&ĐT)
+  // Hiệu trưởng = ADMIN nhưng gắn với trường cụ thể (có schoolId)
   const isSuperAdmin =
     profile?.isSuperAdmin ||
     session?.user?.email === "superadmin@school.com" ||
-    session?.user?.role === "DEPARTMENT_ADMIN" ||
-    session?.user?.role === "ADMIN";
+    session?.user?.role === "DEPARTMENT_ADMIN";
 
   const menuGroups = isSuperAdmin ? superAdminMenuGroups : principalMenuGroups;
 
