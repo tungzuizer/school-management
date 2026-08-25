@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, Search, LogOut, ChevronDown, ShieldCheck, Menu } from "lucide-react";
+import { Bell, Search, LogOut, ChevronDown, ShieldCheck, Menu, KeyRound } from "lucide-react";
+import ChangePasswordModal from "@/components/auth/ChangePasswordModal";
 import dynamic from "next/dynamic";
 import ForcePasswordChangeModal from "@/components/auth/ForcePasswordChangeModal";
 const CommandPalette = dynamic(() => import("@/components/ui/CommandPalette"), { ssr: false });
@@ -27,6 +28,7 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
   const { data: session } = useSession();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
 
   const userName = session?.user?.name || "Người dùng";
   const userRole = roleLabels[(session?.user as { role?: string })?.role || ""] || "Thành viên";
@@ -125,6 +127,16 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
                   </div>
                   <div className="border-t border-slate-100 pt-1">
                     <button
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setChangePasswordModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-indigo-700 font-extrabold rounded-xl hover:bg-indigo-50 transition-colors cursor-pointer"
+                    >
+                      <KeyRound className="w-4 h-4 text-indigo-600" aria-hidden="true" />
+                      <span>Đổi mật khẩu</span>
+                    </button>
+                    <button
                       onClick={() => signOut({ callbackUrl: "/login" })}
                       className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-rose-700 font-extrabold rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
                     >
@@ -141,6 +153,10 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
 
       {/* Command Palette Component */}
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      {/* Change Password Modal */}
+      {changePasswordModalOpen && (
+        <ChangePasswordModal onClose={() => setChangePasswordModalOpen(false)} />
+      )}
       {/* Force Password Change Modal */}
       <ForcePasswordChangeModal />
     </>

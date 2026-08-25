@@ -34,8 +34,7 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
 
     const isSuperAdmin =
       user.email === "superadmin@school.com" ||
-      user.role === "DEPARTMENT_ADMIN" ||
-      (!user.schoolId && user.role === "ADMIN");
+      (user.role as string) === "SUPER_ADMIN";
 
     let schoolName = user.school?.name || "Trường THCS Tân Xã";
     let districtWardName = user.districtWard?.name || "Phòng GD&ĐT Thạch Thất";
