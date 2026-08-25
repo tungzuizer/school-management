@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { KeyRound, Eye, EyeOff, Copy, Check, X, Shield, Building2, User, BookOpen, Crown } from "lucide-react";
+import { generateStudentEmail } from "@/lib/student-email";
 
 interface AccountInfo {
   role: string;
@@ -12,6 +13,9 @@ interface AccountInfo {
   color: string;
   highlight?: boolean;
 }
+
+const student1Email = generateStudentEmail("Nguyễn Việt Tùng", "FPT-HS139");
+const student2Email = generateStudentEmail("Bùi Quốc Vũ", "FPT-HS140");
 
 const accountsList: AccountInfo[] = [
   {
@@ -58,16 +62,26 @@ const accountsList: AccountInfo[] = [
   },
   {
     role: "Giáo viên",
-    name: "Trần Thị Hoa",
+    name: "Trần Thị Hoa (Giáo viên)",
     email: "teacher@school.com",
     defaultPass: "abc123",
     icon: BookOpen,
     color: "bg-emerald-100 border-emerald-300 text-emerald-900",
+    highlight: true,
   },
   {
-    role: "Học sinh",
-    name: "Bùi Quốc Vũ",
-    email: "student@school.com",
+    role: "Học sinh (VD 1)",
+    name: "Nguyễn Việt Tùng (Mã: FPT-HS139)",
+    email: student1Email,
+    defaultPass: "abc123",
+    icon: User,
+    color: "bg-blue-100 border-blue-300 text-blue-900",
+    highlight: true,
+  },
+  {
+    role: "Học sinh (VD 2)",
+    name: "Bùi Quốc Vũ (Mã: FPT-HS140)",
+    email: student2Email,
     defaultPass: "abc123",
     icon: User,
     color: "bg-blue-100 border-blue-300 text-blue-900",
@@ -80,11 +94,15 @@ interface SystemAccountsModalProps {
 }
 
 export default function SystemAccountsModal({ isOpen, onClose }: SystemAccountsModalProps) {
-  // Show passwords by default for admin accounts
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({
-    "superadmin@school.com": true,
-    "admin@school.com": true,
+  // Show passwords by default for all demo accounts
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(() => {
+    const initialMap: Record<string, boolean> = {};
+    accountsList.forEach((acc) => {
+      initialMap[acc.email] = true;
+    });
+    return initialMap;
   });
+
   const [showAll, setShowAll] = useState<boolean>(true);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
@@ -120,7 +138,7 @@ export default function SystemAccountsModal({ isOpen, onClose }: SystemAccountsM
             </div>
             <div>
               <h2 className="text-lg font-extrabold text-slate-900">Danh Sách Tài Khoản & Mật Khẩu Đăng Nhập</h2>
-              <p className="text-xs text-slate-500">Mật khẩu khởi tạo mặc định là <strong className="font-mono text-amber-800">abc123</strong> (hoặc <strong className="font-mono text-amber-800">123456</strong>)</p>
+              <p className="text-xs text-slate-500">Mật khẩu khởi tạo mặc định cho tất cả tài khoản là <strong className="font-mono text-amber-800">abc123</strong> (hoặc <strong className="font-mono text-amber-800">123456</strong>)</p>
             </div>
           </div>
           <button
@@ -168,7 +186,7 @@ export default function SystemAccountsModal({ isOpen, onClose }: SystemAccountsM
                       </span>
                       {acc.highlight && (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200 text-amber-900 border border-amber-300">
-                          Mật khẩu Admin
+                          Tài khoản Mẫu
                         </span>
                       )}
                     </div>
