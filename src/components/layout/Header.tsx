@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Bell, Search, LogOut, ChevronDown, ShieldCheck, Menu, KeyRound } from "lucide-react";
 import ChangePasswordModal from "@/components/auth/ChangePasswordModal";
+import SystemAccountsModal from "@/components/admin/SystemAccountsModal";
 import dynamic from "next/dynamic";
 import ForcePasswordChangeModal from "@/components/auth/ForcePasswordChangeModal";
 const CommandPalette = dynamic(() => import("@/components/ui/CommandPalette"), { ssr: false });
@@ -29,6 +30,7 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [systemAccountsModalOpen, setSystemAccountsModalOpen] = useState(false);
 
   const userName = session?.user?.name || "Người dùng";
   const userRole = roleLabels[(session?.user as { role?: string })?.role || ""] || "Thành viên";
@@ -129,6 +131,16 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
                     <button
                       onClick={() => {
                         setUserDropdownOpen(false);
+                        setSystemAccountsModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-amber-800 font-extrabold rounded-xl hover:bg-amber-50 transition-colors cursor-pointer"
+                    >
+                      <KeyRound className="w-4 h-4 text-amber-600" aria-hidden="true" />
+                      <span>Danh sách TK & Mật khẩu</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUserDropdownOpen(false);
                         setChangePasswordModalOpen(true);
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-indigo-700 font-extrabold rounded-xl hover:bg-indigo-50 transition-colors cursor-pointer"
@@ -157,6 +169,11 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
       {changePasswordModalOpen && (
         <ChangePasswordModal onClose={() => setChangePasswordModalOpen(false)} />
       )}
+      {/* System Accounts & Passwords Modal */}
+      <SystemAccountsModal
+        isOpen={systemAccountsModalOpen}
+        onClose={() => setSystemAccountsModalOpen(false)}
+      />
       {/* Force Password Change Modal */}
       <ForcePasswordChangeModal />
     </>
