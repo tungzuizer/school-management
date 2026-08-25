@@ -120,7 +120,11 @@ export default function CommandPalette({ isOpen, onClose }: { isOpen: boolean; o
             className="w-full py-4 text-sm text-slate-800 placeholder-slate-400 bg-transparent outline-none"
           />
           {query && (
-            <button onClick={() => setQuery("")} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 mr-1">
+            <button
+              onClick={() => setQuery("")}
+              aria-label="Xóa từ khóa tìm kiếm"
+              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 mr-1 cursor-pointer"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
@@ -145,19 +149,19 @@ export default function CommandPalette({ isOpen, onClose }: { isOpen: boolean; o
                   onClick={() => handleSelect(cmd.href)}
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all ${
-                    isSelected ? "bg-indigo-50 text-indigo-900 font-semibold" : "text-slate-700 hover:bg-slate-50"
+                    isSelected ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-800 hover:bg-slate-50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl ${isSelected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"}`}>
+                    <div className={`p-2 rounded-xl ${isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-sm">{cmd.label}</p>
-                      <p className="text-[11px] text-slate-400 font-normal">{cmd.category}</p>
+                      <p className="text-sm font-semibold">{cmd.label}</p>
+                      <p className={`text-[11px] font-medium ${isSelected ? "text-white/90" : "text-slate-600"}`}>{cmd.category}</p>
                     </div>
                   </div>
-                  <ArrowRight className={`w-4 h-4 transition-transform ${isSelected ? "opacity-100 translate-x-0 text-indigo-600" : "opacity-0 -translate-x-2"}`} />
+                  <ArrowRight className={`w-4 h-4 transition-transform ${isSelected ? "opacity-100 translate-x-0 text-white" : "opacity-0 -translate-x-2"}`} />
                 </button>
               );
             })

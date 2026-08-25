@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
 import {
-  LayoutDashboard, Landmark, Building2, LogOut, Menu, X,
-  ChevronDown, ChevronRight, School,
+  LayoutDashboard, Building2, LogOut, Menu, X,
+  ChevronDown, ChevronRight, School, Landmark,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -19,8 +19,6 @@ const menuGroups: MenuGroup[] = [
     icon: LayoutDashboard,
     items: [
       { label: "Dashboard Phòng GD&ĐT", href: "/ward/dashboard", icon: LayoutDashboard },
-      { label: "Dashboard Sở GD&ĐT", href: "/department/dashboard", icon: Landmark },
-      { label: "Bảng Quản trị Trung tâm", href: "/admin/dashboard", icon: School },
     ],
   },
   {
@@ -47,12 +45,12 @@ export default function WardLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {/* Mobile Toggle */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b px-4 py-3 flex items-center justify-between">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Landmark className="w-6 h-6 text-emerald-600" />
-          <span className="font-bold text-sm text-gray-900">Phòng GD&ĐT</span>
+          <span className="font-bold text-sm text-slate-900">Phòng GD&ĐT</span>
         </div>
         <button onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -60,13 +58,13 @@ export default function WardLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r transform transition-transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
-        <div className="p-4 border-b">
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
+        <div className="p-4 border-b border-slate-200">
           <div className="flex items-center gap-2">
             <Landmark className="w-7 h-7 text-emerald-600" />
             <div>
-              <h2 className="font-bold text-sm text-gray-900">Phòng Giáo dục & Đào tạo</h2>
-              <p className="text-xs text-gray-500">{session?.user?.name || "Quản trị viên"}</p>
+              <h2 className="font-bold text-sm text-slate-900">Phòng Giáo dục & Đào tạo</h2>
+              <p className="text-xs text-slate-500 font-medium">{session?.user?.name || "Quản trị viên"}</p>
             </div>
           </div>
         </div>
@@ -74,7 +72,7 @@ export default function WardLayout({ children }: { children: React.ReactNode }) 
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-140px)]">
           {menuGroups.map(group => (
             <div key={group.title}>
-              <button onClick={() => toggleGroup(group.title)} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700">
+              <button onClick={() => toggleGroup(group.title)} className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-slate-600 uppercase hover:text-slate-900">
                 <div className="flex items-center gap-2">
                   <group.icon className="w-4 h-4" />
                   <span>{group.title}</span>
@@ -85,7 +83,7 @@ export default function WardLayout({ children }: { children: React.ReactNode }) 
                 const active = pathname === item.href;
                 return (
                   <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition ${active ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-gray-600 hover:bg-gray-100"}`}>
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${active ? "bg-emerald-600 text-white shadow-xs" : "text-slate-700 hover:bg-slate-100"}`}>
                     <item.icon className="w-4 h-4" />
                     <span>{item.label}</span>
                   </Link>
@@ -95,9 +93,9 @@ export default function WardLayout({ children }: { children: React.ReactNode }) 
           ))}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t">
-          <button onClick={() => signOut({ callbackUrl: "/login" })} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition">
-            <LogOut className="w-4 h-4" />
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-slate-200">
+          <button onClick={() => signOut({ callbackUrl: "/login" })} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-rose-700 font-bold hover:bg-rose-50 transition">
+            <LogOut className="w-4 h-4 text-rose-700" />
             <span>Đăng xuất</span>
           </button>
         </div>

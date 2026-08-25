@@ -19,8 +19,6 @@ const menuGroups: MenuGroup[] = [
     icon: LayoutDashboard,
     items: [
       { label: "Dashboard Sở GD&ĐT", href: "/department/dashboard", icon: LayoutDashboard },
-      { label: "Bảng Quản trị Trung tâm", href: "/admin/dashboard", icon: GraduationCap },
-      { label: "Dashboard Phòng GD&ĐT", href: "/ward/dashboard", icon: Landmark },
     ],
   },
   {
@@ -83,7 +81,7 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100vh-140px)]">
           {menuGroups.map(group => (
             <div key={group.title}>
-              <button onClick={() => toggleGroup(group.title)} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700">
+              <button onClick={() => toggleGroup(group.title)} className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-slate-600 uppercase hover:text-slate-900">
                 <div className="flex items-center gap-2">
                   <group.icon className="w-4 h-4" />
                   <span>{group.title}</span>
@@ -94,7 +92,7 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
                 const active = pathname === item.href;
                 return (
                   <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition ${active ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-gray-600 hover:bg-gray-100"}`}>
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${active ? "bg-indigo-600 text-white shadow-xs" : "text-gray-700 hover:bg-gray-100"}`}>
                     <item.icon className="w-4 h-4" />
                     <span>{item.label}</span>
                   </Link>
