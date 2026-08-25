@@ -320,6 +320,7 @@ model Student {
   classId     String?
   groupId     String?
   status      StudentStatus @default(STUDYING)
+  isClassMonitor Boolean    @default(false) // Lớp trưởng
 
   // Thông tin cá nhân
   dob               DateTime?

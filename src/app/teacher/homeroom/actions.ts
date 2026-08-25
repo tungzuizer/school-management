@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { aiChatCompletion } from "@/lib/ai-provider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { generateStudentEmail } from "@/lib/student-email";
+import bcrypt from "bcryptjs";
 
 async function isApprovedUser(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
@@ -46,8 +48,93 @@ export async function getClassStudents(classId: string) {
       user: { select: { name: true, email: true } },
       group: { select: { id: true, name: true } },
     },
-    orderBy: { user: { name: "asc" } },
+    orderBy: [
+      { isClassMonitor: "desc" },
+      { user: { name: "asc" } },
+    ],
   });
+}
+
+// ============ Thêm Học Sinh mới vào Lớp Chủ Nhiệm ============
+export async function addStudentToHomeroomClass(data: {
+  classId: string;
+  name: string;
+  studentCode: string;
+  dob?: string;
+  gender?: "MALE" | "FEMALE";
+  phone?: string;
+  email?: string;
+}) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
+
+  const name = data.name.trim();
+  const studentCode = data.studentCode.trim();
+  if (!name || !studentCode) {
+    throw new Error("Họ tên và mã học sinh là bắt buộc");
+  }
+
+  // Tự động tạo email học sinh nếu chưa nhập
+  const email = (data.email && data.email.trim()) || generateStudentEmail(name, studentCode);
+
+  // Kiểm tra email đã tồn tại hay chưa
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    throw new Error(`Email ${email} đã được đăng ký trong hệ thống.`);
+  }
+
+  // Mật khẩu mặc định
+  const defaultPassword = "abc123";
+  const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+  // Tạo User và Student
+  const newUser = await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+      role: "STUDENT",
+      isApproved: true,
+      student: {
+        create: {
+          studentCode,
+          classId: data.classId,
+          dob: data.dob ? new Date(data.dob) : null,
+          gender: data.gender || null,
+          phone: data.phone || null,
+        },
+      },
+    },
+    include: {
+      student: true,
+    },
+  });
+
+  return newUser.student;
+}
+
+// ============ Phân quyền / Bổ nhiệm Lớp Trưởng ============
+export async function setClassMonitor(classId: string, studentId: string | null) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
+
+  // Reset tất cả học sinh trong lớp về isClassMonitor = false
+  await prisma.student.updateMany({
+    where: { classId },
+    data: { isClassMonitor: false },
+  });
+
+  // Nếu chọn 1 học sinh làm lớp trưởng
+  if (studentId) {
+    await prisma.student.update({
+      where: { id: studentId },
+      data: { isClassMonitor: true },
+    });
+  }
+
+  return { success: true };
 }
 
 // ============ Quản lý Tổ (Group) ============

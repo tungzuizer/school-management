@@ -15,6 +15,10 @@ import {
   Sparkles,
   FileText,
   Upload,
+  UserPlus,
+  Crown,
+  Star,
+  X,
 } from "lucide-react";
 import {
   getHomeroomClass,
@@ -40,6 +44,8 @@ import {
   getMonthlyPlan,
   saveMonthlyPlan,
   saveWeeklyActivity,
+  addStudentToHomeroomClass,
+  setClassMonitor,
 } from "./actions";
 
 // ============ Types ============
@@ -59,6 +65,7 @@ type StudentItem = {
   group: { id: string; name: string } | null;
   studentCode: string | null;
   status: string;
+  isClassMonitor?: boolean;
 };
 
 type GroupItem = {
@@ -237,7 +244,7 @@ export default function HomeroomPage() {
         </div>
 
         <div className="p-6">
-          {tab === "overview" && <OverviewTab classId={classInfo.id} students={students} />}
+          {tab === "overview" && <OverviewTab classId={classInfo.id} students={students} showToast={showToast} onReload={loadData} />}
           {tab === "groups" && <GroupsTab classId={classInfo.id} students={students} showToast={showToast} onReload={loadData} />}
           {tab === "seating" && <SeatingTab classId={classInfo.id} students={students} showToast={showToast} />}
           {tab === "conduct" && <ConductTab classId={classInfo.id} showToast={showToast} />}
@@ -260,7 +267,17 @@ export default function HomeroomPage() {
 }
 
 // ============ OVERVIEW TAB ============
-function OverviewTab({ classId, students }: { classId: string; students: StudentItem[] }) {
+function OverviewTab({
+  classId,
+  students,
+  showToast,
+  onReload,
+}: {
+  classId: string;
+  students: StudentItem[];
+  showToast: (m: string) => void;
+  onReload: () => void;
+}) {
   const [periodData, setPeriodData] = useState<Array<{
     period: string;
     total: number;
@@ -268,49 +285,287 @@ function OverviewTab({ classId, students }: { classId: string; students: Student
     academic: Record<string, number>;
   }>>([]);
 
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  const [name, setName] = useState("");
+  const [studentCode, setStudentCode] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+
   useEffect(() => {
     getClassSizeByPeriods(classId).then(setPeriodData);
   }, [classId]);
 
+  const currentMonitor = students.find((s) => s.isClassMonitor);
+
+  async function handleAddStudent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !studentCode.trim()) {
+      setAddError("Vui lòng nhập Họ tên và Mã học sinh");
+      return;
+    }
+    setAdding(true);
+    setAddError("");
+    try {
+      await addStudentToHomeroomClass({
+        classId,
+        name,
+        studentCode,
+        dob: dob || undefined,
+        gender,
+        phone: phone || undefined,
+        email: email || undefined,
+      });
+      showToast(`Đã thêm thành công học sinh ${name}!`);
+      setName("");
+      setStudentCode("");
+      setDob("");
+      setPhone("");
+      setEmail("");
+      setShowAddModal(false);
+      onReload();
+    } catch (err: any) {
+      setAddError(err.message || "Đã xảy ra lỗi khi thêm học sinh");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleToggleMonitor(studentId: string, currentIsMonitor?: boolean) {
+    try {
+      const targetStudentId = currentIsMonitor ? null : studentId;
+      await setClassMonitor(classId, targetStudentId);
+      const targetStudent = students.find((s) => s.id === studentId);
+      if (currentIsMonitor) {
+        showToast(`Đã hủy chức vụ Lớp trưởng của ${targetStudent?.user.name}`);
+      } else {
+        showToast(`Đã bổ nhiệm ${targetStudent?.user.name} làm Lớp trưởng!`);
+      }
+      onReload();
+    } catch {
+      showToast("Lỗi khi cập nhật chức vụ Lớp trưởng");
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* Danh sách HS */}
-      <div>
-        <h3 className="font-semibold text-lg mb-3">Danh sách học sinh ({students.length})</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-slate-50">
-                <th className="border p-2 text-left w-10">STT</th>
-                <th className="border p-2 text-left">Họ tên</th>
-                <th className="border p-2 text-left">Mã HS</th>
-                <th className="border p-2 text-left">Tổ</th>
-                <th className="border p-2 text-left">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((s, i) => (
-                <tr key={s.id} className="hover:bg-slate-50">
-                  <td className="border p-2">{i + 1}</td>
-                  <td className="border p-2 font-medium">{s.user.name}</td>
-                  <td className="border p-2 text-slate-600">{s.studentCode || "—"}</td>
-                  <td className="border p-2">{s.group?.name || "Chưa xếp tổ"}</td>
-                  <td className="border p-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      s.status === "STUDYING" ? "bg-green-100 text-green-700" :
-                      s.status === "TRANSFERRED" ? "bg-yellow-100 text-yellow-700" :
-                      "bg-red-100 text-red-700"
-                    }`}>
-                      {s.status === "STUDYING" ? "Đang học" :
-                       s.status === "TRANSFERRED" ? "Chuyển trường" :
-                       s.status === "DROPPED_OUT" ? "Nghỉ học" : "Tốt nghiệp"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Header Bar: Sĩ số, Lớp trưởng & Thêm Học sinh */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <div>
+          <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+            <Users className="w-5 h-5 text-indigo-600" />
+            Danh sách học sinh ({students.length})
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Lớp trưởng hiện tại:{" "}
+            {currentMonitor ? (
+              <span className="font-bold text-amber-700 inline-flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded text-xs border border-amber-200">
+                <Crown className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
+                {currentMonitor.user.name}
+              </span>
+            ) : (
+              <span className="italic text-slate-400">Chưa bổ nhiệm</span>
+            )}
+          </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            + Thêm học sinh
+          </button>
+        </div>
+      </div>
+
+      {/* Modal Thêm Học Sinh */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-indigo-600" />
+                Thêm Học Sinh Mới Vào Lớp
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {addError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
+                {addError}
+              </div>
+            )}
+
+            <form onSubmit={handleAddStudent} className="space-y-3.5 mt-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Họ và tên học sinh <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Nguyễn Việt Tùng"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Mã học sinh <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: FPT-HS141"
+                  value={studentCode}
+                  onChange={(e) => setStudentCode(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Giới tính</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value as "MALE" | "FEMALE")}
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  >
+                    <option value="MALE">Nam</option>
+                    <option value="FEMALE">Nữ</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Ngày sinh</label>
+                  <input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Số điện thoại liên hệ</label>
+                <input
+                  type="text"
+                  placeholder="0901234567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Email đăng nhập (Tuỳ chọn)
+                </label>
+                <input
+                  type="email"
+                  placeholder="Để trống sẽ tự động tạo (VD: tungnvfpths141@gmail.com)"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Mật khẩu khởi tạo mặc định cho học sinh mới là <strong className="font-mono text-amber-700">abc123</strong>
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={adding}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold disabled:opacity-50 cursor-pointer"
+                >
+                  {adding ? "Đang lưu..." : "Thêm Học Sinh"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bảng danh sách học sinh */}
+      <div className="overflow-x-auto border border-slate-200 rounded-xl">
+        <table className="w-full text-sm border-collapse bg-white">
+          <thead>
+            <tr className="bg-slate-50 text-slate-700">
+              <th className="border-b p-3 text-left w-12">STT</th>
+              <th className="border-b p-3 text-left">Họ và tên</th>
+              <th className="border-b p-3 text-left">Mã HS</th>
+              <th className="border-b p-3 text-left">Email đăng nhập</th>
+              <th className="border-b p-3 text-left">Tổ</th>
+              <th className="border-b p-3 text-left">Trạng thái</th>
+              <th className="border-b p-3 text-center w-40">Phân quyền Lớp Trưởng</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((s, i) => (
+              <tr key={s.id} className={`hover:bg-slate-50 transition-colors ${s.isClassMonitor ? "bg-amber-50/40" : ""}`}>
+                <td className="border-b p-3 font-medium text-slate-500">{i + 1}</td>
+                <td className="border-b p-3 font-bold text-slate-900 flex items-center gap-2">
+                  <span>{s.user.name}</span>
+                  {s.isClassMonitor && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-xs">
+                      <Crown className="w-3 h-3 text-amber-600 fill-amber-500" />
+                      Lớp Trưởng
+                    </span>
+                  )}
+                </td>
+                <td className="border-b p-3 text-slate-600 font-mono text-xs">{s.studentCode || "—"}</td>
+                <td className="border-b p-3 text-slate-600 font-mono text-xs">{s.user.email}</td>
+                <td className="border-b p-3 text-slate-700">{s.group?.name || "Chưa xếp tổ"}</td>
+                <td className="border-b p-3">
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                    s.status === "STUDYING" ? "bg-emerald-100 text-emerald-800" :
+                    s.status === "TRANSFERRED" ? "bg-amber-100 text-amber-800" :
+                    "bg-rose-100 text-rose-800"
+                  }`}>
+                    {s.status === "STUDYING" ? "Đang học" :
+                     s.status === "TRANSFERRED" ? "Chuyển trường" :
+                     s.status === "DROPPED_OUT" ? "Nghỉ học" : "Tốt nghiệp"}
+                  </span>
+                </td>
+                <td className="border-b p-3 text-center">
+                  <button
+                    onClick={() => handleToggleMonitor(s.id, s.isClassMonitor)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                      s.isClassMonitor
+                        ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                        : "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                    }`}
+                    title={s.isClassMonitor ? "Hủy chức vụ Lớp Trưởng" : "Phân quyền bổ nhiệm làm Lớp Trưởng"}
+                  >
+                    {s.isClassMonitor ? "Hủy Lớp trưởng" : "⭐ Đặt Lớp trưởng"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Tình hình sĩ số */}
