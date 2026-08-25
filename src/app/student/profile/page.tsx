@@ -3,19 +3,18 @@
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
+  User,
   Mail,
-  Phone,
-  BookOpen,
   School,
   LogOut,
   Shield,
-  Calendar,
+  Sparkles,
 } from "lucide-react";
 import ChangePasswordModal from "@/components/auth/ChangePasswordModal";
 
-export default function TeacherProfilePage() {
+export default function StudentProfilePage() {
   const { data: session } = useSession();
-  const userName = session?.user?.name || "Giáo viên";
+  const userName = session?.user?.name || "Học sinh";
   const userEmail = session?.user?.email || "";
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
@@ -23,22 +22,23 @@ export default function TeacherProfilePage() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Avatar + Name */}
       <div className="flex flex-col items-center text-center">
-        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
-          <span className="text-3xl font-bold text-emerald-600">
+        <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+          <span className="text-3xl font-bold text-blue-600">
             {userName.charAt(0).toUpperCase()}
           </span>
         </div>
         <h1 className="text-xl font-bold text-slate-900">{userName}</h1>
-        <p className="text-sm text-slate-600">Giáo viên</p>
+        <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 mt-1">
+          <Sparkles className="w-3 h-3 text-blue-600" />
+          Học sinh
+        </span>
       </div>
 
       {/* Info cards */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl divide-y divide-gray-100">
         <InfoRow icon={Mail} label="Email" value={userEmail || "—"} />
-        <InfoRow icon={Phone} label="Điện thoại" value="—" />
-        <InfoRow icon={BookOpen} label="Chuyên môn" value="—" />
-        <InfoRow icon={School} label="Lớp chủ nhiệm" value="—" />
-        <InfoRow icon={Calendar} label="Năm vào trường" value="—" />
+        <InfoRow icon={User} label="Họ và tên" value={userName} />
+        <InfoRow icon={School} label="Lớp" value="—" />
       </div>
 
       {/* Actions */}
@@ -59,7 +59,6 @@ export default function TeacherProfilePage() {
         </button>
       </div>
 
-      {/* App version */}
       <p className="text-center text-xs text-slate-500 pt-2">
         School Management v1.0
       </p>

@@ -175,8 +175,7 @@ export default function AdminDashboardPage() {
 
   const isSuperAdmin =
     session?.user?.email === "superadmin@school.com" ||
-    session?.user?.role === "DEPARTMENT_ADMIN" ||
-    (!session?.user?.schoolId && (session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN"));
+    session?.user?.role === "SUPER_ADMIN";
 
   const activeSchoolName = selectedSchoolId
     ? schools.find((s) => s.id === selectedSchoolId)?.name || "Trường đã chọn"

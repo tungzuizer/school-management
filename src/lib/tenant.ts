@@ -53,9 +53,7 @@ export async function getTenantContext(): Promise<TenantContext> {
 export function buildSchoolFilter(ctx: TenantContext): Record<string, any> {
   const isSuperAdmin =
     ctx.userEmail === "superadmin@school.com" ||
-    ctx.userRole === "SUPER_ADMIN" ||
-    (ctx.userRole === "DEPARTMENT_ADMIN" && !ctx.departmentId) ||
-    (!ctx.schoolId && (ctx.userRole === "ADMIN" || ctx.userRole === "WARD_ADMIN" || ctx.userRole === "DEPARTMENT_ADMIN"));
+    ctx.userRole === "SUPER_ADMIN";
 
   if (isSuperAdmin) {
     return {};
@@ -84,9 +82,7 @@ export function buildSchoolFilter(ctx: TenantContext): Record<string, any> {
 export function buildSchoolDirectFilter(ctx: TenantContext): Record<string, any> {
   const isSuperAdmin =
     ctx.userEmail === "superadmin@school.com" ||
-    ctx.userRole === "SUPER_ADMIN" ||
-    (ctx.userRole === "DEPARTMENT_ADMIN" && !ctx.departmentId) ||
-    (!ctx.schoolId && (ctx.userRole === "ADMIN" || ctx.userRole === "WARD_ADMIN" || ctx.userRole === "DEPARTMENT_ADMIN"));
+    ctx.userRole === "SUPER_ADMIN";
 
   if (isSuperAdmin) {
     return {};

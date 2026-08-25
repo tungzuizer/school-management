@@ -21,6 +21,7 @@ import {
   Compass,
   Sparkles,
   ChevronRight,
+  User,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -76,6 +77,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     { label: "Học Bạ Điện Tử", href: "/student/transcript", icon: Award, description: "Học bạ chuẩn Bộ GD&ĐT" },
     { label: "Nhật Ký Chuyên Cần", href: "/student/attendance", icon: CalendarCheck, description: "Xem lịch sử điểm danh do Thầy/Cô ghi" },
     { label: "Thời Khóa Biểu Tuần", href: "/student/schedule", icon: Calendar, description: "Lịch học & giáo viên bộ môn" },
+    { label: "Hồ Sơ Cá Nhân", href: "/student/profile", icon: User, description: "Thông tin & đổi mật khẩu" },
   ];
 
   const activeItem = navItems.find(

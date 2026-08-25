@@ -48,6 +48,8 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "admin@school.com" },
       update: {
+        name: "TS. Nguyễn Văn Hùng",
+        role: Role.ADMIN,
         password: defaultPasswordHash,
         schoolId: defaultSchool?.id,
         districtWardId: defaultWard?.id,
@@ -68,6 +70,8 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "dept@school.com" },
       update: {
+        name: "Lãnh đạo Sở GD&ĐT",
+        role: Role.DEPARTMENT_ADMIN,
         password: defaultPasswordHash,
         departmentId: defaultDept?.id,
       },
@@ -84,6 +88,8 @@ export async function GET(request: Request) {
     await prisma.user.upsert({
       where: { email: "ward@school.com" },
       update: {
+        name: "Cán bộ Phòng GD&ĐT",
+        role: Role.WARD_ADMIN,
         password: defaultPasswordHash,
         districtWardId: defaultWard?.id,
         departmentId: defaultDept?.id,

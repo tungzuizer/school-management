@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { getCurrentAdminProfile, AdminProfile } from "./actions";
+import ForcePasswordChangeModal from "@/components/auth/ForcePasswordChangeModal";
 import {
   LayoutDashboard,
   Building2,
@@ -188,11 +189,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isSuperAdmin =
     profile?.isSuperAdmin ||
     session?.user?.email === "superadmin@school.com" ||
-    session?.user?.role === "DEPARTMENT_ADMIN";
+    session?.user?.role === "SUPER_ADMIN";
 
   const menuGroups = isSuperAdmin ? superAdminMenuGroups : principalMenuGroups;
 
-  const userName = profile?.name || session?.user?.name || (isSuperAdmin ? "Super Admin Tối Cao" : "Hiệu Trưởng");
+  const userName = profile?.name || session?.user?.name || (isSuperAdmin ? "Super Admin Tối Cao" : "TS. Nguyễn Văn Hùng");
   const userEmail = profile?.email || session?.user?.email || "";
 
   const schoolDisplay = profile?.schoolName || (isSuperAdmin ? "Toàn bộ các Trường (Hệ thống Toàn quốc)" : "Trường THCS Tân Xã");
@@ -511,6 +512,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </nav>
       </div>
+      <ForcePasswordChangeModal />
     </div>
   );
 }
