@@ -8,16 +8,10 @@ import {
   Mail,
   Lock,
   Loader2,
-  ShieldCheck,
-  BookOpen,
-  User,
-  Building2,
   UserPlus,
   CheckCircle2,
   AlertCircle,
-  KeyRound,
 } from "lucide-react";
-import SystemAccountsModal from "@/components/admin/SystemAccountsModal";
 
 function LoginFormContent() {
   const searchParams = useSearchParams();
@@ -27,7 +21,6 @@ function LoginFormContent() {
   const [error, setError] = useState("");
   const [successNotice, setSuccessNotice] = useState("");
   const [loading, setLoading] = useState(false);
-  const [accountsModalOpen, setAccountsModalOpen] = useState(false);
 
   useEffect(() => {
     const isRegistered = searchParams.get("registered");
@@ -136,36 +129,6 @@ function LoginFormContent() {
     );
   }
 
-  const quickLogin = async (demoEmail: string) => {
-    setEmail(demoEmail);
-    const demoPassword = "abc123";
-    setPassword(demoPassword);
-    setLoading(true);
-    setError("");
-    try {
-      // Thử đăng nhập với mật khẩu mặc định abc123
-      let result = await signIn("credentials", { email: demoEmail, password: demoPassword, redirect: false });
-
-      // Nếu thất bại, thử với mật khẩu 123456 (từ prisma seed)
-      if (result?.error) {
-        const fallbackPassword = "123456";
-        setPassword(fallbackPassword);
-        result = await signIn("credentials", { email: demoEmail, password: fallbackPassword, redirect: false });
-      }
-
-      if (result?.error) {
-        setError("Không thể đăng nhập tài khoản demo. Hãy chạy seed database trước (npx prisma db seed).");
-        setLoading(false);
-        return;
-      }
-
-      await redirectByRole(demoEmail);
-    } catch {
-      setError("Đã xảy ra lỗi khi đăng nhập.");
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
       <div className="w-full max-w-md">
@@ -264,94 +227,9 @@ function LoginFormContent() {
                 Đăng ký Tài khoản Giáo viên
               </Link>
             </div>
-
-            {/* Quick Demo Login */}
-            <div className="mt-8 pt-6 border-t border-gray-100 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
-                  Đăng nhập nhanh dùng thử (Demo Roles)
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setAccountsModalOpen(true)}
-                  className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                  title="Xem thông tin chi tiết các tài khoản & mật khẩu mặc định"
-                >
-                  <KeyRound className="w-3.5 h-3.5 text-amber-600" />
-                  <span>TK & Mật khẩu</span>
-                </button>
-              </div>
-
-              {/* Super Admin Highlighted Button */}
-              <button
-                onClick={() => quickLogin("superadmin@school.com")}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 p-3.5 rounded-xl border-2 border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-amber-950 font-bold transition-all disabled:opacity-50 shadow-xs cursor-pointer"
-              >
-                <ShieldCheck className="w-5 h-5 text-amber-600" />
-                <span>👑 Quản Trị Viên Tối Cao (Super Admin Toàn Quốc)</span>
-              </button>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  onClick={() => quickLogin("dept@school.com")}
-                  disabled={loading}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-colors disabled:opacity-50 group cursor-pointer"
-                >
-                  <Building2 className="w-5 h-5 text-purple-600 group-hover:text-purple-700" />
-                  <span className="text-xs font-semibold text-gray-700 group-hover:text-purple-800">Cán bộ Sở GD&ĐT</span>
-                </button>
-                <button
-                  onClick={() => quickLogin("ward@school.com")}
-                  disabled={loading}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-colors disabled:opacity-50 group cursor-pointer"
-                >
-                  <Building2 className="w-5 h-5 text-amber-600 group-hover:text-amber-700" />
-                  <span className="text-xs font-semibold text-gray-700 group-hover:text-amber-800">Cán bộ Phòng GD&ĐT</span>
-                </button>
-                <button
-                  onClick={() => quickLogin("admin@school.com")}
-                  disabled={loading}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors disabled:opacity-50 group cursor-pointer"
-                >
-                  <ShieldCheck className="w-5 h-5 text-indigo-500 group-hover:text-indigo-600" />
-                  <span className="text-xs font-semibold text-gray-700 group-hover:text-indigo-700">Hiệu trưởng (Trường)</span>
-                </button>
-                <button
-                  onClick={() => quickLogin("vp1@school.com")}
-                  disabled={loading}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-colors disabled:opacity-50 group cursor-pointer"
-                >
-                  <Building2 className="w-5 h-5 text-teal-500 group-hover:text-teal-600" />
-                  <span className="text-xs font-semibold text-gray-700 group-hover:text-teal-700">Phó Hiệu trưởng</span>
-                </button>
-                <button
-                  onClick={() => quickLogin("teacher@school.com")}
-                  disabled={loading}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-colors disabled:opacity-50 group cursor-pointer"
-                >
-                  <BookOpen className="w-5 h-5 text-emerald-500 group-hover:text-emerald-600" />
-                  <span className="text-xs font-semibold text-gray-700 group-hover:text-emerald-700">Giáo viên</span>
-                </button>
-                <button
-                  onClick={() => quickLogin("student@school.com")}
-                  disabled={loading}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors disabled:opacity-50 group cursor-pointer"
-                >
-                  <User className="w-5 h-5 text-blue-500 group-hover:text-blue-600" />
-                  <span className="text-xs font-semibold text-gray-700 group-hover:text-blue-700">Học sinh</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
-
-      {/* System Accounts & Passwords Modal */}
-      <SystemAccountsModal
-        isOpen={accountsModalOpen}
-        onClose={() => setAccountsModalOpen(false)}
-      />
     </div>
   );
 }
