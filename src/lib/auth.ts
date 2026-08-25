@@ -37,9 +37,20 @@ export const authOptions: NextAuthOptions = {
               user.password
             );
             if (isPasswordValid) {
-              const isDefaultPassword =
-                (await bcrypt.compare("abc123", user.password)) ||
-                (await bcrypt.compare("123456", user.password));
+              // Chỉ buộc đổi mật khẩu cho tài khoản KHÔNG phải demo
+              // Demo accounts (abc123/123456) không cần buộc đổi
+              const demoEmails = [
+                "superadmin@school.com", "admin@school.com", "dept@school.com",
+                "ward@school.com", "vp1@school.com", "teacher@school.com", "student@school.com",
+              ];
+              const isDemoAccount = demoEmails.includes(email);
+              let isDefaultPassword = false;
+
+              if (!isDemoAccount) {
+                isDefaultPassword =
+                  (await bcrypt.compare("abc123", user.password)) ||
+                  (await bcrypt.compare("123456", user.password));
+              }
 
               return {
                 id: user.id,
