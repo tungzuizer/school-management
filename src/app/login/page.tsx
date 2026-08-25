@@ -15,7 +15,9 @@ import {
   UserPlus,
   CheckCircle2,
   AlertCircle,
+  KeyRound,
 } from "lucide-react";
+import SystemAccountsModal from "@/components/admin/SystemAccountsModal";
 
 function LoginFormContent() {
   const searchParams = useSearchParams();
@@ -25,6 +27,7 @@ function LoginFormContent() {
   const [error, setError] = useState("");
   const [successNotice, setSuccessNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [accountsModalOpen, setAccountsModalOpen] = useState(false);
 
   useEffect(() => {
     const isRegistered = searchParams.get("registered");
@@ -264,9 +267,20 @@ function LoginFormContent() {
 
             {/* Quick Demo Login */}
             <div className="mt-8 pt-6 border-t border-gray-100 space-y-3">
-              <p className="text-xs text-gray-400 text-center font-semibold uppercase tracking-wider">
-                Đăng nhập nhanh dùng thử (Demo Roles)
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                  Đăng nhập nhanh dùng thử (Demo Roles)
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAccountsModalOpen(true)}
+                  className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  title="Xem thông tin chi tiết các tài khoản & mật khẩu mặc định"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+                  <span>TK & Mật khẩu</span>
+                </button>
+              </div>
 
               {/* Super Admin Highlighted Button */}
               <button
@@ -332,6 +346,12 @@ function LoginFormContent() {
           </div>
         </div>
       </div>
+
+      {/* System Accounts & Passwords Modal */}
+      <SystemAccountsModal
+        isOpen={accountsModalOpen}
+        onClose={() => setAccountsModalOpen(false)}
+      />
     </div>
   );
 }
