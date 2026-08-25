@@ -125,6 +125,7 @@ export default function SystemAccountsModal({ isOpen, onClose }: SystemAccountsM
           </div>
           <button
             onClick={onClose}
+            aria-label="Đóng danh sách tài khoản"
             className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition cursor-pointer"
           >
             <X className="w-5 h-5" />

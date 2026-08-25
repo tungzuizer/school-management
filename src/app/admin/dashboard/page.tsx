@@ -235,18 +235,18 @@ export default function AdminDashboardPage() {
           {/* Super Admin Executive Quick Action Toolbar */}
           <div className="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
             <Link
-              href="/department/dashboard"
+              href="/admin/multi-school"
               className="p-3 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-400/40 rounded-xl transition-all flex items-center gap-2.5 text-indigo-200 text-xs font-bold group"
             >
               <Globe className="w-4 h-4 text-indigo-300 shrink-0 group-hover:scale-110 transition-transform" />
-              <span>🏛️ Phân Hệ Sở GD&ĐT</span>
+              <span>🏛️ Liên Trường Toàn Quốc</span>
             </Link>
             <Link
-              href="/ward/dashboard"
+              href="/admin/approvals"
               className="p-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 rounded-xl transition-all flex items-center gap-2.5 text-emerald-200 text-xs font-bold group"
             >
-              <Building2 className="w-4 h-4 text-emerald-300 shrink-0 group-hover:scale-110 transition-transform" />
-              <span>📍 Phân Hệ Phòng GD&ĐT</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0 group-hover:scale-110 transition-transform" />
+              <span>🛡️ Phê Duyệt Trung Tâm</span>
             </Link>
             <Link
               href="/admin/principals"
