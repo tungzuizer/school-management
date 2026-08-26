@@ -134,9 +134,12 @@ export default function AttendancePage() {
       });
 
       setRecords(recordsMap);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading slot attendance data:", err);
-      showToast("Lỗi tải thông tin điểm danh ca dạy", "error");
+      const msg = err?.message || "";
+      if (msg && !msg.includes("NEXT_NOT_FOUND") && !msg.includes("not found")) {
+        showToast("Lỗi tải thông tin điểm danh ca dạy", "error");
+      }
     } finally {
       setLoading(false);
     }
