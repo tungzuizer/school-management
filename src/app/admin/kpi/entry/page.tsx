@@ -12,7 +12,7 @@ import {
   requestUnlockKpiPeriod,
 } from "../actions";
 import { calculateKpiScore } from "../utils";
-import { CATEGORY_LABELS, DIRECTION_LABELS, FREQUENCY_LABELS } from "../catalog/page";
+import { CATEGORY_LABELS, DIRECTION_LABELS, FREQUENCY_LABELS, STATUS_LABELS } from "../kpi-labels";
 import { KpiPeriodStatus, ReportingFrequency, MeasurementDirection, KpiCategory } from "@prisma/client";
 import {
   Calendar,
@@ -30,14 +30,6 @@ import {
   Info,
 } from "lucide-react";
 
-export const STATUS_LABELS: Record<KpiPeriodStatus, { label: string; class: string }> = {
-  DRAFT: { label: "Bản nháp", class: "bg-slate-100 text-slate-700 border-slate-200" },
-  SUBMITTED: { label: "Đã gửi duyệt (Cấp Phân hiệu)", class: "bg-blue-50 text-blue-700 border-blue-200" },
-  CAMPUS_CHECKED: { label: "Đã thẩm định Phân hiệu", class: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  VP_REVIEWED: { label: "Hiệu phó đã thông qua", class: "bg-purple-50 text-purple-700 border-purple-200" },
-  APPROVED: { label: "Hiệu trưởng đã phê duyệt (Đã khóa)", class: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  UNLOCK_REQUESTED: { label: "Đang chờ mở khóa", class: "bg-amber-50 text-amber-700 border-amber-200" },
-};
 
 export default function KpiEntryPage() {
   const [periods, setPeriods] = useState<any[]>([]);

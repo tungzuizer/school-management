@@ -10,6 +10,7 @@ import {
   seedDefaultKpiCatalog,
 } from "../actions";
 import { KpiCategory, MeasurementDirection, ReportingFrequency } from "@prisma/client";
+import { CATEGORY_LABELS, DIRECTION_LABELS, FREQUENCY_LABELS } from "../kpi-labels";
 import {
   Search,
   Plus,
@@ -24,33 +25,6 @@ import {
   Filter,
 } from "lucide-react";
 
-export const CATEGORY_LABELS: Record<KpiCategory, string> = {
-  STRATEGIC: "1. Chiến lược phát triển trường",
-  EDUCATIONAL_QUALITY: "2. Chất lượng giáo dục & Đào tạo",
-  PROFESSIONAL: "3. Công tác chuyên môn & Giảng dạy",
-  STAFF_PERSONNEL: "4. Đội ngũ cán bộ & Giáo viên",
-  STUDENT: "5. Công tác học sinh & Rèn luyện",
-  DIGITAL_TRANSFORMATION: "6. Chuyển đổi số & CNTT",
-  FINANCIAL: "7. Tài chính & Ngân sách",
-  ASSETS: "8. Quản lý tài sản & Thiết bị",
-  FACILITIES: "9. Cơ sở vật chất & Hạ tầng",
-  SCHOOL_SAFETY: "10. An toàn & An ninh trường học",
-  SCHOOL_RELATIONS: "11. Quan hệ Gia đình - Nhà trường - Xã hội",
-  INNOVATION: "12. Đổi mới sáng tạo & Thi đua",
-};
-
-export const DIRECTION_LABELS: Record<MeasurementDirection, string> = {
-  HIGHER_BETTER: "Càng cao càng tốt (≥)",
-  LOWER_BETTER: "Càng thấp càng tốt (≤)",
-  PASS_FAIL: "Đạt / Không đạt (Pass/Fail)",
-};
-
-export const FREQUENCY_LABELS: Record<ReportingFrequency, string> = {
-  MONTHLY: "Hàng tháng",
-  QUARTERLY: "Hàng quý",
-  SEMESTER: "Theo học kỳ",
-  YEARLY: "Hàng năm",
-};
 
 export default function KpiCatalogPage() {
   const [catalogs, setCatalogs] = useState<any[]>([]);

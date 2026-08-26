@@ -12,7 +12,7 @@ import {
   createKpiPeriod,
   seedDefaultKpiCatalog,
 } from "../actions";
-import { STATUS_LABELS } from "../entry/page";
+import { STATUS_LABELS } from "../kpi-labels";
 import { KpiPeriodStatus } from "@prisma/client";
 import {
   ShieldCheck,
