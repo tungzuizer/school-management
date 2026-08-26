@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { signIn, getSession, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -11,6 +11,12 @@ import {
   UserPlus,
   CheckCircle2,
   AlertCircle,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  BookOpen,
+  Users,
+  BarChart3,
 } from "lucide-react";
 
 function LoginFormContent() {
@@ -21,6 +27,7 @@ function LoginFormContent() {
   const [error, setError] = useState("");
   const [successNotice, setSuccessNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const isRegistered = searchParams.get("registered");
@@ -112,121 +119,262 @@ function LoginFormContent() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center bg-indigo-950">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-300" />
       </div>
     );
   }
 
   if (status === "authenticated") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
-        <div className="flex items-center gap-3 text-indigo-700 font-bold text-sm">
+      <div className="min-h-screen flex items-center justify-center bg-indigo-950">
+        <div className="flex items-center gap-3 text-indigo-300 font-semibold text-sm">
           <Loader2 className="w-5 h-5 animate-spin" />
-          <span>Đã đăng nhập - Đang chuyển hướng...</span>
+          <span>Đã đăng nhập — Đang chuyển hướng...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-8 sm:px-8 sm:py-10 text-center">
-            <div className="mx-auto w-16 h-16 bg-white p-2 rounded-2xl flex items-center justify-center mb-4 ring-4 ring-white/30 shadow-lg">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+    <div className="min-h-screen flex">
+
+      {/* LEFT PANEL */}
+      <div
+        className="hidden lg:flex lg:w-[52%] xl:w-[56%] relative flex-col justify-between overflow-hidden"
+        style={{ background: "linear-gradient(145deg, #1e1b4b 0%, #312e81 40%, #1e40af 100%)" }}
+      >
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div
+            className="absolute -top-32 -right-32 w-[520px] h-[520px] rounded-full opacity-10"
+            style={{ background: "radial-gradient(circle, #a5b4fc 0%, transparent 70%)" }}
+          />
+          <div
+            className="absolute -bottom-40 -left-20 w-[440px] h-[440px] rounded-full opacity-[0.07]"
+            style={{ background: "radial-gradient(circle, #60a5fa 0%, transparent 70%)" }}
+          />
+          <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="lgrid" width="48" height="48" patternUnits="userSpaceOnUse">
+                <path d="M 48 0 L 0 0 0 48" fill="none" stroke="white" strokeWidth="0.8" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#lgrid)" />
+          </svg>
+          <div
+            className="absolute top-1/3 left-0 w-full h-px opacity-10"
+            style={{ background: "linear-gradient(90deg, transparent 0%, #a5b4fc 50%, transparent 100%)" }}
+          />
+        </div>
+
+        <div className="relative z-10 px-12 pt-12">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)" }}
+            >
+              <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-white">
-              Quản lý Trường học
+            <span className="text-white font-bold text-base tracking-tight" style={{ opacity: 0.9 }}>Quản lý Trường học</span>
+          </div>
+        </div>
+
+        <div className="relative z-10 px-12 pb-4">
+          <p className="text-xs font-semibold tracking-widest uppercase mb-5" style={{ color: "#a5b4fc", opacity: 0.8 }}>
+            Hệ thống giáo dục
+          </p>
+          <h2 className="text-4xl xl:text-5xl font-extrabold text-white leading-tight tracking-tight mb-6">
+            Nền tảng quản lý<br />
+            <span style={{ color: "#93c5fd" }}>thông minh</span>
+          </h2>
+          <p className="text-base leading-relaxed max-w-sm" style={{ color: "#c7d2fe", opacity: 0.75 }}>
+            Kết nối giáo viên, học sinh và phụ huynh trong một hệ sinh thái giáo dục hiện đại.
+          </p>
+
+          <div className="mt-10 flex flex-col gap-3">
+            {[
+              ["Users", "Quản lý hồ sơ học sinh & giáo viên"],
+              ["BookOpen", "Theo dõi kết quả học tập"],
+              ["BarChart3", "Báo cáo và thống kê toàn diện"],
+              ["GraduationCap", "Kết nối phụ huynh — nhà trường"],
+            ].map(([key, label]) => (
+              <div key={key} className="flex items-center gap-3">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(165,180,252,0.12)" }}
+                >
+                  {key === "Users" && <Users className="w-4 h-4" style={{ color: "#93c5fd" }} />}
+                  {key === "BookOpen" && <BookOpen className="w-4 h-4" style={{ color: "#93c5fd" }} />}
+                  {key === "BarChart3" && <BarChart3 className="w-4 h-4" style={{ color: "#93c5fd" }} />}
+                  {key === "GraduationCap" && <GraduationCap className="w-4 h-4" style={{ color: "#93c5fd" }} />}
+                </div>
+                <span className="text-sm" style={{ color: "#e0e7ff", opacity: 0.75 }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative z-10 px-12 pb-10">
+          <div className="h-px w-16 mb-5" style={{ background: "rgba(165,180,252,0.25)" }} />
+          <p className="text-xs" style={{ color: "#818cf8", opacity: 0.6 }}>© 2026 Hệ thống Quản lý Giáo dục</p>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL */}
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 bg-white min-h-screen">
+
+        <div className="lg:hidden mb-10 text-center">
+          <div
+            className="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
+            style={{ background: "linear-gradient(135deg, #4f46e5, #3b82f6)" }}
+          >
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+          </div>
+          <h1 className="text-xl font-bold text-slate-900">Quản lý Trường học</h1>
+        </div>
+
+        <div className="w-full max-w-[400px]">
+
+          <div className="mb-8">
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1.5">
+              Đăng nhập
             </h1>
-            <p className="text-indigo-200 text-base mt-2">Đăng nhập để tiếp tục</p>
+            <p className="text-sm" style={{ color: "#64748b" }}>
+              Nhập thông tin tài khoản để tiếp tục
+            </p>
           </div>
 
-          <div className="p-6 sm:p-8">
-            {/* Registration Success Banner */}
-            {successNotice && (
-              <div className="mb-5 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2.5">
-                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
-                <span className="font-medium">{successNotice}</span>
-              </div>
-            )}
-
-            {/* Error */}
-            {error && (
-              <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-base flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="email" className="block text-base font-semibold text-gray-700 mb-2">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-base"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-base font-semibold text-gray-700 mb-2">
-                  Mật khẩu
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    autoComplete="current-password"
-                    className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-base"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-lg flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Đang đăng nhập...
-                  </>
-                ) : (
-                  "Đăng nhập"
-                )}
-              </button>
-            </form>
-
-            {/* Teacher Registration Link */}
-            <div className="mt-5 text-center">
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center gap-2 text-base font-semibold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-4 py-3 rounded-xl w-full transition-colors"
-              >
-                <UserPlus className="w-5 h-5 text-teal-600" />
-                Đăng ký Tài khoản Mới
-              </Link>
+          {successNotice && (
+            <div className="mb-6 p-4 rounded-xl flex items-start gap-3 text-sm" style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46" }}>
+              <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#059669" }} />
+              <span className="font-medium leading-snug">{successNotice}</span>
             </div>
+          )}
+
+          {error && (
+            <div className="mb-6 p-4 rounded-xl flex items-start gap-3 text-sm" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b" }}>
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#dc2626" }} />
+              <span className="leading-snug">{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold mb-2" style={{ color: "#374151" }}>
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: "#94a3b8" }} />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="ten@truong.edu.vn"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl text-sm placeholder-slate-400 transition-all"
+                  style={{ border: "1.5px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a" }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#4f46e5";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(79,70,229,0.12)";
+                    e.currentTarget.style.background = "#fff";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#e2e8f0";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.background = "#f8fafc";
+                  }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold mb-2" style={{ color: "#374151" }}>
+                Mật khẩu
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: "#94a3b8" }} />
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                  className="w-full pl-10 pr-11 py-3 rounded-xl text-sm placeholder-slate-400 transition-all"
+                  style={{ border: "1.5px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a" }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#4f46e5";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(79,70,229,0.12)";
+                    e.currentTarget.style.background = "#fff";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#e2e8f0";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.background = "#f8fafc";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded"
+                  style={{ color: "#94a3b8", minHeight: "auto", padding: "2px" }}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 mt-2"
+              style={{
+                background: loading ? "#a5b4fc" : "linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)",
+                boxShadow: loading ? "none" : "0 4px 14px rgba(79,70,229,0.35)",
+                cursor: loading ? "not-allowed" : "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Đang đăng nhập...
+                </>
+              ) : (
+                "Đăng nhập"
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex-1 h-px" style={{ background: "#e2e8f0" }} />
+            <span className="text-xs" style={{ color: "#94a3b8" }}>hoặc</span>
+            <div className="flex-1 h-px" style={{ background: "#e2e8f0" }} />
           </div>
+
+          <Link
+            href="/register"
+            className="mt-4 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold"
+            style={{
+              color: "#4f46e5",
+              border: "1.5px solid #e0e7ff",
+              background: "#f5f3ff",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <UserPlus className="w-4 h-4" />
+            Đăng ký tài khoản mới
+          </Link>
+
+          <p className="mt-8 text-center text-xs" style={{ color: "#94a3b8" }}>
+            Bằng cách đăng nhập, bạn đồng ý với{" "}
+            <span className="font-medium cursor-pointer" style={{ color: "#6366f1" }}>điều khoản sử dụng</span>
+          </p>
         </div>
       </div>
     </div>
@@ -237,8 +385,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <div className="min-h-screen flex items-center justify-center bg-indigo-950">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-300" />
         </div>
       }
     >
