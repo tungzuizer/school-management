@@ -14,12 +14,22 @@ datasource db {
 // ==================== ENUMS ====================
 
 enum Role {
-  DEPARTMENT_ADMIN
-  WARD_ADMIN
-  ADMIN
-  VICE_PRINCIPAL
+  SUPER_ADMIN       // System Admin — infra only, no academic data
+  DEPARTMENT_ADMIN  // Sở GD&ĐT — aggregate read for all schools under department
+  DISTRICT_ADMIN    // Phòng GD&ĐT — aggregate read for schools in district
+  WARD_ADMIN        // UBND Xã (commune) — read-only statistics for campuses in ward
+  ADMIN             // Hiệu trưởng — full access across all campuses of the school
+  VICE_PRINCIPAL    // Phó Hiệu trưởng — full access within assigned campus only
+  SUBJECT_HEAD      // Tổ trưởng chuyên môn — cross-campus access scoped to subject group
   TEACHER
   STUDENT
+}
+
+enum ScopeType {
+  GLOBAL        // Unrestricted (SUPER_ADMIN, DEPARTMENT_ADMIN)
+  CAMPUS        // Scoped to a single campus (VICE_PRINCIPAL)
+  SUBJECT_GROUP // Scoped to a subject group across all campuses (SUBJECT_HEAD)
+  WARD          // Scoped to a geographic ward (WARD_ADMIN)
 }
 
 enum ManagementBranch {
@@ -157,6 +167,7 @@ model DistrictWard {
   department EducationDepartment @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   schools    School[]
   users      User[]
+  campusMaps CampusWardMap[]
 
   @@index([departmentId])
   @@index([name])
@@ -173,8 +184,9 @@ model User {
   departmentId   String?
   districtWardId String?
   schoolId       String?
-  campusId       String?
-  createdAt      DateTime @default(now())
+  campusId            String?
+  mustChangePassword  Boolean  @default(false)
+  createdAt           DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relations
@@ -184,6 +196,7 @@ model User {
   teacher               Teacher?
   student               Student?
   campus                Campus?              @relation(fields: [campusId], references: [id])
+  userRoleScopes        UserRoleScope[]
   sentNotifications     Notification[]       @relation("SentNotifications")
   receivedNotifications Notification[]       @relation("ReceivedNotifications")
 
@@ -193,6 +206,38 @@ model User {
   @@index([districtWardId])
   @@index([schoolId])
   @@index([campusId])
+}
+
+model UserRoleScope {
+  id             String    @id @default(cuid())
+  userId         String
+  role           Role
+  scopeType      ScopeType
+  scopeId        String?   // campusId OR wardId depending on scopeType
+  subjectGroupId String?   // for SUBJECT_HEAD: the subject group they manage
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjectGroup SubjectGroup? @relation(fields: [subjectGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role, scopeId, subjectGroupId])
+  @@index([userId])
+  @@index([role])
+  @@index([subjectGroupId])
+}
+
+model CampusWardMap {
+  campusId String
+  wardId   String
+
+  // Relations
+  campus Campus       @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  ward   DistrictWard @relation(fields: [wardId], references: [id], onDelete: Cascade)
+
+  @@id([campusId, wardId])
+  @@index([campusId])
+  @@index([wardId])
 }
 
 model School {
@@ -238,6 +283,7 @@ model Campus {
   users        User[]
   schoolPoints SchoolPoint[]
   classRooms   ClassRoom[]
+  wardMaps     CampusWardMap[]
 
   @@index([schoolId])
   @@index([name])
@@ -453,7 +499,8 @@ model SubjectGroup {
   // Relations
   school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   headTeacher Teacher?  @relation("SubjectGroupHead", fields: [headTeacherId], references: [id], onDelete: SetNull)
-  subjects    Subject[]
+  subjects        Subject[]
+  userRoleScopes  UserRoleScope[]
 
   @@index([schoolId])
   @@index([headTeacherId])

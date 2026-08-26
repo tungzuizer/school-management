@@ -529,3 +529,177 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+
+
+// ============================================================
+// RBAC DEMO ACCOUNTS SEEDER
+// Creates 7 demo accounts covering all roles in the hierarchy.
+// Run: npx prisma db seed
+// ============================================================
+
+async function seedRbacAccounts() {
+  const pw = await bcrypt.hash("Demo@2026!", 10);
+
+  // 1. SUPER_ADMIN — System Admin (infrastructure only)
+  const superAdmin = await prisma.user.upsert({
+    where: { email: "sysadmin@so-gddt.gov.vn" },
+    update: {},
+    create: {
+      email: "sysadmin@so-gddt.gov.vn",
+      password: pw,
+      name: "Quan Tri He Thong",
+      role: "SUPER_ADMIN" as Role,
+      isApproved: true,
+    },
+  });
+  await (prisma as any).userRoleScope.upsert({
+    where: { id: `scope-superadmin-${superAdmin.id}` },
+    update: {},
+    create: {
+      id: `scope-superadmin-${superAdmin.id}`,
+      userId: superAdmin.id,
+      role: "SUPER_ADMIN" as Role,
+      scopeType: "GLOBAL" as any,
+    },
+  });
+  console.log("  [1] SUPER_ADMIN: sysadmin@so-gddt.gov.vn / Demo@2026!");
+
+  // 2. DEPARTMENT_ADMIN — So GD&DT officer (aggregate read)
+  const dept = await prisma.user.upsert({
+    where: { email: "cbso@so-gddt.gov.vn" },
+    update: {},
+    create: {
+      email: "cbso@so-gddt.gov.vn",
+      password: pw,
+      name: "Can Bo So GD&DT",
+      role: "DEPARTMENT_ADMIN" as Role,
+      isApproved: true,
+    },
+  });
+  await (prisma as any).userRoleScope.upsert({
+    where: { id: `scope-dept-${dept.id}` },
+    update: {},
+    create: {
+      id: `scope-dept-${dept.id}`,
+      userId: dept.id,
+      role: "DEPARTMENT_ADMIN" as Role,
+      scopeType: "GLOBAL" as any,
+    },
+  });
+  console.log("  [2] DEPARTMENT_ADMIN: cbso@so-gddt.gov.vn / Demo@2026!");
+
+  // 3. DISTRICT_ADMIN — Phong GD&DT officer
+  const district = await prisma.user.upsert({
+    where: { email: "cbphong@phonggd.gov.vn" },
+    update: {},
+    create: {
+      email: "cbphong@phonggd.gov.vn",
+      password: pw,
+      name: "Can Bo Phong GD&DT",
+      role: "DISTRICT_ADMIN" as Role,
+      isApproved: true,
+    },
+  });
+  await (prisma as any).userRoleScope.upsert({
+    where: { id: `scope-district-${district.id}` },
+    update: {},
+    create: {
+      id: `scope-district-${district.id}`,
+      userId: district.id,
+      role: "DISTRICT_ADMIN" as Role,
+      scopeType: "GLOBAL" as any,
+    },
+  });
+  console.log("  [3] DISTRICT_ADMIN: cbphong@phonggd.gov.vn / Demo@2026!");
+
+  // 4. WARD_ADMIN — UBND Xa commune officer (geographic read-only)
+  const wardUser = await prisma.user.upsert({
+    where: { email: "vhxh.tanxa@diaphuong.gov.vn" },
+    update: {},
+    create: {
+      email: "vhxh.tanxa@diaphuong.gov.vn",
+      password: pw,
+      name: "Can Bo Van Hoa Xa Tan Xa",
+      role: "WARD_ADMIN" as Role,
+      isApproved: true,
+    },
+  });
+  console.log("  [4] WARD_ADMIN: vhxh.tanxa@diaphuong.gov.vn / Demo@2026!");
+  console.log("      (Assign ward in UserRoleScope after CampusWardMap is populated)");
+
+  // 5. ADMIN — Hieu truong (full school access)
+  const hieut = await prisma.user.upsert({
+    where: { email: "ht.tanxa@school.edu.vn" },
+    update: {},
+    create: {
+      email: "ht.tanxa@school.edu.vn",
+      password: pw,
+      name: "Hieu Truong THCS Tan Xa",
+      role: "ADMIN" as Role,
+      isApproved: true,
+    },
+  });
+  await (prisma as any).userRoleScope.upsert({
+    where: { id: `scope-admin-${hieut.id}` },
+    update: {},
+    create: {
+      id: `scope-admin-${hieut.id}`,
+      userId: hieut.id,
+      role: "ADMIN" as Role,
+      scopeType: "GLOBAL" as any,
+    },
+  });
+  console.log("  [5] ADMIN (Hieu truong): ht.tanxa@school.edu.vn / Demo@2026!");
+
+  // 6. VICE_PRINCIPAL — Pho Hieu truong phu trach Diem 1
+  const vp = await prisma.user.upsert({
+    where: { email: "pht.diem1.tanxa@school.edu.vn" },
+    update: {},
+    create: {
+      email: "pht.diem1.tanxa@school.edu.vn",
+      password: pw,
+      name: "Pho Hieu Truong Diem 1",
+      role: "VICE_PRINCIPAL" as Role,
+      isApproved: true,
+    },
+  });
+  // VICE_PRINCIPAL scope is tied to a specific campusId.
+  // Left without campusId here — assign campusId after campus is created.
+  console.log("  [6] VICE_PRINCIPAL (Diem 1): pht.diem1.tanxa@school.edu.vn / Demo@2026!");
+  console.log("      (Assign campusId to this user + UserRoleScope after campus seeding)");
+
+  // 7. SUBJECT_HEAD — To truong chuyen mon Toan
+  const ttcm = await prisma.user.upsert({
+    where: { email: "ttcm.toan.tanxa@school.edu.vn" },
+    update: {},
+    create: {
+      email: "ttcm.toan.tanxa@school.edu.vn",
+      password: pw,
+      name: "To Truong Chuyen Mon Toan",
+      role: "SUBJECT_HEAD" as Role,
+      isApproved: true,
+    },
+  });
+  // SUBJECT_HEAD scope is tied to a SubjectGroup.
+  // Left without subjectGroupId here — assign after SubjectGroup is populated.
+  console.log("  [7] SUBJECT_HEAD (Toan): ttcm.toan.tanxa@school.edu.vn / Demo@2026!");
+  console.log("      (Assign subjectGroupId in UserRoleScope after SubjectGroup seeding)");
+
+  // 8. TEACHER demo account
+  const teacher = await prisma.user.upsert({
+    where: { email: "gv.hoa.tanxa@school.edu.vn" },
+    update: {},
+    create: {
+      email: "gv.hoa.tanxa@school.edu.vn",
+      password: pw,
+      name: "Tran Thi Hoa",
+      role: "TEACHER" as Role,
+      isApproved: true,
+    },
+  });
+  console.log("  [8] TEACHER: gv.hoa.tanxa@school.edu.vn / Demo@2026!");
+
+  console.log("\n  All RBAC demo passwords: Demo@2026!");
+  console.log("  Run 'npx prisma migrate dev' first, then 'npx prisma db seed'");
+}

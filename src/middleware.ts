@@ -7,47 +7,59 @@ export default withAuth(
     const path = req.nextUrl.pathname;
     const role = token?.role as string;
     const email = token?.email as string;
+    const campusId = token?.campusId as string | undefined;
 
     const isSuperAdmin =
       email === "superadmin@school.com" ||
+      email === "sysadmin@so-gddt.gov.vn" ||
       role === "SUPER_ADMIN";
 
-    // Quản trị viên tối cao (Super Admin) được phép truy cập tất cả các phân hệ
+    // SUPER_ADMIN: infra only — blocked from academic data routes
     if (isSuperAdmin) {
+      const academicPaths = ["/teacher", "/student", "/vice-principal"];
+      if (academicPaths.some((p) => path.startsWith(p))) {
+        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      }
       return NextResponse.next();
     }
 
-    // Khu vực Sở GD&ĐT: Chỉ dành riêng cho DEPARTMENT_ADMIN
-    const deptRoles = ["DEPARTMENT_ADMIN"];
-    if (path.startsWith("/department") && !deptRoles.includes(role)) {
+    // /department: So GD&DT only
+    if (path.startsWith("/department") && role !== "DEPARTMENT_ADMIN") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Phòng GD&ĐT: Chỉ dành riêng cho WARD_ADMIN
-    const wardRoles = ["WARD_ADMIN"];
-    if (path.startsWith("/ward") && !wardRoles.includes(role)) {
+    // /district: Phong GD&DT only
+    if (path.startsWith("/district") && role !== "DISTRICT_ADMIN") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Admin (Hiệu trưởng): Chỉ dành riêng cho ADMIN
-    const adminRoles = ["ADMIN"];
-    if (path.startsWith("/admin") && !adminRoles.includes(role)) {
+    // /ward: UBND Xa commune only
+    if (path.startsWith("/ward") && role !== "WARD_ADMIN") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Phó Hiệu trưởng: Chỉ dành riêng cho VICE_PRINCIPAL
-    const vpRoles = ["VICE_PRINCIPAL"];
-    if (path.startsWith("/vice-principal") && !vpRoles.includes(role)) {
+    // /admin: Hieu truong only
+    if (path.startsWith("/admin") && role !== "ADMIN") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Giáo viên: TEACHER, VICE_PRINCIPAL, ADMIN
-    const teacherRoles = ["TEACHER", "VICE_PRINCIPAL", "ADMIN"];
+    // /vice-principal: PHT only — also enforced by campusId at action layer
+    if (path.startsWith("/vice-principal") && role !== "VICE_PRINCIPAL") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    // /subject-head: To truong chuyen mon only
+    if (path.startsWith("/subject-head") && role !== "SUBJECT_HEAD") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    // /teacher: TEACHER, VICE_PRINCIPAL, ADMIN, SUBJECT_HEAD
+    const teacherRoles = ["TEACHER", "VICE_PRINCIPAL", "ADMIN", "SUBJECT_HEAD"];
     if (path.startsWith("/teacher") && !teacherRoles.includes(role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // Khu vực Học sinh: STUDENT, TEACHER, ADMIN, VICE_PRINCIPAL
+    // /student: STUDENT, TEACHER, ADMIN, VICE_PRINCIPAL
     const studentRoles = ["STUDENT", "TEACHER", "ADMIN", "VICE_PRINCIPAL"];
     if (path.startsWith("/student") && !studentRoles.includes(role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
@@ -65,9 +77,11 @@ export default withAuth(
 export const config = {
   matcher: [
     "/department/:path*",
+    "/district/:path*",
     "/ward/:path*",
     "/admin/:path*",
     "/vice-principal/:path*",
+    "/subject-head/:path*",
     "/teacher/:path*",
     "/student/:path*",
   ],
