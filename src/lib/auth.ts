@@ -37,8 +37,8 @@ export const authOptions: NextAuthOptions = {
               user.password
             );
             if (isPasswordValid) {
-              // Chỉ buộc đổi mật khẩu cho tài khoản KHÔNG phải demo
-              // Demo accounts (abc123/123456) không cần buộc đổi
+              // Chá»‰ buá»™c Ä‘á»•i máº­t kháº©u cho tĂ i khoáº£n KHĂ”NG pháº£i demo
+              // Demo accounts (abc123/123456) khĂ´ng cáº§n buá»™c Ä‘á»•i
               const demoEmails = [
                 "superadmin@school.com", "admin@school.com", "dept@school.com",
                 "ward@school.com", "vp1@school.com", "teacher@school.com", "student@school.com",
@@ -71,8 +71,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Demo Mode Fallback (Enabled only when ALLOW_DEMO_LOGIN === "true" or Development)
-        // CHỈ chạy khi user KHÔNG tồn tại trong DB (không tìm thấy email)
-        // Nếu user tồn tại nhưng password sai → return null (không tạo user mới)
+        // CHá»ˆ cháº¡y khi user KHĂ”NG tá»“n táº¡i trong DB (khĂ´ng tĂ¬m tháº¥y email)
+        // Náº¿u user tá»“n táº¡i nhÆ°ng password sai â†’ return null (khĂ´ng táº¡o user má»›i)
         if (!user && isDemoAllowed) {
           const isDefaultPass =
             credentials.password === "abc123" ||
@@ -85,35 +85,43 @@ export const authOptions: NextAuthOptions = {
               email.includes("superadmin") ||
               email.includes("teacher") ||
               email.includes("student") ||
-              email.includes("vp") ||
-              email.includes("dept") ||
-              email.includes("ward"))
+              email.includes("vp") || email.includes("pht") ||
+              email.includes("dept") || email.includes("sogd") ||
+              email.includes("ward") || email.includes("district") ||
+              email.includes("phonggd") || email.includes("diaphuong") ||
+              email.includes("ttcm") || email.includes("subjecthead"))
           ) {
-            const role = email.includes("dept")
+            const role = email.includes("superadmin") || email.includes("sysadmin")
+              ? "SUPER_ADMIN"
+              : email.includes("dept") || email.includes("sogd")
               ? "DEPARTMENT_ADMIN"
-              : email.includes("ward")
+              : email.includes("district") || email.includes("phonggd")
+              ? "DISTRICT_ADMIN"
+              : email.includes("ward") || email.includes("diaphuong")
               ? "WARD_ADMIN"
               : email.includes("admin")
               ? "ADMIN"
-              : email.includes("vp")
+              : email.includes("vp") || email.includes("pht")
               ? "VICE_PRINCIPAL"
-              : email.includes("teacher")
+              : email.includes("ttcm") || email.includes("subjecthead")
+              ? "SUBJECT_HEAD"
+              : email.includes("teacher") || email.includes("gv")
               ? "TEACHER"
               : "STUDENT";
 
             const name = email.includes("superadmin")
-              ? "Quản Trị Viên Tối Cao (Super Admin)"
+              ? "Quáº£n Trá»‹ ViĂªn Tá»‘i Cao (Super Admin)"
               : email.includes("dept")
-              ? "Lãnh đạo Sở GD&ĐT"
+              ? "LĂ£nh Ä‘áº¡o Sá»Ÿ GD&ÄT"
               : email.includes("ward")
-              ? "Cán bộ Phòng GD&ĐT"
+              ? "CĂ¡n bá»™ PhĂ²ng GD&ÄT"
               : email.includes("admin")
-              ? "Nguyễn Văn Admin"
+              ? "Nguyá»…n VÄƒn Admin"
               : email.includes("vp")
-              ? "Phó Hiệu trưởng"
+              ? "PhĂ³ Hiá»‡u trÆ°á»Ÿng"
               : email.includes("teacher")
-              ? "Trần Thị Hoa"
-              : "Phạm Quang Huy";
+              ? "Tráº§n Thá»‹ Hoa"
+              : "Pháº¡m Quang Huy";
 
             const hashedPassword = await bcrypt.hash(credentials.password, 10);
             try {

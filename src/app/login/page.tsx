@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { signIn, getSession, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -56,8 +56,14 @@ function LoginFormContent() {
       session = await getSession();
     }
     const role = session?.user?.role;
-    if (role === "DEPARTMENT_ADMIN") {
+    if (role === "SUPER_ADMIN") {
+      window.location.href = "/admin/dashboard";
+      return;
+    } else if (role === "DEPARTMENT_ADMIN") {
       window.location.href = "/department/dashboard";
+      return;
+    } else if (role === "DISTRICT_ADMIN") {
+      window.location.href = "/district/dashboard";
       return;
     } else if (role === "WARD_ADMIN") {
       window.location.href = "/ward/dashboard";
@@ -65,11 +71,14 @@ function LoginFormContent() {
     } else if (role === "ADMIN") {
       window.location.href = "/admin/dashboard";
       return;
-    } else if (role === "TEACHER") {
-      window.location.href = "/teacher/dashboard";
-      return;
     } else if (role === "VICE_PRINCIPAL") {
       window.location.href = "/vice-principal/dashboard";
+      return;
+    } else if (role === "SUBJECT_HEAD") {
+      window.location.href = "/subject-head/dashboard";
+      return;
+    } else if (role === "TEACHER") {
+      window.location.href = "/teacher/dashboard";
       return;
     } else if (role === "STUDENT") {
       window.location.href = "/student/dashboard";
@@ -77,14 +86,20 @@ function LoginFormContent() {
     }
 
     const checkEmail = (targetEmail || email).toLowerCase();
-    if (checkEmail.includes("department") || checkEmail.includes("sogd")) {
+    if (checkEmail.includes("superadmin") || checkEmail.includes("sysadmin")) {
+      window.location.href = "/admin/dashboard";
+    } else if (checkEmail.includes("department") || checkEmail.includes("sogd")) {
       window.location.href = "/department/dashboard";
-    } else if (checkEmail.includes("ward") || checkEmail.includes("phonggd")) {
+    } else if (checkEmail.includes("district") || checkEmail.includes("phonggd")) {
+      window.location.href = "/district/dashboard";
+    } else if (checkEmail.includes("ward") || checkEmail.includes("diaphuong")) {
       window.location.href = "/ward/dashboard";
     } else if (checkEmail.includes("admin")) {
       window.location.href = "/admin/dashboard";
-    } else if (checkEmail.includes("vp")) {
+    } else if (checkEmail.includes("vp") || checkEmail.includes("pht")) {
       window.location.href = "/vice-principal/dashboard";
+    } else if (checkEmail.includes("ttcm")) {
+      window.location.href = "/subject-head/dashboard";
     } else if (checkEmail.includes("teacher")) {
       window.location.href = "/teacher/dashboard";
     } else if (checkEmail.includes("student")) {
