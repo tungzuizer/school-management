@@ -18,6 +18,7 @@ import {
   EyeOff,
   ArrowLeft,
   UserPlus,
+  Briefcase,
 } from "lucide-react";
 import { getRegistrationFormData, registerTeacher } from "./actions";
 
@@ -52,10 +53,39 @@ const COMMON_SPECIALTIES = [
   "Mỹ thuật",
 ];
 
+const ROLES = [
+  {
+    value: "TEACHER" as const,
+    label: "Giáo viên",
+    sub: "Bộ môn / CN",
+    Icon: User,
+    activeColor: "#0d9488",
+    activeBg: "#f0fdfa",
+    activeBorder: "#0d9488",
+  },
+  {
+    value: "ADMIN" as const,
+    label: "Hiệu trưởng",
+    sub: "ADMIN",
+    Icon: Building2,
+    activeColor: "#4f46e5",
+    activeBg: "#eef2ff",
+    activeBorder: "#4f46e5",
+  },
+  {
+    value: "VICE_PRINCIPAL" as const,
+    label: "Phó HT",
+    sub: "VP",
+    Icon: Briefcase,
+    activeColor: "#7c3aed",
+    activeBg: "#f5f3ff",
+    activeBorder: "#7c3aed",
+  },
+];
+
 export default function RegisterTeacherPage() {
   const router = useRouter();
 
-  // Form states
   const [accountRole, setAccountRole] = useState<"TEACHER" | "ADMIN" | "VICE_PRINCIPAL">("TEACHER");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -69,7 +99,6 @@ export default function RegisterTeacherPage() {
   const [specialty, setSpecialty] = useState("Toán");
   const [customSpecialty, setCustomSpecialty] = useState("");
 
-  // Metadata
   const [departments, setDepartments] = useState<OptionItem[]>([]);
   const [districtWards, setDistrictWards] = useState<
     { id: string; name: string; departmentId: string }[]
@@ -77,7 +106,6 @@ export default function RegisterTeacherPage() {
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [subjects, setSubjects] = useState<OptionItem[]>([]);
 
-  // UI status
   const [showPassword, setShowPassword] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -108,34 +136,23 @@ export default function RegisterTeacherPage() {
       }
       setLoadingData(false);
     }
-
     loadData();
   }, []);
 
-  // Filter district wards based on selected department
   const filteredDistrictWards = selectedDeptId
     ? districtWards.filter((dw) => dw.departmentId === selectedDeptId)
     : districtWards;
 
-  // Filter schools based on selected department / district ward
   const filteredSchools = schools.filter((s) => {
-    if (selectedDistrictWardId && s.districtWardId !== selectedDistrictWardId) {
-      return false;
-    }
-    if (selectedDeptId && s.departmentId !== selectedDeptId) {
-      return false;
-    }
+    if (selectedDistrictWardId && s.districtWardId !== selectedDistrictWardId) return false;
+    if (selectedDeptId && s.departmentId !== selectedDeptId) return false;
     return true;
   });
 
   const handleDistrictWardChange = (dwId: string) => {
     setSelectedDistrictWardId(dwId);
     const matching = schools.filter((s) => !dwId || s.districtWardId === dwId);
-    if (matching.length > 0) {
-      setSelectedSchoolId(matching[0].id);
-    } else {
-      setSelectedSchoolId("");
-    }
+    setSelectedSchoolId(matching.length > 0 ? matching[0].id : "");
   };
 
   const handleSchoolChange = (schId: string) => {
@@ -152,35 +169,12 @@ export default function RegisterTeacherPage() {
     setErrorMsg("");
     setSuccessMsg("");
 
-    if (!name.trim()) {
-      setErrorMsg("Vui lòng nhập Họ và tên.");
-      return;
-    }
-
-    if (!email.trim()) {
-      setErrorMsg("Vui lòng nhập Địa chỉ Email.");
-      return;
-    }
-
-    if (!phone.trim()) {
-      setErrorMsg("Vui lòng nhập Số điện thoại liên hệ.");
-      return;
-    }
-
-    if (!selectedSchoolId) {
-      setErrorMsg("Vui lòng chọn Trường học nơi bạn đang công tác.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setErrorMsg("Mật khẩu phải có độ dài từ 6 ký tự trở lên.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMsg("Xác nhận mật khẩu không trùng khớp.");
-      return;
-    }
+    if (!name.trim()) { setErrorMsg("Vui lòng nhập Họ và tên."); return; }
+    if (!email.trim()) { setErrorMsg("Vui lòng nhập Địa chỉ Email."); return; }
+    if (!phone.trim()) { setErrorMsg("Vui lòng nhập Số điện thoại liên hệ."); return; }
+    if (!selectedSchoolId) { setErrorMsg("Vui lòng chọn Trường học nơi bạn đang công tác."); return; }
+    if (password.length < 6) { setErrorMsg("Mật khẩu phải có độ dài từ 6 ký tự trở lên."); return; }
+    if (password !== confirmPassword) { setErrorMsg("Xác nhận mật khẩu không trùng khớp."); return; }
 
     const finalSpecialty = specialty === "OTHER" ? customSpecialty : specialty;
 
@@ -206,252 +200,274 @@ export default function RegisterTeacherPage() {
 
       setSuccessMsg(res.message || "Đăng ký tài khoản thành công!");
       setIsSubmitting(false);
-
       setTimeout(() => {
         router.push("/login?registered=1&email=" + encodeURIComponent(email));
       }, 2000);
-    } catch (err: any) {
+    } catch {
       setErrorMsg("Lỗi kết nối máy chủ. Vui lòng thử lại sau.");
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-indigo-100 p-4 sm:p-6">
-      <div className="w-full max-w-2xl">
-        <div className="bg-white rounded-3xl shadow-2xl border border-teal-100 overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 px-6 py-8 sm:px-10 sm:py-10 text-center relative">
-            <Link
-              href="/login"
-              className="absolute left-4 top-4 text-white/80 hover:text-white flex items-center gap-1.5 text-sm font-medium bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> Quay lại
-            </Link>
+  const activeRole = ROLES.find((r) => r.value === accountRole)!;
 
-            <div className="mx-auto w-16 h-16 bg-white p-2 rounded-2xl flex items-center justify-center mb-3 ring-4 ring-white/30 shadow-lg">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Đăng ký Tài khoản Giáo viên & Hiệu trưởng
+  return (
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 35%, #eef2ff 100%)" }}
+    >
+      {/* ── COMPACT MOBILE HEADER ────────────────────────────────────────── */}
+      <div
+        className="relative flex-shrink-0"
+        style={{ background: "linear-gradient(135deg, #059669 0%, #0d9488 50%, #4f46e5 100%)" }}
+      >
+        {/* back button */}
+        <Link
+          href="/login"
+          className="absolute left-4 top-4 flex items-center gap-1.5 text-sm font-semibold text-white/90 hover:text-white z-10"
+          style={{
+            background: "rgba(255,255,255,0.15)",
+            backdropFilter: "blur(8px)",
+            padding: "6px 12px",
+            borderRadius: "999px",
+            minHeight: "36px",
+          }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Quay lại</span>
+        </Link>
+
+        <div className="flex items-center gap-4 px-5 pt-4 pb-5 sm:px-10 sm:py-8 sm:flex-col sm:text-center">
+          {/* logo + title row on mobile, stacked on sm+ */}
+          <div
+            className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ring-2 ring-white/30 shadow-lg sm:mx-auto"
+            style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)" }}
+          >
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+          </div>
+          <div className="pt-8 sm:pt-0 sm:mt-2">
+            <h1 className="text-lg sm:text-2xl font-extrabold text-white leading-tight">
+              Đăng ký Tài khoản
             </h1>
-            <p className="text-emerald-100 text-sm sm:text-base mt-2 max-w-md mx-auto">
-              Hệ thống Quản lý Giáo dục liên thông Trường - Phòng - Sở GD&ĐT
+            <p className="text-xs sm:text-sm mt-0.5 sm:mt-1.5 sm:max-w-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
+              Hệ thống Quản lý Giáo dục liên thông
             </p>
           </div>
+        </div>
+      </div>
 
-          <div className="p-6 sm:p-10">
-            {/* Status alerts */}
+      {/* ── FORM CARD ─────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex justify-center px-0 sm:px-6 py-0 sm:py-8">
+        <div
+          className="w-full sm:max-w-2xl sm:rounded-3xl bg-white sm:shadow-2xl overflow-hidden"
+          style={{ borderTop: "none" }}
+        >
+          <div className="px-5 pt-6 pb-8 sm:px-10 sm:pt-8 sm:pb-10">
+
+            {/* Alerts */}
             {errorMsg && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
+              <div className="mb-5 p-3.5 rounded-2xl flex items-start gap-3 text-sm" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b" }}>
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
                 <span>{errorMsg}</span>
               </div>
             )}
-
             {successMsg && (
-              <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-sm flex items-center gap-3">
-                <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-600" />
+              <div className="mb-5 p-4 rounded-2xl flex items-start gap-3 text-sm" style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46" }}>
+                <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-600" />
                 <div>
                   <p className="font-bold text-base">{successMsg}</p>
-                  <p className="text-xs text-emerald-600 mt-0.5">
-                    Đang tự động chuyển hướng đến trang đăng nhập trong giây lát...
-                  </p>
+                  <p className="text-xs text-emerald-600 mt-0.5">Đang chuyển hướng đến trang đăng nhập...</p>
                 </div>
               </div>
             )}
 
             {loadingData ? (
               <div className="py-16 text-center text-gray-500">
-                <Loader2 className="w-10 h-10 animate-spin text-teal-600 mx-auto mb-3" />
-                <p className="font-medium text-base">Đang tải danh sách Trường học & Khu vực...</p>
+                <Loader2 className="w-9 h-9 animate-spin text-teal-600 mx-auto mb-3" />
+                <p className="font-medium text-base">Đang tải danh sách trường học...</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Role selection */}
-                <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100 space-y-2">
-                  <label className="block text-sm font-bold text-gray-800">
-                    Chọn loại tài khoản muốn đăng ký <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setAccountRole("TEACHER")}
-                      className={`p-3 rounded-xl border text-xs sm:text-sm font-bold text-center transition-all cursor-pointer ${
-                        accountRole === "TEACHER"
-                          ? "bg-teal-600 text-white border-teal-600 shadow-md"
-                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      👨🏫 Giáo viên bộ môn / CN
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAccountRole("ADMIN")}
-                      className={`p-3 rounded-xl border text-xs sm:text-sm font-bold text-center transition-all cursor-pointer ${
-                        accountRole === "ADMIN"
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
-                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      🏫 Hiệu trưởng (ADMIN)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAccountRole("VICE_PRINCIPAL")}
-                      className={`p-3 rounded-xl border text-xs sm:text-sm font-bold text-center transition-all cursor-pointer ${
-                        accountRole === "VICE_PRINCIPAL"
-                          ? "bg-purple-600 text-white border-purple-600 shadow-md"
-                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      🏛️ Phó Hiệu trưởng (VP)
-                    </button>
+
+                {/* ── ROLE SELECTOR: horizontal pill tabs ─────────────────── */}
+                <div>
+                  <p className="text-sm font-bold text-gray-800 mb-3">
+                    Loại tài khoản <span className="text-red-500">*</span>
+                  </p>
+                  <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+                    {ROLES.map(({ value, label, sub, Icon, activeColor, activeBg, activeBorder }) => {
+                      const active = accountRole === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setAccountRole(value)}
+                          className="flex items-center gap-2 flex-shrink-0 rounded-2xl px-4 font-semibold text-sm transition-all"
+                          style={{
+                            minHeight: "48px",
+                            paddingTop: "10px",
+                            paddingBottom: "10px",
+                            background: active ? activeBg : "#f8fafc",
+                            border: `1.5px solid ${active ? activeBorder : "#e2e8f0"}`,
+                            color: active ? activeColor : "#64748b",
+                            boxShadow: active ? `0 2px 8px ${activeColor}22` : "none",
+                          }}
+                        >
+                          <Icon className="w-4 h-4 flex-shrink-0" />
+                          <span>
+                            {label}
+                            <span className="hidden sm:inline" style={{ opacity: 0.65 }}>{" "}({sub})</span>
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                  <p className="text-[11px] text-gray-500 italic mt-1">
-                    * Tài khoản Giáo viên sẽ do Hiệu trưởng trường phê duyệt. Tài khoản Hiệu trưởng/Phó Hiệu trưởng sẽ do Sở GD&ĐT / Admin Hệ thống phê duyệt.
+                  <p className="text-[11px] text-gray-400 italic mt-2 leading-snug">
+                    * Tài khoản Giáo viên: Hiệu trưởng phê duyệt. Tài khoản HT/PHT: Admin hệ thống phê duyệt.
                   </p>
                 </div>
 
-                {/* Personal & Contact Section */}
+                {/* ── PERSONAL INFO ────────────────────────────────────────── */}
                 <div>
-                  <h3 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-                    <User className="w-5 h-5 text-teal-600" /> Thông tin cá nhân & Liên hệ
+                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <User className="w-4 h-4" style={{ color: activeRole.activeColor }} />
+                    Thông tin cá nhân & Liên hệ
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Full Name */}
-                    <div className="sm:col-span-2">
+                  <div className="space-y-4">
+                    {/* Full name — always full width */}
+                    <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        Họ và tên giáo viên <span className="text-red-500">*</span>
+                        Họ và tên <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="Ví dụ: Nguyễn Văn An"
                           required
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl text-sm transition-all"
+                          style={{ border: "1.5px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a" }}
                         />
                       </div>
                     </div>
 
-                    {/* Email */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        Email làm việc <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="giaovien@school.edu.vn"
-                          required
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base transition-colors"
-                        />
+                    {/* Email + Phone: side by side on sm, stacked on mobile */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="giaovien@school.edu.vn"
+                            required
+                            className="w-full pl-10 pr-4 py-3 rounded-xl text-sm transition-all"
+                            style={{ border: "1.5px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a" }}
+                          />
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Phone */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        Số điện thoại liên hệ <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="0912 345 678"
-                          required
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base transition-colors"
-                        />
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                          Số điện thoại <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="0912 345 678"
+                            required
+                            className="w-full pl-10 pr-4 py-3 rounded-xl text-sm transition-all"
+                            style={{ border: "1.5px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a" }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Organization & Specialty Section */}
+                {/* ── ORGANIZATION ─────────────────────────────────────────── */}
                 <div>
-                  <h3 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-                    <Building2 className="w-5 h-5 text-teal-600" /> Đơn vị công tác & Chuyên môn
+                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <Building2 className="w-4 h-4" style={{ color: activeRole.activeColor }} />
+                    Đơn vị công tác & Chuyên môn
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Area / District Ward */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        Khu vực / Phòng GD&ĐT
-                      </label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <select
-                          value={selectedDistrictWardId}
-                          onChange={(e) => handleDistrictWardChange(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base bg-white transition-colors"
-                        >
-                          <option value="">-- Tất cả các khu vực --</option>
-                          {filteredDistrictWards.map((dw) => (
-                            <option key={dw.id} value={dw.id}>
-                              {dw.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* School selection */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        Trường học công tác <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <select
-                          value={selectedSchoolId}
-                          onChange={(e) => handleSchoolChange(e.target.value)}
-                          required
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base bg-white font-medium transition-colors text-gray-900"
-                        >
-                          {filteredSchools.length === 0 ? (
-                            <option value="">Không có trường phù hợp</option>
-                          ) : (
-                            filteredSchools.map((sch) => (
-                              <option key={sch.id} value={sch.id}>
-                                {sch.name}{" "}
-                                {sch.districtWard?.name ? "(" + sch.districtWard.name + ")" : ""}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Specialty selection */}
-                    {accountRole === "TEACHER" && (
-                      <div className="sm:col-span-2">
+                  <div className="space-y-4">
+                    {/* Area + School: stacked on mobile, side-by-side on sm */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                          Chuyên môn giảng dạy chính <span className="text-red-500">*</span>
+                          Khu vực / Phòng GD&ĐT
                         </label>
                         <div className="relative">
-                          <BookOpen className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <select
+                            value={selectedDistrictWardId}
+                            onChange={(e) => handleDistrictWardChange(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-white transition-all appearance-none"
+                            style={{ border: "1.5px solid #e2e8f0", outline: "none", color: "#0f172a" }}
+                          >
+                            <option value="">-- Tất cả --</option>
+                            {filteredDistrictWards.map((dw) => (
+                              <option key={dw.id} value={dw.id}>{dw.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                          Trường học <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <select
+                            value={selectedSchoolId}
+                            onChange={(e) => handleSchoolChange(e.target.value)}
+                            required
+                            className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-white font-medium transition-all appearance-none"
+                            style={{ border: "1.5px solid #e2e8f0", outline: "none", color: "#0f172a" }}
+                          >
+                            {filteredSchools.length === 0 ? (
+                              <option value="">Không có trường phù hợp</option>
+                            ) : (
+                              filteredSchools.map((sch) => (
+                                <option key={sch.id} value={sch.id}>
+                                  {sch.name}{sch.districtWard?.name ? " (" + sch.districtWard.name + ")" : ""}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Specialty — full width, only for TEACHER */}
+                    {accountRole === "TEACHER" && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                          Chuyên môn <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <BookOpen className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <select
                             value={specialty}
                             onChange={(e) => setSpecialty(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base bg-white transition-colors"
+                            className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-white transition-all appearance-none"
+                            style={{ border: "1.5px solid #e2e8f0", outline: "none", color: "#0f172a" }}
                           >
                             {COMMON_SPECIALTIES.map((spec) => (
-                              <option key={spec} value={spec}>
-                                Môn {spec}
-                              </option>
+                              <option key={spec} value={spec}>Môn {spec}</option>
                             ))}
                             <option value="OTHER">Môn khác (Tự nhập...)</option>
                           </select>
                         </div>
-
                         {specialty === "OTHER" && (
                           <input
                             type="text"
@@ -459,7 +475,8 @@ export default function RegisterTeacherPage() {
                             onChange={(e) => setCustomSpecialty(e.target.value)}
                             placeholder="Nhập tên môn học chuyên môn..."
                             required
-                            className="mt-2.5 w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none text-base"
+                            className="mt-2.5 w-full px-4 py-3 rounded-xl text-sm"
+                            style={{ border: "1.5px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a" }}
                           />
                         )}
                       </div>
@@ -467,19 +484,19 @@ export default function RegisterTeacherPage() {
                   </div>
                 </div>
 
-                {/* Password Section */}
+                {/* ── PASSWORD ─────────────────────────────────────────────── */}
                 <div>
-                  <h3 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-                    <Lock className="w-5 h-5 text-teal-600" /> Mật khẩu đăng nhập
+                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                    <Lock className="w-4 h-4" style={{ color: activeRole.activeColor }} />
+                    Mật khẩu đăng nhập
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Password */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Mật khẩu <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                           type={showPassword ? "text" : "password"}
                           value={password}
@@ -487,76 +504,77 @@ export default function RegisterTeacherPage() {
                           placeholder="Tối thiểu 6 ký tự"
                           required
                           minLength={6}
-                          className="w-full pl-11 pr-11 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base transition-colors"
+                          className="w-full pl-10 pr-11 py-3 rounded-xl text-sm transition-all"
+                          style={{ border: "1.5px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a" }}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          style={{ padding: "4px", minHeight: "auto" }}
+                          aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                         >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
-
-                    {/* Confirm Password */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Xác nhận mật khẩu <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                           type={showPassword ? "text" : "password"}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Nhập lại mật khẩu"
                           required
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-base transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl text-sm transition-all"
+                          style={{ border: "1.5px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a" }}
                         />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Submit button */}
-                <div className="pt-4">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !!successMsg}
-                    className="w-full py-4 px-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:via-teal-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 text-lg flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                        Đang tạo tài khoản...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-5 h-5" /> Hoàn tất Đăng ký Tài khoản
-                      </>
-                    )}
-                  </button>
-                </div>
+                {/* ── SUBMIT ───────────────────────────────────────────────── */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !!successMsg}
+                  className="w-full flex items-center justify-center gap-2 font-bold text-base text-white rounded-2xl"
+                  style={{
+                    paddingTop: "14px",
+                    paddingBottom: "14px",
+                    background: isSubmitting || !!successMsg
+                      ? "#94a3b8"
+                      : "linear-gradient(135deg, #059669 0%, #0d9488 50%, #4f46e5 100%)",
+                    boxShadow: isSubmitting || !!successMsg ? "none" : "0 6px 20px rgba(13,148,136,0.35)",
+                    cursor: isSubmitting || !!successMsg ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Đang tạo tài khoản...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5" />
+                      Hoàn tất Đăng ký
+                    </>
+                  )}
+                </button>
+
+                {/* Footer */}
+                <p className="text-center text-sm text-gray-500 pt-2">
+                  Đã có tài khoản?{" "}
+                  <Link href="/login" className="font-bold hover:underline" style={{ color: "#0d9488" }}>
+                    Đăng nhập ngay
+                  </Link>
+                </p>
               </form>
             )}
-
-            {/* Footer link to Login */}
-            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-              <p className="text-gray-600 text-base">
-                Đã có tài khoản Giáo viên?{" "}
-                <Link
-                  href="/login"
-                  className="font-bold text-teal-600 hover:text-teal-700 hover:underline inline-flex items-center gap-1"
-                >
-                  Đăng nhập ngay
-                </Link>
-              </p>
-            </div>
           </div>
         </div>
       </div>
