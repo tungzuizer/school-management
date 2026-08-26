@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   --background: #f8fafc;
@@ -226,6 +226,204 @@ tbody tr:not(.no-hover):hover {
   animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ==========================================================================
+   PREMIUM ANIMATION SYSTEM — Cinematic Quality Upgrades
+   ========================================================================== */
+
+/* Gradient mesh shift — background living color */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-shift {
+  background-size: 300% 300%;
+  animation: gradientShift 8s ease infinite;
+}
+
+/* Shimmer sweep — loading states, nav active highlights */
+@keyframes shimmerSweep {
+  0%   { transform: translateX(-150%) skewX(-12deg); }
+  100% { transform: translateX(250%) skewX(-12deg); }
+}
+.shimmer-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+  animation: shimmerSweep 2.4s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Glow pulse — accent badges, active indicators */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+  50%       { box-shadow: 0 0 18px 4px rgba(99, 102, 241, 0.35); }
+}
+.animate-glow-pulse {
+  animation: glowPulse 2.8s ease-in-out infinite;
+}
+@keyframes glowPulseEmerald {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  50%       { box-shadow: 0 0 18px 4px rgba(16, 185, 129, 0.32); }
+}
+.animate-glow-pulse-emerald {
+  animation: glowPulseEmerald 2.8s ease-in-out infinite;
+}
+
+/* Slide in from left — mobile drawer */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-left {
+  animation: slideInLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Stagger fade — nav items entering */
+@keyframes staggerFadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item { animation: staggerFadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stagger-item:nth-child(1)  { animation-delay: 0.04s; }
+.stagger-item:nth-child(2)  { animation-delay: 0.07s; }
+.stagger-item:nth-child(3)  { animation-delay: 0.10s; }
+.stagger-item:nth-child(4)  { animation-delay: 0.13s; }
+.stagger-item:nth-child(5)  { animation-delay: 0.16s; }
+.stagger-item:nth-child(6)  { animation-delay: 0.19s; }
+.stagger-item:nth-child(7)  { animation-delay: 0.22s; }
+.stagger-item:nth-child(8)  { animation-delay: 0.25s; }
+
+/* Orbit spin — decorative ring elements */
+@keyframes orbitSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-orbit { animation: orbitSpin 12s linear infinite; }
+.animate-orbit-slow { animation: orbitSpin 20s linear infinite; }
+.animate-orbit-reverse { animation: orbitSpin 16s linear infinite reverse; }
+
+/* Aura breathe — avatar halos */
+@keyframes auraBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%       { transform: scale(1.12); opacity: 0.25; }
+}
+.animate-aura { animation: auraBreathe 3s ease-in-out infinite; }
+
+/* Dot bounce — loading trio */
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+  40%            { transform: translateY(-6px); opacity: 1; }
+}
+.dot-bounce-1 { animation: dotBounce 1.2s ease-in-out infinite; }
+.dot-bounce-2 { animation: dotBounce 1.2s ease-in-out 0.2s infinite; }
+.dot-bounce-3 { animation: dotBounce 1.2s ease-in-out 0.4s infinite; }
+
+/* Nav item hover lift (class-based for non-link elements) */
+.nav-lift {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s ease,
+              background-color 0.18s ease;
+}
+.nav-lift:hover { transform: translateX(3px); }
+
+/* Glass surface util */
+.glass-surface {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.glass-surface-dark {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Active press micro-spring (already .active-press used in code) */
+.active-press:active {
+  transform: scale(0.96) translateY(1px) !important;
+  filter: brightness(0.93);
+}
+
+/* ==========================================================================
+   PREMIUM ENTRANCE SYSTEM — Staggered, depth-aware reveals
+   ========================================================================== */
+
+/* Card reveal from below with scale & opacity */
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-reveal { animation: cardReveal 0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.card-reveal-1 { animation-delay: 0.04s; }
+.card-reveal-2 { animation-delay: 0.10s; }
+.card-reveal-3 { animation-delay: 0.17s; }
+.card-reveal-4 { animation-delay: 0.24s; }
+.card-reveal-5 { animation-delay: 0.30s; }
+.card-reveal-6 { animation-delay: 0.36s; }
+
+/* Cinematic content entrance */
+@keyframes heroReveal {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.animate-hero-reveal { animation: heroReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Sidebar nav item entrance */
+@keyframes navItemIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.nav-item-in { animation: navItemIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.nav-item-in:nth-child(1) { animation-delay: 0.06s; }
+.nav-item-in:nth-child(2) { animation-delay: 0.10s; }
+.nav-item-in:nth-child(3) { animation-delay: 0.14s; }
+.nav-item-in:nth-child(4) { animation-delay: 0.18s; }
+.nav-item-in:nth-child(5) { animation-delay: 0.22s; }
+.nav-item-in:nth-child(6) { animation-delay: 0.26s; }
+.nav-item-in:nth-child(7) { animation-delay: 0.30s; }
+
+/* Badge pop */
+@keyframes badgePop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-badge-pop { animation: badgePop 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Gradient sweep for shimmer highlights */
+@keyframes shimmerH {
+  0%   { transform: translateX(-200%); }
+  100% { transform: translateX(200%); }
+}
+.shimmer-h::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  animation: shimmerH 2s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Counter number reveal */
+@keyframes numberReveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-number-reveal { animation: numberReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Live status pulse dot */
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(0.75); }
+}
+.pulse-dot { animation: pulseDot 2s ease-in-out infinite; }
 /* Motion Sensitivity Guard: Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -239,9 +437,27 @@ tbody tr:not(.no-hover):hover {
   .animate-float,
   .animate-float-slow,
   .animate-pulse-glow,
+  .animate-glow-pulse,
+  .animate-glow-pulse-emerald,
+  .animate-gradient-shift,
+  .animate-orbit,
+  .animate-orbit-slow,
+  .animate-orbit-reverse,
+  .animate-aura,
+  .shimmer-sweep::after,
+  .stagger-item,
   .animate-shimmer,
   .bell-swing,
-  .pulse-dot {
+  .card-reveal,
+  .animate-hero-reveal,
+  .animate-number-reveal,
+  .nav-item-in,
+  .animate-badge-pop,
+  .shimmer-h::after,
+  .pulse-dot,
+  .dot-bounce-1,
+  .dot-bounce-2,
+  .dot-bounce-3 {
     animation: none !important;
     transform: none !important;
   }
