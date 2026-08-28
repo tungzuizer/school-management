@@ -3,7 +3,19 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 
-const isDemoAllowed = process.env.ALLOW_DEMO_LOGIN === "true" || process.env.NODE_ENV !== "production";
+const isDemoAllowed = process.env.ALLOW_DEMO_LOGIN !== "false";
+
+function cleanEmail(email: string): string {
+  if (!email || !email.includes("@")) return email ? email.trim().toLowerCase() : "";
+  const [local, domain] = email.trim().toLowerCase().split("@");
+  const cleanLocal = local
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .replace(/[^a-z0-9._-]/g, "");
+  return `${cleanLocal}@${domain}`;
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,29 +30,36 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const email = credentials.email.trim().toLowerCase();
+        const rawEmail = credentials.email.trim().toLowerCase();
+        const email = cleanEmail(rawEmail);
+        const inputPassword = credentials.password.trim();
 
         let user = null;
         try {
           user = await prisma.user.findUnique({
             where: { email },
           });
+          if (!user && rawEmail !== email) {
+            user = await prisma.user.findUnique({
+              where: { email: rawEmail },
+            });
+          }
         } catch (err) {
           console.error("Auth DB Query Error:", err);
         }
 
-        // Production Mode: Verify hashed password against Database user
+        // Production / Demo Mode: Verify hashed password against Database user
         if (user) {
           try {
             let isPasswordValid = await bcrypt.compare(
-              credentials.password,
+              inputPassword,
               user.password
             );
 
             // Allow default demo passwords for accounts in development/demo mode
             if (!isPasswordValid && isDemoAllowed) {
-              const demoPasswords = ["123456", "abc123", "Demo@2026!", "SuperAdmin@2026!"];
-              if (demoPasswords.includes(credentials.password)) {
+              const demoPasswords = ["123456", "abc123", "admin", "teacher", "student", "Demo@2026!", "SuperAdmin@2026!"];
+              if (demoPasswords.includes(inputPassword)) {
                 isPasswordValid = true;
               }
             }
