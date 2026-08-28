@@ -65,10 +65,6 @@ export const authOptions: NextAuthOptions = {
             }
 
             if (isPasswordValid) {
-              if (user.isApproved === false) {
-                throw new Error("Tài khoản của bạn đang chờ phê duyệt từ Ban Giám hiệu.");
-              }
-
               // Chỉ buộc đổi mật khẩu cho tài khoản KHÔNG phải demo
               // Demo accounts (abc123/123456) không cần buộc đổi
               const demoEmails = [
@@ -101,9 +97,6 @@ export const authOptions: NextAuthOptions = {
             }
           } catch (err: any) {
             console.error("Password compare error:", err);
-            if (err?.message?.includes("phê duyệt")) {
-              throw err;
-            }
           }
         }
 

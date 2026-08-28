@@ -20,6 +20,7 @@ import {
 import { DailyPositivityWidget } from "@/components/ui/DailyPositivityWidget";
 import { ConfettiEffect } from "@/components/ui/ConfettiEffect";
 import { StudentPraiseModal } from "@/components/ui/StudentPraiseModal";
+import UnapprovedBanner from "@/components/ui/UnapprovedBanner";
 import {
   Users, CheckCircle2, AlertTriangle, Clock, Calendar, BookOpen, Sparkles,
   MessageSquare, ChevronRight, Bell, RefreshCw, NotebookPen, Calculator,

@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
+import UnapprovedBanner from "@/components/ui/UnapprovedBanner";
 import {
   getSchoolsList,
   getDashboardStats,
@@ -185,6 +186,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4">
+      <UnapprovedBanner />
       {/* Super Admin Executive Command Header */}
       {isSuperAdmin ? (
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-6 sm:p-8 shadow-2xl border border-amber-500/30">
