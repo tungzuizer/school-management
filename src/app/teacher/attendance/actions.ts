@@ -120,11 +120,15 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
     if (!teacher) return [];
 
     // Execute queries in parallel using Promise.all for maximum speed
-    const [scheduleEntries, homeroomClasses, existingAttendance] = await Promise.all([
+    const [scheduleEntries, teachingAssignments, homeroomClasses, existingAttendance] = await Promise.all([
       prisma.schedule.findMany({
         where: { teacherId: teacher.id, dayOfWeek },
         include: { classRoom: true, subject: true },
         orderBy: { period: "asc" },
+      }),
+      prisma.teachingAssignment.findMany({
+        where: { teacherId: teacher.id },
+        include: { classRoom: true, subject: true },
       }),
       prisma.classRoom.findMany({
         where: { homeroomTeacherId: teacher.id },
@@ -142,7 +146,7 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
 
     const slots: TeacherSlotOption[] = [];
 
-    // Add timetable slots
+    // Add timetable slots for the selected day
     scheduleEntries.forEach((s) => {
       const slotKey = `${s.classId}_${s.period}_${s.subjectId}`;
       const isLocked = lockedSet.has(`${s.classId}_${s.period}`);
@@ -160,6 +164,31 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
         room: s.room,
         isHomeroom: false,
         isLocked,
+      });
+    });
+
+    // Fallback: Add teaching assignments if specific period slots aren't explicitly added yet
+    teachingAssignments.forEach((ta) => {
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach((p) => {
+        const alreadyHasSlot = slots.some((s) => s.classId === ta.classId && s.period === p);
+        if (!alreadyHasSlot) {
+          const slotKey = `${ta.classId}_${p}_${ta.subjectId}`;
+          const isLocked = lockedSet.has(`${ta.classId}_${p}`);
+          slots.push({
+            slotKey,
+            classId: ta.classId,
+            className: ta.classRoom.name,
+            gradeLevel: ta.classRoom.gradeLevel,
+            period: p,
+            periodLabel: `Tiết ${p} (Phân công)`,
+            periodTime: PERIOD_TIMES[p] || "",
+            subjectId: ta.subject.id,
+            subjectName: ta.subject.name,
+            room: null,
+            isHomeroom: false,
+            isLocked,
+          });
+        }
       });
     });
 
