@@ -6,6 +6,7 @@ export interface TenantContext {
   userName: string;
   userRole: string;
   userEmail?: string;
+  isApproved?: boolean;
   departmentId?: string;    // So GD&DT
   districtWardId?: string;  // Phong GD&DT (DISTRICT_ADMIN)
   schoolId?: string;        // Truong
@@ -24,6 +25,7 @@ export async function getTenantContext(): Promise<TenantContext> {
     userName: session.user.name || "Unknown",
     userRole: session.user.role || "STUDENT",
     userEmail: session.user.email || "",
+    isApproved: session.user.isApproved ?? true,
     departmentId: session.user.departmentId,
     districtWardId: session.user.districtWardId,
     schoolId: session.user.schoolId,
@@ -36,6 +38,7 @@ export async function getTenantContext(): Promise<TenantContext> {
  *
  * Hierarchy:
  *   SUPER_ADMIN            → {} (all schools; but caller should block academic detail)
+ *   UNAPPROVED USER        → { schoolId: "unapproved-no-access-000" } (empty result)
  *   DEPARTMENT_ADMIN       → { school: { departmentId } }
  *   DISTRICT_ADMIN         → { school: { districtWardId } }
  *   WARD_ADMIN             → {} (ward scope is geographic, enforced via CampusWardMap separately)
@@ -43,6 +46,10 @@ export async function getTenantContext(): Promise<TenantContext> {
  *   SUBJECT_HEAD / TEACHER / STUDENT → { schoolId }
  */
 export function buildSchoolFilter(ctx: TenantContext): Record<string, any> {
+  if (ctx.isApproved === false) {
+    return { schoolId: "unapproved-no-access-000" };
+  }
+
   const isSuperAdmin =
     ctx.userEmail === "superadmin@school.com" ||
     ctx.userEmail === "sysadmin@so-gddt.gov.vn" ||
@@ -69,6 +76,10 @@ export function buildSchoolFilter(ctx: TenantContext): Record<string, any> {
  * Returns a Prisma `where` clause scoping queries directly on the School model.
  */
 export function buildSchoolDirectFilter(ctx: TenantContext): Record<string, any> {
+  if (ctx.isApproved === false) {
+    return { id: "unapproved-no-access-000" };
+  }
+
   const isSuperAdmin =
     ctx.userEmail === "superadmin@school.com" ||
     ctx.userEmail === "sysadmin@so-gddt.gov.vn" ||
