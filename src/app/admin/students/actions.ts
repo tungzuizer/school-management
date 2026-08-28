@@ -8,14 +8,13 @@ import { recordAuditLog } from "@/lib/audit-logger";
 
 export async function getStudents(search?: string, classId?: string, gradeLevel?: number, schoolId?: string) {
   try {
-    let targetSchoolId = (schoolId && schoolId !== "ALL") ? schoolId : undefined;
-    if (!targetSchoolId && (!schoolId || schoolId === "")) {
-      try {
-        const ctx = await getTenantContext();
-        if (ctx.schoolId && ctx.userRole !== "SUPER_ADMIN") {
-          targetSchoolId = ctx.schoolId;
-        }
-      } catch { /* allow unauthenticated for demo */ }
+    const ctx = await getTenantContext().catch(() => null);
+    let targetSchoolId: string | undefined;
+
+    if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN") {
+      targetSchoolId = ctx.schoolId;
+    } else {
+      targetSchoolId = (schoolId && schoolId !== "ALL" && schoolId !== "") ? schoolId : undefined;
     }
 
     const andConditions: any[] = [];
