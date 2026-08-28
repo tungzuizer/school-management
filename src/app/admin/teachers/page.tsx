@@ -175,28 +175,79 @@ export default function TeachersPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const STANDARD_SPECIALTIES = [
+    "Toán học",
+    "Ngữ văn",
+    "Tiếng Anh",
+    "Vật lý",
+    "Hóa học",
+    "Sinh học",
+    "Lịch sử",
+    "Địa lý",
+    "Giáo dục công dân",
+    "Tin học",
+    "Công nghệ",
+    "Thể dục",
+    "Âm nhạc",
+    "Mỹ thuật",
+    "Hoạt động trải nghiệm",
+    "Giáo dục quốc phòng",
+  ];
+
+  const normalizeSpecialty = (s?: string | null): string => {
+    if (!s) return "";
+    const clean = s.trim();
+    if (STANDARD_SPECIALTIES.includes(clean)) return clean;
+    const lower = clean.toLowerCase();
+    if (lower.includes("toán")) return "Toán học";
+    if (lower.includes("văn") || lower.includes("ngữ văn")) return "Ngữ văn";
+    if (lower.includes("anh") || lower.includes("tiếng anh")) return "Tiếng Anh";
+    if (lower.includes("lý") || lower.includes("vật lý") || lower.includes("vật lí")) return "Vật lý";
+    if (lower.includes("hóa") || lower.includes("hóa học") || lower.includes("hoá")) return "Hóa học";
+    if (lower.includes("sinh") || lower.includes("sinh học")) return "Sinh học";
+    if (lower.includes("sử") || lower.includes("lịch sử")) return "Lịch sử";
+    if (lower.includes("địa") || lower.includes("địa lý") || lower.includes("địa lí")) return "Địa lý";
+    if (lower.includes("gdcd") || lower.includes("công dân") || lower.includes("pháp luật")) return "Giáo dục công dân";
+    if (lower.includes("tin") || lower.includes("tin học")) return "Tin học";
+    if (lower.includes("công nghệ")) return "Công nghệ";
+    if (lower.includes("thể") || lower.includes("thể dục")) return "Thể dục";
+    if (lower.includes("nhạc") || lower.includes("âm nhạc")) return "Âm nhạc";
+    if (lower.includes("thuật") || lower.includes("mỹ thuật") || lower.includes("mĩ thuật")) return "Mỹ thuật";
+    if (lower.includes("trải nghiệm")) return "Hoạt động trải nghiệm";
+    if (lower.includes("quốc phòng") || lower.includes("gdqp")) return "Giáo dục quốc phòng";
+    return "OTHER";
+  };
+
+  const [customSpecialty, setCustomSpecialty] = useState("");
+
   const openCreate = () => {
     setEditing(null);
-    setForm({ name: "", email: "", password: "", specialty: "", phone: "", degree: "" });
+    setForm({ name: "", email: "", password: "", specialty: STANDARD_SPECIALTIES[0], phone: "", degree: "" });
+    setCustomSpecialty("");
     setModalOpen(true);
   };
 
   const openEdit = (t: TeacherData) => {
     setEditing(t);
+    const matchedSpec = normalizeSpecialty(t.specialty);
     setForm({
       name: t.user?.name || "",
       email: t.user?.email || "",
       password: "",
-      specialty: t.specialty || "",
+      specialty: matchedSpec,
       phone: t.phone || "",
       degree: t.degree || "",
     });
+    setCustomSpecialty(matchedSpec === "OTHER" ? (t.specialty || "") : "");
     setModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) { showToast("Vui lòng điền tên và email", "error"); return; }
+
+    const finalSpecialty = form.specialty === "OTHER" ? customSpecialty.trim() : form.specialty;
+
     setSubmitting(true);
 
     let result;
@@ -204,7 +255,7 @@ export default function TeachersPage() {
       result = await updateTeacher(editing.id, {
         name: form.name.trim(),
         email: form.email.trim(),
-        specialty: form.specialty || undefined,
+        specialty: finalSpecialty || undefined,
         phone: form.phone || undefined,
         degree: form.degree || undefined,
       });
@@ -213,7 +264,7 @@ export default function TeachersPage() {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
-        specialty: form.specialty || undefined,
+        specialty: finalSpecialty || undefined,
         phone: form.phone || undefined,
         degree: form.degree || undefined,
       });
@@ -579,26 +630,24 @@ export default function TeachersPage() {
               <select
                 value={form.specialty}
                 onChange={(e) => setForm({ ...form, specialty: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white text-sm"
               >
                 <option value="">-- Chọn chuyên môn --</option>
-                <option value="Toán học">Toán học</option>
-                <option value="Ngữ văn">Ngữ văn</option>
-                <option value="Tiếng Anh">Tiếng Anh</option>
-                <option value="Vật lý">Vật lý</option>
-                <option value="Hóa học">Hóa học</option>
-                <option value="Sinh học">Sinh học</option>
-                <option value="Lịch sử">Lịch sử</option>
-                <option value="Địa lý">Địa lý</option>
-                <option value="Giáo dục công dân">Giáo dục công dân (GDKT & PL)</option>
-                <option value="Tin học">Tin học</option>
-                <option value="Công nghệ">Công nghệ</option>
-                <option value="Thể dục">Thể dục (GD thể chất)</option>
-                <option value="Âm nhạc">Âm nhạc</option>
-                <option value="Mỹ thuật">Mỹ thuật</option>
-                <option value="Hoạt động trải nghiệm">Hoạt động trải nghiệm</option>
-                <option value="Giáo dục quốc phòng">Giáo dục quốc phòng & an ninh</option>
+                {STANDARD_SPECIALTIES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+                <option value="OTHER">Chuyên môn khác (Nhập tay...)</option>
               </select>
+              {form.specialty === "OTHER" && (
+                <input
+                  type="text"
+                  value={customSpecialty}
+                  onChange={(e) => setCustomSpecialty(e.target.value)}
+                  placeholder="Nhập tên chuyên môn..."
+                  className="mt-2 w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  required
+                />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bằng cấp</label>

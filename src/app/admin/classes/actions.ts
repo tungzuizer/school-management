@@ -72,6 +72,12 @@ export async function getTeachersForSelect(schoolId?: string) {
 
 export async function createClass(data: { name: string; gradeLevel: number; schoolId?: string; campusId?: string; homeroomTeacherId?: string }) {
   try {
+    if (!data.name || !data.name.trim()) {
+      return { success: false, error: "Vui lòng nhập tên lớp học" };
+    }
+
+    const gradeLevel = Number(data.gradeLevel) || 6;
+
     let resolvedSchoolId = data.schoolId?.trim();
     if (!resolvedSchoolId) {
       try {
@@ -87,24 +93,44 @@ export async function createClass(data: { name: string; gradeLevel: number; scho
       return { success: false, error: "Vui lòng chọn trường học" };
     }
 
+    // Verify campus belongs to school if provided
+    let campusId: string | undefined = data.campusId?.trim() || undefined;
+    if (campusId) {
+      const validCampus = await prisma.campus.findUnique({ where: { id: campusId } });
+      if (!validCampus) campusId = undefined;
+    }
+
+    let teacherId: string | undefined = data.homeroomTeacherId?.trim() || undefined;
+    if (teacherId) {
+      const validTeacher = await prisma.teacher.findUnique({ where: { id: teacherId } });
+      if (!validTeacher) teacherId = undefined;
+    }
+
     await prisma.classRoom.create({
       data: {
         name: data.name.trim(),
-        gradeLevel: Number(data.gradeLevel),
+        gradeLevel,
         schoolId: resolvedSchoolId,
-        campusId: data.campusId || undefined,
-        homeroomTeacherId: data.homeroomTeacherId || undefined,
+        campusId,
+        homeroomTeacherId: teacherId,
       },
     });
 
     return { success: true };
   } catch (error: any) {
+    console.error("createClass error:", error);
     return { success: false, error: error.message || "Lỗi khi tạo lớp" };
   }
 }
 
 export async function updateClass(id: string, data: { name: string; gradeLevel: number; schoolId?: string; campusId?: string; homeroomTeacherId?: string }) {
   try {
+    if (!data.name || !data.name.trim()) {
+      return { success: false, error: "Vui lòng nhập tên lớp học" };
+    }
+
+    const gradeLevel = Number(data.gradeLevel) || 6;
+
     let resolvedSchoolId = data.schoolId?.trim();
     if (!resolvedSchoolId) {
       try {
@@ -117,19 +143,32 @@ export async function updateClass(id: string, data: { name: string; gradeLevel: 
       if (firstSchool) resolvedSchoolId = firstSchool.id;
     }
 
+    let campusId: string | null = data.campusId?.trim() || null;
+    if (campusId) {
+      const validCampus = await prisma.campus.findUnique({ where: { id: campusId } });
+      if (!validCampus) campusId = null;
+    }
+
+    let teacherId: string | null = data.homeroomTeacherId?.trim() || null;
+    if (teacherId) {
+      const validTeacher = await prisma.teacher.findUnique({ where: { id: teacherId } });
+      if (!validTeacher) teacherId = null;
+    }
+
     await prisma.classRoom.update({
       where: { id },
       data: {
         name: data.name.trim(),
-        gradeLevel: Number(data.gradeLevel),
+        gradeLevel,
         schoolId: resolvedSchoolId || undefined,
-        campusId: data.campusId || null,
-        homeroomTeacherId: data.homeroomTeacherId || null,
+        campusId,
+        homeroomTeacherId: teacherId,
       },
     });
 
     return { success: true };
   } catch (error: any) {
+    console.error("updateClass error:", error);
     return { success: false, error: error.message || "Lỗi khi cập nhật" };
   }
 }
