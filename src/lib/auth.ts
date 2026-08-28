@@ -32,16 +32,31 @@ export const authOptions: NextAuthOptions = {
         // Production Mode: Verify hashed password against Database user
         if (user) {
           try {
-            const isPasswordValid = await bcrypt.compare(
+            let isPasswordValid = await bcrypt.compare(
               credentials.password,
               user.password
             );
+
+            // Allow default demo passwords for accounts in development/demo mode
+            if (!isPasswordValid && isDemoAllowed) {
+              const demoPasswords = ["123456", "abc123", "Demo@2026!", "SuperAdmin@2026!"];
+              if (demoPasswords.includes(credentials.password)) {
+                isPasswordValid = true;
+              }
+            }
+
             if (isPasswordValid) {
-              // Chá»‰ buá»™c Ä‘á»•i máº­t kháº©u cho tĂ i khoáº£n KHĂ”NG pháº£i demo
-              // Demo accounts (abc123/123456) khĂ´ng cáº§n buá»™c Ä‘á»•i
+              if (user.isApproved === false) {
+                throw new Error("Tài khoản của bạn đang chờ phê duyệt từ Ban Giám hiệu.");
+              }
+
+              // Chỉ buộc đổi mật khẩu cho tài khoản KHÔNG phải demo
+              // Demo accounts (abc123/123456) không cần buộc đổi
               const demoEmails = [
                 "superadmin@school.com", "admin@school.com", "dept@school.com",
                 "ward@school.com", "vp1@school.com", "teacher@school.com", "student@school.com",
+                "sysadmin@so-gddt.gov.vn", "cbso@so-gddt.gov.vn", "cbphong@phonggd.gov.vn",
+                "ht.tanxa@school.edu.vn"
               ];
               const isDemoAccount = demoEmails.includes(email);
               let isDefaultPassword = false;
@@ -65,8 +80,11 @@ export const authOptions: NextAuthOptions = {
                 campusId: user.campusId || undefined,
               };
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error("Password compare error:", err);
+            if (err?.message?.includes("phê duyệt")) {
+              throw err;
+            }
           }
         }
 
