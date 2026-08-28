@@ -15,6 +15,7 @@ import {
   Star,
 } from "lucide-react";
 import ChangePasswordModal from "@/components/auth/ChangePasswordModal";
+import AvatarUploader from "@/components/ui/AvatarUploader";
 
 export default function StudentProfilePage() {
   const { data: session } = useSession();
@@ -42,11 +43,12 @@ export default function StudentProfilePage() {
         <div className="relative z-10 p-6 md:p-8">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5">
             {/* Avatar */}
-            <div className="relative shrink-0">
-              <div className="w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-md border-2 border-white/30 flex items-center justify-center shadow-2xl shadow-blue-900/40">
-                <span className="text-3xl font-black text-white">{getInitials(userName)}</span>
-              </div>
-              <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-2 border-indigo-600 shadow-sm pulse-dot" />
+            <div className="shrink-0">
+              <AvatarUploader
+                currentImage={session?.user?.image}
+                name={userName}
+                size="lg"
+              />
             </div>
 
             {/* Info */}

@@ -87,6 +87,7 @@ export const authOptions: NextAuthOptions = {
                 email: user.email,
                 name: user.name,
                 role: user.role,
+                image: user.image || undefined,
                 isApproved: user.isApproved,
                 mustChangePassword: isDefaultPassword,
                 departmentId: user.departmentId || undefined,
@@ -197,6 +198,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.image = user.image;
         token.isApproved = user.isApproved;
         token.mustChangePassword = user.mustChangePassword;
         token.departmentId = user.departmentId;
@@ -209,6 +211,9 @@ export const authOptions: NextAuthOptions = {
         if (typeof session.mustChangePassword === "boolean") {
           token.mustChangePassword = session.mustChangePassword;
         }
+        if (session.image !== undefined) {
+          token.image = session.image;
+        }
       }
 
       return token;
@@ -217,6 +222,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
+        session.user.image = token.image as string | undefined;
         session.user.isApproved = token.isApproved as boolean | undefined;
         session.user.mustChangePassword = token.mustChangePassword as boolean | undefined;
         session.user.departmentId = token.departmentId as string | undefined;
