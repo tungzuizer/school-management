@@ -31,8 +31,10 @@ export async function getSchoolsList() {
       schools.map(async (sch) => {
         const studentCount = await prisma.student.count({
           where: {
-            status: StudentStatus.STUDYING,
-            classRoom: { schoolId: sch.id },
+            OR: [
+              { classRoom: { schoolId: sch.id } },
+              { user: { schoolId: sch.id } },
+            ],
           },
         });
 
@@ -70,8 +72,13 @@ export async function getSchoolsList() {
 export async function getDashboardStats(schoolId?: string) {
   try {
     const studentWhere = schoolId
-      ? { status: StudentStatus.STUDYING, classRoom: { schoolId } }
-      : { status: StudentStatus.STUDYING };
+      ? {
+          OR: [
+            { classRoom: { schoolId } },
+            { user: { schoolId } },
+          ],
+        }
+      : {};
 
     const classWhere = schoolId ? { schoolId } : {};
 
