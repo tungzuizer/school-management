@@ -432,43 +432,84 @@ export default function ClassesPage() {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Sửa lớp" : "Thêm lớp mới"}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tên lớp *</label>
-              <input type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Khối *</label>
-              <select value={form.gradeLevel} onChange={(e) => setForm({...form, gradeLevel: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                {[1,2,3,4,5,6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Khối {g}</option>)}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Trường *</label>
-            <select value={form.schoolId} onChange={(e) => setForm({...form, schoolId: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" required>
-              <option value="">-- Chọn trường --</option>
-              {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Giáo viên chủ nhiệm</label>
-            <select value={form.homeroomTeacherId} onChange={(e) => setForm({...form, homeroomTeacherId: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="">-- Không chọn --</option>
-              {teachers.map(t => <option key={t.id} value={t.id}>{t.user.name}</option>)}
-            </select>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-              {submitting ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm mới"}
-            </button>
-          </div>
-        </form>
-      </Modal>
+          {/* Create/Edit Modal */}
+          <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Sửa lớp" : "Thêm lớp mới"}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên lớp *</label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm({...form, name: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    placeholder="VD: 10A1"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Khối *</label>
+                  <select
+                    value={form.gradeLevel}
+                    onChange={(e) => setForm({...form, gradeLevel: e.target.value})}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Khối {g}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* School Cards Selection in Modal */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trường học áp dụng *</label>
+                {schools.length === 0 ? (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-500 italic">
+                    Hệ thống sẽ tự động gán vào trường học thuộc tài khoản của bạn.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1 border border-slate-200 rounded-xl bg-slate-50/50">
+                    {schools.map((s) => {
+                      const isSelected = form.schoolId === s.id || (!form.schoolId && schools[0]?.id === s.id);
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setForm({ ...form, schoolId: s.id })}
+                          className={`p-2.5 rounded-xl text-xs font-bold text-left transition-all flex items-center justify-between border ${
+                            isSelected
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40"
+                          }`}
+                        >
+                          <span className="truncate">🏫 {s.name}</span>
+                          {isSelected && <span className="text-xs">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Giáo viên chủ nhiệm</label>
+                <select
+                  value={form.homeroomTeacherId}
+                  onChange={(e) => setForm({...form, homeroomTeacherId: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white text-sm"
+                >
+                  <option value="">-- Không chọn --</option>
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.user.name}</option>)}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-medium">Hủy</button>
+                <button type="submit" disabled={submitting} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm font-medium">
+                  {submitting ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm mới"}
+                </button>
+              </div>
+            </form>
+          </Modal>
 
       {/* Delete Modal */}
       <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Xác nhận xóa" size="sm">

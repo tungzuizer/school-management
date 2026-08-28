@@ -23,7 +23,7 @@ export async function getSubjects(search?: string) {
   if (search) {
     where.name = { contains: search, mode: "insensitive" };
   }
-  return prisma.subject.findMany({
+  const subjects = await prisma.subject.findMany({
     where,
     select: {
       id: true,
@@ -60,6 +60,49 @@ export async function getSubjects(search?: string) {
       _count: { select: { teachingAssignments: true, grades: true } },
     },
     orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+  });
+
+  const allTeachers = await prisma.teacher.findMany({
+    select: {
+      id: true,
+      specialty: true,
+      user: {
+        select: {
+          name: true,
+          email: true,
+          school: { select: { id: true, name: true } }
+        }
+      }
+    }
+  });
+
+  return subjects.map(s => {
+    const specialtyTeachers = allTeachers.filter(t =>
+      t.specialty && (
+        t.specialty.toLowerCase().includes(s.name.toLowerCase()) ||
+        s.name.toLowerCase().includes(t.specialty.toLowerCase())
+      )
+    );
+
+    const existingTeacherIds = new Set(s.teachingAssignments.map(ta => ta.teacher.id));
+    const extraAssignments = specialtyTeachers
+      .filter(t => !existingTeacherIds.has(t.id))
+      .map(t => ({
+        id: `spec-${t.id}`,
+        teacher: t,
+        classRoom: null,
+      }));
+
+    const totalTeachingAssignments = [...s.teachingAssignments, ...extraAssignments];
+
+    return {
+      ...s,
+      teachingAssignments: totalTeachingAssignments,
+      _count: {
+        ...s._count,
+        teachingAssignments: new Set(totalTeachingAssignments.map(ta => ta.teacher.id)).size,
+      }
+    };
   });
 }
 
