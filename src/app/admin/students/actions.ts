@@ -76,14 +76,21 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
 
 export async function getClassesForSelect(schoolId?: string) {
   try {
+    const ctx = await getTenantContext().catch(() => null);
+    let targetSchoolId = (schoolId && schoolId !== "ALL" && schoolId !== "") ? schoolId : undefined;
+    if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN") {
+      targetSchoolId = ctx.schoolId;
+    }
+
     const where: any = {};
-    if (schoolId && schoolId !== "ALL" && schoolId !== "") where.schoolId = schoolId;
+    if (targetSchoolId) where.schoolId = targetSchoolId;
+
     const classes = await prisma.classRoom.findMany({
       where,
       select: { id: true, name: true, gradeLevel: true, schoolId: true, school: { select: { id: true, name: true } } },
       orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
     });
-    if (classes.length > 0 || !schoolId) return classes;
+    if (classes.length > 0 || !targetSchoolId) return classes;
     return prisma.classRoom.findMany({
       select: { id: true, name: true, gradeLevel: true, schoolId: true, school: { select: { id: true, name: true } } },
       orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
@@ -95,10 +102,25 @@ export async function getClassesForSelect(schoolId?: string) {
 }
 
 export async function getSchoolsForSelect() {
-  return prisma.school.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
+  try {
+    const ctx = await getTenantContext().catch(() => null);
+    if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN") {
+      return prisma.school.findMany({
+        where: { id: ctx.schoolId },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      });
+    }
+    return prisma.school.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+  } catch {
+    return prisma.school.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+  }
 }
 
 export async function createStudent(data: {
