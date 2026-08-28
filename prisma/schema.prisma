@@ -337,6 +337,7 @@ model ClassRoom {
   monthlyPlans        MonthlyPlan[]
   academicTranscripts AcademicTranscript[]
   teacherChangeRequests TeacherChangeRequest[]
+  participations      ParticipationRecord[]
 
   @@index([schoolId])
   @@index([campusId])
@@ -367,6 +368,8 @@ model Student {
   groupId     String?
   status      StudentStatus @default(STUDYING)
   isClassMonitor Boolean    @default(false) // Lớp trưởng
+  classRole   String?       // "LOP_TRUONG", "LOP_PHO", "TO_TRUONG", "THANH_VIEN"
+  bonusPoints Int           @default(0) // Tổng điểm tích cực/thưởng
 
   // Thông tin cá nhân
   dob               DateTime?
@@ -425,6 +428,7 @@ model Student {
   incidents       Incident[]
   parentFeedbacks ParentFeedback[]
   academicTranscripts AcademicTranscript[]
+  participations  ParticipationRecord[]
 
   @@index([userId])
   @@index([classId])
@@ -1412,6 +1416,27 @@ model AuditLog {
   @@index([action])
   @@index([entityName])
   @@index([createdAt])
+}
+
+model ParticipationRecord {
+  id          String   @id @default(cuid())
+  studentId   String
+  classId     String
+  date        DateTime @default(now())
+  title       String   // VD: "Phát biểu tích cực", "Giúp đỡ bạn học", "Bài tập hoàn thành xuất sắc"
+  category    String   @default("PHAT_BIEU") // PHAT_BIEU, HO_TRO_BAN, VAN_THE, BAI_TAP, PHONG_TRAO
+  points      Int      @default(1) // Số điểm thưởng cộng (+1, +2, +5...)
+  note        String?  @db.Text
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classRoom ClassRoom @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([classId])
+  @@index([date])
 }
 
 // ==================== KHÓA SỔ DỮ LIỆU (DATA LOCK) ====================

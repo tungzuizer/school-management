@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   UserPlus,
   Briefcase,
+  Sparkles,
 } from "lucide-react";
 import { getRegistrationFormData, registerTeacher } from "./actions";
 
@@ -56,12 +57,21 @@ const COMMON_SPECIALTIES = [
 const ROLES = [
   {
     value: "TEACHER" as const,
-    label: "Giáo viên",
-    sub: "Bộ môn / CN",
+    label: "Giáo viên Trường",
+    sub: "Thuộc Trường",
     Icon: User,
     activeColor: "#0d9488",
     activeBg: "#f0fdfa",
     activeBorder: "#0d9488",
+  },
+  {
+    value: "INDEPENDENT_TEACHER" as const,
+    label: "Giáo viên Tự do",
+    sub: "Dạy độc lập",
+    Icon: Sparkles,
+    activeColor: "#ea580c",
+    activeBg: "#fff7ed",
+    activeBorder: "#ea580c",
   },
   {
     value: "ADMIN" as const,
@@ -86,7 +96,9 @@ const ROLES = [
 export default function RegisterTeacherPage() {
   const router = useRouter();
 
-  const [accountRole, setAccountRole] = useState<"TEACHER" | "ADMIN" | "VICE_PRINCIPAL">("TEACHER");
+  const [selectedRoleType, setSelectedRoleType] = useState<
+    "TEACHER" | "INDEPENDENT_TEACHER" | "ADMIN" | "VICE_PRINCIPAL"
+  >("TEACHER");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -169,14 +181,16 @@ export default function RegisterTeacherPage() {
     setErrorMsg("");
     setSuccessMsg("");
 
+    const isIndep = selectedRoleType === "INDEPENDENT_TEACHER";
     if (!name.trim()) { setErrorMsg("Vui lòng nhập Họ và tên."); return; }
     if (!email.trim()) { setErrorMsg("Vui lòng nhập Địa chỉ Email."); return; }
     if (!phone.trim()) { setErrorMsg("Vui lòng nhập Số điện thoại liên hệ."); return; }
-    if (!selectedSchoolId) { setErrorMsg("Vui lòng chọn Trường học nơi bạn đang công tác."); return; }
+    if (!isIndep && !selectedSchoolId) { setErrorMsg("Vui lòng chọn Trường học nơi bạn đang công tác."); return; }
     if (password.length < 6) { setErrorMsg("Mật khẩu phải có độ dài từ 6 ký tự trở lên."); return; }
     if (password !== confirmPassword) { setErrorMsg("Xác nhận mật khẩu không trùng khớp."); return; }
 
     const finalSpecialty = specialty === "OTHER" ? customSpecialty : specialty;
+    const isTeacherRole = selectedRoleType === "TEACHER" || selectedRoleType === "INDEPENDENT_TEACHER";
 
     setIsSubmitting(true);
     try {
@@ -185,11 +199,12 @@ export default function RegisterTeacherPage() {
         email,
         phone,
         password,
-        role: accountRole,
-        schoolId: selectedSchoolId,
-        districtWardId: selectedDistrictWardId || undefined,
-        departmentId: selectedDeptId || undefined,
-        specialty: accountRole === "TEACHER" ? finalSpecialty : undefined,
+        role: isIndep ? "TEACHER" : (selectedRoleType as any),
+        isIndependentTeacher: isIndep,
+        schoolId: isIndep ? undefined : selectedSchoolId,
+        districtWardId: isIndep ? undefined : (selectedDistrictWardId || undefined),
+        departmentId: isIndep ? undefined : (selectedDeptId || undefined),
+        specialty: isTeacherRole ? finalSpecialty : undefined,
       });
 
       if (!res.success) {
@@ -209,7 +224,7 @@ export default function RegisterTeacherPage() {
     }
   };
 
-  const activeRole = ROLES.find((r) => r.value === accountRole)!;
+  const activeRole = ROLES.find((r) => r.value === selectedRoleType)!;
 
   return (
     <div
@@ -296,12 +311,12 @@ export default function RegisterTeacherPage() {
                   </p>
                   <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
                     {ROLES.map(({ value, label, sub, Icon, activeColor, activeBg, activeBorder }) => {
-                      const active = accountRole === value;
+                      const active = selectedRoleType === value;
                       return (
                         <button
                           key={value}
                           type="button"
-                          onClick={() => setAccountRole(value)}
+                          onClick={() => setSelectedRoleType(value)}
                           className="flex items-center gap-2 flex-shrink-0 rounded-2xl px-4 font-semibold text-sm transition-all"
                           style={{
                             minHeight: "48px",
@@ -323,7 +338,9 @@ export default function RegisterTeacherPage() {
                     })}
                   </div>
                   <p className="text-[11px] text-gray-400 italic mt-2 leading-snug">
-                    * Tài khoản Giáo viên: Hiệu trưởng phê duyệt. Tài khoản HT/PHT: Admin hệ thống phê duyệt.
+                    {selectedRoleType === "INDEPENDENT_TEACHER"
+                      ? "* Giáo viên tự do: Có không gian dạy học riêng, tự thêm học sinh & quản lý lớp học độc lập."
+                      : "* Giáo viên trường: Hiệu trưởng phê duyệt. Tài khoản HT/PHT: Admin hệ thống phê duyệt."}
                   </p>
                 </div>
 
@@ -400,56 +417,68 @@ export default function RegisterTeacherPage() {
                     Đơn vị công tác & Chuyên môn
                   </h3>
                   <div className="space-y-4">
-                    {/* Area + School: stacked on mobile, side-by-side on sm */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                          Khu vực / Phòng GD&ĐT
-                        </label>
-                        <div className="relative">
-                          <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <select
-                            value={selectedDistrictWardId}
-                            onChange={(e) => handleDistrictWardChange(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-white transition-all appearance-none"
-                            style={{ border: "1.5px solid #e2e8f0", outline: "none", color: "#0f172a" }}
-                          >
-                            <option value="">-- Tất cả --</option>
-                            {filteredDistrictWards.map((dw) => (
-                              <option key={dw.id} value={dw.id}>{dw.name}</option>
-                            ))}
-                          </select>
+                    {selectedRoleType === "INDEPENDENT_TEACHER" ? (
+                      <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 text-orange-950 text-xs leading-relaxed space-y-1.5 shadow-2xs">
+                        <div className="font-extrabold text-sm text-orange-900 flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-orange-600" />
+                          <span>Chế độ Giáo viên Tự do (Dạy độc lập)</span>
+                        </div>
+                        <p className="text-orange-900/90">
+                          Tài khoản của bạn sẽ tự động sở hữu <strong>không gian dạy học cá nhân riêng biệt</strong>. Bạn có toàn quyền tự thêm học sinh, phân vị trí Lớp trưởng/Lớp phó, chia Tổ và đánh giá điểm thưởng tích cực mà không chịu phụ thuộc nhà trường.
+                        </p>
+                      </div>
+                    ) : (
+                      /* Area + School: stacked on mobile, side-by-side on sm */
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                            Khu vực / Phòng GD&ĐT
+                          </label>
+                          <div className="relative">
+                            <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <select
+                              value={selectedDistrictWardId}
+                              onChange={(e) => handleDistrictWardChange(e.target.value)}
+                              className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-white transition-all appearance-none"
+                              style={{ border: "1.5px solid #e2e8f0", outline: "none", color: "#0f172a" }}
+                            >
+                              <option value="">-- Tất cả --</option>
+                              {filteredDistrictWards.map((dw) => (
+                                <option key={dw.id} value={dw.id}>{dw.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                            Trường học <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <select
+                              value={selectedSchoolId}
+                              onChange={(e) => handleSchoolChange(e.target.value)}
+                              required
+                              className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-white font-medium transition-all appearance-none"
+                              style={{ border: "1.5px solid #e2e8f0", outline: "none", color: "#0f172a" }}
+                            >
+                              {filteredSchools.length === 0 ? (
+                                <option value="">Không có trường phù hợp</option>
+                              ) : (
+                                filteredSchools.map((sch) => (
+                                  <option key={sch.id} value={sch.id}>
+                                    {sch.name}{sch.districtWard?.name ? " (" + sch.districtWard.name + ")" : ""}
+                                  </option>
+                                ))
+                              )}
+                            </select>
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                          Trường học <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <select
-                            value={selectedSchoolId}
-                            onChange={(e) => handleSchoolChange(e.target.value)}
-                            required
-                            className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-white font-medium transition-all appearance-none"
-                            style={{ border: "1.5px solid #e2e8f0", outline: "none", color: "#0f172a" }}
-                          >
-                            {filteredSchools.length === 0 ? (
-                              <option value="">Không có trường phù hợp</option>
-                            ) : (
-                              filteredSchools.map((sch) => (
-                                <option key={sch.id} value={sch.id}>
-                                  {sch.name}{sch.districtWard?.name ? " (" + sch.districtWard.name + ")" : ""}
-                                </option>
-                              ))
-                            )}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
+                    )}
 
-                    {/* Specialty — full width, only for TEACHER */}
-                    {accountRole === "TEACHER" && (
+                    {/* Specialty — full width, for TEACHER or INDEPENDENT_TEACHER */}
+                    {(selectedRoleType === "TEACHER" || selectedRoleType === "INDEPENDENT_TEACHER") && (
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                           Chuyên môn <span className="text-red-500">*</span>

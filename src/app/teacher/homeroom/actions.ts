@@ -26,7 +26,7 @@ export async function getHomeroomClass(teacherIdParam?: string) {
   });
   if (!teacher) return null;
 
-  const classRoom = await prisma.classRoom.findFirst({
+  let classRoom = await prisma.classRoom.findFirst({
     where: { homeroomTeacherId: teacher.id },
     include: {
       school: true,
@@ -34,6 +34,49 @@ export async function getHomeroomClass(teacherIdParam?: string) {
       _count: { select: { students: true } },
     },
   });
+
+  // Auto-create Independent Homeroom Class if teacher doesn't have any class assigned yet
+  if (!classRoom) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, schoolId: true } });
+    if (user) {
+      let schoolId = user.schoolId;
+      if (!schoolId) {
+        const indepSchool = await prisma.school.create({
+          data: {
+            name: `Lớp học / Trung tâm Tự do - ${user.name}`,
+            schoolType: "THPT",
+          },
+        });
+        schoolId = indepSchool.id;
+        await prisma.user.update({ where: { id: userId }, data: { schoolId } });
+      }
+
+      classRoom = await prisma.classRoom.create({
+        data: {
+          name: `Lớp học Tự do 10A1`,
+          gradeLevel: 10,
+          schoolId,
+          homeroomTeacherId: teacher.id,
+        },
+        include: {
+          school: true,
+          campus: true,
+          _count: { select: { students: true } },
+        },
+      });
+
+      // Quick setup 4 default groups (Tổ 1..4)
+      await prisma.group.createMany({
+        data: [
+          { classId: classRoom.id, name: "Tổ 1" },
+          { classId: classRoom.id, name: "Tổ 2" },
+          { classId: classRoom.id, name: "Tổ 3" },
+          { classId: classRoom.id, name: "Tổ 4" },
+        ],
+      });
+    }
+  }
+
   return classRoom;
 }
 
@@ -50,6 +93,7 @@ export async function getClassStudents(classId: string) {
     },
     orderBy: [
       { isClassMonitor: "desc" },
+      { bonusPoints: "desc" },
       { user: { name: "asc" } },
     ],
   });
@@ -610,5 +654,106 @@ export async function saveWeeklyActivity(/* mutation_guard */ data: {
       notes: data.notes,
     },
     create: data,
+  });
+}
+
+// ============ Phân quyền chức danh học sinh (Lớp trưởng / Lớp phó / Tổ trưởng) ============
+export async function setStudentClassRole(studentId: string, role: string | null) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
+
+  const isMonitor = role === "LOP_TRUONG";
+
+  return prisma.student.update({
+    where: { id: studentId },
+    data: {
+      classRole: role,
+      isClassMonitor: isMonitor,
+    },
+  });
+}
+
+// ============ Khởi tạo nhanh 4 Tổ (Tổ 1, Tổ 2, Tổ 3, Tổ 4) ============
+export async function quickSetupFourGroups(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
+
+  const groupNames = ["Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4"];
+  const existingGroups = await prisma.group.findMany({
+    where: { classId },
+    select: { name: true },
+  });
+
+  const existingNames = new Set(existingGroups.map((g) => g.name));
+
+  const newGroupsToCreate = groupNames
+    .filter((name) => !existingNames.has(name))
+    .map((name) => ({ classId, name }));
+
+  if (newGroupsToCreate.length > 0) {
+    await prisma.group.createMany({ data: newGroupsToCreate });
+  }
+
+  return { success: true };
+}
+
+// ============ Đánh giá Tích cực & Cộng điểm Thưởng ============
+export async function recordParticipationBonus(data: {
+  studentId: string;
+  classId: string;
+  title: string;
+  category?: string;
+  points: number;
+  note?: string;
+}) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Chưa đăng nhập");
+  if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
+
+  const points = data.points > 0 ? data.points : 1;
+
+  // 1. Tạo nhật ký hoạt động tích cực
+  const record = await prisma.participationRecord.create({
+    data: {
+      studentId: data.studentId,
+      classId: data.classId,
+      title: data.title,
+      category: data.category || "PHAT_BIEU",
+      points: points,
+      note: data.note || null,
+      createdById: session.user.id,
+    },
+  });
+
+  // 2. Cộng lũy kế bonusPoints cho học sinh
+  await prisma.student.update({
+    where: { id: data.studentId },
+    data: {
+      bonusPoints: { increment: points },
+    },
+  });
+
+  return record;
+}
+
+// ============ Lấy lịch sử hoạt động tích cực ============
+export async function getParticipationRecords(classId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+  if (!(await isApprovedUser(session.user.id))) return [];
+
+  return prisma.participationRecord.findMany({
+    where: { classId },
+    include: {
+      student: {
+        include: {
+          user: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
   });
 }

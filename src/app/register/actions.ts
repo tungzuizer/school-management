@@ -9,7 +9,8 @@ export interface RegisterTeacherInput {
   phone: string;
   password: string;
   role?: "TEACHER" | "ADMIN" | "VICE_PRINCIPAL";
-  schoolId: string;
+  isIndependentTeacher?: boolean;
+  schoolId?: string;
   districtWardId?: string;
   departmentId?: string;
   specialty?: string;
@@ -65,7 +66,18 @@ export async function getRegistrationFormData() {
 
 export async function registerTeacher(input: RegisterTeacherInput) {
   try {
-    const { name, email, phone, password, role = "TEACHER", schoolId, districtWardId, departmentId, specialty } = input;
+    const {
+      name,
+      email,
+      phone,
+      password,
+      role = "TEACHER",
+      isIndependentTeacher = false,
+      schoolId,
+      districtWardId,
+      departmentId,
+      specialty,
+    } = input;
 
     if (!name || !name.trim()) {
       return { success: false, error: "Vui lòng nhập Họ và tên." };
@@ -85,7 +97,7 @@ export async function registerTeacher(input: RegisterTeacherInput) {
       return { success: false, error: "Mật khẩu phải có ít nhất 6 ký tự." };
     }
 
-    if (!schoolId) {
+    if (!isIndependentTeacher && !schoolId) {
       return { success: false, error: "Vui lòng chọn Trường học." };
     }
 
@@ -98,9 +110,81 @@ export async function registerTeacher(input: RegisterTeacherInput) {
       return { success: false, error: "Email này đã được sử dụng trong hệ thống." };
     }
 
-    // Find school details to inherit location attributes
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // If Independent Teacher -> Auto-create dedicated independent school & homeroom class
+    if (isIndependentTeacher) {
+      const newUser = await prisma.$transaction(async (tx) => {
+        // Find default department & ward if available
+        const defaultDept = await tx.educationDepartment.findFirst();
+        const defaultWard = await tx.districtWard.findFirst();
+
+        // Create independent virtual school space
+        const indepSchool = await tx.school.create({
+          data: {
+            name: `Lớp học / Trung tâm Tự do - ${name.trim()}`,
+            schoolType: "THPT",
+            departmentId: defaultDept?.id || null,
+            districtWardId: defaultWard?.id || null,
+          },
+        });
+
+        // Create user with isApproved = true
+        const user = await tx.user.create({
+          data: {
+            name: name.trim(),
+            email: cleanEmail,
+            password: hashedPassword,
+            role: "TEACHER",
+            isApproved: true,
+            schoolId: indepSchool.id,
+            departmentId: defaultDept?.id || null,
+            districtWardId: defaultWard?.id || null,
+          },
+        });
+
+        // Create teacher profile
+        const teacher = await tx.teacher.create({
+          data: {
+            userId: user.id,
+            phone: phone ? phone.trim() : null,
+            specialty: specialty ? specialty.trim() : "Toán học",
+          },
+        });
+
+        // Auto-create default homeroom class for this independent teacher
+        const defaultClass = await tx.classRoom.create({
+          data: {
+            name: `Lớp học Tự do 10A1`,
+            gradeLevel: 10,
+            schoolId: indepSchool.id,
+            homeroomTeacherId: teacher.id,
+          },
+        });
+
+        // Auto-create default 4 Groups (Tổ 1, Tổ 2, Tổ 3, Tổ 4)
+        await tx.group.createMany({
+          data: [
+            { classId: defaultClass.id, name: "Tổ 1" },
+            { classId: defaultClass.id, name: "Tổ 2" },
+            { classId: defaultClass.id, name: "Tổ 3" },
+            { classId: defaultClass.id, name: "Tổ 4" },
+          ],
+        });
+
+        return user;
+      });
+
+      return {
+        success: true,
+        message: `Đăng ký tài khoản Giáo viên Tự do thành công! Bạn có thể đăng nhập ngay và tự thêm học sinh vào lớp học của mình.`,
+      };
+    }
+
+    // Normal School Teacher Registration
     const targetSchool = await prisma.school.findUnique({
-      where: { id: schoolId },
+      where: { id: schoolId! },
       select: { id: true, name: true, departmentId: true, districtWardId: true },
     });
 
@@ -110,9 +194,6 @@ export async function registerTeacher(input: RegisterTeacherInput) {
 
     const finalDepartmentId = departmentId || targetSchool.departmentId || undefined;
     const finalDistrictWardId = districtWardId || targetSchool.districtWardId || undefined;
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user and teacher record if TEACHER
     const newUser = await prisma.$transaction(async (tx) => {
