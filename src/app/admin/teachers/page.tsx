@@ -575,9 +575,30 @@ export default function TeachersPage() {
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Chuyên môn</label>
-              <input type="text" value={form.specialty} onChange={(e) => setForm({...form, specialty: e.target.value})}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="VD: Toán, Văn..." />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Chuyên môn / Môn giảng dạy *</label>
+              <select
+                value={form.specialty}
+                onChange={(e) => setForm({ ...form, specialty: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+              >
+                <option value="">-- Chọn chuyên môn --</option>
+                <option value="Toán học">Toán học</option>
+                <option value="Ngữ văn">Ngữ văn</option>
+                <option value="Tiếng Anh">Tiếng Anh</option>
+                <option value="Vật lý">Vật lý</option>
+                <option value="Hóa học">Hóa học</option>
+                <option value="Sinh học">Sinh học</option>
+                <option value="Lịch sử">Lịch sử</option>
+                <option value="Địa lý">Địa lý</option>
+                <option value="Giáo dục công dân">Giáo dục công dân (GDKT & PL)</option>
+                <option value="Tin học">Tin học</option>
+                <option value="Công nghệ">Công nghệ</option>
+                <option value="Thể dục">Thể dục (GD thể chất)</option>
+                <option value="Âm nhạc">Âm nhạc</option>
+                <option value="Mỹ thuật">Mỹ thuật</option>
+                <option value="Hoạt động trải nghiệm">Hoạt động trải nghiệm</option>
+                <option value="Giáo dục quốc phòng">Giáo dục quốc phòng & an ninh</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bằng cấp</label>

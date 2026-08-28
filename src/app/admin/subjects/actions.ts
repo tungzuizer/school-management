@@ -1,7 +1,22 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getTenantContext } from "@/lib/tenant";
 
+export async function getPrincipalSchoolInfo() {
+  try {
+    const ctx = await getTenantContext();
+    if (ctx.schoolId) {
+      const school = await prisma.school.findUnique({
+        where: { id: ctx.schoolId },
+        select: { id: true, name: true, schoolType: true }
+      });
+      if (school) return school;
+    }
+  } catch {}
+  const firstSchool = await prisma.school.findFirst({ select: { id: true, name: true, schoolType: true } });
+  return firstSchool || { id: "", name: "Trường học", schoolType: "THPT" };
+}
 
 export async function getSubjects(search?: string) {
   const where: any = {};
@@ -18,7 +33,28 @@ export async function getSubjects(search?: string) {
       headTeacher: {
         select: {
           id: true,
-          user: { select: { name: true } }
+          user: { select: { name: true, school: { select: { name: true } } } }
+        }
+      },
+      teachingAssignments: {
+        select: {
+          id: true,
+          teacher: {
+            select: {
+              id: true,
+              specialty: true,
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                  school: { select: { id: true, name: true } }
+                }
+              }
+            }
+          },
+          classRoom: {
+            select: { id: true, name: true, gradeLevel: true }
+          }
         }
       },
       _count: { select: { teachingAssignments: true, grades: true } },
