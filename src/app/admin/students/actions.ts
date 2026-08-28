@@ -44,6 +44,8 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
           OR: [
             { classRoom: { schoolId: targetSchoolId } },
             { user: { schoolId: targetSchoolId } },
+            { classRoom: null },
+            { user: { schoolId: null } },
           ],
         });
       }
@@ -154,6 +156,12 @@ export async function createStudent(data: {
       if (existingCode) return { success: false, error: "Mã học sinh đã tồn tại" };
     }
 
+    let userSchoolId: string | undefined;
+    try {
+      const ctx = await getTenantContext();
+      if (ctx.schoolId) userSchoolId = ctx.schoolId;
+    } catch { /* skip */ }
+
     const rawPassword = data.password && data.password.trim() ? data.password.trim() : "abc123";
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
     await prisma.user.create({
@@ -162,6 +170,7 @@ export async function createStudent(data: {
         email: data.email,
         password: hashedPassword,
         role: "STUDENT",
+        schoolId: userSchoolId || undefined,
         student: {
           create: {
             studentCode: data.studentCode || undefined,
@@ -348,6 +357,12 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
       existingStudents.map((s) => (s.studentCode ? s.studentCode.toLowerCase() : ""))
     );
 
+    let userSchoolId: string | undefined;
+    try {
+      const ctx = await getTenantContext();
+      if (ctx.schoolId) userSchoolId = ctx.schoolId;
+    } catch { /* skip */ }
+
     let createdCount = 0;
     const errors: string[] = [];
 
@@ -385,6 +400,7 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
             email,
             password: defaultPasswordHash,
             role: "STUDENT",
+            schoolId: userSchoolId || undefined,
             student: {
               create: {
                 studentCode: code || undefined,

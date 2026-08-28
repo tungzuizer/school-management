@@ -34,9 +34,20 @@ export async function getVPClasses(campusId: string) {
 
 export async function getVPStudents(campusId: string) {
   try {
-    const effectiveCampusId = await getEffectiveCampusId(campusId);
+    let effectiveCampusId = campusId;
+    if (!campusId || campusId.startsWith("demo")) {
+      const firstCampus = await prisma.campus.findFirst({ select: { id: true } });
+      if (firstCampus) effectiveCampusId = firstCampus.id;
+    }
+
     const students = await prisma.student.findMany({
-      where: { classRoom: { campusId: effectiveCampusId } },
+      where: {
+        OR: [
+          { classRoom: { campusId: effectiveCampusId } },
+          { classRoom: { campusId: null } },
+          { classId: null },
+        ],
+      },
       include: {
         user: { select: { id: true, name: true, email: true } },
         classRoom: { select: { id: true, name: true, gradeLevel: true } },
@@ -44,18 +55,16 @@ export async function getVPStudents(campusId: string) {
       orderBy: { user: { name: "asc" } },
     });
 
-    if (students.length === 0) {
-      return prisma.student.findMany({
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          classRoom: { select: { id: true, name: true, gradeLevel: true } },
-        },
-        orderBy: { user: { name: "asc" } },
-        take: 200,
-      });
-    }
+    if (students.length > 0) return students;
 
-    return students;
+    return await prisma.student.findMany({
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        classRoom: { select: { id: true, name: true, gradeLevel: true } },
+      },
+      orderBy: { user: { name: "asc" } },
+      take: 500,
+    });
   } catch (err) {
     console.error("getVPStudents error:", err);
     return [];
