@@ -53,11 +53,19 @@ export async function getStudentGrades(classId: string, subjectId: string, term:
   const userApproved = await isApprovedUser(session.user.id);
   if (!userApproved) return [];
 
-  const students = await prisma.student.findMany({
-    where: { classId, status: "STUDYING" },
+  let students = await prisma.student.findMany({
+    where: { classId, status: { notIn: ["TRANSFERRED", "DROPPED_OUT", "GRADUATED"] } },
     include: { user: { select: { name: true } } },
     orderBy: { user: { name: "asc" } },
   });
+
+  if (students.length === 0) {
+    students = await prisma.student.findMany({
+      where: { classId },
+      include: { user: { select: { name: true } } },
+      orderBy: { user: { name: "asc" } },
+    });
+  }
 
   const grades = await prisma.grade.findMany({
     where: {

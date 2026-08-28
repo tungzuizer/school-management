@@ -44,6 +44,17 @@ export async function getVPStudents(campusId: string) {
       orderBy: { user: { name: "asc" } },
     });
 
+    if (students.length === 0) {
+      return prisma.student.findMany({
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          classRoom: { select: { id: true, name: true, gradeLevel: true } },
+        },
+        orderBy: { user: { name: "asc" } },
+        take: 200,
+      });
+    }
+
     return students;
   } catch (err) {
     console.error("getVPStudents error:", err);

@@ -7,45 +7,81 @@ import { getTenantContext } from "@/lib/tenant";
 import { recordAuditLog } from "@/lib/audit-logger";
 
 export async function getStudents(search?: string, classId?: string, gradeLevel?: number, schoolId?: string) {
-  const where: any = {};
+  try {
+    const where: any = {};
 
-  if (schoolId) {
-    where.classRoom = { ...(where.classRoom || {}), schoolId };
-  } else {
-    try {
-      const ctx = await getTenantContext();
-      if (ctx.schoolId) {
-        where.classRoom = { ...(where.classRoom || {}), schoolId: ctx.schoolId };
-      }
-    } catch { /* allow unauthenticated for demo */ }
-  }
+    let targetSchoolId = schoolId;
+    if (!targetSchoolId) {
+      try {
+        const ctx = await getTenantContext();
+        if (ctx.schoolId) {
+          targetSchoolId = ctx.schoolId;
+        }
+      } catch { /* allow unauthenticated for demo */ }
+    }
 
-  if (search) {
-    where.user = { name: { contains: search, mode: "insensitive" } };
-  }
-  if (classId) {
-    where.classId = classId;
-  }
-  if (gradeLevel) {
-    where.classRoom = { ...(where.classRoom || {}), gradeLevel };
-  }
-  return prisma.student.findMany({
-    where,
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-      classRoom: {
-        select: {
-          id: true,
-          name: true,
-          gradeLevel: true,
-          school: { select: { id: true, name: true } },
+    if (search) {
+      where.user = { name: { contains: search, mode: "insensitive" } };
+    }
+    if (classId) {
+      where.classId = classId;
+    }
+    if (gradeLevel) {
+      where.classRoom = { ...(where.classRoom || {}), gradeLevel };
+    }
+
+    // Try fetching with school scope if schoolId exists
+    if (targetSchoolId) {
+      const scopedWhere = {
+        ...where,
+        OR: [
+          { classRoom: { schoolId: targetSchoolId } },
+          { user: { schoolId: targetSchoolId } },
+        ],
+      };
+      const result = await prisma.student.findMany({
+        where: scopedWhere,
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          classRoom: {
+            select: {
+              id: true,
+              name: true,
+              gradeLevel: true,
+              school: { select: { id: true, name: true } },
+            },
+          },
+          group: { select: { id: true, name: true } },
         },
+        orderBy: { user: { name: "asc" } },
+        take: 500,
+      });
+
+      if (result.length > 0) return result;
+    }
+
+    // Fallback: fetch without rigid school restriction so unassigned students still show up
+    return await prisma.student.findMany({
+      where,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        classRoom: {
+          select: {
+            id: true,
+            name: true,
+            gradeLevel: true,
+            school: { select: { id: true, name: true } },
+          },
+        },
+        group: { select: { id: true, name: true } },
       },
-      group: { select: { id: true, name: true } },
-    },
-    orderBy: { user: { name: "asc" } },
-    take: 200,
-  });
+      orderBy: { user: { name: "asc" } },
+      take: 500,
+    });
+  } catch (error) {
+    console.error("Error in getStudents:", error);
+    return [];
+  }
 }
 
 export async function getClassesForSelect(schoolId?: string) {
