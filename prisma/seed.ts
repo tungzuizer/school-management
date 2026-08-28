@@ -260,14 +260,31 @@ async function main() {
       },
     });
 
-    // Create 5 subject-specialist teachers for this school
-    const teacherSpecs = [
-      { name: "Phạm Văn Minh", specialty: "Toán học", slug: "toan" },
-      { name: "Trần Thị Thanh", specialty: "Vật lý", slug: "vatly" },
-      { name: "Lê Hoàng Mai", specialty: "Ngữ văn", slug: "nguvan" },
-      { name: "Phạm Minh Đức", specialty: "Tiếng Anh", slug: "tienganh" },
-      { name: "Vũ Phương Thảo", specialty: "Lịch sử", slug: "lichsu" },
+    // Create 5 unique subject-specialist teachers per school
+    const schoolTeacherSpecs = [
+      [
+        { name: "Trần Thị Hoa", specialty: "Toán học", slug: "toan" },
+        { name: "Nguyễn Văn An", specialty: "Vật lý", slug: "vatly" },
+        { name: "Đỗ Thị Bích", specialty: "Ngữ văn", slug: "nguvan" },
+        { name: "Hoàng Đức Anh", specialty: "Tiếng Anh", slug: "tienganh" },
+        { name: "Nguyễn Thị Chúc", specialty: "Lịch sử", slug: "lichsu" },
+      ],
+      [
+        { name: "Phạm Văn Minh", specialty: "Toán học", slug: "toan" },
+        { name: "Trần Thị Thanh", specialty: "Vật lý", slug: "vatly" },
+        { name: "Lê Hoàng Mai", specialty: "Ngữ văn", slug: "nguvan" },
+        { name: "Phạm Minh Đức", specialty: "Tiếng Anh", slug: "tienganh" },
+        { name: "Vũ Phương Thảo", specialty: "Lịch sử", slug: "lichsu" },
+      ],
+      [
+        { name: "Nguyễn Đức Trung", specialty: "Toán học", slug: "toan" },
+        { name: "Lê Thị Hải", specialty: "Vật lý", slug: "vatly" },
+        { name: "Trịnh Thu Trang", specialty: "Ngữ văn", slug: "nguvan" },
+        { name: "Vũ Hoàng Long", specialty: "Tiếng Anh", slug: "tienganh" },
+        { name: "Lý Ngọc Diệp", specialty: "Lịch sử", slug: "lichsu" },
+      ],
     ];
+    const teacherSpecs = schoolTeacherSpecs[sIdx] || schoolTeacherSpecs[0];
 
     const schoolTeachers = [];
     for (let tIdx = 0; tIdx < teacherSpecs.length; tIdx++) {
