@@ -29,6 +29,8 @@ const PERIOD_TIMES: Record<number, { label: string; time: string }> = {
   6: { label: "Tiết 6", time: "13:50 - 14:35" },
   7: { label: "Tiết 7", time: "14:50 - 15:35" },
   8: { label: "Tiết 8", time: "15:40 - 16:25" },
+  9: { label: "Tiết 9", time: "16:30 - 17:15" },
+  10: { label: "Tiết 10", time: "17:20 - 18:05" },
 };
 
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -97,7 +99,7 @@ export default function StudentSchedulePage() {
   };
 
   const morningPeriods = [1, 2, 3, 4];
-  const afternoonPeriods = [5, 6, 7, 8];
+  const afternoonPeriods = [5, 6, 7, 8, 9, 10];
 
   const daysToRender = data?.days.slice(0, 6) || []; // Monday to Saturday
 

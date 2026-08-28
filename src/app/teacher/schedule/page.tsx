@@ -30,6 +30,8 @@ const PERIOD_TIMES: Record<number, { label: string; time: string; shift: "MORNIN
   6: { label: "Tiết 6", time: "13:50 - 14:35", shift: "AFTERNOON" },
   7: { label: "Tiết 7", time: "14:50 - 15:35", shift: "AFTERNOON" },
   8: { label: "Tiết 8", time: "15:40 - 16:25", shift: "AFTERNOON" },
+  9: { label: "Tiết 9", time: "16:30 - 17:15", shift: "AFTERNOON" },
+  10: { label: "Tiết 10", time: "17:20 - 18:05", shift: "AFTERNOON" },
 };
 
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -99,7 +101,7 @@ export default function TeacherSchedulePage() {
   };
 
   const morningPeriods = [1, 2, 3, 4];
-  const afternoonPeriods = [5, 6, 7, 8];
+  const afternoonPeriods = [5, 6, 7, 8, 9, 10];
 
   const daysToRender = data?.days.slice(0, 6) || [];
 

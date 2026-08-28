@@ -127,7 +127,7 @@ export default function AdminJournalsPage() {
   };
 
   const selectedClassObj = classes.find(c => c.id === selectedClass);
-  const periods = [1, 2, 3, 4, 5, 6, 7, 8];
+  const periods = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

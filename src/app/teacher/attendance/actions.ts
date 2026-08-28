@@ -31,7 +31,8 @@ export interface TeacherSlotOption {
 
 
 function parseLocalDate(dateStr: string): { dateObj: Date; dayOfWeek: number } {
-  const parts = dateStr.split("-").map(Number);
+  const cleanDateStr = dateStr ? dateStr.split("T")[0] : "";
+  const parts = cleanDateStr.split("-").map(Number);
   if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -53,6 +54,8 @@ const PERIOD_TIMES: Record<number, string> = {
   6: "13:50 - 14:35",
   7: "14:50 - 15:35",
   8: "15:40 - 16:25",
+  9: "16:30 - 17:15",
+  10: "17:20 - 18:05",
 };
 
 // Fetch teacher's exact teaching slots according to timetable on a specific date
@@ -80,7 +83,7 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
     prisma.attendance.findMany({
       where: {
         date: dateObj,
-        period: { in: [1, 2, 3, 4, 5, 6, 7, 8] },
+        period: { in: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
       },
       select: { classId: true, period: true },
     }),
@@ -111,7 +114,7 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
     });
   });
 
-  // Add Homeroom Class fallback options if teacher is homeroom teacher and has no timetable slots for this day
+  // Add Homeroom Class fallback options for periods without explicit timetable slots
   if (homeroomClasses.length > 0) {
     // Try to find "Sinh hoạt" or teacher specialty subject, otherwise fallback
     let fallbackSubject = await prisma.subject.findFirst({
@@ -134,9 +137,10 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
     const subName = "Sinh hoạt lớp (GVCN)";
 
     homeroomClasses.forEach((hr) => {
-      // If homeroom teacher has no timetable slots for this day, allow periods for homeroom attendance
-      if (!slots.some((s) => s.classId === hr.id)) {
-        [1, 2, 3, 4, 5, 6, 7, 8].forEach((p) => {
+      // Allow periods for homeroom attendance if slot for that specific period doesn't exist yet in slots
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach((p) => {
+        const alreadyHasSlot = slots.some((s) => s.classId === hr.id && s.period === p);
+        if (!alreadyHasSlot) {
           const slotKey = `${hr.id}_${p}_${subId}`;
           const isLocked = lockedSet.has(`${hr.id}_${p}`);
           slots.push({
@@ -153,10 +157,13 @@ export async function getTeacherScheduleForDate(date: string): Promise<TeacherSl
             isHomeroom: true,
             isLocked,
           });
-        });
-      }
+        }
+      });
     });
   }
+
+  // Sort slots by period ascending so morning slots come first, then afternoon slots
+  slots.sort((a, b) => a.period - b.period);
 
   return slots;
 }

@@ -25,6 +25,7 @@ const PERIOD_TIMES: Record<number, { start: string; end: string }> = {
   7: { start: "13:50", end: "14:35" },
   8: { start: "14:45", end: "15:30" },
   9: { start: "15:35", end: "16:20" },
+  10: { start: "16:25", end: "17:10" },
 };
 
 export function LiveClassTimeline({ schedule, className = "" }: Props) {

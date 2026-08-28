@@ -241,8 +241,8 @@ export default function ClassJournalPage() {
   const currentClassObj = classes.find((c) => c.id === selectedClass);
   const isClassHomeroomTeacher = currentClassObj?.isHomeroom || false;
 
-  // Periods list 1 to 8 (Standard Vietnamese school periods)
-  const periods = [1, 2, 3, 4, 5, 6, 7, 8];
+  // Periods list 1 to 10 (Standard Vietnamese school periods)
+  const periods = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
