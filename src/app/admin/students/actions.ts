@@ -8,11 +8,11 @@ import { recordAuditLog } from "@/lib/audit-logger";
 
 export async function getStudents(search?: string, classId?: string, gradeLevel?: number, schoolId?: string) {
   try {
-    let targetSchoolId = schoolId;
-    if (!targetSchoolId) {
+    let targetSchoolId = (schoolId && schoolId !== "ALL") ? schoolId : undefined;
+    if (!targetSchoolId && (!schoolId || schoolId === "")) {
       try {
         const ctx = await getTenantContext();
-        if (ctx.schoolId) {
+        if (ctx.schoolId && ctx.userRole !== "SUPER_ADMIN") {
           targetSchoolId = ctx.schoolId;
         }
       } catch { /* allow unauthenticated for demo */ }
@@ -64,7 +64,7 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
       where: andConditions.length > 0 ? { AND: andConditions } : {},
       include: includeSelect,
       orderBy: { user: { name: "asc" } },
-      take: 500,
+      take: 2000,
     });
 
     return result;
@@ -77,7 +77,7 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
 export async function getClassesForSelect(schoolId?: string) {
   try {
     const where: any = {};
-    if (schoolId) where.schoolId = schoolId;
+    if (schoolId && schoolId !== "ALL" && schoolId !== "") where.schoolId = schoolId;
     const classes = await prisma.classRoom.findMany({
       where,
       select: { id: true, name: true, gradeLevel: true, schoolId: true, school: { select: { id: true, name: true } } },
@@ -338,6 +338,12 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
       if (ctx.schoolId) userSchoolId = ctx.schoolId;
     } catch { /* skip */ }
 
+    const classSchoolMap = new Map<string, string>();
+    const allClasses = await prisma.classRoom.findMany({ select: { id: true, schoolId: true } });
+    allClasses.forEach((c) => {
+      if (c.schoolId) classSchoolMap.set(c.id, c.schoolId);
+    });
+
     let createdCount = 0;
     const errors: string[] = [];
 
@@ -369,13 +375,15 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
       }
 
       try {
+        const rowSchoolId = userSchoolId || (s.classId ? classSchoolMap.get(s.classId) : undefined);
+
         await prisma.user.create({
           data: {
             name: s.name.trim(),
             email,
             password: defaultPasswordHash,
             role: "STUDENT",
-            schoolId: userSchoolId || undefined,
+            schoolId: rowSchoolId || undefined,
             student: {
               create: {
                 studentCode: code || undefined,

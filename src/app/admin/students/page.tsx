@@ -64,7 +64,7 @@ export default function StudentsPage() {
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
-  const [filterSchool, setFilterSchool] = useState("");
+  const [filterSchool, setFilterSchool] = useState("ALL");
   const [filterGrade, setFilterGrade] = useState("");
   const [filterClass, setFilterClass] = useState("");
   const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
@@ -463,7 +463,7 @@ export default function StudentsPage() {
               }}
               className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs max-w-[200px]"
             >
-              <option value="">🏫 Tất cả các trường</option>
+              <option value="ALL">🏫 Tất cả các trường</option>
               {schools.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
