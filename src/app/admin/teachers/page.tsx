@@ -5,7 +5,7 @@ import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import { getTeachers, getSchoolsForTeacherSelect, createTeacher, updateTeacher, resetTeacherPassword, deleteTeacher, createBulkTeachers, BulkTeacherInput } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Loader2, KeyRound, Lock, CheckCircle2 } from "lucide-react";
+import { Loader2, KeyRound, Lock, CheckCircle2, Cloud, FileSpreadsheet, Plus, School, Building2, BookOpen, GraduationCap, LayoutGrid, Table, Crown, Clock } from "lucide-react";
 
 interface TeacherData {
   id: string;
@@ -325,7 +325,7 @@ export default function TeachersPage() {
             onClick={() => setDriveModalOpen(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium transition"
           >
-            <span>☁️</span> Google Drive
+            <Cloud className="w-4 h-4" /> Google Drive
           </button>
           <button
             onClick={() => {
@@ -336,10 +336,10 @@ export default function TeachersPage() {
             }}
             className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 text-sm font-medium"
           >
-            <span>📥</span> Nhập CSV/Text
+            <FileSpreadsheet className="w-4 h-4" /> Nhập CSV/Text
           </button>
           <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium">
-            <span>+</span> Thêm giáo viên
+            <Plus className="w-4 h-4" /> Thêm giáo viên
           </button>
         </div>
       </div>
@@ -348,7 +348,7 @@ export default function TeachersPage() {
       {schools.length > 0 && (
         <div className="mb-5 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
-            <span>🏫 Chọn trường học để lọc danh sách giáo viên:</span>
+            <span className="flex items-center gap-1.5"><School className="w-3.5 h-3.5 text-indigo-600" /> Chọn trường học để lọc danh sách giáo viên:</span>
             <span>{schools.length} Trường khả dụng</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -360,7 +360,7 @@ export default function TeachersPage() {
                   : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
               }`}
             >
-              <span>🏛️</span> Tất cả các trường
+              <Building2 className="w-3.5 h-3.5" /> Tất cả các trường
             </button>
             {schools.map((s) => (
               <button
@@ -372,7 +372,7 @@ export default function TeachersPage() {
                     : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                 }`}
               >
-                <span>🏫</span> {s.name}
+                <School className="w-3.5 h-3.5" /> {s.name}
               </button>
             ))}
           </div>
@@ -396,7 +396,7 @@ export default function TeachersPage() {
             onChange={(e) => setFilterSpecialty(e.target.value)}
             className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
           >
-            <option value="">📖 Tất cả chuyên môn</option>
+            <option value="">Tất cả chuyên môn</option>
             {uniqueSpecialties.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -410,7 +410,7 @@ export default function TeachersPage() {
             onChange={(e) => setFilterGrade(e.target.value)}
             className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
           >
-            <option value="">📚 Tất cả khối dạy</option>
+            <option value="">Tất cả khối dạy</option>
             {gradeOptions.map((g) => (
               <option key={g} value={g}>
                 Khối {g}
@@ -423,19 +423,19 @@ export default function TeachersPage() {
         <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
           <button
             onClick={() => setViewMode("GRID")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
               viewMode === "GRID" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            🎴 Dạng Thẻ
+            <LayoutGrid className="w-3.5 h-3.5" /> Dạng Thẻ
           </button>
           <button
             onClick={() => setViewMode("TABLE")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
               viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            📋 Dạng Bảng
+            <Table className="w-3.5 h-3.5" /> Dạng Bảng
           </button>
         </div>
       </div>

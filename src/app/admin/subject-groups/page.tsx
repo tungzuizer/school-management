@@ -1,6 +1,18 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import {
+  Cloud,
+  FileSpreadsheet,
+  Plus,
+  School,
+  Building2,
+  AlertTriangle,
+  LayoutGrid,
+  Table,
+  Upload,
+  HelpCircle,
+} from "lucide-react";
 import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import {
   getSubjectGroups,
@@ -407,7 +419,7 @@ export default function SubjectGroupsPage() {
             onClick={() => setDriveModalOpen(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium transition"
           >
-            <span>☁️</span> Google Drive
+            <Cloud className="w-4 h-4" /> Google Drive
           </button>
           <button
             onClick={() => {
@@ -418,13 +430,13 @@ export default function SubjectGroupsPage() {
             }}
             className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 text-sm font-medium"
           >
-            <span>📥</span> Nhập CSV/Text
+            <FileSpreadsheet className="w-4 h-4" /> Nhập CSV/Text
           </button>
           <button
             onClick={openCreate}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium"
           >
-            <span>+</span> Thêm tổ mới
+            <Plus className="w-4 h-4" /> Thêm tổ mới
           </button>
         </div>
       </div>
@@ -433,7 +445,7 @@ export default function SubjectGroupsPage() {
       {schools.length > 0 && (
         <div className="mb-5 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
-            <span>🏫 Chọn trường học để lọc danh sách tổ chuyên môn:</span>
+            <span className="flex items-center gap-1.5"><School className="w-4 h-4 text-indigo-600" /> Chọn trường học để lọc danh sách tổ chuyên môn:</span>
             <span>{schools.length} Trường khả dụng</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -445,7 +457,7 @@ export default function SubjectGroupsPage() {
                   : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
               }`}
             >
-              <span>🏛️</span> Tất cả các trường
+              <Building2 className="w-4 h-4" /> Tất cả các trường
             </button>
             {schools.map((s) => (
               <button
@@ -457,7 +469,7 @@ export default function SubjectGroupsPage() {
                     : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                 }`}
               >
-                <span>🏫</span> {s.name}
+                <School className="w-4 h-4" /> {s.name}
               </button>
             ))}
           </div>
@@ -489,7 +501,7 @@ export default function SubjectGroupsPage() {
               onClick={() => openAssignModal()}
               className="px-3 py-2 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold hover:bg-amber-100 transition flex items-center gap-1.5"
             >
-              <span>⚠️</span> {unassignedSubjects.length} môn chưa phân tổ
+              <AlertTriangle className="w-4 h-4 text-amber-600" /> {unassignedSubjects.length} môn chưa phân tổ
             </button>
           )}
         </div>
@@ -498,23 +510,23 @@ export default function SubjectGroupsPage() {
         <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
           <button
             onClick={() => setViewMode("GRID")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
               viewMode === "GRID"
                 ? "bg-white text-indigo-700 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            🎴 Dạng Thẻ Tổ
+            <LayoutGrid className="w-4 h-4" /> Dạng Thẻ Tổ
           </button>
           <button
             onClick={() => setViewMode("TABLE")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
               viewMode === "TABLE"
                 ? "bg-white text-indigo-700 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            📋 Dạng Bảng
+            <Table className="w-4 h-4" /> Dạng Bảng
           </button>
         </div>
       </div>
@@ -615,7 +627,7 @@ export default function SubjectGroupsPage() {
                       onClick={() => openAssignModal(g)}
                       className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 flex items-center gap-1"
                     >
-                      <span>+</span> Gán môn
+                      <Plus className="w-3.5 h-3.5" /> Gán môn
                     </button>
                     <div className="space-x-3">
                       <button
@@ -978,7 +990,7 @@ export default function SubjectGroupsPage() {
       >
         <div className="space-y-4">
           <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-900 space-y-1">
-            <p className="font-semibold mb-1">💡 Hướng dẫn nhập dữ liệu:</p>
+            <p className="font-semibold mb-1 flex items-center gap-1.5"><HelpCircle className="w-4 h-4 text-indigo-600" /> Hướng dẫn nhập dữ liệu:</p>
             <p>1. Copy hàng loạt từ Excel / Google Sheets hoặc tải file CSV mẫu.</p>
             <p>
               2. Thứ tự cột:{" "}
@@ -1011,10 +1023,10 @@ export default function SubjectGroupsPage() {
               onClick={downloadTemplate}
               className="text-xs bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-50 flex items-center gap-1 font-medium"
             >
-              📄 Tải mẫu CSV
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Tải mẫu CSV
             </button>
-            <label className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded cursor-pointer hover:bg-indigo-100 font-medium">
-              📁 Tải file CSV lên
+            <label className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded cursor-pointer hover:bg-indigo-100 font-medium flex items-center gap-1">
+              <Upload className="w-3.5 h-3.5" /> Tải file CSV lên
               <input type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
             </label>
           </div>

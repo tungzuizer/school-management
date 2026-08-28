@@ -18,10 +18,28 @@ export async function getPrincipalSchoolInfo() {
   return firstSchool || { id: "", name: "Trường học", schoolType: "THPT" };
 }
 
-export async function getSubjects(search?: string) {
+export async function getSchoolsForSelect() {
+  try {
+    return await prisma.school.findMany({
+      select: { id: true, name: true, schoolType: true },
+      orderBy: { name: "asc" },
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function getSubjects(search?: string, schoolId?: string) {
   const where: any = {};
   if (search) {
     where.name = { contains: search, mode: "insensitive" };
+  }
+  if (schoolId && schoolId !== "ALL" && schoolId !== "") {
+    where.OR = [
+      { teachingAssignments: { some: { teacher: { user: { schoolId } } } } },
+      { headTeacher: { user: { schoolId } } },
+      { subjectGroup: { schoolId } },
+    ];
   }
   const subjects = await prisma.subject.findMany({
     where,

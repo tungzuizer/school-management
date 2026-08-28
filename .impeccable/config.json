@@ -26,6 +26,11 @@
         "value": "text-slate-500",
         "createdAt": "2026-08-26T18:01:00.022Z",
         "reason": "user confirmed high contrast text-slate-500 on white glass container"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "1044",
+        "createdAt": "2026-08-28T15:27:08.226Z"
       }
     ]
   }

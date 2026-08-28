@@ -15,7 +15,7 @@ import {
 } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { KeyRound, Lock, Loader2 } from "lucide-react";
+import { KeyRound, Lock, Loader2, Cloud, FileSpreadsheet, Plus, School, Building2, LayoutGrid, Table, GraduationCap, Users } from "lucide-react";
 
 interface StudentData {
   id: string;
@@ -420,7 +420,7 @@ export default function StudentsPage() {
             onClick={() => setDriveModalOpen(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium transition"
           >
-            <span>☁️</span> Google Drive
+            <Cloud className="w-4 h-4" /> Google Drive
           </button>
           <button
             onClick={() => {
@@ -431,13 +431,13 @@ export default function StudentsPage() {
             }}
             className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 text-sm font-medium"
           >
-            <span>📥</span> Nhập CSV/Text
+            <FileSpreadsheet className="w-4 h-4" /> Nhập CSV/Text
           </button>
           <button
             onClick={openCreate}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium"
           >
-            <span>+</span> Thêm học sinh
+            <Plus className="w-4 h-4" /> Thêm học sinh
           </button>
         </div>
       </div>
@@ -446,7 +446,7 @@ export default function StudentsPage() {
       {schools.length > 0 && (
         <div className="mb-5 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
-            <span>🏫 Chọn trường học để lọc danh sách học sinh:</span>
+            <span className="flex items-center gap-1.5"><School className="w-3.5 h-3.5 text-indigo-600" /> Chọn trường học để lọc danh sách học sinh:</span>
             <span>{schools.length} Trường khả dụng</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -461,7 +461,7 @@ export default function StudentsPage() {
                   : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
               }`}
             >
-              <span>🏛️</span> Tất cả các trường
+              <Building2 className="w-3.5 h-3.5" /> Tất cả các trường
             </button>
             {schools.map((s) => (
               <button
@@ -476,7 +476,7 @@ export default function StudentsPage() {
                     : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                 }`}
               >
-                <span>🏫</span> {s.name}
+                <School className="w-3.5 h-3.5" /> {s.name}
               </button>
             ))}
           </div>
@@ -503,7 +503,7 @@ export default function StudentsPage() {
             }}
             className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
           >
-            <option value="">📚 Tất cả khối</option>
+            <option value="">Tất cả khối</option>
             {gradeOptions.map((g) => (
               <option key={g} value={g}>
                 Khối {g}
@@ -517,7 +517,7 @@ export default function StudentsPage() {
             onChange={(e) => setFilterClass(e.target.value)}
             className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
           >
-            <option value="">👥 Tất cả lớp</option>
+            <option value="">Tất cả lớp</option>
             {classes
               .filter((c) => !filterGrade || c.gradeLevel === Number(filterGrade))
               .map((c) => (
@@ -532,19 +532,19 @@ export default function StudentsPage() {
         <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
           <button
             onClick={() => setViewMode("GRID")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
               viewMode === "GRID" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            🎴 Dạng Thẻ
+            <LayoutGrid className="w-3.5 h-3.5" /> Dạng Thẻ
           </button>
           <button
             onClick={() => setViewMode("TABLE")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
               viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            📋 Dạng Bảng
+            <Table className="w-3.5 h-3.5" /> Dạng Bảng
           </button>
         </div>
       </div>
@@ -1041,7 +1041,7 @@ export default function StudentsPage() {
                 type="file"
                 accept=".csv, .txt"
                 onChange={handleFileUpload}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                className="w-full text-sm text-slate-700 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
               />
             </div>
           </div>
