@@ -103,21 +103,21 @@ function AttendanceContent() {
       setSlots(scheduleSlots);
 
       if (scheduleSlots.length > 0) {
-        let targetSlotKey = scheduleSlots[0].slotKey;
-        if (urlClassId && urlPeriod) {
-          const matched = scheduleSlots.find(
-            (s) => s.classId === urlClassId && s.period === Number(urlPeriod)
-          );
-          if (matched) {
-            targetSlotKey = matched.slotKey;
+        setSelectedSlotKey((prevKey) => {
+          if (prevKey && scheduleSlots.some((s) => s.slotKey === prevKey)) {
+            return prevKey;
           }
-        } else if (urlClassId) {
-          const matched = scheduleSlots.find((s) => s.classId === urlClassId);
-          if (matched) {
-            targetSlotKey = matched.slotKey;
+          if (urlClassId && urlPeriod) {
+            const matched = scheduleSlots.find(
+              (s) => s.classId === urlClassId && s.period === Number(urlPeriod)
+            );
+            if (matched) return matched.slotKey;
+          } else if (urlClassId) {
+            const matched = scheduleSlots.find((s) => s.classId === urlClassId);
+            if (matched) return matched.slotKey;
           }
-        }
-        setSelectedSlotKey(targetSlotKey);
+          return scheduleSlots[0].slotKey;
+        });
       } else {
         setSelectedSlotKey("");
         setStudents([]);
