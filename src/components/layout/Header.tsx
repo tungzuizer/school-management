@@ -102,9 +102,17 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
               aria-expanded={userDropdownOpen}
               className="flex items-center gap-2 p-1.5 min-h-[44px] rounded-xl hover:bg-slate-100/80 transition-all active-press cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xs shadow-xs ring-2 ring-indigo-100">
-                {userName.charAt(0).toUpperCase()}
-              </div>
+              {session?.user?.image ? (
+                <img
+                  src={session.user.image}
+                  alt={userName}
+                  className="w-8 h-8 rounded-xl object-cover ring-2 ring-indigo-100 shadow-xs"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xs shadow-xs ring-2 ring-indigo-100">
+                  {userName.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="hidden md:block text-left">
                 <p className="text-xs font-extrabold text-slate-900 leading-tight">{userName}</p>
                 <p className="text-[10px] text-indigo-700 font-bold leading-tight">{userRole}</p>
