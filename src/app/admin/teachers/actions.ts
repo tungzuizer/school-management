@@ -167,7 +167,7 @@ export interface BulkTeacherInput {
   degree?: string;
 }
 
-export function cleanEmail(email: string): string {
+function cleanEmail(email: string): string {
   if (!email || !email.includes("@")) return email ? email.trim().toLowerCase() : "";
   const [local, domain] = email.trim().toLowerCase().split("@");
   const cleanLocal = local
@@ -179,7 +179,7 @@ export function cleanEmail(email: string): string {
   return `${cleanLocal}@${domain}`;
 }
 
-export function removeVietnameseTones(str: string): string {
+function removeVietnameseTones(str: string): string {
   return str
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
