@@ -18,25 +18,34 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
       } catch { /* allow unauthenticated for demo */ }
     }
 
-    const buildBaseConditions = () => {
-      const conds: any[] = [];
-      if (search && search.trim()) {
-        const cleanSearch = search.trim();
-        conds.push({
-          OR: [
-            { user: { name: { contains: cleanSearch, mode: "insensitive" } } },
-            { studentCode: { contains: cleanSearch, mode: "insensitive" } },
-          ],
-        });
-      }
-      if (classId && classId.trim()) {
-        conds.push({ classId: classId.trim() });
-      }
-      if (gradeLevel) {
-        conds.push({ classRoom: { gradeLevel: Number(gradeLevel) } });
-      }
-      return conds;
-    };
+    const andConditions: any[] = [];
+
+    if (targetSchoolId) {
+      andConditions.push({
+        OR: [
+          { classRoom: { schoolId: targetSchoolId } },
+          { user: { schoolId: targetSchoolId } },
+        ],
+      });
+    }
+
+    if (search && search.trim()) {
+      const cleanSearch = search.trim();
+      andConditions.push({
+        OR: [
+          { user: { name: { contains: cleanSearch, mode: "insensitive" } } },
+          { studentCode: { contains: cleanSearch, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    if (classId && classId.trim()) {
+      andConditions.push({ classId: classId.trim() });
+    }
+
+    if (gradeLevel) {
+      andConditions.push({ classRoom: { gradeLevel: Number(gradeLevel) } });
+    }
 
     const includeSelect = {
       user: { select: { id: true, name: true, email: true } },
@@ -51,48 +60,14 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
       group: { select: { id: true, name: true } },
     };
 
-    const baseConds = buildBaseConditions();
-
-    // Attempt 1: Filter with targetSchoolId if present
-    if (targetSchoolId) {
-      const schoolConds = [
-        ...baseConds,
-        {
-          OR: [
-            { classRoom: { schoolId: targetSchoolId } },
-            { user: { schoolId: targetSchoolId } },
-            { classId: null },
-            { user: { schoolId: null } },
-          ],
-        },
-      ];
-
-      const result = await prisma.student.findMany({
-        where: { AND: schoolConds },
-        include: includeSelect,
-        orderBy: { user: { name: "asc" } },
-        take: 500,
-      });
-
-      if (result && result.length > 0) return result;
-    }
-
-    // Attempt 2: Fetch with base filters (search/class/grade) without school restriction
-    const resultNoSchool = await prisma.student.findMany({
-      where: baseConds.length > 0 ? { AND: baseConds } : {},
+    const result = await prisma.student.findMany({
+      where: andConditions.length > 0 ? { AND: andConditions } : {},
       include: includeSelect,
       orderBy: { user: { name: "asc" } },
       take: 500,
     });
 
-    if (resultNoSchool && resultNoSchool.length > 0) return resultNoSchool;
-
-    // Attempt 3: Fallback — return all students if filters returned nothing
-    return await prisma.student.findMany({
-      include: includeSelect,
-      orderBy: { user: { name: "asc" } },
-      take: 500,
-    });
+    return result;
   } catch (error) {
     console.error("Error in getStudents:", error);
     return [];
@@ -156,6 +131,11 @@ export async function createStudent(data: {
       const ctx = await getTenantContext();
       if (ctx.schoolId) userSchoolId = ctx.schoolId;
     } catch { /* skip */ }
+
+    if (!userSchoolId && data.classId) {
+      const cls = await prisma.classRoom.findUnique({ where: { id: data.classId }, select: { schoolId: true } });
+      if (cls?.schoolId) userSchoolId = cls.schoolId;
+    }
 
     const rawPassword = data.password && data.password.trim() ? data.password.trim() : "abc123";
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
