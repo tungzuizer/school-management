@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getSubjects, createSubject, updateSubject, deleteSubject } from "./actions";
+import { getSubjects, getSchoolsForSelect, createSubject, updateSubject, deleteSubject } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Loader2, Users, School, BookOpen } from "lucide-react";
+import { Loader2, Users, School, BookOpen, Eye, Crown, Plus, LayoutGrid, Table, Building2 } from "lucide-react";
 
 export const STANDARD_VIETNAMESE_SUBJECTS = [
   "Toán học",
@@ -69,6 +69,8 @@ interface SubjectsClientProps {
 export default function SubjectsClient({ initialSubjects, initialTeachers, schoolInfo }: SubjectsClientProps) {
   const [subjects, setSubjects] = useState<SubjectData[]>(initialSubjects);
   const [teachers] = useState<TeacherData[]>(initialTeachers);
+  const [schools, setSchools] = useState<SchoolInfo[]>([]);
+  const [filterSchool, setFilterSchool] = useState<string>("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
@@ -98,15 +100,19 @@ export default function SubjectsClient({ initialSubjects, initialTeachers, schoo
     if (!silent) setLoading(true);
     setIsRefreshing(true);
     try {
-      const data = await getSubjects(debouncedSearch || undefined);
+      const [data, schoolsList] = await Promise.all([
+        getSubjects(debouncedSearch || undefined, filterSchool || undefined),
+        getSchoolsForSelect(),
+      ]);
       setSubjects(data as SubjectData[]);
+      setSchools(schoolsList);
     } catch (e) {
       console.error("Failed to load subjects:", e);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [debouncedSearch]);
+  }, [debouncedSearch, filterSchool]);
 
   useEffect(() => {
     if (isInitialMount) {
@@ -230,21 +236,41 @@ export default function SubjectsClient({ initialSubjects, initialTeachers, schoo
           <p className="text-xs text-slate-500 mt-1">Danh sách môn học chuẩn theo chương trình giáo dục Việt Nam</p>
         </div>
         <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 font-medium text-sm shadow-2xs">
-          <span>+</span> Thêm môn học
+          <Plus className="w-4 h-4" /> Thêm môn học
         </button>
       </div>
 
-      {/* School & Subject Program Banner Cards */}
-      {schoolInfo && (
+      {/* School Cards Bar (Thẻ chọn Trường) */}
+      {schools.length > 0 && (
         <div className="mb-5 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
-            <span>🏫 Đang hiển thị chương trình môn học của trường:</span>
-            <span>Cấp: {getSchoolTypeLabel(schoolInfo.schoolType)}</span>
+            <span className="flex items-center gap-1.5"><School className="w-4 h-4 text-indigo-600" /> Chọn trường học để lọc môn học:</span>
+            <span>{schools.length} Trường khả dụng</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <div className="px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-600 shadow-xs flex items-center gap-1.5">
-              <span>🏫</span> {schoolInfo.name} ({getSchoolTypeLabel(schoolInfo.schoolType)})
-            </div>
+            <button
+              onClick={() => setFilterSchool("")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                filterSchool === ""
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              <Building2 className="w-4 h-4" /> Tất cả các trường
+            </button>
+            {schools.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setFilterSchool(s.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                  filterSchool === s.id
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                <School className="w-4 h-4" /> {s.name}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -265,19 +291,19 @@ export default function SubjectsClient({ initialSubjects, initialTeachers, schoo
         <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
           <button
             onClick={() => setViewMode("GRID")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
               viewMode === "GRID" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            🎴 Dạng Thẻ
+            <LayoutGrid className="w-4 h-4" /> Dạng Thẻ
           </button>
           <button
             onClick={() => setViewMode("TABLE")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
               viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            📋 Dạng Bảng
+            <Table className="w-4 h-4" /> Dạng Bảng
           </button>
         </div>
       </div>
@@ -307,7 +333,14 @@ export default function SubjectsClient({ initialSubjects, initialTeachers, schoo
 
                   <p className="text-xs text-slate-500">
                     <span className="font-semibold text-slate-700">Trưởng bộ môn:</span>{" "}
-                    {s.headTeacher?.user?.name ? `👑 ${s.headTeacher.user.name}` : "Chưa phân công"}
+                    {s.headTeacher?.user?.name ? (
+                      <span className="inline-flex items-center gap-1 font-semibold text-indigo-700">
+                        <Crown className="w-3.5 h-3.5 text-amber-500" />
+                        {s.headTeacher.user.name}
+                      </span>
+                    ) : (
+                      "Chưa phân công"
+                    )}
                   </p>
 
                   <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
@@ -315,7 +348,9 @@ export default function SubjectsClient({ initialSubjects, initialTeachers, schoo
                       onClick={() => setDetailSubject(s)}
                       className="bg-indigo-50 hover:bg-indigo-100 p-2 rounded-lg border border-indigo-100 text-center transition-colors group/btn"
                     >
-                      <span className="text-indigo-600 block font-semibold text-[10px] group-hover/btn:underline">👁️ Xem Giáo viên</span>
+                      <span className="text-indigo-600 font-semibold text-[10px] group-hover/btn:underline flex items-center justify-center gap-1">
+                        <Eye className="w-3 h-3 text-indigo-600" /> Xem Giáo viên
+                      </span>
                       <span className="font-extrabold text-indigo-800">{s._count.teachingAssignments} GV</span>
                     </button>
                     <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 text-center">
