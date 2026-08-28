@@ -162,7 +162,13 @@ export default function ClassesPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ name: "", gradeLevel: "6", schoolId: schools[0]?.id || "", campusId: "", homeroomTeacherId: "" });
+    setForm({
+      name: "",
+      gradeLevel: "6",
+      schoolId: filterSchool || schools[0]?.id || "",
+      campusId: "",
+      homeroomTeacherId: "",
+    });
     setModalOpen(true);
   };
 
@@ -180,12 +186,13 @@ export default function ClassesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.schoolId) { showToast("Vui lòng điền đủ thông tin", "error"); return; }
+    if (!form.name.trim()) { showToast("Vui lòng nhập tên lớp", "error"); return; }
     setSubmitting(true);
+    const selectedSchoolId = form.schoolId || filterSchool || schools[0]?.id || "";
     const data = {
       name: form.name.trim(),
-      gradeLevel: parseInt(form.gradeLevel),
-      schoolId: form.schoolId,
+      gradeLevel: parseInt(form.gradeLevel) || 6,
+      schoolId: selectedSchoolId,
       campusId: form.campusId || undefined,
       homeroomTeacherId: form.homeroomTeacherId || undefined,
     };
@@ -246,16 +253,46 @@ export default function ClassesPage() {
         </div>
       </div>
 
+      {/* School Cards Bar (Thẻ chọn Trường) */}
+      {schools.length > 0 && (
+        <div className="mb-5 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+            <span>🏫 Chọn trường học để xem danh sách lớp:</span>
+            <span>{schools.length} Trường khả dụng</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFilterSchool("")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                filterSchool === ""
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              <span>🏛️</span> Tất cả các trường
+            </button>
+            {schools.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setFilterSchool(s.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                  filterSchool === s.id
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                <span>🏫</span> {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Filters & View Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-3">
           <input type="text" placeholder="Tìm tên lớp..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-64 bg-white shadow-2xs" />
-          <select value={filterSchool} onChange={(e) => setFilterSchool(e.target.value)}
-            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs">
-            <option value="">Tất cả trường</option>
-            {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
           <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)}
             className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs">
             <option value="">Tất cả khối</option>

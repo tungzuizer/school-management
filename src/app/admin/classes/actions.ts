@@ -70,20 +70,64 @@ export async function getTeachersForSelect(schoolId?: string) {
   }
 }
 
-export async function createClass(data: { name: string; gradeLevel: number; schoolId: string; campusId?: string; homeroomTeacherId?: string }) {
+export async function createClass(data: { name: string; gradeLevel: number; schoolId?: string; campusId?: string; homeroomTeacherId?: string }) {
   try {
-    await prisma.classRoom.create({ data });
-    
+    let resolvedSchoolId = data.schoolId?.trim();
+    if (!resolvedSchoolId) {
+      try {
+        const ctx = await getTenantContext();
+        if (ctx.schoolId) resolvedSchoolId = ctx.schoolId;
+      } catch {}
+    }
+    if (!resolvedSchoolId) {
+      const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+      if (firstSchool) resolvedSchoolId = firstSchool.id;
+    }
+    if (!resolvedSchoolId) {
+      return { success: false, error: "Vui lòng chọn trường học" };
+    }
+
+    await prisma.classRoom.create({
+      data: {
+        name: data.name.trim(),
+        gradeLevel: Number(data.gradeLevel),
+        schoolId: resolvedSchoolId,
+        campusId: data.campusId || undefined,
+        homeroomTeacherId: data.homeroomTeacherId || undefined,
+      },
+    });
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi tạo lớp" };
   }
 }
 
-export async function updateClass(id: string, data: { name: string; gradeLevel: number; schoolId: string; campusId?: string; homeroomTeacherId?: string }) {
+export async function updateClass(id: string, data: { name: string; gradeLevel: number; schoolId?: string; campusId?: string; homeroomTeacherId?: string }) {
   try {
-    await prisma.classRoom.update({ where: { id }, data });
-    
+    let resolvedSchoolId = data.schoolId?.trim();
+    if (!resolvedSchoolId) {
+      try {
+        const ctx = await getTenantContext();
+        if (ctx.schoolId) resolvedSchoolId = ctx.schoolId;
+      } catch {}
+    }
+    if (!resolvedSchoolId) {
+      const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+      if (firstSchool) resolvedSchoolId = firstSchool.id;
+    }
+
+    await prisma.classRoom.update({
+      where: { id },
+      data: {
+        name: data.name.trim(),
+        gradeLevel: Number(data.gradeLevel),
+        schoolId: resolvedSchoolId || undefined,
+        campusId: data.campusId || null,
+        homeroomTeacherId: data.homeroomTeacherId || null,
+      },
+    });
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi cập nhật" };
