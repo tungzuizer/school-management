@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getTeacherScheduleForDate,
   getClassStudents,
@@ -64,8 +65,23 @@ const STATUS_OPTIONS = [
   },
 ];
 
-export default function AttendancePage() {
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
+function AttendanceContent() {
+  const searchParams = useSearchParams();
+  const urlDate = searchParams.get("date");
+  const urlClassId = searchParams.get("classId");
+  const urlPeriod = searchParams.get("period");
+
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (urlDate) return urlDate;
+    return new Date().toISOString().split("T")[0];
+  });
+
+  useEffect(() => {
+    if (urlDate) {
+      setSelectedDate(urlDate);
+    }
+  }, [urlDate]);
+
   const [slots, setSlots] = useState<TeacherSlotOption[]>([]);
   const [selectedSlotKey, setSelectedSlotKey] = useState<string>("");
 
@@ -87,7 +103,21 @@ export default function AttendancePage() {
       setSlots(scheduleSlots);
 
       if (scheduleSlots.length > 0) {
-        setSelectedSlotKey(scheduleSlots[0].slotKey);
+        let targetSlotKey = scheduleSlots[0].slotKey;
+        if (urlClassId && urlPeriod) {
+          const matched = scheduleSlots.find(
+            (s) => s.classId === urlClassId && s.period === Number(urlPeriod)
+          );
+          if (matched) {
+            targetSlotKey = matched.slotKey;
+          }
+        } else if (urlClassId) {
+          const matched = scheduleSlots.find((s) => s.classId === urlClassId);
+          if (matched) {
+            targetSlotKey = matched.slotKey;
+          }
+        }
+        setSelectedSlotKey(targetSlotKey);
       } else {
         setSelectedSlotKey("");
         setStudents([]);
@@ -98,7 +128,7 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, urlClassId, urlPeriod]);
 
   useEffect(() => {
     loadScheduleSlots();
@@ -501,5 +531,20 @@ export default function AttendancePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AttendancePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-slate-500 font-bold">
+          <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          Đang tải thông tin điểm danh...
+        </div>
+      }
+    >
+      <AttendanceContent />
+    </Suspense>
   );
 }

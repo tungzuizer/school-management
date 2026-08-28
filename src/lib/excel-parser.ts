@@ -374,7 +374,7 @@ export function mapRowsToSchedules(rawRows: Record<string, any>[]): ParsedSchedu
       error = `Dòng ${idx + 2}: Không nhận diện được Thứ (${dayRaw}).`;
     } else if (!period) {
       isValid = false;
-      error = `Dòng ${idx + 2}: Tiết học phải từ 1 đến 8 (nhận được: ${periodRaw}).`;
+      error = `Dòng ${idx + 2}: Tiết học phải từ 1 đến 10 (nhận được: ${periodRaw}).`;
     } else if (!subjectName) {
       isValid = false;
       error = `Dòng ${idx + 2}: Thiếu tên môn học.`;

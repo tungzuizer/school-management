@@ -66,6 +66,8 @@ const AFTERNOON_PERIODS = [
   { num: 6, label: "Tiết 6", time: "13:50 - 14:35" },
   { num: 7, label: "Tiết 7", time: "14:50 - 15:35" },
   { num: 8, label: "Tiết 8", time: "15:40 - 16:25" },
+  { num: 9, label: "Tiết 9", time: "16:30 - 17:15" },
+  { num: 10, label: "Tiết 10", time: "17:20 - 18:05" },
 ];
 
 // Helper colors for subject badges
