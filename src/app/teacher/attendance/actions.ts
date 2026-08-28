@@ -60,168 +60,249 @@ const PERIOD_TIMES: Record<number, string> = {
 
 // Fetch teacher's exact teaching slots according to timetable on a specific date
 export async function getTeacherScheduleForDate(date: string): Promise<TeacherSlotOption[]> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return [];
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return [];
 
-  if (!(await isApprovedUser(session.user.id))) return [];
+    if (!(await isApprovedUser(session.user.id))) return [];
 
-  const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
-  if (!teacher) return [];
+    const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
+    const userRole = (session.user as any).role;
+    const isManagement = userRole === "ADMIN" || userRole === "PRINCIPAL" || userRole === "VICE_PRINCIPAL";
 
-  const { dateObj, dayOfWeek } = parseLocalDate(date);
+    const { dateObj, dayOfWeek } = parseLocalDate(date);
 
-  // Execute queries in parallel using Promise.all for maximum speed
-  const [scheduleEntries, homeroomClasses, existingAttendance] = await Promise.all([
-    prisma.schedule.findMany({
-      where: { teacherId: teacher.id, dayOfWeek },
-      include: { classRoom: true, subject: true },
-      orderBy: { period: "asc" },
-    }),
-    prisma.classRoom.findMany({
-      where: { homeroomTeacherId: teacher.id },
-    }),
-    prisma.attendance.findMany({
-      where: {
-        date: dateObj,
-        period: { in: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
-      },
-      select: { classId: true, period: true },
-    }),
-  ]);
+    if (!teacher && isManagement) {
+      const userSchoolId = (session.user as any).schoolId;
+      const [scheduleEntries, existingAttendance] = await Promise.all([
+        prisma.schedule.findMany({
+          where: {
+            dayOfWeek,
+            classRoom: userSchoolId ? { schoolId: userSchoolId } : undefined,
+          },
+          include: { classRoom: true, subject: true },
+          orderBy: [{ classId: "asc" }, { period: "asc" }],
+        }),
+        prisma.attendance.findMany({
+          where: {
+            date: dateObj,
+            period: { in: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+          },
+          select: { classId: true, period: true },
+        }),
+      ]);
 
-  const lockedSet = new Set(existingAttendance.map((a) => `${a.classId}_${a.period}`));
+      const lockedSet = new Set(existingAttendance.map((a) => `${a.classId}_${a.period}`));
+      const slots: TeacherSlotOption[] = [];
 
-  const slots: TeacherSlotOption[] = [];
+      scheduleEntries.forEach((s) => {
+        const slotKey = `${s.classId}_${s.period}_${s.subjectId}`;
+        const isLocked = lockedSet.has(`${s.classId}_${s.period}`);
+        slots.push({
+          slotKey,
+          classId: s.classId,
+          className: s.classRoom.name,
+          gradeLevel: s.classRoom.gradeLevel,
+          period: s.period,
+          periodLabel: `Tiết ${s.period}`,
+          periodTime: PERIOD_TIMES[s.period] || "",
+          subjectId: s.subject.id,
+          subjectName: s.subject.name,
+          room: s.room,
+          isHomeroom: false,
+          isLocked,
+        });
+      });
 
-  // Add timetable slots
-  scheduleEntries.forEach((s) => {
-    const slotKey = `${s.classId}_${s.period}_${s.subjectId}`;
-    const isLocked = lockedSet.has(`${s.classId}_${s.period}`);
+      return slots;
+    }
 
-    slots.push({
-      slotKey,
-      classId: s.classId,
-      className: s.classRoom.name,
-      gradeLevel: s.classRoom.gradeLevel,
-      period: s.period,
-      periodLabel: `Tiết ${s.period}`,
-      periodTime: PERIOD_TIMES[s.period] || "",
-      subjectId: s.subject.id,
-      subjectName: s.subject.name,
-      room: s.room,
-      isHomeroom: false,
-      isLocked,
+    if (!teacher) return [];
+
+    // Execute queries in parallel using Promise.all for maximum speed
+    const [scheduleEntries, homeroomClasses, existingAttendance] = await Promise.all([
+      prisma.schedule.findMany({
+        where: { teacherId: teacher.id, dayOfWeek },
+        include: { classRoom: true, subject: true },
+        orderBy: { period: "asc" },
+      }),
+      prisma.classRoom.findMany({
+        where: { homeroomTeacherId: teacher.id },
+      }),
+      prisma.attendance.findMany({
+        where: {
+          date: dateObj,
+          period: { in: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+        },
+        select: { classId: true, period: true },
+      }),
+    ]);
+
+    const lockedSet = new Set(existingAttendance.map((a) => `${a.classId}_${a.period}`));
+
+    const slots: TeacherSlotOption[] = [];
+
+    // Add timetable slots
+    scheduleEntries.forEach((s) => {
+      const slotKey = `${s.classId}_${s.period}_${s.subjectId}`;
+      const isLocked = lockedSet.has(`${s.classId}_${s.period}`);
+
+      slots.push({
+        slotKey,
+        classId: s.classId,
+        className: s.classRoom.name,
+        gradeLevel: s.classRoom.gradeLevel,
+        period: s.period,
+        periodLabel: `Tiết ${s.period}`,
+        periodTime: PERIOD_TIMES[s.period] || "",
+        subjectId: s.subject.id,
+        subjectName: s.subject.name,
+        room: s.room,
+        isHomeroom: false,
+        isLocked,
+      });
     });
-  });
 
-  // Add Homeroom Class fallback options for periods without explicit timetable slots
-  if (homeroomClasses.length > 0) {
-    // Try to find "Sinh hoạt" or teacher specialty subject, otherwise fallback
-    let fallbackSubject = await prisma.subject.findFirst({
-      where: { name: { contains: "Sinh hoạt" } },
-      select: { id: true, name: true },
-    });
-
-    if (!fallbackSubject && teacher.specialty) {
-      fallbackSubject = await prisma.subject.findFirst({
-        where: { name: { contains: teacher.specialty.replace("học", "").trim() } },
+    // Add Homeroom Class fallback options for periods without explicit timetable slots
+    if (homeroomClasses.length > 0) {
+      // Try to find "Sinh hoạt" or teacher specialty subject, otherwise fallback
+      let fallbackSubject = await prisma.subject.findFirst({
+        where: { name: { contains: "Sinh hoạt" } },
         select: { id: true, name: true },
       });
-    }
 
-    if (!fallbackSubject) {
-      fallbackSubject = await prisma.subject.findFirst({ select: { id: true, name: true } });
-    }
+      if (!fallbackSubject && teacher.specialty) {
+        fallbackSubject = await prisma.subject.findFirst({
+          where: { name: { contains: teacher.specialty.replace("học", "").trim() } },
+          select: { id: true, name: true },
+        });
+      }
 
-    const subId = fallbackSubject?.id || "";
-    const subName = "Sinh hoạt lớp (GVCN)";
+      if (!fallbackSubject) {
+        fallbackSubject = await prisma.subject.findFirst({ select: { id: true, name: true } });
+      }
 
-    homeroomClasses.forEach((hr) => {
-      // Allow periods for homeroom attendance if slot for that specific period doesn't exist yet in slots
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach((p) => {
-        const alreadyHasSlot = slots.some((s) => s.classId === hr.id && s.period === p);
-        if (!alreadyHasSlot) {
-          const slotKey = `${hr.id}_${p}_${subId}`;
-          const isLocked = lockedSet.has(`${hr.id}_${p}`);
-          slots.push({
-            slotKey,
-            classId: hr.id,
-            className: hr.name,
-            gradeLevel: hr.gradeLevel,
-            period: p,
-            periodLabel: `Tiết ${p} (GVCN)`,
-            periodTime: PERIOD_TIMES[p] || "",
-            subjectId: subId,
-            subjectName: subName,
-            room: null,
-            isHomeroom: true,
-            isLocked,
-          });
-        }
+      const subId = fallbackSubject?.id || "";
+      const subName = "Sinh hoạt lớp (GVCN)";
+
+      homeroomClasses.forEach((hr) => {
+        // Allow periods for homeroom attendance if slot for that specific period doesn't exist yet in slots
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach((p) => {
+          const alreadyHasSlot = slots.some((s) => s.classId === hr.id && s.period === p);
+          if (!alreadyHasSlot) {
+            const slotKey = `${hr.id}_${p}_${subId}`;
+            const isLocked = lockedSet.has(`${hr.id}_${p}`);
+            slots.push({
+              slotKey,
+              classId: hr.id,
+              className: hr.name,
+              gradeLevel: hr.gradeLevel,
+              period: p,
+              periodLabel: `Tiết ${p} (GVCN)`,
+              periodTime: PERIOD_TIMES[p] || "",
+              subjectId: subId,
+              subjectName: subName,
+              room: null,
+              isHomeroom: true,
+              isLocked,
+            });
+          }
+        });
       });
-    });
+    }
+
+    // Sort slots by period ascending so morning slots come first, then afternoon slots
+    slots.sort((a, b) => a.period - b.period);
+
+    return slots;
+  } catch (err) {
+    console.error("Error in getTeacherScheduleForDate:", err);
+    return [];
   }
-
-  // Sort slots by period ascending so morning slots come first, then afternoon slots
-  slots.sort((a, b) => a.period - b.period);
-
-  return slots;
 }
 
 // Get students of a class for attendance
 export async function getClassStudents(classId: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return [];
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return [];
 
-  if (!(await isApprovedUser(session.user.id))) return [];
+    if (!(await isApprovedUser(session.user.id))) return [];
 
-  const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
-  if (!teacher) return [];
+    const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
+    const userRole = (session.user as any).role;
+    const isManagement = userRole === "ADMIN" || userRole === "PRINCIPAL" || userRole === "VICE_PRINCIPAL";
 
-  const classRoom = await prisma.classRoom.findUnique({ where: { id: classId } });
-  const isHomeroom = classRoom?.homeroomTeacherId === teacher.id;
-  const hasAccess = await prisma.teachingAssignment.findFirst({
-    where: { teacherId: teacher.id, classId },
-  });
-  const hasSchedule = await prisma.schedule.findFirst({
-    where: { teacherId: teacher.id, classId },
-  });
+    if (!teacher && !isManagement) return [];
 
-  if (!hasAccess && !isHomeroom && !hasSchedule) return [];
+    if (!isManagement && teacher) {
+      const classRoom = await prisma.classRoom.findUnique({ where: { id: classId } });
+      const isHomeroom = classRoom?.homeroomTeacherId === teacher.id;
+      const hasAccess = await prisma.teachingAssignment.findFirst({
+        where: { teacherId: teacher.id, classId },
+      });
+      const hasSchedule = await prisma.schedule.findFirst({
+        where: { teacherId: teacher.id, classId },
+      });
 
-  return prisma.student.findMany({
-    where: { classId, status: "STUDYING" },
-    include: { user: { select: { name: true } } },
-    orderBy: { user: { name: "asc" } },
-  });
+      if (!hasAccess && !isHomeroom && !hasSchedule) return [];
+    }
+
+    const students = await prisma.student.findMany({
+      where: {
+        classId,
+        status: { notIn: ["TRANSFERRED", "DROPPED_OUT", "GRADUATED"] },
+      },
+      include: { user: { select: { name: true } } },
+      orderBy: { user: { name: "asc" } },
+    });
+
+    if (students.length === 0) {
+      return prisma.student.findMany({
+        where: { classId },
+        include: { user: { select: { name: true } } },
+        orderBy: { user: { name: "asc" } },
+      });
+    }
+
+    return students;
+  } catch (err) {
+    console.error("Error in getClassStudents:", err);
+    return [];
+  }
 }
 
 // Get attendance records for a specific class, date, and period
 export async function getAttendanceByDateAndPeriod(classId: string, date: string, period: number) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return { isLocked: false, existingData: [], lockedAt: null };
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return { isLocked: false, existingData: [], lockedAt: null };
 
-  if (!(await isApprovedUser(session.user.id))) return { isLocked: false, existingData: [], lockedAt: null };
+    if (!(await isApprovedUser(session.user.id))) return { isLocked: false, existingData: [], lockedAt: null };
 
-  const { dateObj } = parseLocalDate(date);
+    const { dateObj } = parseLocalDate(date);
 
-  const existingData = await prisma.attendance.findMany({
-    where: {
-      classId,
-      date: dateObj,
-      period,
-    },
-    include: { student: { include: { user: { select: { name: true } } } } },
-  });
+    const existingData = await prisma.attendance.findMany({
+      where: {
+        classId,
+        date: dateObj,
+        period: Number(period),
+      },
+      include: { student: { include: { user: { select: { name: true } } } } },
+    });
 
-  const isLocked = existingData.length > 0;
-  const lockedAt = isLocked ? existingData[0].createdAt.toISOString() : null;
+    const isLocked = existingData.length > 0;
+    const lockedAt = isLocked ? existingData[0].createdAt.toISOString() : null;
 
-  return {
-    isLocked,
-    existingData,
-    lockedAt,
-  };
+    return {
+      isLocked,
+      existingData,
+      lockedAt,
+    };
+  } catch (err) {
+    console.error("Error in getAttendanceByDateAndPeriod:", err);
+    return { isLocked: false, existingData: [], lockedAt: null };
+  }
 }
 
 // Save attendance with strict check: Teacher MUST be scheduled to teach this class at this period, or be Homeroom teacher
@@ -244,7 +325,10 @@ export async function saveAttendance(
   }
 
   const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
-  if (!teacher) return { success: false, error: "Không tìm thấy thông tin giáo viên" };
+  const userRole = (session.user as any).role;
+  const isManagement = userRole === "ADMIN" || userRole === "PRINCIPAL" || userRole === "VICE_PRINCIPAL";
+
+  if (!teacher && !isManagement) return { success: false, error: "Không tìm thấy thông tin giáo viên" };
 
   const classRoom = await prisma.classRoom.findUnique({ where: { id: classId } });
   if (!classRoom) return { success: false, error: "Không tìm thấy thông tin lớp học" };
@@ -252,24 +336,26 @@ export async function saveAttendance(
   const { dateObj, dayOfWeek } = parseLocalDate(date);
 
   // Verify Schedule permission: Is teacher scheduled to teach this class/period, or assignment, or homeroom?
-  const isHomeroom = classRoom.homeroomTeacherId === teacher.id;
-  const isScheduled = await prisma.schedule.findFirst({
-    where: {
-      teacherId: teacher.id,
-      classId,
-      dayOfWeek,
-      period,
-    },
-  });
-  const isAssigned = await prisma.teachingAssignment.findFirst({
-    where: { teacherId: teacher.id, classId },
-  });
+  if (!isManagement && teacher) {
+    const isHomeroom = classRoom.homeroomTeacherId === teacher.id;
+    const isScheduled = await prisma.schedule.findFirst({
+      where: {
+        teacherId: teacher.id,
+        classId,
+        dayOfWeek,
+        period,
+      },
+    });
+    const isAssigned = await prisma.teachingAssignment.findFirst({
+      where: { teacherId: teacher.id, classId },
+    });
 
-  if (!isScheduled && !isAssigned && !isHomeroom) {
-    return {
-      success: false,
-      error: `Bạn không có ca dạy Lớp ${classRoom.name} vào Tiết ${period} ngày ${date}. Không thể thực hiện điểm danh!`,
-    };
+    if (!isScheduled && !isAssigned && !isHomeroom) {
+      return {
+        success: false,
+        error: `Bạn không có ca dạy Lớp ${classRoom.name} vào Tiết ${period} ngày ${date}. Không thể thực hiện điểm danh!`,
+      };
+    }
   }
 
   try {
