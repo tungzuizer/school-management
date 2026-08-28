@@ -234,6 +234,21 @@ export default function SubjectsClient({ initialSubjects, initialTeachers, schoo
         </button>
       </div>
 
+      {/* School & Subject Program Banner Cards */}
+      {schoolInfo && (
+        <div className="mb-5 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+            <span>🏫 Đang hiển thị chương trình môn học của trường:</span>
+            <span>Cấp: {getSchoolTypeLabel(schoolInfo.schoolType)}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <div className="px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-600 shadow-xs flex items-center gap-1.5">
+              <span>🏫</span> {schoolInfo.name} ({getSchoolTypeLabel(schoolInfo.schoolType)})
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters & View Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-3">
