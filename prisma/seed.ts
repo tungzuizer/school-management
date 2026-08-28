@@ -262,11 +262,11 @@ async function main() {
 
     // Create 5 subject-specialist teachers for this school
     const teacherSpecs = [
-      { name: "Toán", specialty: "Toán học" },
-      { name: "Vật Lý", specialty: "Vật lý" },
-      { name: "Ngữ Văn", specialty: "Ngữ văn" },
-      { name: "Tiếng Anh", specialty: "Tiếng Anh" },
-      { name: "Lịch Sử", specialty: "Lịch sử" },
+      { name: "Phạm Văn Minh", specialty: "Toán học", slug: "toan" },
+      { name: "Trần Thị Thanh", specialty: "Vật lý", slug: "vatly" },
+      { name: "Lê Hoàng Mai", specialty: "Ngữ văn", slug: "nguvan" },
+      { name: "Phạm Minh Đức", specialty: "Tiếng Anh", slug: "tienganh" },
+      { name: "Vũ Phương Thảo", specialty: "Lịch sử", slug: "lichsu" },
     ];
 
     const schoolTeachers = [];
@@ -287,8 +287,8 @@ async function main() {
       } else {
         teacherUser = await prisma.user.create({
           data: {
-            name: `GV. ${sConf.code} Cô/Thầy (${spec.name})`,
-            email: `teacher.${sConf.code.toLowerCase()}.${spec.name.toLowerCase().replace(/ /g, "")}@school.com`,
+            name: `${spec.name} (${spec.specialty})`,
+            email: `teacher.${sConf.code.toLowerCase()}.${spec.slug}@school.com`,
             password: hashedPassword,
             role: Role.TEACHER,
             schoolId: school.id,

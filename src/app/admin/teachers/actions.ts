@@ -60,7 +60,8 @@ export async function createTeacher(data: {
   degree?: string;
 }) {
   try {
-    const existing = await prisma.user.findUnique({ where: { email: data.email } });
+    const sanitizedEmail = cleanEmail(data.email);
+    const existing = await prisma.user.findUnique({ where: { email: sanitizedEmail } });
     if (existing) return { success: false, error: "Email đã tồn tại" };
 
     const rawPassword = data.password && data.password.trim() ? data.password.trim() : "abc123";
@@ -74,7 +75,7 @@ export async function createTeacher(data: {
     await prisma.user.create({
       data: {
         name: data.name,
-        email: data.email,
+        email: sanitizedEmail,
         password: hashedPassword,
         role: "TEACHER",
         schoolId: schoolIdToUse,
@@ -166,22 +167,26 @@ export interface BulkTeacherInput {
   degree?: string;
 }
 
-function removeVietnameseTones(str: string): string {
-  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
-  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
-  str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
-  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
-  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-  str = str.replace(/đ/g, "d");
-  str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
-  str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
-  str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
-  str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
-  str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
-  str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
-  str = str.replace(/Đ/g, "D");
-  return str.toLowerCase().replace(/[^a-z0-9]/g, "");
+export function cleanEmail(email: string): string {
+  if (!email || !email.includes("@")) return email ? email.trim().toLowerCase() : "";
+  const [local, domain] = email.trim().toLowerCase().split("@");
+  const cleanLocal = local
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .replace(/[^a-z0-9._-]/g, "");
+  return `${cleanLocal}@${domain}`;
+}
+
+export function removeVietnameseTones(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 export async function createBulkTeachers(teachersData: BulkTeacherInput[]) {
@@ -207,7 +212,7 @@ export async function createBulkTeachers(teachersData: BulkTeacherInput[]) {
         continue;
       }
 
-      let email = t.email?.trim().toLowerCase();
+      let email = t.email ? cleanEmail(t.email) : undefined;
 
       if (!email) {
         const cleanName = removeVietnameseTones(t.name.trim());
@@ -218,6 +223,8 @@ export async function createBulkTeachers(teachersData: BulkTeacherInput[]) {
           email = `gv.${cleanName}${suffix}@school.edu.vn`;
           suffix++;
         }
+      } else {
+        email = cleanEmail(email);
       }
 
       if (existingEmails.has(email)) {
