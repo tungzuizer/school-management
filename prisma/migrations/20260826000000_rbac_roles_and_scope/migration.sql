@@ -11,6 +11,12 @@
 
 -- ============================================================
 -- STEP 1: Add new Role enum values
+-- NOTE: ALTER TYPE ADD VALUE cannot be used inside a transaction
+-- that also uses the new value (PostgreSQL restriction). We commit
+-- the enum changes first, then perform DML in a new transaction.
+-- Prisma runs migration.sql in autocommit mode (each statement is
+-- its own implicit transaction), so placing the DDL at the top and
+-- the DML below is sufficient — no explicit COMMIT needed here.
 -- ============================================================
 
 ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'SUPER_ADMIN';
@@ -31,12 +37,16 @@ WHERE role = 'WARD_ADMIN';
 -- STEP 3: Add ScopeType enum
 -- ============================================================
 
-CREATE TYPE "ScopeType" AS ENUM (
-  'GLOBAL',
-  'CAMPUS',
-  'SUBJECT_GROUP',
-  'WARD'
-);
+DO $$ BEGIN
+  CREATE TYPE "ScopeType" AS ENUM (
+    'GLOBAL',
+    'CAMPUS',
+    'SUBJECT_GROUP',
+    'WARD'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================================
 -- STEP 4: Add mustChangePassword column to User
@@ -49,7 +59,7 @@ ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT false;
 -- STEP 5: Create UserRoleScope table
 -- ============================================================
 
-CREATE TABLE "UserRoleScope" (
+CREATE TABLE IF NOT EXISTS "UserRoleScope" (
   "id"             TEXT NOT NULL,
   "userId"         TEXT NOT NULL,
   "role"           "Role" NOT NULL,
@@ -61,42 +71,58 @@ CREATE TABLE "UserRoleScope" (
   CONSTRAINT "UserRoleScope_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "UserRoleScope_userId_role_scopeId_subjectGroupId_key"
+CREATE UNIQUE INDEX IF NOT EXISTS "UserRoleScope_userId_role_scopeId_subjectGroupId_key"
   ON "UserRoleScope"("userId", "role", "scopeId", "subjectGroupId");
 
-CREATE INDEX "UserRoleScope_userId_idx"          ON "UserRoleScope"("userId");
-CREATE INDEX "UserRoleScope_role_idx"            ON "UserRoleScope"("role");
-CREATE INDEX "UserRoleScope_subjectGroupId_idx"  ON "UserRoleScope"("subjectGroupId");
+CREATE INDEX IF NOT EXISTS "UserRoleScope_userId_idx"          ON "UserRoleScope"("userId");
+CREATE INDEX IF NOT EXISTS "UserRoleScope_role_idx"            ON "UserRoleScope"("role");
+CREATE INDEX IF NOT EXISTS "UserRoleScope_subjectGroupId_idx"  ON "UserRoleScope"("subjectGroupId");
 
-ALTER TABLE "UserRoleScope"
-  ADD CONSTRAINT "UserRoleScope_userId_fkey"
-    FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "UserRoleScope"
+    ADD CONSTRAINT "UserRoleScope_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
-ALTER TABLE "UserRoleScope"
-  ADD CONSTRAINT "UserRoleScope_subjectGroupId_fkey"
-    FOREIGN KEY ("subjectGroupId") REFERENCES "SubjectGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "UserRoleScope"
+    ADD CONSTRAINT "UserRoleScope_subjectGroupId_fkey"
+      FOREIGN KEY ("subjectGroupId") REFERENCES "SubjectGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================================
 -- STEP 6: Create CampusWardMap table
 -- ============================================================
 
-CREATE TABLE "CampusWardMap" (
+CREATE TABLE IF NOT EXISTS "CampusWardMap" (
   "campusId" TEXT NOT NULL,
   "wardId"   TEXT NOT NULL,
 
   CONSTRAINT "CampusWardMap_pkey" PRIMARY KEY ("campusId", "wardId")
 );
 
-CREATE INDEX "CampusWardMap_campusId_idx" ON "CampusWardMap"("campusId");
-CREATE INDEX "CampusWardMap_wardId_idx"   ON "CampusWardMap"("wardId");
+CREATE INDEX IF NOT EXISTS "CampusWardMap_campusId_idx" ON "CampusWardMap"("campusId");
+CREATE INDEX IF NOT EXISTS "CampusWardMap_wardId_idx"   ON "CampusWardMap"("wardId");
 
-ALTER TABLE "CampusWardMap"
-  ADD CONSTRAINT "CampusWardMap_campusId_fkey"
-    FOREIGN KEY ("campusId") REFERENCES "Campus"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "CampusWardMap"
+    ADD CONSTRAINT "CampusWardMap_campusId_fkey"
+      FOREIGN KEY ("campusId") REFERENCES "Campus"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
-ALTER TABLE "CampusWardMap"
-  ADD CONSTRAINT "CampusWardMap_wardId_fkey"
-    FOREIGN KEY ("wardId") REFERENCES "DistrictWard"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "CampusWardMap"
+    ADD CONSTRAINT "CampusWardMap_wardId_fkey"
+      FOREIGN KEY ("wardId") REFERENCES "DistrictWard"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================================
 -- STEP 7: Backfill UserRoleScope for existing users
@@ -135,10 +161,3 @@ SELECT
 FROM "User"
 WHERE role = 'DISTRICT_ADMIN'
 ON CONFLICT DO NOTHING;
-
--- ============================================================
--- RUN INSTRUCTIONS:
---   Option A (recommended): npx prisma migrate dev --name rbac_roles_and_scope
---   Option B (manual):      psql $DATABASE_URL -f prisma/migrations/20260826000000_rbac_roles_and_scope/migration.sql
---   After applying:         npx prisma db seed
--- ============================================================

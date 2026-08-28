@@ -20,6 +20,12 @@
         ],
         "createdAt": "2026-08-24T18:35:47.923Z",
         "reason": "Intentional dark sidebar pattern: slate-300/400 text on slate-900 bg provides adequate contrast hierarchy"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "text-slate-500",
+        "createdAt": "2026-08-26T18:01:00.022Z",
+        "reason": "user confirmed high contrast text-slate-500 on white glass container"
       }
     ]
   }
