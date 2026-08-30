@@ -11,10 +11,10 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
     const ctx = await getTenantContext().catch(() => null);
     let targetSchoolId: string | undefined;
 
-    if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN") {
+    if (schoolId && schoolId !== "ALL" && schoolId !== "") {
+      targetSchoolId = schoolId;
+    } else if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN" && ctx?.userRole !== "ADMIN" && ctx?.userRole !== "DEPARTMENT_ADMIN" && ctx?.userRole !== "DISTRICT_ADMIN") {
       targetSchoolId = ctx.schoolId;
-    } else {
-      targetSchoolId = (schoolId && schoolId !== "ALL" && schoolId !== "") ? schoolId : undefined;
     }
 
     const andConditions: any[] = [];
@@ -76,8 +76,11 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
 export async function getClassesForSelect(schoolId?: string) {
   try {
     const ctx = await getTenantContext().catch(() => null);
-    let targetSchoolId = (schoolId && schoolId !== "ALL" && schoolId !== "") ? schoolId : undefined;
-    if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN") {
+    let targetSchoolId: string | undefined;
+
+    if (schoolId && schoolId !== "ALL" && schoolId !== "") {
+      targetSchoolId = schoolId;
+    } else if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN" && ctx?.userRole !== "ADMIN" && ctx?.userRole !== "DEPARTMENT_ADMIN" && ctx?.userRole !== "DISTRICT_ADMIN") {
       targetSchoolId = ctx.schoolId;
     }
 
@@ -103,7 +106,7 @@ export async function getClassesForSelect(schoolId?: string) {
 export async function getSchoolsForSelect() {
   try {
     const ctx = await getTenantContext().catch(() => null);
-    if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN") {
+    if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN" && ctx?.userRole !== "ADMIN" && ctx?.userRole !== "DEPARTMENT_ADMIN" && ctx?.userRole !== "DISTRICT_ADMIN") {
       return prisma.school.findMany({
         where: { id: ctx.schoolId },
         select: { id: true, name: true },
