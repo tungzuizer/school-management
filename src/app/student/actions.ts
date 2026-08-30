@@ -178,7 +178,7 @@ export async function getStudentDashboardData() {
             if (stId === student.id) {
               const row = key[0];
               const col = key.slice(1);
-              seatPosition = `Hàng ${row} - Ghế ${col} (Sơ đồ Rạp Phim)`;
+              seatPosition = `Hàng ${row} - Ghế ${col} (Sơ đồ lớp học)`;
               break;
             }
           }

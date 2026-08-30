@@ -222,7 +222,7 @@ export async function evaluateStudentSeatPoint(data: {
     const isPositive = data.points >= 0;
     const type = isPositive ? "COMMENDATION" : "VIOLATION";
     const seatInfoStr = data.seatLabel ? ` [Chỗ ngồi: ${data.seatLabel}]` : "";
-    const fullDesc = `[Cinema Rạp Phim${seatInfoStr}] ${data.badgeTitle}: ${data.description} (${data.points >= 0 ? "+" : ""}${data.points} điểm)`;
+    const fullDesc = `[Sơ Đồ Lớp Học${seatInfoStr}] ${data.badgeTitle}: ${data.description} (${data.points >= 0 ? "+" : ""}${data.points} điểm)`;
 
     // Timestamped Incident log
     const now = new Date();
@@ -243,9 +243,9 @@ export async function evaluateStudentSeatPoint(data: {
         senderId: teacherUser.id,
         receiverId: student.user.id,
         title: isPositive
-          ? `🎬 Tuyên dương Cinema Rạp Phim: +${data.points} điểm!`
-          : `⚠️ Nhắc nhở nếp sống Cinema Rạp Phim: ${data.points} điểm`,
-        content: `Thầy/Cô ${teacherUser.name} vừa đánh giá tại sơ đồ rạp chiếu phim (${data.seatLabel || "Ghế học"}): "${data.description}". Mốc thời gian: ${now.toLocaleTimeString("vi-VN")} ${now.toLocaleDateString("vi-VN")}.`,
+          ? `Tuyên dương học sinh: +${data.points} điểm!`
+          : `Nhắc nhở nếp sống: ${data.points} điểm`,
+        content: `Thầy/Cô ${teacherUser.name} vừa đánh giá tại sơ đồ chỗ ngồi lớp học (${data.seatLabel || "Vị trí ghế"}): "${data.description}". Mốc thời gian: ${now.toLocaleTimeString("vi-VN")} ${now.toLocaleDateString("vi-VN")}.`,
       },
     });
 

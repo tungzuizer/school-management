@@ -1629,7 +1629,7 @@ function SeatingTab({
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-widest mb-1">
-            <LayoutGrid className="w-4 h-4" /> Sơ Đồ Lớp Học Kiểu Rạp Chiếu Phim
+            <LayoutGrid className="w-4 h-4" /> Sơ Đồ Chỗ Ngồi Lớp Học
           </div>
           <h2 className="text-xl font-black text-white">Sơ Đồ Ghế & Tuyên Dương Trực Tiếp</h2>
           <p className="text-xs text-slate-300 mt-1">
