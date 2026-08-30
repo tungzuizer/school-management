@@ -147,6 +147,7 @@ export async function createStudentCommendation(data: {
   category: string;
   badgeTitle: string;
   description: string;
+  points?: number;
 }) {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id || data.teacherUserId;
@@ -176,13 +177,15 @@ export async function createStudentCommendation(data: {
       return { success: false, error: "Không tìm thấy thông tin học sinh." };
     }
 
-    // Cộng điểm thưởng tích cực (+5 điểm cho khen thưởng)
+    const pts = data.points && data.points > 0 ? data.points : 2;
+
+    // Cộng điểm thưởng tích cực
     await prisma.student.update({
       where: { id: student.id },
-      data: { bonusPoints: { increment: 5 } },
+      data: { bonusPoints: { increment: pts } },
     });
 
-    const fullDescription = `[Tuyên Dương: ${data.category}] - ${data.badgeTitle}: ${data.description} (+5 điểm)`;
+    const fullDescription = `[Cộng Điểm Rèn Luyện: ${data.category}] - ${data.badgeTitle}: ${data.description} (+${pts} điểm)`;
 
     const incident = await prisma.incident.create({
       data: {
@@ -199,8 +202,8 @@ export async function createStudentCommendation(data: {
       data: {
         senderId: teacherUser.id,
         receiverId: student.user.id,
-        title: `🏆 Tuyên dương khen thưởng: ${data.badgeTitle}! (+5 điểm)`,
-        content: `Chúc mừng ${student.user.name}! Thầy/Cô ${teacherUser.name} vừa tuyên dương bạn: "${data.description}". Hãy tiếp tục phát huy nhé! 🎉`,
+        title: `⭐ Đánh giá & Cộng +${pts} điểm tích cực: ${data.badgeTitle}!`,
+        content: `Chúc mừng ${student.user.name}! Thầy/Cô ${teacherUser.name} vừa tuyên dương tinh thần học tập: "${data.description}" (+${pts} điểm rèn luyện). Hãy tiếp tục phát huy nhé! 🎉`,
       },
     });
 
@@ -208,10 +211,10 @@ export async function createStudentCommendation(data: {
     revalidatePath("/teacher/dashboard");
     revalidatePath("/student/dashboard");
 
-    return { success: true, incidentId: incident.id };
+    return { success: true, incidentId: incident.id, addedPoints: pts };
   } catch (error) {
     console.error("Error creating commendation:", error);
-    return { success: false, error: "Đã xảy ra lỗi khi tạo tuyên dương." };
+    return { success: false, error: "Đã xảy ra lỗi khi cộng điểm học sinh." };
   }
 }
 

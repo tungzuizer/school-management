@@ -107,7 +107,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       accentClass: "text-rose-600",
       items: [
         { label: "Sơ đồ chỗ ngồi rạp chiếu phim", href: "/teacher/seating-cinema", icon: Film, description: "Đánh giá & cộng điểm theo chỗ ngồi", badge: "Rạp phim" },
-        { label: "Tuyên dương khen thưởng", href: "/teacher/commendations", icon: Award, description: "Tuyên dương & tặng huy hiệu" },
+        { label: "Cộng điểm & Tuyên dương", href: "/teacher/commendations", icon: Award, description: "Cộng điểm rèn luyện & Phát biểu bài", badge: "Cộng điểm" },
       ],
     },
     {

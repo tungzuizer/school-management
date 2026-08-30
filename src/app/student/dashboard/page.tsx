@@ -150,7 +150,7 @@ export default function StudentDashboardPage() {
                 {data.student.bonusPoints !== undefined && (
                   <span className="flex items-center gap-1.5 bg-emerald-500/20 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-200 border border-emerald-400/30 shadow-sm">
                     <Trophy className="w-3.5 h-3.5 text-yellow-300 shrink-0" />
-                    Điểm khen thưởng: <strong className="text-emerald-300 ml-0.5">+{data.student.bonusPoints} đ</strong>
+                    Số lần khen thưởng tích cực: <strong className="text-emerald-300 ml-0.5">{data.student.bonusPoints} lần</strong>
                   </span>
                 )}
               </div>
