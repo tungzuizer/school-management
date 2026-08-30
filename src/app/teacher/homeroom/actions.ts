@@ -739,13 +739,18 @@ export async function recordParticipationBonus(data: {
 }
 
 // ============ Lấy lịch sử hoạt động tích cực ============
-export async function getParticipationRecords(classId: string) {
+export async function getParticipationRecords(classId: string, studentId?: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return [];
   if (!(await isApprovedUser(session.user.id))) return [];
 
+  const where: Record<string, unknown> = { classId };
+  if (studentId) {
+    where.studentId = studentId;
+  }
+
   return prisma.participationRecord.findMany({
-    where: { classId },
+    where,
     include: {
       student: {
         include: {

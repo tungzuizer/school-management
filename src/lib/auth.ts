@@ -17,6 +17,15 @@ function cleanEmail(email: string): string {
   return `${cleanLocal}@${domain}`;
 }
 
+function sanitizeImageUrl(img?: string | null): string | undefined {
+  if (!img) return undefined;
+  // Prevent base64 data URLs or long strings from entering JWT session cookies (causes Vercel 494 REQUEST_HEADER_TOO_LARGE)
+  if (img.startsWith("data:") || img.length > 256) {
+    return undefined;
+  }
+  return img;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -198,7 +207,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
-        token.image = user.image;
+        token.image = sanitizeImageUrl(user.image);
         token.isApproved = user.isApproved;
         token.mustChangePassword = user.mustChangePassword;
         token.departmentId = user.departmentId;
@@ -212,8 +221,13 @@ export const authOptions: NextAuthOptions = {
           token.mustChangePassword = session.mustChangePassword;
         }
         if (session.image !== undefined) {
-          token.image = session.image;
+          token.image = sanitizeImageUrl(session.image);
         }
+      }
+
+      // Always sanitize existing token.image to clean up large cookies from prior sessions
+      if (typeof token.image === "string" && (token.image.startsWith("data:") || token.image.length > 256)) {
+        token.image = undefined;
       }
 
       return token;
