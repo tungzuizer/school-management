@@ -96,7 +96,7 @@ export const authOptions: NextAuthOptions = {
                 email: user.email,
                 name: user.name,
                 role: user.role,
-                image: user.image || undefined,
+                image: sanitizeImageUrl(user.image),
                 isApproved: user.isApproved,
                 mustChangePassword: isDefaultPassword,
                 departmentId: user.departmentId || undefined,
@@ -259,7 +259,7 @@ export const authOptions: NextAuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.session-token" : "next-auth.session-token",
+      name: process.env.NODE_ENV === "production" ? "__Secure-v2-app.session-token" : "v2-app.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
