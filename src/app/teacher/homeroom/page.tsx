@@ -168,6 +168,22 @@ export default function HomeroomPage() {
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
+  const [autoOpenAdd, setAutoOpenAdd] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get("tab");
+      const urlAction = params.get("action");
+      if (urlTab) {
+        setTab(urlTab);
+      }
+      if (urlAction === "add-student") {
+        setTab("overview");
+        setAutoOpenAdd(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (session?.user?.id) loadData();
@@ -250,7 +266,15 @@ export default function HomeroomPage() {
         </div>
 
         <div className="p-6">
-          {tab === "overview" && <OverviewTab classId={classInfo.id} students={students} showToast={showToast} onReload={loadData} />}
+          {tab === "overview" && (
+            <OverviewTab
+              classId={classInfo.id}
+              students={students}
+              showToast={showToast}
+              onReload={loadData}
+              initialShowAdd={autoOpenAdd}
+            />
+          )}
           {tab === "groups" && <GroupsTab classId={classInfo.id} students={students} showToast={showToast} onReload={loadData} />}
           {tab === "seating" && <SeatingTab classId={classInfo.id} students={students} showToast={showToast} />}
           {tab === "conduct" && <ConductTab classId={classInfo.id} showToast={showToast} />}
@@ -287,11 +311,13 @@ function OverviewTab({
   students,
   showToast,
   onReload,
+  initialShowAdd = false,
 }: {
   classId: string;
   students: StudentItem[];
   showToast: (m: string) => void;
   onReload: () => void;
+  initialShowAdd?: boolean;
 }) {
   const [periodData, setPeriodData] = useState<Array<{
     period: string;
@@ -300,7 +326,7 @@ function OverviewTab({
     academic: Record<string, number>;
   }>>([]);
 
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(initialShowAdd);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
