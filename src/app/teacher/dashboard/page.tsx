@@ -24,7 +24,7 @@ import UnapprovedBanner from "@/components/ui/UnapprovedBanner";
 import {
   Users, CheckCircle2, AlertTriangle, Clock, Calendar, BookOpen, Sparkles,
   MessageSquare, ChevronRight, Bell, RefreshCw, NotebookPen, Calculator,
-  ClipboardCheck, Zap, Award,
+  ClipboardCheck, Zap, Award, UserPlus,
 } from "lucide-react";
 
 interface HomeroomClass { id: string; name: string; gradeLevel: number; schoolName: string; campusName: string | null; totalStudents: number; }
@@ -167,6 +167,14 @@ export default function TeacherDashboardPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 shrink-0">
+              {homeroom && (
+                <Link
+                  href="/teacher/homeroom?tab=overview&action=add-student"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4 text-white" /> <span>+ Thêm Học Sinh</span>
+                </Link>
+              )}
               <button onClick={() => setPraiseModalOpen(true)} className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-amber-950 font-black rounded-2xl text-xs shadow-lg shadow-amber-400/30 transition-all hover:scale-105 active:scale-95 cursor-pointer shimmer-h">
                 <Award className="w-4 h-4 text-amber-950 fill-amber-950 relative z-10" />
                 <span className="relative z-10">Tuyen Duong Hoc Sinh 🌟</span>
