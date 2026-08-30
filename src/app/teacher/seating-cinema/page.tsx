@@ -19,10 +19,8 @@ import {
   Loader2,
   School,
   Zap,
-  Move,
   Trash2,
   Shuffle,
-  GripVertical,
   Users,
   Check,
   BookOpen,
@@ -83,7 +81,6 @@ export default function CinemaSeatingPage() {
   // Layout Configuration state
   const [rowCount, setRowCount] = useState<number>(5);
   const [colCount, setColCount] = useState<number>(6);
-  const [mode, setMode] = useState<"EVALUATE" | "EDIT">("EVALUATE");
   const [configModalOpen, setConfigModalOpen] = useState(false);
 
   // Quick Evaluation Modal
@@ -216,74 +213,21 @@ export default function CinemaSeatingPage() {
     }
   };
 
-  // Drag & Drop Handlers
-  const handleDragStartFromSeat = (e: React.DragEvent, seatKey: string, studentId: string) => {
-    e.dataTransfer.setData("text/plain", JSON.stringify({ studentId, fromSeat: seatKey }));
-  };
-
-  const handleDragStartFromUnseated = (e: React.DragEvent, studentId: string) => {
-    e.dataTransfer.setData("text/plain", JSON.stringify({ studentId, fromSeat: null }));
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDropOnSeat = (e: React.DragEvent, targetSeatKey: string) => {
-    e.preventDefault();
-    const dataRaw = e.dataTransfer.getData("text/plain");
-    if (!dataRaw) return;
-
-    try {
-      const { studentId, fromSeat } = JSON.parse(dataRaw);
-      if (!studentId) return;
-
-      setSeatMap((prev) => {
-        const next = { ...prev };
-        const targetStudentId = next[targetSeatKey];
-
-        if (fromSeat) {
-          if (targetStudentId) {
-            next[fromSeat] = targetStudentId;
-          } else {
-            delete next[fromSeat];
-          }
-          next[targetSeatKey] = studentId;
-        } else {
-          Object.keys(next).forEach((k) => {
-            if (next[k] === studentId) delete next[k];
-          });
-          next[targetSeatKey] = studentId;
-        }
-        return next;
-      });
-    } catch {
-      // Ignore
-    }
-  };
-
   const handleSeatClick = (seatKey: string) => {
     const student = getStudentBySeat(seatKey);
 
-    if (mode === "EVALUATE") {
-      if (!student) {
-        setTargetSeatKey(seatKey);
-        setAssignStudentId("");
-        setAssignModalOpen(true);
-        return;
-      }
-
-      setSelectedSeatKey(seatKey);
-      setSelectedStudentForEval(student);
-      setSelectedCriteria(PRESET_CRITERIA[0]);
-      setCustomNote("");
-      setEvalModalOpen(true);
-    } else {
+    if (!student) {
       setTargetSeatKey(seatKey);
-      setAssignStudentId(student ? student.id : "");
+      setAssignStudentId("");
       setAssignModalOpen(true);
+      return;
     }
+
+    setSelectedSeatKey(seatKey);
+    setSelectedStudentForEval(student);
+    setSelectedCriteria(PRESET_CRITERIA[0]);
+    setCustomNote("");
+    setEvalModalOpen(true);
   };
 
   const handleAssignSeat = () => {
@@ -409,28 +353,10 @@ export default function CinemaSeatingPage() {
 
       {/* ===== CONTROLS & TOOLBAR ===== */}
       <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        {/* Mode Switcher */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200">
-          <button
-            onClick={() => setMode("EVALUATE")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              mode === "EVALUATE"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5" /> Chế Độ Đánh Giá Nhanh
-          </button>
-          <button
-            onClick={() => setMode("EDIT")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              mode === "EDIT"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Move className="w-3.5 h-3.5" /> Chế Độ Chỉnh Sửa & Kéo Thả
-          </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-900">
+            <Zap className="w-3.5 h-3.5 text-indigo-600" /> Sơ đồ quản lý & Đánh giá trực quan
+          </span>
         </div>
 
         {/* Action Buttons */}
@@ -487,18 +413,15 @@ export default function CinemaSeatingPage() {
             <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
               <Users className="w-4 h-4 text-amber-600" /> Học Sinh Chưa Được Xếp Chỗ ({unseatedStudents.length} học sinh)
             </span>
-            <span className="text-[11px] font-medium text-amber-700">Kéo thả học sinh vào vị trí ghế mong muốn</span>
+            <span className="text-[11px] font-medium text-amber-900">Nhấp vào ô ghế trống trên sơ đồ để xếp chỗ cho học sinh</span>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
             {unseatedStudents.map((s) => (
               <div
                 key={s.id}
-                draggable
-                onDragStart={(e) => handleDragStartFromUnseated(e, s.id)}
-                className="px-3.5 py-2 rounded-2xl bg-white border border-amber-200 text-slate-800 text-xs font-bold shadow-2xs hover:shadow-md hover:border-indigo-500 cursor-grab active:cursor-grabbing flex items-center gap-2 shrink-0 transition-all hover:scale-105"
+                className="px-3.5 py-2 rounded-2xl bg-white border border-amber-200 text-slate-800 text-xs font-bold shadow-2xs flex items-center gap-2 shrink-0"
               >
-                <GripVertical className="w-3.5 h-3.5 text-amber-500" />
                 <span>{s.name}</span>
                 {s.isClassMonitor && <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-md border border-amber-200">LT</span>}
               </div>
@@ -517,10 +440,8 @@ export default function CinemaSeatingPage() {
               <span>BẢNG ĐEN / MÀN HÌNH GIẢNG DẠY</span>
             </div>
           </div>
-          <p className="text-[11px] font-medium text-slate-500">
-            {mode === "EVALUATE"
-              ? "Nhấp vào học sinh để thực hiện đánh giá tích cực hoặc nhắc nhở"
-              : "Kéo thả học sinh giữa các vị trí để điều chỉnh vị trí ngồi"}
+          <p className="text-[11px] font-medium text-slate-600">
+            Nhấp vào vị trí học sinh để thực hiện đánh giá tích cực hoặc xếp chỗ ngồi
           </p>
         </div>
 
@@ -551,10 +472,6 @@ export default function CinemaSeatingPage() {
                     return (
                       <div key={seatKey} className={`flex items-center ${isMiddleAisle ? "mr-6 sm:mr-8" : ""}`}>
                         <div
-                          draggable={!!student}
-                          onDragStart={(e) => student && handleDragStartFromSeat(e, seatKey, student.id)}
-                          onDragOver={handleDragOver}
-                          onDrop={(e) => handleDropOnSeat(e, seatKey)}
                           onClick={() => handleSeatClick(seatKey)}
                           className={`w-28 sm:w-34 h-22 sm:h-24 rounded-2xl p-2.5 flex flex-col justify-between transition-all duration-200 text-left relative group cursor-pointer border ${
                             student
@@ -602,9 +519,7 @@ export default function CinemaSeatingPage() {
 
                           {/* Hint */}
                           <div className="text-[9px] font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity truncate">
-                            {mode === "EVALUATE"
-                              ? student ? "Đánh giá" : "Xếp HS"
-                              : "Đổi vị trí"}
+                            {student ? "Đánh giá" : "+ Xếp chỗ"}
                           </div>
                         </div>
                       </div>
