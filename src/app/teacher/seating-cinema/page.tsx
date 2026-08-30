@@ -14,6 +14,7 @@ import {
   Film,
   Sparkles,
   Award,
+  Trophy,
   Clock,
   UserCheck,
   Plus,
@@ -343,8 +344,8 @@ export default function CinemaSeatingPage() {
                             </span>
                             {student ? (
                               <span className="text-[10px] font-black text-purple-300 bg-purple-950/80 border border-purple-500/30 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                                <Zap className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                                <span>+{student.bonusPoints}</span>
+                                <Trophy className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                                <span>{student.bonusPoints || 0} lần</span>
                               </span>
                             ) : (
                               <span className="text-[10px] font-bold text-slate-600">Trống</span>
