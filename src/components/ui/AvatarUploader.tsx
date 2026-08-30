@@ -59,8 +59,8 @@ export default function AvatarUploader({ currentImage, name, size = "lg" }: Avat
         throw new Error(result.error || "Cập nhật ảnh đại diện thất bại.");
       }
 
-      // Update NextAuth session in real-time so header & pages sync
-      await updateSession({ image: result.image });
+      // Update NextAuth session without passing heavy base64 strings to cookie
+      await updateSession({ image: undefined });
 
       setSuccessMsg("Đã cập nhật avatar thành công!");
       setTimeout(() => setSuccessMsg(null), 3000);
