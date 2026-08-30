@@ -70,8 +70,33 @@ export async function getCinemaClassAndStudents(classIdParam?: string) {
       }
     }
 
+    // Fallback: If teacher has no homeroom or assignments, query school classes from DB
+    if (classes.length === 0) {
+      const schoolClasses = await prisma.classRoom.findMany({
+        where: teacherUser.schoolId ? { schoolId: teacherUser.schoolId } : undefined,
+        select: { id: true, name: true, gradeLevel: true },
+        take: 50,
+        orderBy: { name: "asc" },
+      });
+
+      for (const c of schoolClasses) {
+        if (!classes.some((existing) => existing.id === c.id)) {
+          classes.push(c);
+        }
+      }
+    }
+
     if (!selectedClassId && classes.length > 0) {
-      selectedClassId = classes[0].id;
+      // Find the first class that has students in the database
+      const classWithStudents = await prisma.student.findFirst({
+        where: { classId: { in: classes.map((c) => c.id) } },
+        select: { classId: true },
+      });
+      if (classWithStudents?.classId) {
+        selectedClassId = classWithStudents.classId;
+      } else {
+        selectedClassId = classes[0].id;
+      }
     }
 
     if (!selectedClassId) {
