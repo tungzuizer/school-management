@@ -8,6 +8,7 @@ import { signIn, getSession, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import { getUserRoleByEmail } from "./actions";
 import {
   Mail,
   Lock,
@@ -208,45 +209,77 @@ function LoginFormContent() {
     }
   }, [status, session]);
 
-  const redirectByRole = async (targetEmail?: string) => {
-    let session = await getSession();
-    if (!session?.user?.role) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      session = await getSession();
+  const getDashboardPathForRole = (role?: string) => {
+    switch (role) {
+      case "SUPER_ADMIN":
+        return "/admin/dashboard";
+      case "DEPARTMENT_ADMIN":
+        return "/department/dashboard";
+      case "DISTRICT_ADMIN":
+        return "/district/dashboard";
+      case "WARD_ADMIN":
+        return "/ward/dashboard";
+      case "ADMIN":
+        return "/admin/dashboard";
+      case "VICE_PRINCIPAL":
+        return "/vice-principal/dashboard";
+      case "SUBJECT_HEAD":
+        return "/subject-head/dashboard";
+      case "TEACHER":
+        return "/teacher/dashboard";
+      case "STUDENT":
+        return "/student/dashboard";
+      default:
+        return null;
     }
-    const role = session?.user?.role;
-    if (role === "SUPER_ADMIN") { window.location.href = "/admin/dashboard"; return; }
-    if (role === "DEPARTMENT_ADMIN") { window.location.href = "/department/dashboard"; return; }
-    if (role === "DISTRICT_ADMIN") { window.location.href = "/district/dashboard"; return; }
-    if (role === "WARD_ADMIN") { window.location.href = "/ward/dashboard"; return; }
-    if (role === "ADMIN") { window.location.href = "/admin/dashboard"; return; }
-    if (role === "VICE_PRINCIPAL") { window.location.href = "/vice-principal/dashboard"; return; }
-    if (role === "SUBJECT_HEAD") { window.location.href = "/subject-head/dashboard"; return; }
-    if (role === "TEACHER") { window.location.href = "/teacher/dashboard"; return; }
-    if (role === "STUDENT") { window.location.href = "/student/dashboard"; return; }
+  };
 
-    const checkEmail = (targetEmail || email).toLowerCase();
-    if (checkEmail.includes("superadmin") || checkEmail.includes("sysadmin")) {
-      window.location.href = "/admin/dashboard";
-    } else if (checkEmail.includes("department") || checkEmail.includes("sogd")) {
-      window.location.href = "/department/dashboard";
-    } else if (checkEmail.includes("district") || checkEmail.includes("phonggd")) {
-      window.location.href = "/district/dashboard";
-    } else if (checkEmail.includes("ward") || checkEmail.includes("diaphuong")) {
-      window.location.href = "/ward/dashboard";
-    } else if (checkEmail.includes("admin")) {
-      window.location.href = "/admin/dashboard";
-    } else if (checkEmail.includes("vp") || checkEmail.includes("pht")) {
-      window.location.href = "/vice-principal/dashboard";
-    } else if (checkEmail.includes("ttcm")) {
-      window.location.href = "/subject-head/dashboard";
-    } else if (checkEmail.includes("teacher")) {
-      window.location.href = "/teacher/dashboard";
-    } else if (checkEmail.includes("student")) {
-      window.location.href = "/student/dashboard";
-    } else {
-      window.location.href = "/admin/dashboard";
+  const redirectByRole = async (targetEmail?: string) => {
+    let currentRole = session?.user?.role;
+
+    if (!currentRole) {
+      let activeSession = await getSession();
+      currentRole = activeSession?.user?.role;
     }
+
+    let targetPath = getDashboardPathForRole(currentRole);
+
+    const emailToUse = targetEmail || email;
+    if (!targetPath && emailToUse) {
+      const dbRole = await getUserRoleByEmail(emailToUse);
+      if (dbRole) {
+        targetPath = getDashboardPathForRole(dbRole);
+      }
+    }
+
+    if (!targetPath && emailToUse) {
+      const checkEmail = emailToUse.toLowerCase();
+      if (checkEmail.includes("superadmin") || checkEmail.includes("sysadmin")) {
+        targetPath = "/admin/dashboard";
+      } else if (checkEmail.includes("department") || checkEmail.includes("sogd")) {
+        targetPath = "/department/dashboard";
+      } else if (checkEmail.includes("district") || checkEmail.includes("phonggd")) {
+        targetPath = "/district/dashboard";
+      } else if (checkEmail.includes("ward") || checkEmail.includes("diaphuong")) {
+        targetPath = "/ward/dashboard";
+      } else if (checkEmail.includes("admin")) {
+        targetPath = "/admin/dashboard";
+      } else if (checkEmail.includes("vp") || checkEmail.includes("pht")) {
+        targetPath = "/vice-principal/dashboard";
+      } else if (checkEmail.includes("ttcm")) {
+        targetPath = "/subject-head/dashboard";
+      } else if (checkEmail.includes("teacher") || checkEmail.includes("gv") || checkEmail.includes("giao-vien") || checkEmail.includes("giaovien")) {
+        targetPath = "/teacher/dashboard";
+      } else if (checkEmail.includes("student") || checkEmail.includes("hs") || checkEmail.includes("hocsinh")) {
+        targetPath = "/student/dashboard";
+      }
+    }
+
+    if (!targetPath) {
+      targetPath = "/teacher/dashboard";
+    }
+
+    window.location.href = targetPath;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -481,7 +514,7 @@ function LoginFormContent() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-sky-600 hover:bg-sky-50 p-1.5 rounded-lg transition-all"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-700 hover:text-sky-700 hover:bg-sky-50 p-1.5 rounded-lg transition-all"
                   aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

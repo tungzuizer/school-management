@@ -70,6 +70,7 @@ export default withAuth(
     callbacks: {
       authorized: ({ token }) => !!token,
     },
+    secret: process.env.NEXTAUTH_SECRET || "school_management_production_secret_key_2026",
   }
 );
 
