@@ -144,7 +144,7 @@ export default function StudentDashboardPage() {
                 {data.student.seatPosition && (
                   <span className="flex items-center gap-1.5 bg-gradient-to-r from-rose-500/30 to-purple-500/30 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-extrabold text-rose-200 border border-rose-400/40 shadow-sm">
                     <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                    Chỗ ngồi Cinema: <strong className="text-white ml-0.5">{data.student.seatPosition}</strong>
+                    Vị trí chỗ ngồi: <strong className="text-white ml-0.5">{data.student.seatPosition}</strong>
                   </span>
                 )}
                 {data.student.bonusPoints !== undefined && (

@@ -33,6 +33,7 @@ import {
   SlidersHorizontal,
   ChevronDown,
   Layers,
+  LayoutGrid,
 } from "lucide-react";
 
 interface SeatMapping {
@@ -340,14 +341,14 @@ export default function CinemaSeatingPage() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/20 text-xs font-semibold text-indigo-300">
-              <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Quản Lý Sơ Đồ Chỗ Ngồi & Đánh Giá</span>
+              <LayoutGrid className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Sơ Đồ Chỗ Ngồi Trực Quan & Đánh Giá Tích Cực</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight">
-              Sơ Đồ Chỗ Ngồi Trực Quan
+              Sơ Đồ Không Gian Lớp Học & Rèn Luyện
             </h1>
             <p className="text-xs md:text-sm text-slate-300 max-w-xl leading-relaxed">
-              Hiển thị danh sách học sinh theo vị trí không gian lớp học, cho phép đánh giá tích cực và điều chỉnh sơ đồ chỗ ngồi linh hoạt.
+              Quản lý vị trí chỗ ngồi học sinh trực quan, ghi nhận đánh giá nếp sống và thi đua lớp học theo thời gian thực.
             </p>
           </div>
 

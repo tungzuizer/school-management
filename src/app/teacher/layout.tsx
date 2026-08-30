@@ -102,11 +102,11 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     },
     {
       id: "cinema-eval",
-      title: "Sơ Đồ Cinema & Đánh Giá",
-      icon: Film,
-      accentClass: "text-rose-600",
+      title: "Sơ Đồ Chỗ Ngồi & Đánh Giá",
+      icon: LayoutGrid,
+      accentClass: "text-indigo-600",
       items: [
-        { label: "Sơ đồ chỗ ngồi rạp chiếu phim", href: "/teacher/seating-cinema", icon: Film, description: "Đánh giá & cộng điểm theo chỗ ngồi", badge: "Rạp phim" },
+        { label: "Sơ đồ chỗ ngồi lớp học", href: "/teacher/seating-cinema", icon: LayoutGrid, description: "Đánh giá & xếp vị trí chỗ ngồi trực quan", badge: "Trực quan" },
         { label: "Cộng điểm & Tuyên dương", href: "/teacher/commendations", icon: Award, description: "Cộng điểm rèn luyện & Phát biểu bài", badge: "Cộng điểm" },
       ],
     },
@@ -166,7 +166,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const bottomTabs = [
     { label: "Tổng quan", href: "/teacher/dashboard", icon: Home },
     { label: "Học sinh", href: "/teacher/students", icon: UserPlus },
-    { label: "Sơ đồ Cinema", href: "/teacher/seating-cinema", icon: Film },
+    { label: "Sơ đồ chỗ ngồi", href: "/teacher/seating-cinema", icon: LayoutGrid },
     { label: "Điểm danh", href: "/teacher/attendance", icon: ClipboardCheck },
     { label: "Sổ đầu bài", href: "/teacher/journal", icon: FileSpreadsheet },
   ];
