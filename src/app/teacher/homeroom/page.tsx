@@ -107,27 +107,29 @@ type GradeItem = {
 
 // Tab definitions
 const TABS = [
-  { key: "ai_reminder", label: "Trợ lý AI Nhắc việc" },
-  { key: "overview", label: "Tổng quan lớp" },
-  { key: "groups", label: "Tổ chức tổ" },
-  { key: "seating", label: "Sơ đồ chỗ ngồi" },
-  { key: "conduct", label: "Rèn luyện & Học tập" },
-  { key: "grades", label: "Bảng điểm lớp" },
-  { key: "incidents", label: "Vi phạm / Khen thưởng" },
-  { key: "feedback", label: "Phối hợp phụ huynh" },
-  { key: "monthly_plan", label: "Kế hoạch tháng & Sinh hoạt tuần" },
+  { key: "overview", label: "📊 Tổng quan lớp" },
+  { key: "students", label: "👥 Danh sách & Thêm Học sinh" },
+  { key: "seating", label: "🎬 Sơ đồ Lớp & Tuyên dương" },
+  { key: "groups", label: "🚩 Quản lý Tổ" },
+  { key: "conduct", label: "⭐ Rèn luyện & Thi đua" },
+  { key: "grades", label: "📝 Bảng điểm lớp" },
+  { key: "incidents", label: "⚠️ Vi phạm / Tuyên dương" },
+  { key: "feedback", label: "💬 Phối hợp phụ huynh" },
+  { key: "monthly_plan", label: "📅 Kế hoạch & Sinh hoạt" },
+  { key: "ai_reminder", label: "🤖 Trợ lý AI" },
 ] as const;
 
 const TAB_ICONS: Record<string, React.ElementType> = {
   overview: Users,
-  groups: LayoutGrid,
-  seating: ClipboardList,
-  conduct: BarChart3,
+  students: UserPlus,
+  seating: LayoutGrid,
+  groups: Users,
+  conduct: Star,
   grades: ClipboardList,
   incidents: AlertTriangle,
   feedback: MessageSquare,
-  ai_reminder: Sparkles,
   monthly_plan: FileText,
+  ai_reminder: Sparkles,
 };
 
 const PERIODS = [
@@ -163,7 +165,7 @@ const ACADEMIC_OPTIONS = [
 
 export default function HomeroomPage() {
   const { data: session } = useSession();
-  const [tab, setTab] = useState<string>("ai_reminder");
+  const [tab, setTab] = useState<string>("overview");
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,7 +181,7 @@ export default function HomeroomPage() {
         setTab(urlTab);
       }
       if (urlAction === "add-student") {
-        setTab("overview");
+        setTab("students");
         setAutoOpenAdd(true);
       }
     }
@@ -272,17 +274,25 @@ export default function HomeroomPage() {
               students={students}
               showToast={showToast}
               onReload={loadData}
+            />
+          )}
+          {tab === "students" && (
+            <StudentsTab
+              classId={classInfo.id}
+              students={students}
+              showToast={showToast}
+              onReload={loadData}
               initialShowAdd={autoOpenAdd}
             />
           )}
           {tab === "groups" && <GroupsTab classId={classInfo.id} students={students} showToast={showToast} onReload={loadData} />}
-          {tab === "seating" && <SeatingTab classId={classInfo.id} students={students} showToast={showToast} />}
+          {tab === "seating" && <SeatingTab classId={classInfo.id} students={students} showToast={showToast} onReload={loadData} />}
           {tab === "conduct" && <ConductTab classId={classInfo.id} showToast={showToast} />}
           {tab === "grades" && <GradesTab classId={classInfo.id} />}
           {tab === "incidents" && <IncidentsTab classId={classInfo.id} students={students} showToast={showToast} />}
           {tab === "feedback" && <FeedbackTab classId={classInfo.id} students={students} showToast={showToast} />}
-          {tab === "ai_reminder" && <AIReminderTab schoolId={classInfo.schoolId} className={classInfo.name} showToast={showToast} />}
           {tab === "monthly_plan" && <MonthlyPlanTab classId={classInfo.id} showToast={showToast} />}
+          {tab === "ai_reminder" && <AIReminderTab schoolId={classInfo.schoolId} className={classInfo.name} showToast={showToast} />}
         </div>
       </div>
 
@@ -304,6 +314,459 @@ const CLASS_ROLE_OPTIONS = [
   { value: "TO_TRUONG", label: "🚩 Tổ trưởng", color: "bg-emerald-100 text-emerald-900 border-emerald-300" },
   { value: "", label: "👤 Học sinh", color: "bg-slate-100 text-slate-700 border-slate-200" },
 ];
+
+// ============ STUDENTS TAB (Thêm & Quản lý Học sinh) ============
+function StudentsTab({
+  classId,
+  students,
+  showToast,
+  onReload,
+  initialShowAdd = false,
+}: {
+  classId: string;
+  students: StudentItem[];
+  showToast: (m: string) => void;
+  onReload: () => void;
+  initialShowAdd?: boolean;
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAddModal, setShowAddModal] = useState(initialShowAdd);
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  const [name, setName] = useState("");
+  const [studentCode, setStudentCode] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+
+  // Bonus Points Modal state
+  const [bonusStudent, setBonusStudent] = useState<StudentItem | null>(null);
+  const [bonusPoints, setBonusPoints] = useState<number>(1);
+  const [bonusCategory, setBonusCategory] = useState<string>("PHAT_BIEU");
+  const [bonusTitle, setBonusTitle] = useState<string>("Phát biểu xây dựng bài");
+  const [bonusNote, setBonusNote] = useState<string>("");
+  const [savingBonus, setSavingBonus] = useState(false);
+
+  const filteredStudents = students.filter((s) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      s.user.name.toLowerCase().includes(q) ||
+      (s.studentCode && s.studentCode.toLowerCase().includes(q))
+    );
+  });
+
+  async function handleAddStudent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !studentCode.trim()) {
+      setAddError("Vui lòng nhập Họ tên và Mã học sinh");
+      return;
+    }
+    setAdding(true);
+    setAddError("");
+    try {
+      await addStudentToHomeroomClass({
+        classId,
+        name,
+        studentCode,
+        dob: dob || undefined,
+        gender,
+        phone: phone || undefined,
+        email: email || undefined,
+      });
+      showToast(`Đã thêm thành công học sinh ${name}!`);
+      setName("");
+      setStudentCode("");
+      setDob("");
+      setPhone("");
+      setEmail("");
+      setShowAddModal(false);
+      onReload();
+    } catch (err: any) {
+      setAddError(err.message || "Đã xảy ra lỗi khi thêm học sinh");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleRoleChange(studentId: string, newRole: string) {
+    try {
+      await setStudentClassRole(studentId, newRole || null);
+      const student = students.find((s) => s.id === studentId);
+      const roleLabel = CLASS_ROLE_OPTIONS.find((r) => r.value === newRole)?.label || "Học sinh";
+      showToast(`Đã cập nhật chức danh ${roleLabel} cho ${student?.user.name}`);
+      onReload();
+    } catch {
+      showToast("Lỗi khi cập nhật chức danh học sinh");
+    }
+  }
+
+  async function handleSaveBonus(e: React.FormEvent) {
+    e.preventDefault();
+    if (!bonusStudent) return;
+    setSavingBonus(true);
+    try {
+      await recordParticipationBonus({
+        studentId: bonusStudent.id,
+        classId,
+        title: bonusTitle,
+        category: bonusCategory,
+        points: bonusPoints,
+        note: bonusNote || undefined,
+      });
+      showToast(`Đã cộng +${bonusPoints} điểm thưởng cho ${bonusStudent.user.name}!`);
+      setBonusStudent(null);
+      setBonusTitle("Phát biểu xây dựng bài");
+      setBonusNote("");
+      onReload();
+    } catch {
+      showToast("Lỗi khi ghi nhận điểm thưởng");
+    } finally {
+      setSavingBonus(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header Banner & Main Actions */}
+      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-blue-900 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-indigo-200 text-xs font-bold uppercase tracking-wider mb-1">
+            <UserPlus className="w-4 h-4" /> Quản lý danh sách lớp
+          </div>
+          <h2 className="text-xl font-black">Danh Sách Học Sinh Lớp Chủ Nhiệm</h2>
+          <p className="text-xs text-indigo-200 mt-1">
+            Thêm mới học sinh, phân công ban cán sự lớp (👑 Lớp trưởng, 📚 Lớp phó) và tuyên dương thưởng điểm.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-amber-400 hover:bg-amber-300 text-amber-950 font-black px-5 py-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 cursor-pointer whitespace-nowrap"
+        >
+          <UserPlus className="w-4 h-4 stroke-[3]" /> + Thêm Học Sinh Mới
+        </button>
+      </div>
+
+      {/* Filter & Toolbar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <div className="w-full sm:w-80 relative">
+          <input
+            type="text"
+            placeholder="Tìm theo tên hoặc mã học sinh..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full text-xs pl-3 pr-8 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium"
+          />
+        </div>
+        <div className="text-xs font-bold text-slate-600">
+          Hiển thị: <span className="text-indigo-600 font-extrabold">{filteredStudents.length}</span> / {students.length} học sinh
+        </div>
+      </div>
+
+      {/* Students Table */}
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-100/80 text-slate-700 font-extrabold border-b border-slate-200">
+                <th className="p-3 w-12 text-center">STT</th>
+                <th className="p-3">Họ và Tên</th>
+                <th className="p-3 w-32">Mã Học Sinh</th>
+                <th className="p-3 w-40">Chức Danh Ban Cán Sự</th>
+                <th className="p-3 w-28">Tổ</th>
+                <th className="p-3 w-32 text-center">Điểm Tích Cực</th>
+                <th className="p-3 w-32 text-right">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredStudents.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-400 font-medium">
+                    Không tìm thấy học sinh nào phù hợp.
+                  </td>
+                </tr>
+              ) : (
+                filteredStudents.map((s, idx) => (
+                  <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
+                    <td className="p-3">
+                      <div className="font-bold text-slate-900">{s.user.name}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{s.user.email}</div>
+                    </td>
+                    <td className="p-3 font-mono font-bold text-slate-600">
+                      {s.studentCode || "--"}
+                    </td>
+                    <td className="p-3">
+                      <select
+                        value={s.classRole || ""}
+                        onChange={(e) => handleRoleChange(s.id, e.target.value)}
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-bold outline-none cursor-pointer ${
+                          CLASS_ROLE_OPTIONS.find((r) => r.value === (s.classRole || ""))?.color ||
+                          "bg-slate-50 border-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {CLASS_ROLE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-3 font-semibold text-slate-700">
+                      {s.group ? s.group.name : <span className="text-slate-400 text-[11px]">Chưa xếp tổ</span>}
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 font-black text-xs px-2.5 py-1 rounded-full">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                        +{s.bonusPoints || 0}đ
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() => setBonusStudent(s)}
+                        className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2.5 py-1 rounded-lg text-[11px] transition-colors inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Star className="w-3 h-3 text-amber-600 fill-amber-400" />
+                        + Cộng điểm
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal Thêm Học Sinh Mới */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-indigo-600" />
+                Thêm Học Sinh Mới
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {addError && (
+              <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
+                {addError}
+              </div>
+            )}
+
+            <form onSubmit={handleAddStudent} className="space-y-3.5 mt-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Họ và Tên Học Sinh <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Nhập đầy đủ Họ và Tên..."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Mã Học Sinh <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: HS10A1-001"
+                  value={studentCode}
+                  onChange={(e) => setStudentCode(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Giới tính</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value as "MALE" | "FEMALE")}
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium"
+                  >
+                    <option value="MALE">Nam</option>
+                    <option value="FEMALE">Nữ</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Ngày sinh</label>
+                  <input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Số điện thoại liên hệ</label>
+                <input
+                  type="text"
+                  placeholder="0901234567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Email đăng nhập (Tuỳ chọn)
+                </label>
+                <input
+                  type="email"
+                  placeholder="Để trống sẽ tự tạo (VD: nguyenvana.hs10a1@gmail.com)"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Mật khẩu khởi tạo mặc định cho học sinh mới là <strong className="font-mono text-amber-700">abc123</strong>
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={adding}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold disabled:opacity-50 cursor-pointer"
+                >
+                  {adding ? "Đang lưu..." : "Thêm Học Sinh"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Đánh giá & Cộng điểm tích cực */}
+      {bonusStudent && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
+                Cộng Điểm Tích Cực — {bonusStudent.user.name}
+              </h3>
+              <button
+                onClick={() => setBonusStudent(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBonus} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nội dung / Hành vi tích cực</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="VD: Phát biểu chính xác bài toán khó..."
+                  value={bonusTitle}
+                  onChange={(e) => setBonusTitle(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Phân loại hoạt động</label>
+                <select
+                  value={bonusCategory}
+                  onChange={(e) => {
+                    setBonusCategory(e.target.value);
+                    if (e.target.value === "PHAT_BIEU") setBonusTitle("Phát biểu xây dựng bài");
+                    else if (e.target.value === "BAI_TAP") setBonusTitle("Bài tập xuất sắc");
+                    else if (e.target.value === "HO_TRO") setBonusTitle("Hỗ trợ bạn học");
+                    else if (e.target.value === "PHONG_TRAO") setBonusTitle("Tích cực phong trào lớp");
+                  }}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold text-slate-800"
+                >
+                  <option value="PHAT_BIEU">🙋♂️ Phát biểu xây dựng bài (+1đ)</option>
+                  <option value="BAI_TAP">📝 Bài tập xuất sắc / Sáng tạo (+2đ)</option>
+                  <option value="HO_TRO">🤝 Hỗ trợ bạn học (+2đ)</option>
+                  <option value="PHONG_TRAO">🏆 Hoạt động phong trào (+5đ)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Số điểm cộng thưởng</label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 5].map((pts) => (
+                    <button
+                      key={pts}
+                      type="button"
+                      onClick={() => setBonusPoints(pts)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                        bonusPoints === pts
+                          ? "bg-amber-500 text-white border-amber-600 shadow-sm"
+                          : "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                      }`}
+                    >
+                      +{pts} Điểm
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Ghi chú bổ sung (Tuỳ chọn)</label>
+                <textarea
+                  value={bonusNote}
+                  onChange={(e) => setBonusNote(e.target.value)}
+                  placeholder="Ghi chú ngắn cho học sinh..."
+                  rows={2}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setBonusStudent(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingBonus}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  {savingBonus ? "Đang lưu..." : "Xác nhận Cộng điểm"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ============ OVERVIEW TAB ============
 function OverviewTab({
@@ -987,15 +1450,17 @@ function GroupsTab({
   );
 }
 
-// ============ SEATING TAB ============
+// ============ CINEMA CLASSROOM SEATING & EVALUATION TAB ============
 function SeatingTab({
   classId,
   students,
   showToast,
+  onReload,
 }: {
   classId: string;
   students: StudentItem[];
   showToast: (m: string) => void;
+  onReload?: () => void;
 }) {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -1005,10 +1470,46 @@ function SeatingTab({
   const [grid, setGrid] = useState<(string | null)[][]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Mode: "eval" (default: click to reward bonus points) or "arrange" (click to assign/move seat)
+  const [mode, setMode] = useState<"eval" | "arrange">("eval");
+
+  // Seat Arrangement Modal state
+  const [targetSeat, setTargetSeat] = useState<{ r: number; c: number } | null>(null);
+
+  // Instant Evaluation Modal state
+  const [bonusStudent, setBonusStudent] = useState<StudentItem | null>(null);
+  const [bonusPoints, setBonusPoints] = useState<number>(1);
+  const [bonusCategory, setBonusCategory] = useState<string>("PHAT_BIEU");
+  const [bonusTitle, setBonusTitle] = useState<string>("Phát biểu xây dựng bài");
+  const [bonusNote, setBonusNote] = useState<string>("");
+  const [savingBonus, setSavingBonus] = useState(false);
+
+  // Timestamped participation history for selected student
+  const [studentHistory, setStudentHistory] = useState<Array<{
+    id: string;
+    title: string;
+    category: string;
+    points: number;
+    note: string | null;
+    createdAt: Date | string;
+  }>>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   useEffect(() => {
     loadChart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId, month, year]);
+
+  useEffect(() => {
+    if (bonusStudent) {
+      setLoadingHistory(true);
+      getParticipationRecords(classId, bonusStudent.id)
+        .then((records) => {
+          setStudentHistory(records as unknown as typeof studentHistory);
+        })
+        .finally(() => setLoadingHistory(false));
+    }
+  }, [bonusStudent, classId]);
 
   async function loadChart() {
     const chart = await getSeatingChart(classId, month, year);
@@ -1030,58 +1531,58 @@ function SeatingTab({
     setGrid(Array.from({ length: rows }, () => Array(cols).fill(null)));
   }
 
-  function handleCellClick(r: number, c: number) {
-    const current = grid[r]?.[c];
-    // Get list of placed student ids
-    const placed = new Set(grid.flat().filter(Boolean));
-    const available = students.filter((s) => !placed.has(s.id) || s.id === current);
+  function getStudentObj(id: string | null) {
+    if (!id) return null;
+    return students.find((s) => s.id === id) || null;
+  }
 
-    if (current) {
-      // Remove student
-      const newGrid = grid.map((row) => [...row]);
-      newGrid[r][c] = null;
-      setGrid(newGrid);
-    } else {
-      // Show prompt to select student
-      const sel = prompt(
-        "Chọn số thứ tự học sinh:\n" +
-        available.filter((s) => !placed.has(s.id)).map((s, i) => `${i + 1}. ${s.user.name}`).join("\n")
-      );
-      if (sel) {
-        const idx = parseInt(sel) - 1;
-        const avail = available.filter((s) => !placed.has(s.id));
-        if (avail[idx]) {
-          const newGrid = grid.map((row) => [...row]);
-          if (!newGrid[r]) newGrid[r] = Array(cols).fill(null);
-          newGrid[r][c] = avail[idx].id;
-          setGrid(newGrid);
-        }
+  function handleCellClick(r: number, c: number) {
+    const studentId = grid[r]?.[c];
+    const studentObj = getStudentObj(studentId);
+
+    if (mode === "eval") {
+      if (studentObj) {
+        setBonusStudent(studentObj);
+        setBonusPoints(1);
+        setBonusCategory("PHAT_BIEU");
+        setBonusTitle("Phát biểu xây dựng bài");
+        setBonusNote("");
+      } else {
+        setTargetSeat({ r, c });
       }
+    } else {
+      // Arrange mode
+      setTargetSeat({ r, c });
     }
   }
 
-  async function handleSave() {
+  function handleAssignStudentToSeat(selectedStudentId: string | null) {
+    if (!targetSeat) return;
+    const { r, c } = targetSeat;
+    const newGrid = grid.map((row) => [...row]);
+    if (!newGrid[r]) newGrid[r] = Array(cols).fill(null);
+    newGrid[r][c] = selectedStudentId;
+    setGrid(newGrid);
+    setTargetSeat(null);
+  }
+
+  async function handleSaveChart() {
     setSaving(true);
     await saveSeatingChart(classId, month, year, JSON.stringify({ grid, rows, cols }));
     setSaving(false);
-    showToast("Đã lưu sơ đồ chỗ ngồi");
+    showToast("Đã lưu sơ đồ chỗ ngồi lớp học!");
   }
 
-  async function handleCopy() {
+  async function handleCopyPrevMonth() {
     const prevMonth = month === 1 ? 12 : month - 1;
     const prevYear = month === 1 ? year - 1 : year;
     try {
       await copySeatingChart(classId, prevMonth, prevYear, month, year);
       await loadChart();
-      showToast("Đã sao chép từ tháng trước");
+      showToast("Đã sao chép sơ đồ từ tháng trước");
     } catch {
       showToast("Không tìm thấy sơ đồ tháng trước");
     }
-  }
-
-  function getStudentName(id: string | null) {
-    if (!id) return null;
-    return students.find((s) => s.id === id)?.user.name || "?";
   }
 
   function handleResize() {
@@ -1091,67 +1592,478 @@ function SeatingTab({
     setGrid(newGrid);
   }
 
+  async function handleSaveBonusSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!bonusStudent) return;
+    setSavingBonus(true);
+    try {
+      await recordParticipationBonus({
+        studentId: bonusStudent.id,
+        classId,
+        title: bonusTitle,
+        category: bonusCategory,
+        points: bonusPoints,
+        note: bonusNote || undefined,
+      });
+      showToast(`Đã tuyên dương và cộng +${bonusPoints}đ cho ${bonusStudent.user.name}!`);
+
+      // Refresh timestamped history list inside modal
+      const updatedRecords = await getParticipationRecords(classId, bonusStudent.id);
+      setStudentHistory(updatedRecords as unknown as typeof studentHistory);
+
+      if (onReload) onReload();
+    } catch {
+      showToast("Lỗi khi tuyên dương học sinh");
+    } finally {
+      setSavingBonus(false);
+    }
+  }
+
+  // Get list of placed student IDs
+  const placedStudentIds = new Set(grid.flat().filter(Boolean));
+  const rowLabels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+
   return (
-    <div className="space-y-4">
-      {/* Controls */}
-      <div className="flex flex-wrap gap-3 items-end">
+    <div className="space-y-6">
+      {/* Header Banner & Mode Controls */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-4">
         <div>
-          <label className="block text-xs font-medium mb-1">Tháng</label>
-          <select value={month} onChange={(e) => setMonth(+e.target.value)} className="border rounded px-2 py-1 text-sm">
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-widest mb-1">
+            <LayoutGrid className="w-4 h-4" /> Sơ Đồ Lớp Học Kiểu Rạp Chiếu Phim
+          </div>
+          <h2 className="text-xl font-black text-white">Sơ Đồ Ghế & Tuyên Dương Trực Tiếp</h2>
+          <p className="text-xs text-slate-300 mt-1">
+            Bấm trực tiếp vào vị trí ghế của học sinh để mở cửa sổ Tuyên Dương, Cộng Điểm và xem Lịch Sử Đánh Giá theo thời gian!
+          </p>
         </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">Năm</label>
-          <input type="number" value={year} onChange={(e) => setYear(+e.target.value)} className="border rounded px-2 py-1 text-sm w-20" />
+
+        {/* Mode Switch Button Group */}
+        <div className="flex items-center bg-slate-800/90 p-1.5 rounded-xl border border-slate-700">
+          <button
+            onClick={() => setMode("eval")}
+            className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+              mode === "eval"
+                ? "bg-amber-500 text-slate-950 shadow-md"
+                : "text-slate-300 hover:text-white"
+            }`}
+          >
+            <Star className="w-4 h-4 fill-current" /> ⭐ Chế Độ Tuyên Dương
+          </button>
+          <button
+            onClick={() => setMode("arrange")}
+            className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+              mode === "arrange"
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-slate-300 hover:text-white"
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" /> ⚙️ Chế Độ Xếp Ghế
+          </button>
         </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">Hàng</label>
-          <input type="number" min={1} max={12} value={rows} onChange={(e) => setRows(+e.target.value)} className="border rounded px-2 py-1 text-sm w-16" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">Cột</label>
-          <input type="number" min={1} max={12} value={cols} onChange={(e) => setCols(+e.target.value)} className="border rounded px-2 py-1 text-sm w-16" />
-        </div>
-        <button onClick={handleResize} className="bg-gray-200 px-3 py-1 rounded text-sm hover:bg-gray-300">Cập nhật kích thước</button>
-        <button onClick={handleCopy} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-sm hover:bg-yellow-200"> Sao chép tháng trước</button>
-        <button onClick={handleSave} disabled={saving} className="bg-blue-600 text-white px-4 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-          {saving ? "Đang lưu..." : " Lưu"}
-        </button>
       </div>
 
-      {/* Grid - Bảng giáo */}
-      <div className="text-center text-xs text-slate-600 font-semibold bg-gray-200 py-1 rounded-t">BẢNG</div>
-      <div className="overflow-x-auto">
-        <div className="inline-block">
-          {Array.from({ length: rows }).map((_, r) => (
-            <div key={r} className="flex">
-              {Array.from({ length: cols }).map((_, c) => {
-                const studentId = grid[r]?.[c];
-                const name = getStudentName(studentId);
+      {/* Grid Size & Date Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-bold text-slate-700">Tháng:</label>
+            <select
+              value={month}
+              onChange={(e) => setMonth(+e.target.value)}
+              className="text-xs p-2 border border-slate-300 rounded-xl bg-white font-bold outline-none"
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  Tháng {i + 1}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-bold text-slate-700">Năm:</label>
+            <input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(+e.target.value)}
+              className="text-xs p-2 border border-slate-300 rounded-xl bg-white w-20 font-mono font-bold outline-none"
+            />
+          </div>
+
+          <div className="h-4 w-[1px] bg-slate-300 mx-1 hidden sm:block" />
+
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-bold text-slate-700">Hàng:</label>
+            <input
+              type="number"
+              min={1}
+              max={12}
+              value={rows}
+              onChange={(e) => setRows(+e.target.value)}
+              className="text-xs p-2 border border-slate-300 rounded-xl bg-white w-14 font-bold outline-none text-center"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-bold text-slate-700">Cột:</label>
+            <input
+              type="number"
+              min={1}
+              max={12}
+              value={cols}
+              onChange={(e) => setCols(+e.target.value)}
+              className="text-xs p-2 border border-slate-300 rounded-xl bg-white w-14 font-bold outline-none text-center"
+            />
+          </div>
+
+          <button
+            onClick={handleResize}
+            className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Đổi Kích Thước
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopyPrevMonth}
+            className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            📋 Sao Chép Tháng Trước
+          </button>
+          <button
+            onClick={handleSaveChart}
+            disabled={saving}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs shadow-md transition-all disabled:opacity-50 cursor-pointer"
+          >
+            {saving ? "Đang lưu..." : "💾 Lưu Sơ Đồ Ghế"}
+          </button>
+        </div>
+      </div>
+
+      {/* CINEMA ROOM STAGE / BLACKBOARD */}
+      <div className="bg-slate-900 rounded-2xl p-6 shadow-2xl border border-slate-800">
+        {/* Cinema Screen Curve */}
+        <div className="relative mb-8 text-center">
+          <div className="bg-gradient-to-r from-slate-950 via-indigo-900 to-slate-950 text-indigo-200 py-3.5 px-6 rounded-2xl border border-indigo-500/30 shadow-inner relative overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-indigo-300 to-amber-400" />
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-300 flex items-center justify-center gap-2">
+              🎬 BỤC GIẢNG / BẢNG ĐEN LỚP HỌC
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              (Góc nhìn màn hình chiếu từ bục giảng xuống các dãy ghế học sinh)
+            </p>
+          </div>
+        </div>
+
+        {/* CINEMA SEATING GRID */}
+        <div className="overflow-x-auto pb-4">
+          <div className="inline-block min-w-full">
+            <div className="flex flex-col gap-3 items-center">
+              {Array.from({ length: rows }).map((_, r) => {
+                const rowLetter = rowLabels[r] || `R${r + 1}`;
                 return (
-                  <div
-                    key={c}
-                    onClick={() => handleCellClick(r, c)}
-                    className={`w-24 h-16 border border-gray-300 flex items-center justify-center text-xs cursor-pointer transition-colors ${
-                      name ? "bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium" : "bg-white hover:bg-gray-100 text-blue-800"
-                    }`}
-                    title={name ? `Click để xóa: ${name}` : "Click để thêm HS"}
-                  >
-                    {name || "+"}
+                  <div key={r} className="flex items-center gap-2">
+                    {/* Row Label Badge */}
+                    <div className="w-8 text-center font-black text-xs text-amber-400 font-mono">
+                      {rowLetter}
+                    </div>
+
+                    {/* Seat Cards in this row */}
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: cols }).map((_, c) => {
+                        const studentId = grid[r]?.[c];
+                        const student = getStudentObj(studentId);
+                        const seatCode = `${rowLetter}${c + 1}`;
+
+                        return (
+                          <div
+                            key={c}
+                            onClick={() => handleCellClick(r, c)}
+                            className={`w-28 h-20 rounded-xl p-2 border flex flex-col justify-between transition-all duration-200 cursor-pointer select-none relative ${
+                              student
+                                ? "bg-gradient-to-b from-slate-800 to-slate-900 border-indigo-500/50 hover:border-amber-400 hover:scale-105 shadow-md group"
+                                : "bg-slate-950/60 border-dashed border-slate-700/80 hover:border-indigo-400 hover:bg-slate-800/50 text-slate-500"
+                            }`}
+                          >
+                            {/* Seat Code Top Label */}
+                            <div className="flex items-center justify-between text-[10px] font-mono">
+                              <span className="text-slate-400 font-bold">{seatCode}</span>
+                              {student && (
+                                <span className="bg-amber-500/20 text-amber-300 font-black px-1.5 py-0.2 rounded-full border border-amber-500/30 text-[9px]">
+                                  ⭐+{student.bonusPoints || 0}đ
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Main Content: Student Name & Role Badge */}
+                            {student ? (
+                              <div className="space-y-0.5">
+                                <div className="font-extrabold text-xs text-white truncate group-hover:text-amber-300 transition-colors">
+                                  {student.user.name}
+                                </div>
+                                <div className="text-[10px] text-indigo-300 font-medium truncate flex items-center gap-1">
+                                  {student.classRole === "LOP_TRUONG" && "👑 Lớp trưởng"}
+                                  {student.classRole === "LOP_PHO_HOC_TAP" && "📚 Lớp phó HT"}
+                                  {student.classRole === "LOP_PHO_KY_LUAT" && "🛡️ Lớp phó KL"}
+                                  {student.classRole === "TO_TRUONG" && "🚩 Tổ trưởng"}
+                                  {!student.classRole && "👤 Học sinh"}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex-1 flex flex-col items-center justify-center text-[11px] text-slate-500 font-medium">
+                                <span>Ghế trống</span>
+                                <span className="text-[9px] text-slate-600">+ Chọn HS</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Row Label Badge Right */}
+                    <div className="w-8 text-center font-black text-xs text-amber-400 font-mono">
+                      {rowLetter}
+                    </div>
                   </div>
                 );
               })}
             </div>
-          ))}
+          </div>
         </div>
       </div>
-      <p className="text-xs text-slate-600">Click vào ô trống để thêm học sinh, click vào ô có tên để xóa.</p>
+
+      {/* Modal Xếp Ghế (Seat Assignment Modal) */}
+      {targetSeat && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                <LayoutGrid className="w-5 h-5 text-indigo-600" />
+                Xếp Ghế Position [{rowLabels[targetSeat.r] || `R${targetSeat.r + 1}`}{targetSeat.c + 1}]
+              </h3>
+              <button
+                onClick={() => setTargetSeat(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 mt-4">
+              <p className="text-xs text-slate-600">
+                Chọn học sinh cho vị trí ghế <strong className="font-mono text-indigo-600 font-bold">{rowLabels[targetSeat.r] || targetSeat.r + 1}{targetSeat.c + 1}</strong>:
+              </p>
+
+              <div className="max-h-60 overflow-y-auto space-y-1.5 border border-slate-200 rounded-xl p-2">
+                <button
+                  type="button"
+                  onClick={() => handleAssignStudentToSeat(null)}
+                  className="w-full text-left p-2 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors border border-transparent hover:border-rose-200 cursor-pointer"
+                >
+                  🚫 Để ghế trống (Bỏ xếp học sinh)
+                </button>
+
+                {students.map((st) => {
+                  const isPlaced = placedStudentIds.has(st.id);
+                  const isCurrentInSeat = grid[targetSeat.r]?.[targetSeat.c] === st.id;
+
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => handleAssignStudentToSeat(st.id)}
+                      className={`w-full text-left p-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                        isCurrentInSeat
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : isPlaced
+                          ? "bg-slate-50 text-slate-400 border border-slate-100 opacity-60"
+                          : "bg-white hover:bg-indigo-50 text-slate-800 border border-slate-200 hover:border-indigo-300"
+                      }`}
+                    >
+                      <span>{st.user.name} ({st.studentCode || "Chưa có mã"})</span>
+                      {isCurrentInSeat && <span className="text-[10px] font-black">✓ Đang ở ghế này</span>}
+                      {isPlaced && !isCurrentInSeat && <span className="text-[10px]">Đã xếp ở vị trí khác</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setTargetSeat(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tuyên Dương & Đánh Giá Cộng Điểm Kèm Lịch Sử Thời Gian */}
+      {bonusStudent && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <div className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">
+                  ⭐ Đánh Giá & Tuyên Dương Tích Cực
+                </div>
+                <h3 className="font-black text-lg text-slate-900">
+                  {bonusStudent.user.name}
+                </h3>
+              </div>
+              <button
+                onClick={() => setBonusStudent(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Points Summary */}
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-900">Tổng điểm thưởng hiện tại:</span>
+              <span className="text-base font-black text-amber-600 bg-white px-3 py-1 rounded-lg border border-amber-300 shadow-xs">
+                ⭐ +{bonusStudent.bonusPoints || 0} điểm
+              </span>
+            </div>
+
+            {/* Form đánh giá mới */}
+            <form onSubmit={handleSaveBonusSubmit} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nội dung tuyên dương</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="VD: Phát biểu chính xác câu hỏi nâng cao..."
+                  value={bonusTitle}
+                  onChange={(e) => setBonusTitle(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Phân loại hoạt động</label>
+                <select
+                  value={bonusCategory}
+                  onChange={(e) => {
+                    setBonusCategory(e.target.value);
+                    if (e.target.value === "PHAT_BIEU") setBonusTitle("Phát biểu xây dựng bài");
+                    else if (e.target.value === "BAI_TAP") setBonusTitle("Bài tập xuất sắc");
+                    else if (e.target.value === "HO_TRO") setBonusTitle("Hỗ trợ bạn học");
+                    else if (e.target.value === "PHONG_TRAO") setBonusTitle("Tích cực phong trào lớp");
+                  }}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold text-slate-800"
+                >
+                  <option value="PHAT_BIEU">🙋♂️ Phát biểu xây dựng bài (+1đ)</option>
+                  <option value="BAI_TAP">📝 Bài tập xuất sắc / Sáng tạo (+2đ)</option>
+                  <option value="HO_TRO">🤝 Hỗ trợ bạn học (+2đ)</option>
+                  <option value="PHONG_TRAO">🏆 Hoạt động phong trào (+5đ)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Số điểm cộng thưởng</label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 5].map((pts) => (
+                    <button
+                      key={pts}
+                      type="button"
+                      onClick={() => setBonusPoints(pts)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                        bonusPoints === pts
+                          ? "bg-amber-500 text-white border-amber-600 shadow-sm"
+                          : "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                      }`}
+                    >
+                      +{pts} Điểm
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Ghi chú bổ sung</label>
+                <textarea
+                  value={bonusNote}
+                  onChange={(e) => setBonusNote(e.target.value)}
+                  placeholder="Ghi chú nhận xét ngắn..."
+                  rows={2}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setBonusStudent(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingBonus}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  {savingBonus ? "Đang lưu..." : "⭐ Tuyên Dương & Lưu"}
+                </button>
+              </div>
+            </form>
+
+            {/* TIMESTAMPED EVALUATION HISTORY LOG */}
+            <div className="mt-6 border-t border-slate-200 pt-4 space-y-3">
+              <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center justify-between">
+                <span>⏱️ Lịch Sử Đánh Giá & Tuyên Dương Gần Đây</span>
+                <span className="text-[10px] text-slate-400 font-normal">Lưu mốc thời gian chính xác</span>
+              </h4>
+
+              {loadingHistory ? (
+                <div className="text-center py-4 text-xs text-slate-400">Đang tải lịch sử...</div>
+              ) : studentHistory.length === 0 ? (
+                <div className="text-center py-4 text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+                  Chưa có lịch sử tuyên dương nào cho học sinh này.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {studentHistory.map((rec) => (
+                    <div
+                      key={rec.id}
+                      className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="text-amber-600 font-black">+{rec.points}đ</span>
+                          <span>{rec.title}</span>
+                        </div>
+                        {rec.note && <div className="text-[11px] text-slate-500 italic">{rec.note}</div>}
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-500 bg-white px-2 py-1 rounded-md border border-slate-200 whitespace-nowrap">
+                        {new Date(rec.createdAt).toLocaleString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// ============ CONDUCT TAB ============
 
 // ============ CONDUCT TAB ============
 function ConductTab({
