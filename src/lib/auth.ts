@@ -225,9 +225,12 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Always sanitize existing token.image to clean up large cookies from prior sessions
-      if (typeof token.image === "string" && (token.image.startsWith("data:") || token.image.length > 256)) {
+      // Always sanitize existing token.image & token.picture to clean up large cookies from prior sessions
+      if (typeof token.image === "string" && (token.image.startsWith("data:") || token.image.length > 200)) {
         token.image = undefined;
+      }
+      if (typeof token.picture === "string" && (token.picture.startsWith("data:") || token.picture.length > 200)) {
+        token.picture = undefined;
       }
 
       return token;

@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -14,81 +14,131 @@ async function isApprovedUser(userId: string): Promise<boolean> {
 }
 
 export async function getTeacherClassesAndStudents(userIdParam?: string) {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id || userIdParam;
-  if (!userId) return { classes: [] };
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id || userIdParam;
+    if (!userId) return { classes: [] };
 
-  if (!(await isApprovedUser(userId))) {
-    return { classes: [] };
-  }
+    if (!(await isApprovedUser(userId))) {
+      return { classes: [] };
+    }
 
-  const teacher = await prisma.teacher.findUnique({
-    where: { userId },
-  });
-
-  const classMap = new Map<string, { id: string; name: string; students: { id: string; name: string; studentCode: string | null }[] }>();
-
-  if (teacher) {
-    const homeroomClass = await prisma.classRoom.findFirst({
-      where: { homeroomTeacherId: teacher.id },
-      include: {
-        students: {
-          where: { status: "STUDYING" },
-          include: {
-            user: { select: { id: true, name: true, email: true } },
-          },
-          orderBy: { user: { name: "asc" } },
-        },
-      },
+    const teacherUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, schoolId: true },
     });
 
-    const assignments = await prisma.teachingAssignment.findMany({
-      where: { teacherId: teacher.id },
-      include: {
-        classRoom: {
-          include: {
-            students: {
-              where: { status: "STUDYING" },
-              include: {
-                user: { select: { id: true, name: true, email: true } },
+    if (!teacherUser) return { classes: [] };
+
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId },
+    });
+
+    const classMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        students: { id: string; name: string; studentCode: string | null }[];
+      }
+    >();
+
+    if (teacher) {
+      const homeroomClass = await prisma.classRoom.findFirst({
+        where: { homeroomTeacherId: teacher.id },
+        include: {
+          students: {
+            where: { status: "STUDYING" },
+            include: {
+              user: { select: { id: true, name: true, email: true } },
+            },
+            orderBy: { user: { name: "asc" } },
+          },
+        },
+      });
+
+      const assignments = await prisma.teachingAssignment.findMany({
+        where: { teacherId: teacher.id },
+        include: {
+          classRoom: {
+            include: {
+              students: {
+                where: { status: "STUDYING" },
+                include: {
+                  user: { select: { id: true, name: true, email: true } },
+                },
+                orderBy: { user: { name: "asc" } },
               },
-              orderBy: { user: { name: "asc" } },
             },
           },
         },
-      },
-    });
-
-    if (homeroomClass) {
-      classMap.set(homeroomClass.id, {
-        id: homeroomClass.id,
-        name: `${homeroomClass.name} (Chủ nhiệm)`,
-        students: homeroomClass.students.map((s) => ({
-          id: s.id,
-          name: s.user.name,
-          studentCode: s.studentCode,
-        })),
       });
-    }
 
-    assignments.forEach((a) => {
-      if (a.classRoom && !classMap.has(a.classRoom.id)) {
-        classMap.set(a.classRoom.id, {
-          id: a.classRoom.id,
-          name: a.classRoom.name,
-          students: a.classRoom.students.map((s) => ({
+      if (homeroomClass) {
+        classMap.set(homeroomClass.id, {
+          id: homeroomClass.id,
+          name: `${homeroomClass.name} (Chủ nhiệm)`,
+          students: homeroomClass.students.map((s) => ({
             id: s.id,
             name: s.user.name,
             studentCode: s.studentCode,
           })),
         });
       }
-    });
-  }
 
-  return {
-    classes: Array.from(classMap.values()),
-  };
+      assignments.forEach((a) => {
+        if (a.classRoom && !classMap.has(a.classRoom.id)) {
+          classMap.set(a.classRoom.id, {
+            id: a.classRoom.id,
+            name: a.classRoom.name,
+            students: a.classRoom.students.map((s) => ({
+              id: s.id,
+              name: s.user.name,
+              studentCode: s.studentCode,
+            })),
+          });
+        }
+      });
+    }
+
+    // Fallback cho giáo viên tự do / giáo viên chưa phân công lớp
+    if (classMap.size === 0) {
+      const schoolWhere = teacherUser.schoolId ? { schoolId: teacherUser.schoolId } : {};
+      const fallbackClasses = await prisma.classRoom.findMany({
+        where: schoolWhere,
+        include: {
+          students: {
+            where: { status: "STUDYING" },
+            include: {
+              user: { select: { id: true, name: true, email: true } },
+            },
+            orderBy: { user: { name: "asc" } },
+          },
+        },
+        orderBy: { name: "asc" },
+        take: 20,
+      });
+
+      fallbackClasses.forEach((c) => {
+        classMap.set(c.id, {
+          id: c.id,
+          name: c.name,
+          students: c.students.map((s) => ({
+            id: s.id,
+            name: s.user.name,
+            studentCode: s.studentCode,
+          })),
+        });
+      });
+    }
+
+    return {
+      classes: Array.from(classMap.values()),
+    };
+  } catch (error) {
+    console.error("Error in getTeacherClassesAndStudents:", error);
+    return { classes: [] };
+  }
 }
 
 export async function createStudentCommendation(data: {
@@ -103,7 +153,7 @@ export async function createStudentCommendation(data: {
   if (!userId) return { success: false, error: "Bạn chưa đăng nhập." };
 
   if (!(await isApprovedUser(userId))) {
-    return { success: false, error: "Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt và cấp quyền dữ liệu." };
+    return { success: false, error: "Tài khoản của bạn đang chờ phê duyệt." };
   }
 
   try {
@@ -123,10 +173,16 @@ export async function createStudentCommendation(data: {
       },
     });
     if (!student || !student.classRoom) {
-      return { success: false, error: "Không tìm thấy học sinh." };
+      return { success: false, error: "Không tìm thấy thông tin học sinh." };
     }
 
-    const fullDescription = `[Tuyên Dương: ${data.category}] - ${data.badgeTitle}: ${data.description}`;
+    // Cộng điểm thưởng tích cực (+5 điểm cho khen thưởng)
+    await prisma.student.update({
+      where: { id: student.id },
+      data: { bonusPoints: { increment: 5 } },
+    });
+
+    const fullDescription = `[Tuyên Dương: ${data.category}] - ${data.badgeTitle}: ${data.description} (+5 điểm)`;
 
     const incident = await prisma.incident.create({
       data: {
@@ -143,8 +199,8 @@ export async function createStudentCommendation(data: {
       data: {
         senderId: teacherUser.id,
         receiverId: student.user.id,
-        title: `🏆 Tuyên dương khen thưởng: ${data.badgeTitle}!`,
-        content: `Chúc mừng ${student.user.name}! Thầy/Cô ${teacherUser.name} vừa gửi lời tuyên dương đến bạn: "${data.description}". Hãy tiếp tục phát huy nhé! 🎉`,
+        title: `🏆 Tuyên dương khen thưởng: ${data.badgeTitle}! (+5 điểm)`,
+        content: `Chúc mừng ${student.user.name}! Thầy/Cô ${teacherUser.name} vừa tuyên dương bạn: "${data.description}". Hãy tiếp tục phát huy nhé! 🎉`,
       },
     });
 
@@ -160,36 +216,46 @@ export async function createStudentCommendation(data: {
 }
 
 export async function getRecentCommendations(userIdParam?: string) {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id || userIdParam;
-  if (!userId) return [];
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id || userIdParam;
+    if (!userId) return [];
 
-  if (!(await isApprovedUser(userId))) return [];
+    if (!(await isApprovedUser(userId))) return [];
 
-  const teacher = await prisma.teacher.findUnique({
-    where: { userId },
-  });
-  if (!teacher) return [];
+    const teacherUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
 
-  const teacherUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { name: true },
-  });
+    if (!teacherUser) return [];
 
-  return prisma.incident.findMany({
-    where: {
-      type: "COMMENDATION",
-      reportedBy: teacherUser?.name || undefined,
-    },
-    include: {
-      student: {
-        include: {
-          user: { select: { name: true } },
-        },
+    const incidents = await prisma.incident.findMany({
+      where: {
+        type: "COMMENDATION",
       },
-      classRoom: { select: { name: true } },
-    },
-    orderBy: { date: "desc" },
-    take: 20,
-  });
+      include: {
+        student: {
+          include: {
+            user: { select: { name: true } },
+          },
+        },
+        classRoom: { select: { name: true } },
+      },
+      orderBy: { date: "desc" },
+      take: 20,
+    });
+
+    return incidents.map((inc) => ({
+      id: inc.id,
+      description: inc.description,
+      date: inc.date.toISOString(),
+      reportedBy: inc.reportedBy || teacherUser.name,
+      studentName: inc.student.user.name,
+      className: inc.classRoom?.name || "Lớp học",
+    }));
+  } catch (error) {
+    console.error("Error in getRecentCommendations:", error);
+    return [];
+  }
 }
