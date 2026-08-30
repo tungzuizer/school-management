@@ -103,6 +103,10 @@ export async function getStudentDashboardData() {
     const today = new Date();
     const dayOfWeek = today.getDay();
 
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+
     const [
       grades,
       absentDays,
@@ -110,6 +114,7 @@ export async function getStudentDashboardData() {
       commendations,
       recentNotifications,
       todaySchedule,
+      seatingChart,
     ] = await Promise.all([
       prisma.grade.findMany({
         where: { studentId: student.id },
@@ -157,7 +162,31 @@ export async function getStudentDashboardData() {
             orderBy: { period: "asc" },
           })
         : Promise.resolve([]),
+      student.classId
+        ? prisma.seatingChart.findUnique({
+            where: { classId_month_year: { classId: student.classId, month, year } },
+          })
+        : Promise.resolve(null),
     ]);
+
+    let seatPosition: string | null = null;
+    if (seatingChart?.layoutJson) {
+      try {
+        const parsed = JSON.parse(seatingChart.layoutJson);
+        if (parsed.seats) {
+          for (const [key, stId] of Object.entries(parsed.seats)) {
+            if (stId === student.id) {
+              const row = key[0];
+              const col = key.slice(1);
+              seatPosition = `Hàng ${row} - Ghế ${col} (Sơ đồ Rạp Phim)`;
+              break;
+            }
+          }
+        }
+      } catch {
+        seatPosition = null;
+      }
+    }
 
     let avgScore = 0;
     if (grades.length > 0) {
@@ -179,6 +208,8 @@ export async function getStudentDashboardData() {
         className: student.classRoom?.name || "Chưa phân lớp",
         schoolName: student.classRoom?.school?.name || "",
         studentCode: (student as Record<string, unknown>).studentCode as string | null,
+        seatPosition: seatPosition || "Chưa xếp vị trí",
+        bonusPoints: student.bonusPoints || 0,
       },
       stats: {
         avgScore: Math.round(avgScore * 100) / 100,

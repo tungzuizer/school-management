@@ -32,6 +32,8 @@ type DashboardData = {
     className: string;
     schoolName: string;
     studentCode: string | null;
+    seatPosition?: string;
+    bonusPoints?: number;
   };
   stats: {
     avgScore: number;
@@ -139,10 +141,16 @@ export default function StudentDashboardPage() {
                   <Building2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
                   {data.student.schoolName}
                 </span>
-                {data.student.studentCode && (
-                  <span className="flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold text-white border border-white/20 shadow-sm">
-                    <IdCard className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                    Mã HS: <strong className="ml-0.5">{data.student.studentCode}</strong>
+                {data.student.seatPosition && (
+                  <span className="flex items-center gap-1.5 bg-gradient-to-r from-rose-500/30 to-purple-500/30 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-extrabold text-rose-200 border border-rose-400/40 shadow-sm">
+                    <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                    Chỗ ngồi Cinema: <strong className="text-white ml-0.5">{data.student.seatPosition}</strong>
+                  </span>
+                )}
+                {data.student.bonusPoints !== undefined && (
+                  <span className="flex items-center gap-1.5 bg-emerald-500/20 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-200 border border-emerald-400/30 shadow-sm">
+                    <Trophy className="w-3.5 h-3.5 text-yellow-300 shrink-0" />
+                    Điểm khen thưởng: <strong className="text-emerald-300 ml-0.5">+{data.student.bonusPoints} đ</strong>
                   </span>
                 )}
               </div>

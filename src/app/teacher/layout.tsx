@@ -26,6 +26,11 @@ import {
   Compass,
   Zap,
   ChevronRight,
+  UserPlus,
+  Film,
+  Award,
+  GraduationCap,
+  FileCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -87,15 +92,34 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       ],
     },
     {
+      id: "students-manage",
+      title: "Quản Lý Học Sinh",
+      icon: UserPlus,
+      accentClass: "text-purple-600",
+      items: [
+        { label: "Thêm & Danh sách học sinh", href: "/teacher/students", icon: UserPlus, description: "Thêm mới cá nhân & Excel hàng loạt", badge: "Mới" },
+      ],
+    },
+    {
+      id: "cinema-eval",
+      title: "Sơ Đồ Cinema & Đánh Giá",
+      icon: Film,
+      accentClass: "text-rose-600",
+      items: [
+        { label: "Sơ đồ chỗ ngồi rạp chiếu phim", href: "/teacher/seating-cinema", icon: Film, description: "Đánh giá & cộng điểm theo chỗ ngồi", badge: "Rạp phim" },
+        { label: "Tuyên dương khen thưởng", href: "/teacher/commendations", icon: Award, description: "Tuyên dương & tặng huy hiệu" },
+      ],
+    },
+    {
       id: "homeroom",
       title: "Góc Lớp Chủ Nhiệm",
       icon: Users,
       accentClass: "text-emerald-600",
       items: [
-        { label: "Sổ chủ nhiệm", href: "/teacher/homeroom", icon: NotebookPen, description: "Quản lý nếp sống & thi đua" },
-        { label: "Học bạ điện tử", href: "/teacher/transcript", icon: FileSpreadsheet, description: "Tổng kết & nộp học bạ" },
-        { label: "Điểm danh học sinh", href: "/teacher/attendance", icon: ClipboardCheck, description: "Báo cáo sĩ số hằng ngày" },
-        { label: "Báo cáo ngày BGH", href: "/teacher/daily-report", icon: Sparkles, description: "Nộp tổng kết ngày" },
+        { label: "Sổ chủ nhiệm", href: "/teacher/homeroom", icon: NotebookPen, description: "Quản lý nếp sống & tổ lớp" },
+        { label: "Điểm danh sĩ số", href: "/teacher/attendance", icon: ClipboardCheck, description: "Báo cáo sĩ số hằng ngày" },
+        { label: "Học bạ điện tử", href: "/teacher/transcript", icon: GraduationCap, description: "Tổng kết & nộp học bạ" },
+        { label: "Báo cáo ngày BGH", href: "/teacher/daily-report", icon: FileCheck, description: "Nộp tổng kết ngày" },
       ],
     },
     {
@@ -141,10 +165,10 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
   const bottomTabs = [
     { label: "Tổng quan", href: "/teacher/dashboard", icon: Home },
-    { label: "Lịch dạy", href: "/teacher/schedule", icon: Calendar },
+    { label: "Học sinh", href: "/teacher/students", icon: UserPlus },
+    { label: "Sơ đồ Cinema", href: "/teacher/seating-cinema", icon: Film },
     { label: "Điểm danh", href: "/teacher/attendance", icon: ClipboardCheck },
     { label: "Sổ đầu bài", href: "/teacher/journal", icon: FileSpreadsheet },
-    { label: "Nhập điểm", href: "/teacher/grades", icon: Calculator },
   ];
 
   return (
