@@ -27,7 +27,7 @@ import {
   Zap,
   ChevronRight,
   UserPlus,
-  Film,
+  LayoutGrid,
   Award,
   GraduationCap,
   FileCheck,
