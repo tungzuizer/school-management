@@ -30,28 +30,6 @@ export default function RootLayout({
       lang="vi"
       className={`h-full antialiased ${beVietnamPro.variable}`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var cookies = document.cookie.split(";");
-                  for (var i = 0; i < cookies.length; i++) {
-                    var cookie = cookies[i].trim();
-                    if (cookie.indexOf("next-auth.session-token") === 0 || cookie.indexOf("__Secure-next-auth.session-token") === 0) {
-                      var eqPos = cookie.indexOf("=");
-                      var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-                      document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
-                      document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=" + window.location.hostname + ";";
-                    }
-                  }
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
       <body className={`min-h-full flex flex-col ${beVietnamPro.className}`}>
         <SessionProvider>{children}</SessionProvider>
       </body>
