@@ -12,6 +12,15 @@ import {
   KpiPeriodStatus,
   QualityCategory,
   QualityObjectiveStatus,
+  AiTaskGroup,
+  AiAlertSeverity,
+  AiAlertStatus,
+  DocumentType,
+  DocumentUrgency,
+  DocumentStatus,
+  EquipmentCategory,
+  EquipmentCondition,
+  TransferStatus,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import fs from "fs";
@@ -67,6 +76,15 @@ async function main() {
   console.log("🌱 Seeding database with 3 schools & 5 classes each from CSV files...");
 
   // Clean existing data in reverse dependency order
+  await prisma.aiAnalysisLog.deleteMany();
+  await prisma.aiReportSummary.deleteMany();
+  await prisma.aiRecommendation.deleteMany();
+  await prisma.aiAlert.deleteMany();
+  await prisma.aiConfigThreshold.deleteMany();
+  await prisma.equipmentTransfer.deleteMany();
+  await prisma.equipment.deleteMany();
+  await prisma.officialDocument.deleteMany();
+
   await prisma.fileAuditLog.deleteMany();
   await prisma.systemEvidenceFile.deleteMany();
   await prisma.approvalComment.deleteMany();
@@ -249,16 +267,210 @@ async function main() {
       },
     });
 
-    const schoolPoint = await prisma.schoolPoint.create({
-      data: {
-        campusId: campus.id,
-        name: `Điểm trường chính - ${sConf.name.replace("Trường THCS ", "")}`,
-        address: sConf.address,
-        distanceKm: 0,
-        managerName: sConf.name,
-        phone: sConf.phone,
-      },
-    });
+    let schoolPoint;
+    if (sIdx === 0) {
+      // Create 4 distinct school points for THCS Tân Xã (Primary Multi-Campus Demo)
+      schoolPoint = await prisma.schoolPoint.create({
+        data: {
+          campusId: campus.id,
+          name: "Điểm trường Trung tâm",
+          address: "Trung tâm Xã Tân Xã, Huyện Thạch Thất",
+          distanceKm: 0,
+          managerName: "ThS. Trịnh Văn Sơn",
+          phone: "024-3383-1111",
+        },
+      });
+
+      const pointBanMo = await prisma.schoolPoint.create({
+        data: {
+          campusId: campus.id,
+          name: "Điểm trường Bản Mó",
+          address: "Bản Mó, Xã Tân Xã (Vùng khó khăn)",
+          distanceKm: 4.5,
+          managerName: "Thầy Lò Văn Quyết",
+          phone: "0912-345-001",
+        },
+      });
+
+      const pointBanPun = await prisma.schoolPoint.create({
+        data: {
+          campusId: campus.id,
+          name: "Điểm trường Bản Pún",
+          address: "Bản Pún, Xã Tân Xã (Đường đèo dốc)",
+          distanceKm: 8.2,
+          managerName: "Thầy Cầm Văn Nam",
+          phone: "0912-345-002",
+        },
+      });
+
+      const pointPhiaXam = await prisma.schoolPoint.create({
+        data: {
+          campusId: campus.id,
+          name: "Điểm trường Phia Xam",
+          address: "Bản Phia Xam, Xã Tân Xã (Điểm xa nhất)",
+          distanceKm: 12.5,
+          managerName: "Thầy Lữ Văn Sơn",
+          phone: "0912-345-003",
+        },
+      });
+
+      // Seed satellite teachers
+      const satelliteTeacherData = [
+        { name: "Lò Văn Quyết", specialty: "Toán học", slug: "quyet", pointId: pointBanMo.id },
+        { name: "Hà Thị Dung", specialty: "Ngữ văn", slug: "dung", pointId: pointBanMo.id },
+        { name: "Cầm Văn Nam", specialty: "Tiếng Anh", slug: "nam", pointId: pointBanPun.id },
+        { name: "Vi Thị Mai", specialty: "Vật lý", slug: "mai", pointId: pointBanPun.id },
+        { name: "Lữ Văn Sơn", specialty: "Toán học", slug: "son", pointId: pointPhiaXam.id },
+      ];
+
+      for (const st of satelliteTeacherData) {
+        const u = await prisma.user.create({
+          data: {
+            name: `${st.name} (GV ${st.specialty})`,
+            email: `teacher.sat.${st.slug}@school.com`,
+            password: hashedPassword,
+            role: Role.TEACHER,
+            schoolId: school.id,
+            departmentId: dept.id,
+            districtWardId: sConf.districtWardId,
+          },
+        });
+        await prisma.teacher.create({
+          data: {
+            userId: u.id,
+            specialty: st.specialty,
+            phone: "0987654321",
+            degree: "Cử nhân",
+          },
+        });
+      }
+
+      // Seed Equipment for 4 points
+      const eqCategories = [
+        { code: "PC-TT-01", name: "Dàn máy tính phòng Lab 1", cat: EquipmentCategory.COMPUTER, pt: schoolPoint.id, qty: 25, cond: EquipmentCondition.GOOD },
+        { code: "PJ-TT-01", name: "Máy chiếu hội trường", cat: EquipmentCategory.PROJECTOR, pt: schoolPoint.id, qty: 5, cond: EquipmentCondition.GOOD },
+        { code: "PC-BM-01", name: "Máy tính dạy học Bản Mó", cat: EquipmentCategory.COMPUTER, pt: pointBanMo.id, qty: 6, cond: EquipmentCondition.GOOD },
+        { code: "PJ-BM-01", name: "Máy chiếu di động Bản Mó", cat: EquipmentCategory.PROJECTOR, pt: pointBanMo.id, qty: 1, cond: EquipmentCondition.POOR },
+        { code: "PC-BP-01", name: "Máy tính thực hành Bản Pún", cat: EquipmentCategory.COMPUTER, pt: pointBanPun.id, qty: 4, cond: EquipmentCondition.GOOD },
+        { code: "LK-BP-01", name: "Bộ đồ dùng KHTN Bản Pún", cat: EquipmentCategory.LAB_KIT, pt: pointBanPun.id, qty: 2, cond: EquipmentCondition.GOOD },
+        { code: "PC-PX-01", name: "Máy vi tính văn phòng Phia Xam", cat: EquipmentCategory.COMPUTER, pt: pointPhiaXam.id, qty: 2, cond: EquipmentCondition.GOOD },
+      ];
+
+      for (const eq of eqCategories) {
+        await prisma.equipment.create({
+          data: {
+            code: eq.code,
+            name: eq.name,
+            category: eq.cat,
+            schoolId: school.id,
+            schoolPointId: eq.pt,
+            totalQuantity: eq.qty,
+            availableQuantity: eq.qty,
+            condition: eq.cond,
+          },
+        });
+      }
+
+      // Seed Official Documents
+      await prisma.officialDocument.createMany({
+        data: [
+          {
+            docNumber: "142/SGDĐT-GDTrH",
+            title: "Chỉ đạo khẩn cấp ứng phó mưa lũ, sạt lở đất và đảm bảo an toàn tại các điểm trường vùng cao",
+            issuer: "Sở GD&ĐT Hà Nội",
+            docType: DocumentType.INCOMING,
+            urgency: DocumentUrgency.URGENT,
+            status: DocumentStatus.PROCESSING,
+            issueDate: new Date(),
+            deadline: new Date(Date.now() + 24 * 3600 * 1000), // 24h
+            summary: "Yêu cầu các trường có điểm lẻ kiểm tra đường sá, ngập úng, cho học sinh nghỉ học nếu nguy hiểm.",
+            actionRequired: "Hiệu trưởng kiểm tra 3 điểm lẻ Bản Mó, Bản Pún, Phia Xam và báo cáo trong ngày.",
+            schoolId: school.id,
+          },
+          {
+            docNumber: "88/PGDĐT-TCCB",
+            title: "Rà soát định biên giáo viên và tình hình cơ sở vật chất năm học 2026-2027",
+            issuer: "Phòng GD&ĐT Thạch Thất",
+            docType: DocumentType.INCOMING,
+            urgency: DocumentUrgency.HIGH,
+            status: DocumentStatus.PENDING,
+            issueDate: new Date(),
+            deadline: new Date(Date.now() + 48 * 3600 * 1000), // 48h
+            summary: "Báo cáo tổng hợp số liệu thừa/thiếu giáo viên môn Tiếng Anh và Tin học theo điểm trường.",
+            actionRequired: "Tổng hợp số liệu từ các phân hiệu gửi Phòng trước 17h00 ngày mai.",
+            schoolId: school.id,
+          },
+        ],
+      });
+
+      // Seed Default AI Config Thresholds
+      const defaultThresholdList = [
+        { metricKey: "MAX_UNEXCUSED_ABSENT_DAYS", name: "Số buổi nghỉ học không phép tối đa", val: 2.0, group: AiTaskGroup.EARLY_WARNING, sev: AiAlertSeverity.HIGH },
+        { metricKey: "MAX_TOTAL_ABSENT_DAYS", name: "Số buổi nghỉ học có phép tối đa trong tháng", val: 3.0, group: AiTaskGroup.EARLY_WARNING, sev: AiAlertSeverity.MEDIUM },
+        { metricKey: "ATTENDANCE_CRITICAL_RATE", name: "Tỷ lệ chuyên cần mức báo động đỏ (%)", val: 85.0, group: AiTaskGroup.REALTIME_MONITORING, sev: AiAlertSeverity.CRITICAL },
+        { metricKey: "ATTENDANCE_WARNING_RATE", name: "Tỷ lệ chuyên cần mức cần chú ý (%)", val: 92.0, group: AiTaskGroup.REALTIME_MONITORING, sev: AiAlertSeverity.MEDIUM },
+        { metricKey: "TEACHER_MAX_WEEKLY_PERIODS", name: "Định mức tiết dạy tối đa/tuần của GV", val: 23.0, group: AiTaskGroup.COORDINATION_DISPATCH, sev: AiAlertSeverity.MEDIUM },
+        { metricKey: "MAX_TRAVEL_DISTANCE_KM", name: "Khoảng cách di chuyển dạy thay tối đa (km)", val: 15.0, group: AiTaskGroup.COORDINATION_DISPATCH, sev: AiAlertSeverity.LOW },
+        { metricKey: "LESSON_PLAN_DELAY_DAYS", name: "Số ngày chậm nộp giáo án cho phép", val: 2.0, group: AiTaskGroup.PLAN_PROGRESS, sev: AiAlertSeverity.MEDIUM },
+        { metricKey: "DOC_EXPIRING_HOURS", name: "Thời gian cảnh báo công văn sắp đến hạn (giờ)", val: 48.0, group: AiTaskGroup.DOCS_PERIODIC_REPORTS, sev: AiAlertSeverity.HIGH },
+        { metricKey: "PARENT_FEEDBACK_RESPONSE_HOURS", name: "Thời gian tối đa phản hồi ý kiến phụ huynh (giờ)", val: 48.0, group: AiTaskGroup.COMMUNICATION_FEEDBACK, sev: AiAlertSeverity.MEDIUM },
+      ];
+
+      for (const t of defaultThresholdList) {
+        await prisma.aiConfigThreshold.create({
+          data: {
+            schoolId: school.id,
+            taskGroup: t.group,
+            metricKey: t.metricKey,
+            metricName: t.name,
+            thresholdValue: t.val,
+            severity: t.sev,
+            comparisonOp: "GTE",
+          },
+        });
+      }
+
+      // Seed Initial AI Alerts
+      await prisma.aiAlert.createMany({
+        data: [
+          {
+            schoolId: school.id,
+            schoolPointId: pointBanMo.id,
+            taskGroup: AiTaskGroup.EARLY_WARNING,
+            severity: AiAlertSeverity.HIGH,
+            status: AiAlertStatus.ACTIVE,
+            title: "Học sinh Lò Văn Tuấn vắng học 4 buổi liên tiếp không phép",
+            description: "Học sinh Lò Văn Tuấn (Điểm Bản Mó) vắng mặt 4 ngày liên tiếp không rõ lý do. Gia đình làm nương xa, có nguy cơ bỏ học giữa chừng.",
+            suggestedAction: "Đề nghị GVCN và Ban quản lý thôn Bản Mó đến trực tiếp gia đình xác minh, động viên học sinh trở lại trường.",
+            targetEntity: "Student:mock-ban-mo-1",
+            targetName: "Lò Văn Tuấn (Lớp 6A1 - Điểm Bản Mó)",
+          },
+          {
+            schoolId: school.id,
+            schoolPointId: pointPhiaXam.id,
+            taskGroup: AiTaskGroup.COORDINATION_DISPATCH,
+            severity: AiAlertSeverity.CRITICAL,
+            status: AiAlertStatus.ACTIVE,
+            title: "Thiếu giáo viên Toán tại Điểm Phia Xam (Cách trung tâm 12.5 km)",
+            description: "Thầy Lữ Văn Sơn nghỉ ốm đột xuất 3 ngày. Điểm Phia Xam không có giáo viên Toán dự phòng.",
+            suggestedAction: "Kích hoạt điều phối dạy thay: Phân công thầy Lò Văn Quyết (Bản Mó, 8km) hoặc thầy Cầm Văn Nam tăng cường.",
+            targetEntity: "SchoolPoint:" + pointPhiaXam.id,
+            targetName: "Điểm trường Phia Xam",
+          },
+        ],
+      });
+    } else {
+      schoolPoint = await prisma.schoolPoint.create({
+        data: {
+          campusId: campus.id,
+          name: `Điểm trường chính - ${sConf.name.replace("Trường THCS ", "")}`,
+          address: sConf.address,
+          distanceKm: 0,
+          managerName: sConf.name,
+          phone: sConf.phone,
+        },
+      });
+    }
 
     // Create 5 unique subject-specialist teachers per school
     const schoolTeacherSpecs = [
@@ -525,6 +737,9 @@ async function main() {
       },
     });
   }
+
+  // Seed all 7-role RBAC hierarchy accounts
+  await seedRbacAccounts();
 
   console.log("\n✅ Seed process completed successfully!");
   console.log("🏫 3 Trường đã khởi tạo:");

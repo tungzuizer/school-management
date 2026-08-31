@@ -263,6 +263,13 @@ model School {
   academicCalendars   AcademicCalendar[]
   subjectGroups       SubjectGroup[]
   lessonPlanPeriods   LessonPlanPeriod[]
+  aiConfigThresholds  AiConfigThreshold[]
+  aiAlerts            AiAlert[]
+  aiRecommendations   AiRecommendation[]
+  aiReportSummaries   AiReportSummary[]
+  aiAnalysisLogs      AiAnalysisLog[]
+  officialDocuments   OfficialDocument[]
+  equipmentItems      Equipment[]
 
   @@index([name])
   @@index([departmentId])
@@ -279,11 +286,16 @@ model Campus {
   updatedAt DateTime @updatedAt
 
   // Relations
-  school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  users        User[]
-  schoolPoints SchoolPoint[]
-  classRooms   ClassRoom[]
-  wardMaps     CampusWardMap[]
+  school            School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  users             User[]
+  schoolPoints      SchoolPoint[]
+  classRooms        ClassRoom[]
+  wardMaps          CampusWardMap[]
+  aiAlerts          AiAlert[]
+  aiRecommendations AiRecommendation[]
+  aiReportSummaries AiReportSummary[]
+  officialDocuments OfficialDocument[]
+  equipmentItems    Equipment[]
 
   @@index([schoolId])
   @@index([name])
@@ -301,8 +313,13 @@ model SchoolPoint {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  campus     Campus      @relation(fields: [campusId], references: [id], onDelete: Cascade)
-  classRooms ClassRoom[]
+  campus            Campus              @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  classRooms        ClassRoom[]
+  aiAlerts          AiAlert[]
+  aiRecommendations AiRecommendation[]
+  equipmentItems    Equipment[]
+  transfersFrom     EquipmentTransfer[] @relation("TransferSourcePoint")
+  transfersTo       EquipmentTransfer[] @relation("TransferTargetPoint")
 
   @@index([campusId])
   @@index([name])
@@ -1577,4 +1594,293 @@ model TranscriptUnlockRequest {
   updatedAt     DateTime           @updatedAt
 
   transcript    AcademicTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+}
+
+// ==================== AI ASSISTANT & MULTI-CAMPUS MANAGEMENT ====================
+
+enum AiTaskGroup {
+  REALTIME_MONITORING       // 1. Giám sát thời gian thực
+  COORDINATION_DISPATCH     // 2. Điều phối hoạt động & dạy thay
+  DECISION_SUPPORT          // 3. Hỗ trợ ra quyết định
+  PLAN_PROGRESS             // 4. Quản lý kế hoạch & chỉ tiêu
+  DOCS_PERIODIC_REPORTS     // 5. Quản lý văn bản & báo cáo định kỳ
+  EARLY_WARNING             // 6. Cảnh báo sớm
+  COMMUNICATION_FEEDBACK    // 7. Giao tiếp & phản hồi phụ huynh
+}
+
+enum AiAlertSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AiAlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}
+
+enum DocumentType {
+  INCOMING           // Công văn đến từ Sở/Phòng/UBND
+  OUTGOING           // Công văn đi
+  INTERNAL_DIRECTIVE // Chỉ đạo nội bộ nhà trường
+}
+
+enum DocumentUrgency {
+  NORMAL
+  URGENT             // Khẩn
+  EXPRESS            // Thượng khẩn / Hỏa tốc
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  OVERDUE
+}
+
+enum EquipmentCategory {
+  IT_COMPUTER        // Máy vi tính / Phòng tin học
+  PROJECTOR_SCREEN   // Máy chiếu / Màn hình tương tác
+  LAB_PHYSICS        // Thiết bị thí nghiệm Vật lý
+  LAB_CHEMISTRY      // Thiết bị thí nghiệm Hóa học
+  LAB_BIOLOGY        // Thiết bị thí nghiệm Sinh học
+  SPORTS             // Thiết bị thể dục thể thao
+  MUSIC_ARTS         // Nhạc cụ, Mỹ thuật
+  GENERAL            // Thiết bị dùng chung
+}
+
+enum EquipmentCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  BROKEN
+}
+
+enum TransferStatus {
+  PENDING
+  APPROVED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+// 1. Bảng Cấu hình Ngưỡng cảnh báo thông minh (Configurable Thresholds)
+model AiConfigThreshold {
+  id               String          @id @default(cuid())
+  schoolId         String
+  taskGroup        AiTaskGroup
+  metricKey        String          // VD: "MAX_ABSENT_DAYS_MONTH", "TEACHER_SHORTAGE_THRESHOLD", "SYLLABUS_DELAY_DAYS"
+  metricName       String          // Tên hiển thị tiếng Việt
+  thresholdValue   Float           // Giá trị ngưỡng (VD: 3 buổi, 1 giáo viên, 7 ngày)
+  comparisonOp     String          @default("GTE") // GTE, LTE, EQ, NEQ
+  severity         AiAlertSeverity @default(MEDIUM)
+  description      String?         @db.Text
+  isEditable       Boolean         @default(true)
+  updatedAt        DateTime        @updatedAt
+  createdAt        DateTime        @default(now())
+
+  school           School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, metricKey])
+  @@index([schoolId])
+  @@index([taskGroup])
+}
+
+// 2. Bảng Lưu trữ Cảnh báo AI theo Điểm trường
+model AiAlert {
+  id               String          @id @default(cuid())
+  schoolId         String
+  campusId         String?
+  schoolPointId    String?
+  taskGroup        AiTaskGroup
+  severity         AiAlertSeverity
+  status           AiAlertStatus   @default(ACTIVE)
+  title            String
+  description      String          @db.Text
+  triggerMetric    String?         // Số liệu thực tế kích hoạt cảnh báo (VD: "Vắng 4 buổi trong tháng 8/2026")
+  suggestedAction  String?         @db.Text
+  impactAnalysis   String?         @db.Text
+  targetEntity     String?         // "Student:cuid", "Teacher:cuid", "ClassRoom:cuid"
+  targetName       String?         // Tên đối tượng liên quan để hiển thị trực tiếp
+  acknowledgedById String?
+  acknowledgedAt   DateTime?
+  resolvedById     String?
+  resolvedAt       DateTime?
+  resolutionNote   String?         @db.Text
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  school           School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus           Campus?         @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  schoolPoint      SchoolPoint?    @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([campusId])
+  @@index([taskGroup])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// 3. Bảng Lưu trữ Đề xuất & Phương án Tư vấn của AI
+model AiRecommendation {
+  id                String          @id @default(cuid())
+  schoolId          String
+  campusId          String?
+  schoolPointId     String?
+  taskGroup         AiTaskGroup
+  title             String
+  contextSummary    String          @db.Text
+  optionsJson       String          @db.Text // JSON: Array<{ title, pros: [], cons: [], score: number, feasibility: string }>
+  recommendedOption String?
+  legalGrounds      String?         @db.Text // Căn cứ pháp lý: Thông tư, Điều lệ trường học
+  actionStepsJson   String?         @db.Text // JSON: string[]
+  isApplied         Boolean         @default(false)
+  appliedAt         DateTime?
+  appliedById       String?
+  appliedNotes      String?         @db.Text
+  createdAt         DateTime        @default(now())
+
+  school            School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus            Campus?         @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  schoolPoint       SchoolPoint?    @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([campusId])
+  @@index([taskGroup])
+}
+
+// 4. Bảng Lưu trữ Báo cáo Tổng hợp Định kỳ của AI
+model AiReportSummary {
+  id                 String      @id @default(cuid())
+  schoolId           String
+  campusId           String?     // Null = Toàn trường, Có ID = Điểm trường cụ thể
+  reportType         String      // "DAILY_EXECUTIVE", "WEEKLY_CAMPUS_AUDIT", "MONTHLY_STRATEGIC"
+  periodLabel        String      // "Ngày 31/08/2026", "Tuần 35/2026", "Tháng 8/2026"
+  contentJson        String      @db.Text // JSON tổng hợp chi tiết theo 4 điểm trường
+  aiExecutiveSummary String      @db.Text // Tóm tắt điều hành 1 đoạn dành cho Hiệu trưởng
+  createdAt          DateTime    @default(now())
+
+  school             School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus             Campus?     @relation(fields: [campusId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([campusId])
+  @@index([reportType])
+}
+
+// 5. Bảng Nhật ký Phân tích & Vận hành Pipeline AI
+model AiAnalysisLog {
+  id              String       @id @default(cuid())
+  schoolId        String
+  campusId        String?
+  triggeredBy     String       // "MANUAL_PRINCIPAL", "SCHEDULED_CRON", "WEBHOOK"
+  taskGroup       AiTaskGroup?
+  status          String       // "SUCCESS", "WARNING", "FAILED"
+  alertsGenerated Int          @default(0)
+  durationMs      Int          @default(0)
+  detailsJson     String?      @db.Text
+  createdAt       DateTime     @default(now())
+
+  school          School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([createdAt])
+}
+
+// 6. Quản lý Công văn & Văn bản chỉ đạo
+model OfficialDocument {
+  id              String          @id @default(cuid())
+  schoolId        String
+  campusId        String?
+  docNumber       String          // Số/Ký hiệu văn bản (e.g. "124/SGDĐT-GDTrH")
+  title           String          // Trích yếu nội dung
+  issuer          String          // Cơ quan ban hành (Sở GD&ĐT, Phòng GD&ĐT, UBND Xã...)
+  issueDate       DateTime
+  receivedDate    DateTime        @default(now())
+  deadline        DateTime?       // Hạn xử lý / báo cáo
+  docType         DocumentType    @default(INCOMING)
+  urgency         DocumentUrgency @default(NORMAL)
+  status          DocumentStatus  @default(PENDING)
+  summary         String?         @db.Text
+  actionRequired  String?         @db.Text // Nội dung yêu cầu thực hiện
+  assignedToId    String?         // Người phụ trách xử lý
+  assignedToName  String?
+  fileUrl         String?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  school          School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus          Campus?         @relation(fields: [campusId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([campusId])
+  @@index([deadline])
+  @@index([status])
+  @@index([urgency])
+}
+
+// 7. Quản lý Thiết bị & Đồ dùng dạy học
+model Equipment {
+  id                String             @id @default(cuid())
+  schoolId          String
+  campusId          String?
+  schoolPointId     String?
+  code              String             @unique
+  name              String
+  category          EquipmentCategory  @default(GENERAL)
+  totalQuantity     Int                @default(1)
+  availableQuantity Int                @default(1)
+  inUseQuantity     Int                @default(0)
+  brokenQuantity    Int                @default(0)
+  condition         EquipmentCondition @default(GOOD)
+  unit              String             @default("bộ")
+  locationDetail    String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  school            School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus            Campus?             @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  schoolPoint       SchoolPoint?        @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
+  transfersFrom     EquipmentTransfer[] @relation("TransferEquipment")
+
+  @@index([schoolId])
+  @@index([campusId])
+  @@index([schoolPointId])
+  @@index([category])
+}
+
+// 8. Điều chuyển thiết bị giữa các điểm trường
+model EquipmentTransfer {
+  id                 String         @id @default(cuid())
+  schoolId           String
+  equipmentId        String
+  fromSchoolPointId  String?
+  toSchoolPointId    String
+  quantity           Int            @default(1)
+  transferDate       DateTime       @default(now())
+  returnExpectedDate DateTime?
+  actualReturnDate   DateTime?
+  reason             String         @db.Text
+  status             TransferStatus @default(PENDING)
+  approvedById       String?
+  aiRecommendation   String?        @db.Text
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  equipment          Equipment      @relation("TransferEquipment", fields: [equipmentId], references: [id], onDelete: Cascade)
+  fromSchoolPoint    SchoolPoint?   @relation("TransferSourcePoint", fields: [fromSchoolPointId], references: [id], onDelete: SetNull)
+  toSchoolPoint      SchoolPoint    @relation("TransferTargetPoint", fields: [toSchoolPointId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([equipmentId])
+  @@index([fromSchoolPointId])
+  @@index([toSchoolPointId])
+  @@index([status])
 }

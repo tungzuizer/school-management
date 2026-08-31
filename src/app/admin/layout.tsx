@@ -152,10 +152,11 @@ const principalMenuGroups: MenuGroup[] = [
     ],
   },
   {
-    title: "Trợ lý AI & Cảnh báo",
+    title: "🤖 Trợ lý AI & Cảnh báo",
     icon: Bot,
     items: [
-      { label: "Tư vấn & Cảnh báo AI", href: "/admin/principal-ai", icon: Bot },
+      { label: "Trợ lý AI Đa điểm trường", href: "/admin/ai-assistant", icon: Bot, badge: "NEW" },
+      { label: "Tư vấn & Cảnh báo AI", href: "/admin/principal-ai", icon: Sparkles },
       { label: "Bố trí dạy thay", href: "/admin/substitute-dispatch", icon: UserCheck },
     ],
   },
