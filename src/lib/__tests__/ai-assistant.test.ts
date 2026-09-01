@@ -304,7 +304,6 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
           description: "Thầy Sơn nghỉ ốm đột xuất.",
           targetEntity: "Teacher:sơn",
           targetName: "Thầy Lữ Văn Sơn",
-          schoolPointName: "Điểm trường Phia Xam",
           suggestedAction: "Cử giáo viên tăng cường từ Bản Mó hoặc Trung tâm.",
           createdAt: new Date(),
         },
@@ -343,9 +342,10 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
     it("allows ADMIN (Principal) to access all school campuses and points", () => {
       const adminCtx: TenantContext = {
         userId: "admin-1",
+        userName: "Thầy Hiệu Trưởng",
         userRole: "ADMIN",
         schoolId: "school-tan-xa",
-        campusId: null,
+        campusId: undefined,
       };
 
       // Admin has full school access without throwing
@@ -356,6 +356,7 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
     it("restricts VICE_PRINCIPAL to their assigned campus only", () => {
       const vpCtx: TenantContext = {
         userId: "vp-1",
+        userName: "Cô Phó Hiệu Trưởng",
         userRole: "VICE_PRINCIPAL",
         schoolId: "school-tan-xa",
         campusId: "campus-tx",
@@ -373,6 +374,7 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
     it("restricts SUBJECT_HEAD to their assigned subject group only", () => {
       const ttcmCtx: TenantContext = {
         userId: "ttcm-1",
+        userName: "Tổ Trưởng Chuyên Môn",
         userRole: "SUBJECT_HEAD",
         schoolId: "school-tan-xa",
       };
@@ -389,6 +391,7 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
     it("blocks SUPER_ADMIN from accessing academic student details", () => {
       const superAdminCtx: TenantContext = {
         userId: "sa-1",
+        userName: "Quản Trị Viên Tối Cao",
         userRole: "SUPER_ADMIN",
       };
 
