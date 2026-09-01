@@ -16,6 +16,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import CampusOverviewGrid from "./components/CampusOverviewGrid";
+import CampusDetailModal from "./components/CampusDetailModal";
 import TaskTabsNavigation from "./components/TaskTabsNavigation";
 import ThresholdConfigModal from "./components/ThresholdConfigModal";
 import {
@@ -45,6 +46,7 @@ export default function AiAssistantPrincipalDashboardPage() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<AiTaskGroup>(AiTaskGroup.REALTIME_MONITORING);
   const [selectedPointId, setSelectedPointId] = useState<string | undefined>(undefined);
+  const [detailPoint, setDetailPoint] = useState<any | null>(null);
   const [isThresholdModalOpen, setIsThresholdModalOpen] = useState(false);
 
   // Sub-task interactive states
@@ -274,6 +276,7 @@ export default function AiAssistantPrincipalDashboardPage() {
             pointStatuses={realtime.pointStatuses}
             selectedPointId={selectedPointId}
             onSelectPoint={(id) => setSelectedPointId(id === selectedPointId ? undefined : id)}
+            onViewDetail={(point) => setDetailPoint(point)}
           />
         )}
       </div>
@@ -1025,6 +1028,31 @@ export default function AiAssistantPrincipalDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Campus Point AI Deep Detail Modal */}
+      <CampusDetailModal
+        isOpen={!!detailPoint}
+        onClose={() => setDetailPoint(null)}
+        pointStatus={detailPoint}
+        pointSummary={
+          detailPoint && snapshot?.schoolPoints
+            ? snapshot.schoolPoints.find(
+                (sp: any) =>
+                  sp.id === detailPoint.schoolPointId ||
+                  sp.name === detailPoint.schoolPointName
+              )
+            : null
+        }
+        teachers={snapshot?.teachers || []}
+        equipment={snapshot?.equipment || []}
+        alerts={earlyWarning?.alerts || []}
+        onNavigateToTab={(tab, payload) => {
+          setActiveTab(tab);
+          if (payload?.pointId) {
+            setSelectedPointId(payload.pointId);
+          }
+        }}
+      />
 
       {/* Threshold Config Modal */}
       <ThresholdConfigModal

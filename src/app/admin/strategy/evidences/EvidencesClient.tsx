@@ -33,6 +33,7 @@ import {
   restoreEvidenceFile,
   logFileDownload,
 } from "./actions";
+import R2FileUploader from "@/components/storage/R2FileUploader";
 
 interface AuditLog {
   id: string;
@@ -589,19 +590,24 @@ export default function EvidencesClient({
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-xl text-center">
-                <label className="cursor-pointer block space-y-1">
-                  <Upload className="w-8 h-8 text-blue-600 mx-auto" />
-                  <span className="text-xs font-bold text-blue-800 block">Chọn tệp từ máy tính của bạn</span>
-                  <span className="text-[11px] text-gray-500 block">Hỗ trợ PDF, DOCX, XLSX, PNG, JPG, JPEG (tối đa 25MB)</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg"
-                    onChange={handleSelectUploadFile}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+              <R2FileUploader
+                folder="evidences"
+                maxSizeMB={25}
+                acceptedExtensions={[".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"]}
+                label="Tệp đính kèm (Cloudflare R2)"
+                hint="Kéo thả tệp minh chứng vào đây hoặc bấm để chọn"
+                onUploadComplete={(result) => {
+                  setUploadForm((prev) => ({
+                    ...prev,
+                    fileName: result.fileName,
+                    fileType: result.fileType,
+                    fileSize: result.fileSize,
+                    fileUrl: result.publicUrl,
+                  }));
+                  showToast("success", `Tải lên Cloudflare R2 thành công: ${result.fileName}`);
+                }}
+                onError={(err) => showToast("error", err)}
+              />
 
               <div>
                 <label className="font-bold text-gray-700 block mb-1">Tên tệp minh chứng *</label>
