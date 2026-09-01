@@ -3,22 +3,35 @@
 import prisma from "@/lib/prisma";
 import { aiChatCompletion } from "@/lib/ai-provider";
 import { getComprehensiveAIContext } from "@/lib/ai-data-engine";
+import {
+  AI_DATA_INTEGRITY_SYSTEM_PROMPT,
+  verifyAIGrounding,
+  type AIGroundedResponse,
+} from "@/lib/ai/data-integrity";
+import { getTenantContext } from "@/lib/tenant";
 
 export async function askPrincipalAI(query: string) {
   const dbContext = await getComprehensiveAIContext(query);
+  const tenantCtx = await getTenantContext();
+  const schoolId = tenantCtx?.schoolId || "";
+  const campusId = tenantCtx?.campusId || undefined;
 
-  const prompt = `Bạn là Trợ lý AI Thông minh & Cố vấn Quản lý Giáo dục cho Hiệu trưởng.
+  const prompt = `${AI_DATA_INTEGRITY_SYSTEM_PROMPT}
 
-DỮ LIỆU THỰC TẾ TRÍCH XUẤT TỪ CƠ SỞ DỮ LIỆU HỆ THỐNG NGUYÊN BẢN:
+Bạn là Trợ lý AI Thông minh & Cố vấn Quản lý Giáo dục cho Hiệu trưởng.
+
+DỮ LIỆU THỰC TẾ TRÍCH XUẤT TỪ CƠ SỞ DỮ LIỆU HỆ THỐNG NGUYÊN BẢN (KÈM ID BẢN GHI):
 ${dbContext}
 
 CÂU HỎI / YÊU CẦU CỦA HIỆU TRƯỞNG:
 "${query}"
 
 QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
-1. Hãy trả lời ĐÚNG TRỌNG TÂM câu hỏi của Hiệu trưởng dựa trên dữ liệu thực tế ở trên. Đi thẳng vào vấn đề, tự nhiên, rõ ràng.
-2. Nếu Hiệu trưởng hỏi tra cứu thông tin (như sĩ số, học sinh đi học, vắng mặt, điểm trường, giáo viên), hãy cung cấp ngay con số thực tế trong cơ sở dữ liệu. KHÔNG viết lan man hay tự chế số liệu.
-3. Nếu câu hỏi yêu cầu lập kế hoạch/giải pháp chỉ đạo, hãy trình bày rõ các phương án chỉ đạo ở cuối bài dạng:
+1. Hãy trả lời ĐÚNG TRỌNG TÂM câu hỏi của Hiệu trưởng dựa trên dữ liệu thực tế ở trên.
+2. Nêu rõ [DỮ KIỆN — có record_id] đối với mọi số liệu thực tế được trích xuất (kèm mã bản ghi, ví dụ: [id=xxx]).
+3. Nêu rõ [SUY LUẬN — cần con người xác minh] đối với các phán đoán hoặc đề xuất.
+4. Nếu thiếu dữ liệu hoặc không chắc chắn, bắt buộc trả lời "Không đủ dữ liệu" (INSUFFICIENT_DATA).
+5. Nếu câu hỏi yêu cầu lập kế hoạch/giải pháp chỉ đạo, hãy trình bày rõ các phương án chỉ đạo ở cuối bài dạng:
 
 PHƯƠNG_ÁN_1:
 TIÊU_ĐỀ: [Tên phương án 1]
@@ -41,6 +54,12 @@ BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
   }
 
   let aiText = aiRes.text;
+
+  // Grounding verification against DB
+  const grounded: AIGroundedResponse = await verifyAIGrounding(aiText, {
+    schoolId,
+    campusId,
+  });
 
   const hasOptions = aiText.includes("PHƯƠNG_ÁN_1");
   const lines = aiText.split("\n");
@@ -85,6 +104,7 @@ BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
     success: true,
     data: {
       text: aiText,
+      grounded,
       recommendation: hasOptions || actionSteps.length > 0 ? {
         summary: summary.replace(/^TÓM_TẮT:\s*/i, ""),
         riskLevel: (["LOW", "MEDIUM", "HIGH"].includes(riskLevel) ? riskLevel : "LOW") as "LOW" | "MEDIUM" | "HIGH",

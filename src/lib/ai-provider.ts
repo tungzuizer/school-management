@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { AI_DATA_INTEGRITY_SYSTEM_PROMPT } from "@/lib/ai/data-integrity";
 
 export interface AIChatParams {
   prompt?: string;
@@ -84,7 +85,7 @@ export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResu
 
   const model = params.model || currentSettings.model;
 
-  const messages =
+  let messages =
     params.messages ||
     (params.prompt ? [{ role: "user" as const, content: params.prompt }] : []);
 
@@ -94,6 +95,25 @@ export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResu
       text: "",
       error: "Nội dung yêu cầu bị rỗng.",
     };
+  }
+
+  // Ensure AI Data Integrity Policy is injected into system messages
+  const hasSystemPrompt = messages.some((m) => m.role === "system");
+  if (!hasSystemPrompt) {
+    messages = [
+      { role: "system", content: AI_DATA_INTEGRITY_SYSTEM_PROMPT },
+      ...messages,
+    ];
+  } else {
+    messages = messages.map((m) => {
+      if (m.role === "system" && !m.content.includes("AI DATA INTEGRITY POLICY")) {
+        return {
+          ...m,
+          content: `${AI_DATA_INTEGRITY_SYSTEM_PROMPT}\n\n${m.content}`,
+        };
+      }
+      return m;
+    });
   }
 
   try {

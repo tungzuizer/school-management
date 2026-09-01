@@ -28,12 +28,15 @@ import {
   getDecisionLogs,
   getSchoolPointsContext,
 } from "./actions";
+import { GroundedResponseCard } from "@/components/ai/grounded-response-card";
+import type { AIGroundedResponse } from "@/lib/ai/data-integrity";
 
 interface Message {
   id: string;
   sender: "user" | "ai";
   text: string;
   timestamp: string;
+  grounded?: AIGroundedResponse;
   recommendation?: {
     summary: string;
     riskLevel: "LOW" | "MEDIUM" | "HIGH";
@@ -144,6 +147,7 @@ export default function PrincipalAIPage() {
           sender: "ai",
           text: result.data.text || result.data.recommendation?.summary || "Đã phân tích xong.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          grounded: result.data.grounded,
           recommendation: result.data.recommendation,
         };
         setMessages((prev) => [...prev, aiResponse]);
@@ -345,22 +349,28 @@ export default function PrincipalAIPage() {
 
                   <div className={`max-w-3xl space-y-4 ${msg.sender === "user" ? "items-end" : "items-start"}`}>
                     {/* User Text / AI Intro text */}
-                    <div
-                      className={`p-4 rounded-2xl text-sm ${
-                        msg.sender === "user"
-                          ? "bg-blue-600 text-white font-medium rounded-tr-none shadow-sm"
-                          : "bg-gray-100 text-gray-800 rounded-tl-none"
-                      }`}
-                    >
-                      <p className="whitespace-pre-line">{msg.text}</p>
-                      <span
-                        className={`text-[10px] block mt-1 ${
-                          msg.sender === "user" ? "text-blue-100 text-right" : "text-gray-400"
-                        }`}
-                      >
-                        {msg.timestamp}
-                      </span>
-                    </div>
+                    {msg.sender === "user" ? (
+                      <div className="p-4 rounded-2xl text-sm bg-blue-600 text-white font-medium rounded-tr-none shadow-sm">
+                        <p className="whitespace-pre-line">{msg.text}</p>
+                        <span className="text-[10px] block mt-1 text-blue-100 text-right">
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                    ) : msg.grounded ? (
+                      <div className="space-y-3 w-full">
+                        <GroundedResponseCard grounded={msg.grounded} />
+                        <span className="text-[10px] block text-gray-400">
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-2xl text-sm bg-gray-100 text-gray-800 rounded-tl-none">
+                        <p className="whitespace-pre-line">{msg.text}</p>
+                        <span className="text-[10px] block mt-1 text-gray-400">
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                    )}
 
                     {/* AI Structured Recommendation Card */}
                     {msg.recommendation && (msg.recommendation.options.length > 0 || msg.recommendation.actionSteps.length > 0) && (
