@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { getCurrentAdminProfile, AdminProfile } from "./actions";
-import ForcePasswordChangeModal from "@/components/auth/ForcePasswordChangeModal";
+import Header from "@/components/layout/Header";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import {
   LayoutDashboard,
   Building2,
@@ -185,12 +186,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     fetchProfile();
   }, [session]);
 
-  // Super Admin = không gắn với trường cụ thể (superadmin@school.com, Sở GD&ĐT)
-  // Hiệu trưởng = ADMIN nhưng gắn với trường cụ thể (có schoolId)
   const isSuperAdmin =
     profile?.isSuperAdmin ||
     session?.user?.email === "superadmin@school.com" ||
-    session?.user?.role === "SUPER_ADMIN";
+    (session?.user as { role?: string })?.role === "SUPER_ADMIN";
 
   const menuGroups = isSuperAdmin ? superAdminMenuGroups : principalMenuGroups;
 
@@ -214,60 +213,71 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-100/70 text-slate-900 font-sans">
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-sans relative selection:bg-indigo-500 selection:text-white">
+      {/* Ambient background mesh */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
+      </div>
+
       {/* ===== Sidebar - Desktop ===== */}
       <aside
-        className={`hidden lg:flex flex-col w-72 text-white shrink-0 shadow-2xl transition-all border-r ${
+        className={`hidden lg:flex flex-col w-72 text-white shrink-0 shadow-2xl transition-all border-r relative z-20 ${
           isSuperAdmin
-            ? "bg-slate-900 border-r border-amber-500/20"
-            : "bg-slate-900 border-r border-slate-800"
+            ? "bg-slate-950 border-r border-amber-500/20"
+            : "bg-slate-950 border-r border-slate-800/80"
         }`}
       >
+        {/* Ambient Top Glow */}
+        <div
+          className={`absolute top-0 left-0 right-0 h-44 bg-gradient-to-b pointer-events-none ${
+            isSuperAdmin
+              ? "from-amber-500/15 via-amber-500/5 to-transparent"
+              : "from-indigo-500/15 via-indigo-500/5 to-transparent"
+          }`}
+        />
+
         {/* User Profile Header */}
-        <div className="px-4 pt-5 pb-4 border-b border-white/10">
+        <div className="p-4 border-b border-slate-800/80 relative">
           <div className="flex items-center gap-3">
             <div
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ring-2 shadow-lg ${
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ring-2 shadow-lg transition-transform duration-300 hover:scale-105 ${
                 isSuperAdmin
                   ? "bg-gradient-to-br from-amber-500 to-amber-700 ring-amber-400/60 text-white"
-                  : "bg-white/20 ring-white/30"
+                  : "bg-gradient-to-br from-indigo-500 to-violet-600 ring-indigo-400/50 text-white"
               }`}
             >
               {isSuperAdmin ? (
-                <Crown className="w-6 h-6 text-amber-100 animate-pulse" />
+                <Crown className="w-5 h-5 text-amber-100 animate-pulse" />
               ) : (
-                <span className="text-base font-bold text-white">
+                <span className="text-sm font-extrabold text-white">
                   {getInitials(userName)}
                 </span>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate flex items-center gap-1">
+              <p className="text-xs font-extrabold text-white truncate flex items-center gap-1">
                 {userName}
               </p>
-              <p className="text-[11px] text-slate-300 truncate">{userEmail}</p>
+              <p className="text-[10px] text-slate-300 truncate">{userEmail}</p>
 
               {isSuperAdmin ? (
-                <div className="mt-2 pt-1.5 border-t border-amber-400/30 text-[10px] space-y-1">
-                  <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 font-extrabold rounded-md text-[9px] uppercase tracking-wider inline-flex items-center gap-1 shadow-xs">
-                    <Crown className="w-3 h-3 text-amber-950" /> QUẢN TRỊ VIÊN TỐI CAO
+                <div className="mt-2 pt-1.5 border-t border-amber-400/20 text-[10px] space-y-1">
+                  <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-extrabold rounded-md text-[9px] uppercase tracking-wider inline-flex items-center gap-1 shadow-xs">
+                    <Crown className="w-3 h-3 text-slate-950" /> QUẢN TRỊ VIÊN TỐI CAO
                   </span>
                   <p className="truncate font-bold text-amber-200 flex items-center gap-1">
                     <Globe className="w-3 h-3 text-amber-300 shrink-0" /> {schoolDisplay}
                   </p>
-                  <p className="truncate text-slate-300 opacity-90">{wardDisplay}</p>
-                  <p className="truncate text-slate-400 opacity-75">{deptDisplay}</p>
                 </div>
               ) : (
-                <div className="mt-1 pt-1 border-t border-white/10 text-[10px] text-teal-200 font-medium space-y-0.5">
-                  <span className="px-1.5 py-0.5 bg-indigo-500/40 text-indigo-100 font-bold rounded text-[9px] uppercase tracking-wider inline-block mb-0.5">
+                <div className="mt-1.5 pt-1 border-t border-slate-800 text-[10px] space-y-0.5">
+                  <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-400/30 rounded text-[9px] uppercase tracking-wider inline-block mb-0.5">
                     BGH - Hiệu Trưởng
                   </span>
-                  <p className="truncate font-bold text-white flex items-center gap-1">
-                    <Building2 className="w-3 h-3 text-teal-300 shrink-0" /> {schoolDisplay}
+                  <p className="truncate font-bold text-slate-200 flex items-center gap-1">
+                    <Building2 className="w-3 h-3 text-indigo-300 shrink-0" /> {schoolDisplay}
                   </p>
-                  <p className="truncate text-blue-200 opacity-90">{wardDisplay}</p>
-                  <p className="truncate text-blue-300 opacity-75">{deptDisplay}</p>
                 </div>
               )}
             </div>
@@ -275,7 +285,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1 scrollbar-thin scrollbar-thumb-slate-700">
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1.5 custom-scrollbar relative">
           {menuGroups.map((group) => {
             const hasActiveItem = group.items.some(
               item => pathname === item.href || pathname.startsWith(item.href + "/")
@@ -288,17 +298,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Group header */}
                 <button
                   onClick={() => toggleGroup(group.title)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                     hasActiveItem
                       ? isSuperAdmin
-                        ? "text-amber-300 bg-amber-500/15 border border-amber-500/30"
-                        : "text-white bg-white/15"
+                        ? "text-amber-300 bg-amber-500/15 border border-amber-500/30 shadow-xs"
+                        : "text-white bg-white/10 border border-white/10 shadow-xs"
                       : isSuperAdmin
-                      ? "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                      : "text-blue-300 hover:text-white hover:bg-white/8"
+                      ? "text-slate-300 hover:text-white hover:bg-slate-800/60"
+                      : "text-slate-300 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  <GroupIcon className={`w-4 h-4 shrink-0 ${isSuperAdmin && hasActiveItem ? "text-amber-400" : ""}`} />
+                  <GroupIcon className={`w-4 h-4 shrink-0 ${isSuperAdmin && hasActiveItem ? "text-amber-400" : hasActiveItem ? "text-indigo-400" : "text-slate-400"}`} />
                   <span className="flex-1 text-left truncate">{group.title}</span>
                   {isCollapsed ? (
                     <ChevronRight className="w-3.5 h-3.5 opacity-60" />
@@ -309,7 +319,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 {/* Group items */}
                 {!isCollapsed && (
-                  <div className="mt-1 ml-1 space-y-0.5 border-l-2 border-slate-700/50 pl-2">
+                  <div className="mt-1 ml-1 space-y-1 border-l-2 border-slate-800 pl-2">
                     {group.items.map((item) => {
                       const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                       const Icon = item.icon;
@@ -318,25 +328,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           key={item.href}
                           href={item.href}
                           prefetch={true}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                          className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative ${
                             isActive
                               ? isSuperAdmin
-                                ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold shadow-lg shadow-amber-500/20"
-                                : "bg-indigo-600 text-white font-bold shadow-md"
+                                ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-extrabold shadow-lg shadow-amber-500/20"
+                                : "bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-extrabold shadow-lg shadow-indigo-500/25"
                               : isSuperAdmin
                               ? "text-slate-300 hover:bg-slate-800/80 hover:text-white"
-                              : "text-blue-100 hover:bg-white/10 hover:text-white"
+                              : "text-slate-300 hover:bg-white/10 hover:text-white"
                           }`}
                         >
-                          <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? (isSuperAdmin ? "text-slate-950" : "text-[#1a237e]") : isSuperAdmin ? "text-amber-400/80" : "text-blue-300"}`} />
+                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? (isSuperAdmin ? "text-slate-950" : "text-white") : isSuperAdmin ? "text-amber-400/80" : "text-slate-400"}`} />
                           <span className="flex-1 truncate">{item.label}</span>
                           {item.badge && (
-                            <span className="px-1.5 py-0.5 bg-amber-400 text-slate-950 font-extrabold rounded text-[9px] uppercase tracking-wider">
+                            <span className={`px-1.5 py-0.5 font-extrabold rounded text-[9px] uppercase tracking-wider ${
+                              isActive
+                                ? "bg-slate-950 text-amber-300"
+                                : "bg-amber-400 text-slate-950"
+                            }`}>
                               {item.badge}
                             </span>
                           )}
                           {isActive && !item.badge && (
-                            <div className={`w-1.5 h-1.5 rounded-full ${isSuperAdmin ? "bg-slate-950" : "bg-[#1a237e]"}`} />
+                            <div className={`w-1.5 h-1.5 rounded-full ${isSuperAdmin ? "bg-slate-950" : "bg-white"}`} />
                           )}
                         </Link>
                       );
@@ -349,59 +363,54 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Bottom: Logout */}
-        <div className="px-3 py-3 border-t border-white/10">
+        <div className="p-3 border-t border-slate-800/80 relative">
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-rose-300 hover:text-white hover:bg-rose-500/30 rounded-xl transition-all font-bold cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-slate-300 hover:text-rose-200 hover:bg-rose-500/20 rounded-xl transition-all font-bold cursor-pointer active-press group"
           >
-            <LogOut className="w-4 h-4" />
-            Đăng xuất khỏi Hệ thống
+            <LogOut className="w-4 h-4 text-slate-400 group-hover:text-rose-300" />
+            <span>Đăng xuất</span>
           </button>
         </div>
       </aside>
 
       {/* ===== Main Content Area ===== */}
-      <div className="flex-1 flex flex-col min-h-screen bg-slate-50 text-slate-900">
-        {/* Mobile Top Bar */}
-        <header className="lg:hidden bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between shrink-0 shadow-md">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isSuperAdmin ? "bg-amber-500 text-slate-950 font-bold" : "bg-indigo-600 text-white"}`}>
-              {isSuperAdmin ? <Crown className="w-5 h-5" /> : getInitials(userName)}
-            </div>
-            <div>
-              <h1 className="text-xs font-bold text-white flex items-center gap-1">
-                {userName}
-                {isSuperAdmin && <span className="text-[10px] text-amber-400 font-extrabold">👑 SUPER ADMIN</span>}
-              </h1>
-              <p className="text-[10px] text-slate-400 truncate">{schoolDisplay}</p>
-            </div>
+      <div className="flex-1 flex flex-col min-h-screen z-10 min-w-0">
+        {/* Global Unified Header */}
+        <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
+
+        {/* Workspace Subheader with Breadcrumbs */}
+        <div className="px-4 md:px-6 pt-3 pb-1 flex items-center justify-between border-b border-slate-200/60 bg-white/40 backdrop-blur-xs">
+          <Breadcrumb />
+          <div className="flex items-center gap-2">
+            <span className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+              isSuperAdmin
+                ? "bg-amber-100 text-amber-900 border border-amber-300"
+                : "bg-indigo-100 text-indigo-900 border border-indigo-200"
+            }`}>
+              <Sparkles className="w-3 h-3" />
+              {isSuperAdmin ? "Cổng Điều hành Toàn quốc" : "Không gian Quản trị Nhà trường"}
+            </span>
           </div>
-          <button
-            onClick={() => setMobileMenuOpen(prev => !prev)}
-            aria-label="Toggle navigation menu"
-            className="p-2 rounded-xl text-slate-300 hover:bg-slate-800 transition focus:outline-hidden focus:ring-2 focus:ring-amber-400"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-        </header>
+        </div>
 
         {/* Mobile Drawer */}
         {mobileMenuOpen && (
           <>
             <div
-              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm animate-fade-in"
               onClick={() => setMobileMenuOpen(false)}
             />
-            <div className="fixed inset-y-0 left-0 w-80 bg-slate-900 border-r border-slate-800 z-50 lg:hidden flex flex-col shadow-2xl text-white">
+            <div className="fixed inset-y-0 left-0 w-80 bg-slate-950 border-r border-slate-800 z-50 lg:hidden flex flex-col shadow-2xl text-white animate-slide-in-left">
               {/* Drawer header */}
               <div className="px-4 pt-5 pb-4 border-b border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSuperAdmin ? "bg-amber-500 text-slate-950 font-bold" : "bg-indigo-600 text-white"}`}>
-                    {isSuperAdmin ? <Crown className="w-6 h-6" /> : getInitials(userName)}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSuperAdmin ? "bg-amber-500 text-slate-950 font-bold" : "bg-indigo-600 text-white font-bold"}`}>
+                    {isSuperAdmin ? <Crown className="w-5 h-5" /> : getInitials(userName)}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-white truncate">{userName}</p>
-                    <p className="text-[11px] text-slate-400 truncate">{userEmail}</p>
+                    <p className="text-[11px] text-slate-300 truncate">{userEmail}</p>
                     {isSuperAdmin && (
                       <span className="px-2 py-0.5 bg-amber-400 text-slate-950 font-extrabold rounded text-[9px] uppercase tracking-wider inline-block mt-1">
                         👑 Super Admin Tối Cao
@@ -411,14 +420,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 transition"
+                  className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Drawer nav */}
-              <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-2">
+              <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-2 custom-scrollbar">
                 {menuGroups.map((group) => {
                   const GroupIcon = group.icon;
                   return (
@@ -429,7 +438,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           {group.title}
                         </p>
                       </div>
-                      <div className="space-y-0.5 ml-1">
+                      <div className="space-y-1 ml-1">
                         {group.items.map((item) => {
                           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                           const Icon = item.icon;
@@ -441,11 +450,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                               onClick={() => setMobileMenuOpen(false)}
                               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                                 isActive
-                                  ? "bg-amber-500 text-slate-950 font-bold shadow-md"
-                                  : "text-slate-300 hover:bg-slate-800"
+                                  ? isSuperAdmin
+                                    ? "bg-amber-400 text-slate-950 font-extrabold shadow-md"
+                                    : "bg-indigo-600 text-white font-extrabold shadow-md"
+                                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
                               }`}
                             >
-                              <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-slate-950" : "text-amber-400/80"}`} />
+                              <Icon className={`w-4 h-4 shrink-0 ${isActive ? (isSuperAdmin ? "text-slate-950" : "text-white") : isSuperAdmin ? "text-amber-400/80" : "text-slate-400"}`} />
                               <span className="truncate">{item.label}</span>
                             </Link>
                           );
@@ -457,10 +468,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </nav>
 
               {/* Drawer footer */}
-              <div className="px-3 py-3 border-t border-slate-800">
+              <div className="p-3 border-t border-slate-800">
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-rose-400 hover:bg-rose-500/20 rounded-xl transition font-bold"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-rose-300 hover:bg-rose-500/20 rounded-xl transition font-bold cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   Đăng xuất
@@ -470,13 +481,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </>
         )}
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto pb-20 lg:pb-6 p-4 md:p-6 bg-slate-50">
-          {children}
+        {/* Page content container */}
+        <main className="flex-1 overflow-y-auto pb-24 lg:pb-8 p-4 md:p-6">
+          <div className="max-w-[1680px] mx-auto w-full">
+            {children}
+          </div>
         </main>
 
         {/* ===== Mobile Bottom Tab Bar ===== */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 shadow-[0_-2px_10px_rgba(0,0,0,0.4)]">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-header border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
           <div className="flex items-stretch justify-around max-w-lg mx-auto pb-[env(safe-area-inset-bottom)]">
             {mobileMainTabs.map((tab) => {
               const Icon = tab.icon;
@@ -487,17 +500,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   key={tab.href}
                   href={tab.href}
                   prefetch={true}
-                  className={`flex flex-col items-center justify-center py-2.5 px-4 min-w-[68px] relative transition-colors ${
+                  className={`flex flex-col items-center justify-center py-2 px-3 min-w-[64px] min-h-[44px] relative transition-transform duration-200 active:scale-95 ${
                     isActive
-                      ? "text-amber-400"
-                      : "text-slate-400 active:text-slate-200"
+                      ? isSuperAdmin ? "text-amber-600 font-extrabold" : "text-indigo-600 font-extrabold"
+                      : "text-slate-600 hover:text-slate-900 font-medium"
                   }`}
                 >
                   {isActive && (
-                    <div className="absolute top-0 w-10 h-[3px] bg-amber-400 rounded-b-full" />
+                    <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full shadow-xs ${
+                      isSuperAdmin ? "bg-amber-500" : "bg-indigo-600"
+                    }`} />
                   )}
-                  <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-                  <span className={`text-[10px] mt-0.5 ${isActive ? "font-extrabold" : "font-medium"}`}>
+                  <Icon className="w-5 h-5" />
+                  <span className="text-[10px] mt-0.5 leading-tight">
                     {tab.label}
                   </span>
                 </Link>
@@ -505,15 +520,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             })}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="flex flex-col items-center justify-center py-2.5 px-4 min-w-[68px] text-slate-400 active:text-slate-200 transition-colors"
+              className="flex flex-col items-center justify-center py-2 px-3 min-w-[64px] min-h-[44px] text-slate-600 hover:text-slate-900 font-medium transition-transform duration-200 active:scale-95 cursor-pointer"
             >
               <Menu className="w-5 h-5" />
-              <span className="text-[10px] mt-0.5 font-medium">Menu</span>
+              <span className="text-[10px] mt-0.5 leading-tight">Mục lục</span>
             </button>
           </div>
         </nav>
       </div>
-      <ForcePasswordChangeModal />
     </div>
   );
 }

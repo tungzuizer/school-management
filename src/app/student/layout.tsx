@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 import Header from "@/components/layout/Header";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import dynamic from "next/dynamic";
 const FloatingAIChatWidget = dynamic(
   () => import("@/components/ui/FloatingAIChatWidget").then((mod) => mod.FloatingAIChatWidget),
@@ -192,6 +193,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
         {/* Main content */}
         <main className="flex-1 min-w-0 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-4 sm:p-6 shadow-lg shadow-slate-200/60 pb-24 lg:pb-6">
+          <div className="mb-4 pb-2 border-b border-slate-100 hidden sm:block">
+            <Breadcrumb />
+          </div>
           {children}
         </main>
       </div>
@@ -209,7 +213,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                   href={tab.href}
                   prefetch={true}
                   className={`flex flex-col items-center justify-center py-2 px-3 rounded-2xl relative transition-all duration-200 flex-1 ${
-                    isActive ? "text-blue-600 bg-blue-50/80" : "text-slate-500 hover:text-blue-950"
+                    isActive ? "text-blue-600 bg-blue-50/90 font-bold" : "text-slate-600 hover:text-blue-950"
                   }`}
                 >
                   {isActive && <span className="absolute top-0 w-6 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-b-full shadow-sm" />}
@@ -220,7 +224,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             })}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="flex flex-col items-center justify-center py-2 px-3 rounded-2xl text-slate-500 flex-1 cursor-pointer transition-colors hover:text-blue-700 active-press"
+              className="flex flex-col items-center justify-center py-2 px-3 rounded-2xl text-slate-600 flex-1 cursor-pointer transition-colors hover:text-blue-700 active-press"
             >
               <Menu className="w-5 h-5" />
               <span className="text-[10px] mt-0.5 font-black text-slate-700 tracking-tight">Menu</span>
