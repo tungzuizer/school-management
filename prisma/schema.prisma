@@ -270,6 +270,11 @@ model School {
   aiAnalysisLogs      AiAnalysisLog[]
   officialDocuments   OfficialDocument[]
   equipmentItems      Equipment[]
+  journeySnapshots        StudentJourneySnapshot[]
+  journeyThresholdConfigs JourneyThresholdConfig[]
+  examPeriods             ExamPeriod[]
+  studentScores           StudentScore[]
+  importBatches           StudentImportBatch[]
 
   @@index([name])
   @@index([departmentId])
@@ -296,6 +301,10 @@ model Campus {
   aiReportSummaries AiReportSummary[]
   officialDocuments OfficialDocument[]
   equipmentItems    Equipment[]
+  journeySnapshots        StudentJourneySnapshot[]
+  journeyThresholdConfigs JourneyThresholdConfig[]
+  examPeriods             ExamPeriod[]
+  studentScores           StudentScore[]
 
   @@index([schoolId])
   @@index([name])
@@ -446,6 +455,9 @@ model Student {
   parentFeedbacks ParentFeedback[]
   academicTranscripts AcademicTranscript[]
   participations  ParticipationRecord[]
+  journeySnapshots StudentJourneySnapshot[]
+  interventions    InterventionRecord[]
+  studentScores    StudentScore[]
 
   @@index([userId])
   @@index([classId])
@@ -500,6 +512,8 @@ model Subject {
   journalEntries      ClassJournalEntry[]
   changeRequests      TeacherChangeRequest[]
   transcriptSubjectGrades TranscriptSubjectGrade[]
+  journeySnapshots    StudentJourneySnapshot[]
+  studentScores       StudentScore[]
 
   @@index([name])
   @@index([gradeLevel])
@@ -1883,4 +1897,261 @@ model EquipmentTransfer {
   @@index([fromSchoolPointId])
   @@index([toSchoolPointId])
   @@index([status])
+}
+
+// ==================== MODULE HÀNH TRÌNH HỌC SINH (STUDENT LEARNING JOURNEY) ====================
+
+enum ExamSemester {
+  HK1
+  HK2
+}
+
+enum ExamType {
+  ORAL
+  FIFTEEN_MIN
+  MIDTERM
+  FINAL
+  PERIOD_SUMMARY
+}
+
+enum MatchConfidence {
+  EXACT
+  FUZZY
+  MANUAL_REVIEW
+}
+
+enum ImportBatchStatus {
+  STAGED
+  MAPPED
+  REVIEWED
+  COMMITTED
+  ROLLED_BACK
+}
+
+enum TrendLabel {
+  IMPROVING
+  STABLE
+  DECLINING
+  VOLATILE
+}
+
+enum TriggerSource {
+  AI
+  TEACHER
+  ADMIN
+}
+
+enum InterventionStatus {
+  SUGGESTED
+  APPROVED
+  APPLIED
+  OUTCOME_TRACKED
+  REJECTED
+}
+
+model ExamPeriod {
+  id           String       @id @default(cuid())
+  schoolId     String
+  campusId     String?
+  schoolYear   String       // VD: "2024-2025", "2025-2026"
+  semester     ExamSemester // HK1, HK2
+  examType     ExamType     // MIDTERM, FINAL, PERIOD_SUMMARY...
+  name         String       // "Giữa kỳ 1 2025-2026"
+  orderIndex   Int          // Thứ tự thời gian tuyệt đối (1, 2, 3, 4...) để hồi quy tuyến tính chạy chính xác
+  startDate    DateTime?
+  endDate      DateTime?
+  isLocked     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus       Campus?      @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  scores       StudentScore[]
+  snapshots    StudentJourneySnapshot[]
+
+  @@unique([schoolId, schoolYear, semester, examType])
+  @@index([schoolId])
+  @@index([campusId])
+  @@index([orderIndex])
+}
+
+model StudentScore {
+  id            String      @id @default(cuid())
+  studentId     String
+  subjectId     String
+  examPeriodId  String
+  schoolId      String
+  campusId      String
+  score         Float       // 0.0 - 10.0
+  importBatchId String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  examPeriod    ExamPeriod  @relation(fields: [examPeriodId], references: [id], onDelete: Cascade)
+  school        School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus        Campus      @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  importBatch   StudentImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, subjectId, examPeriodId])
+  @@index([studentId])
+  @@index([subjectId])
+  @@index([examPeriodId])
+  @@index([schoolId, campusId])
+}
+
+model StudentImportBatch {
+  id             String            @id @default(cuid())
+  schoolId       String
+  campusId       String?
+  fileName       String
+  totalRows      Int               @default(0)
+  validRows      Int               @default(0)
+  invalidRows    Int               @default(0)
+  status         ImportBatchStatus @default(STAGED)
+  importedById   String
+  importedByName String?
+  committedAt    DateTime?
+  rolledBackAt   DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  school         School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  stagings       StudentImportStaging[]
+  mappings       StudentImportMapping[]
+  scores         StudentScore[]
+
+  @@index([schoolId])
+  @@index([campusId])
+  @@index([status])
+}
+
+model StudentImportStaging {
+  id             String   @id @default(cuid())
+  batchId        String
+  rowNumber      Int
+  rawStudentCode String?
+  rawName        String
+  rawClassLabel  String?
+  rawSubject     String
+  rawPeriod      String
+  rawScore       Float?
+  isValid        Boolean  @default(true)
+  errorMessage   String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  batch          StudentImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+}
+
+model StudentImportMapping {
+  id               String          @id @default(cuid())
+  batchId          String
+  rawName          String
+  rawStudentCode   String?
+  rawClassLabel    String?
+  rawSubject       String?
+  matchedStudentId String?
+  matchedSubjectId String?
+  matchedPeriodId  String?
+  matchConfidence  MatchConfidence
+  reviewedBy       String?
+  reviewedByName   String?
+  reviewedAt       DateTime?
+  notes            String?         @db.Text
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  batch            StudentImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([matchConfidence])
+}
+
+model JourneyThresholdConfig {
+  id                 String   @id @default(cuid())
+  schoolId           String
+  campusId           String
+  increasingSlope    Float    @default(0.25)
+  decliningSlope     Float    @default(0.25)
+  volatilityMax      Float    @default(1.2)
+  minPeriodsRequired Int      @default(3)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  school             School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus             Campus   @relation(fields: [campusId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, campusId])
+  @@index([schoolId])
+  @@index([campusId])
+}
+
+model StudentJourneySnapshot {
+  id                 String     @id @default(cuid())
+  studentId          String
+  subjectId          String?
+  examPeriodId       String
+  schoolId           String
+  campusId           String
+
+  avgScore           Float
+  trendSlope         Float
+  trendLabel         TrendLabel
+  volatilityScore    Float
+  baselineScore      Float
+  deltaFromBaseline  Float
+  dataPointsCount    Int        @default(0)
+  isInsufficientData Boolean    @default(false)
+
+  computedAt         DateTime   @default(now())
+
+  student            Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject            Subject?   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  examPeriod         ExamPeriod @relation(fields: [examPeriodId], references: [id], onDelete: Cascade)
+  school             School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus             Campus     @relation(fields: [campusId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, examPeriodId])
+  @@index([schoolId, campusId, trendLabel])
+  @@index([computedAt])
+}
+
+model InterventionRecord {
+  id                  String             @id @default(cuid())
+  studentId           String
+  schoolId            String
+  campusId            String
+  subjectId           String?
+  triggeredBy         TriggerSource
+  trendLabelAtTrigger TrendLabel
+  interventionType    String
+  note                String?            @db.Text
+  status              InterventionStatus @default(SUGGESTED)
+
+  suggestedAt         DateTime           @default(now())
+  approvedById        String?
+  approvedByName      String?
+  approvedAt          DateTime?
+  rejectionReason     String?            @db.Text
+  rejectedAt          DateTime?
+  appliedById         String?
+  appliedByName       String?
+  appliedAt           DateTime?
+
+  outcomeCheckedAt    DateTime?
+  outcomeScoreDelta   Float?
+  outcomeNote         String?            @db.Text
+
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  student             Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([schoolId, campusId])
+  @@index([status])
+  @@index([triggeredBy])
 }
