@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { checkIsSubjectHead } from "./subject-head/actions";
 import { FloatingAIChatWidget } from "@/components/ui/FloatingAIChatWidget";
 import Header from "@/components/layout/Header";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import {
   Home,
   Calendar,
@@ -292,6 +293,9 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
         {/* Main content */}
         <main className="flex-1 min-w-0 bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-3xl p-4 sm:p-6 shadow-lg shadow-slate-200/60 pb-24 lg:pb-6">
+          <div className="mb-4 pb-2 border-b border-slate-100 hidden sm:block">
+            <Breadcrumb />
+          </div>
           {children}
         </main>
       </div>
@@ -310,7 +314,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
                   prefetch={true}
                   aria-current={isActive ? "page" : undefined}
                   className={`flex flex-col items-center justify-center py-2 px-2 rounded-2xl relative transition-all duration-200 flex-1 ${
-                    isActive ? "text-indigo-700 bg-indigo-50/80" : "text-slate-500 hover:text-slate-800"
+                    isActive ? "text-indigo-700 bg-indigo-50/90 font-bold" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   {isActive && <span className="absolute top-0 w-6 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-b-full" />}
@@ -322,7 +326,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
             <button
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Mở menu"
-              className="flex flex-col items-center justify-center py-2 px-2 rounded-2xl text-slate-500 flex-1 cursor-pointer transition-colors hover:text-indigo-700 active-press"
+              className="flex flex-col items-center justify-center py-2 px-2 rounded-2xl text-slate-600 flex-1 cursor-pointer transition-colors hover:text-indigo-700 active-press"
             >
               <Menu className="w-4 h-4" style={{ width: "1.125rem", height: "1.125rem" }} />
               <span className="text-[9.5px] mt-0.5 font-black text-slate-700 tracking-tight">Menu</span>

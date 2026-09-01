@@ -63,30 +63,59 @@ interface SidebarProps {
 
 const roleConfig: Record<string, { bg: string; accent: string; sidebarBg: string; mobileAccent: string; activeGlow: string }> = {
   ADMIN: {
-    bg: "bg-gradient-to-r from-indigo-500 to-violet-600",
-    accent: "bg-indigo-500/20 text-indigo-200 border-indigo-400/30",
+    bg: "bg-gradient-to-r from-blue-600 to-indigo-700",
+    accent: "bg-blue-500/20 text-blue-200 border-blue-400/30",
     sidebarBg: "bg-slate-950",
-    mobileAccent: "text-indigo-600",
-    activeGlow: "shadow-[0_0_20px_rgba(99,102,241,0.35)]",
+    mobileAccent: "text-blue-600",
+    activeGlow: "shadow-[0_0_20px_rgba(37,99,235,0.35)]",
+  },
+  SUPER_ADMIN: {
+    bg: "bg-gradient-to-r from-rose-600 to-red-700",
+    accent: "bg-rose-500/20 text-rose-200 border-rose-400/30",
+    sidebarBg: "bg-slate-950",
+    mobileAccent: "text-rose-600",
+    activeGlow: "shadow-[0_0_20px_rgba(225,29,72,0.35)]",
+  },
+  DEPARTMENT_ADMIN: {
+    bg: "bg-gradient-to-r from-sky-600 to-blue-700",
+    accent: "bg-sky-500/20 text-sky-200 border-sky-400/30",
+    sidebarBg: "bg-slate-950",
+    mobileAccent: "text-sky-600",
+    activeGlow: "shadow-[0_0_20px_rgba(2,132,199,0.35)]",
+  },
+  WARD_ADMIN: {
+    bg: "bg-gradient-to-r from-teal-600 to-emerald-700",
+    accent: "bg-teal-500/20 text-teal-200 border-teal-400/30",
+    sidebarBg: "bg-slate-950",
+    mobileAccent: "text-teal-600",
+    activeGlow: "shadow-[0_0_20px_rgba(13,148,136,0.35)]",
+  },
+  VICE_PRINCIPAL: {
+    bg: "bg-gradient-to-r from-violet-600 to-indigo-700",
+    accent: "bg-violet-500/20 text-violet-200 border-violet-400/30",
+    sidebarBg: "bg-slate-950",
+    mobileAccent: "text-violet-600",
+    activeGlow: "shadow-[0_0_20px_rgba(124,58,237,0.35)]",
   },
   TEACHER: {
-    bg: "bg-gradient-to-r from-emerald-500 to-teal-600",
+    bg: "bg-gradient-to-r from-emerald-600 to-teal-700",
     accent: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
     sidebarBg: "bg-slate-950",
     mobileAccent: "text-emerald-600",
-    activeGlow: "shadow-[0_0_20px_rgba(16,185,129,0.35)]",
+    activeGlow: "shadow-[0_0_20px_rgba(5,150,105,0.35)]",
   },
   STUDENT: {
-    bg: "bg-gradient-to-r from-amber-500 to-orange-600",
+    bg: "bg-gradient-to-r from-amber-600 to-orange-600",
     accent: "bg-amber-500/20 text-amber-200 border-amber-400/30",
     sidebarBg: "bg-slate-950",
     mobileAccent: "text-amber-600",
-    activeGlow: "shadow-[0_0_20px_rgba(245,158,11,0.35)]",
+    activeGlow: "shadow-[0_0_20px_rgba(217,119,6,0.35)]",
   },
 };
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Hiệu trưởng",
+  SUPER_ADMIN: "Quản trị viên Hệ thống",
   TEACHER: "Giáo viên",
   STUDENT: "Học sinh",
   DEPARTMENT_ADMIN: "Sở GD&ĐT",
@@ -142,13 +171,13 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
                 className={`group flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 relative ${
                   isActive
                     ? `bg-white/15 text-white ${config.activeGlow} border border-white/10 backdrop-blur-md`
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1"
+                    : "text-slate-300 hover:bg-white/10 hover:text-white hover:translate-x-1"
                 }`}
               >
                 {isActive && (
                   <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 ${config.bg} rounded-r-full shadow-md`} />
                 )}
-                <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-indigo-400" : "text-slate-400 group-hover:text-slate-200"}`} />
+                <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-indigo-300" : "text-slate-300 group-hover:text-white"}`} />
                 <span className="truncate">{item.label}</span>
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className="ml-auto bg-rose-500 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full min-w-[22px] text-center shadow-sm animate-pulse">
@@ -164,10 +193,10 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
         <div className="border-t border-slate-800/80 p-3 relative">
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3.5 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:bg-rose-500/15 hover:text-rose-300 transition-all duration-200 active-press cursor-pointer"
+            className="flex items-center gap-3.5 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-slate-100 hover:bg-rose-500/25 hover:text-white transition-all duration-200 active-press cursor-pointer group"
             title="Đăng xuất"
           >
-            <LogOut className="w-5 h-5 shrink-0 text-slate-400 group-hover:text-rose-400" />
+            <LogOut className="w-5 h-5 shrink-0 text-slate-300 group-hover:text-white" />
             <span>Đăng xuất</span>
           </button>
         </div>
@@ -185,7 +214,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
                 href={item.href}
                 prefetch={true}
                 className={`flex flex-col items-center justify-center py-2 px-2 min-w-[64px] relative transition-transform duration-200 active:scale-95 ${
-                  isActive ? config.mobileAccent : "text-slate-400 hover:text-slate-600"
+                  isActive ? `${config.mobileAccent} font-bold` : "text-slate-600 hover:text-slate-900 font-medium"
                 }`}
               >
                 {isActive && (
@@ -209,7 +238,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
             <button
               onClick={() => setMobileMenuOpen(true)}
               className={`flex flex-col items-center justify-center py-2 px-2 min-w-[64px] transition-transform duration-200 active:scale-95 ${
-                mobileMenuOpen ? config.mobileAccent : "text-slate-400 hover:text-slate-600"
+                mobileMenuOpen ? `${config.mobileAccent} font-bold` : "text-slate-600 hover:text-slate-900 font-medium"
               }`}
             >
               <MoreHorizontal className="w-5 h-5" />
@@ -240,7 +269,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
               <h3 className="text-base font-bold text-slate-800">Menu chức năng</h3>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -260,7 +289,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
                     className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all ${
                       isActive
                         ? `bg-slate-100 ${config.mobileAccent} font-bold shadow-xs`
-                        : "text-slate-600 hover:bg-slate-50"
+                        : "text-slate-700 hover:bg-slate-100"
                     }`}
                   >
                     <Icon className="w-5 h-5 shrink-0" />

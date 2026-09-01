@@ -12,6 +12,7 @@ const CommandPalette = dynamic(() => import("@/components/ui/CommandPalette"), {
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Hiệu trưởng",
+  SUPER_ADMIN: "Quản trị viên Hệ thống",
   DEPARTMENT_ADMIN: "Sở GD&ĐT",
   WARD_ADMIN: "Phòng GD&ĐT",
   VICE_PRINCIPAL: "Phó Hiệu trưởng",
