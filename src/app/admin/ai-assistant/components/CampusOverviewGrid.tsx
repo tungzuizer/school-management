@@ -17,12 +17,14 @@ interface CampusOverviewGridProps {
   pointStatuses: RealtimeMonitoringResult["pointStatuses"];
   selectedPointId?: string;
   onSelectPoint?: (pointId: string) => void;
+  onViewDetail?: (point: RealtimeMonitoringResult["pointStatuses"][0]) => void;
 }
 
 export default function CampusOverviewGrid({
   pointStatuses,
   selectedPointId,
   onSelectPoint,
+  onViewDetail,
 }: CampusOverviewGridProps) {
   const getStatusBadge = (color: "GREEN" | "YELLOW" | "RED") => {
     switch (color) {
@@ -165,8 +167,21 @@ export default function CampusOverviewGrid({
 
             {/* Action Footer */}
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-indigo-600 font-semibold mt-3">
-              <span>Xem phân tích chi tiết</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onViewDetail) {
+                    onViewDetail(point);
+                  } else if (onSelectPoint) {
+                    onSelectPoint(point.schoolPointId);
+                  }
+                }}
+                className="w-full flex items-center justify-between hover:text-indigo-800 transition-colors group cursor-pointer"
+              >
+                <span className="group-hover:underline">Xem phân tích chi tiết</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </button>
             </div>
           </div>
         );
