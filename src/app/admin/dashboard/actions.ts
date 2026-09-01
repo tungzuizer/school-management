@@ -424,16 +424,29 @@ export async function getTodaySummary(schoolId?: string) {
 }
 
 export async function getAdminDashboardData(schoolId?: string) {
-  const [schools, stats, weekData, classGrades, classAttendance, incidents, today] =
-    await Promise.all([
-      getSchoolsList(),
-      getDashboardStats(schoolId),
-      getAttendanceByWeek(schoolId),
-      getGradesByClass(schoolId),
-      getClassAttendanceRanking(schoolId),
-      getRecentIncidents(10, schoolId),
-      getTodaySummary(schoolId),
-    ]);
+  const [
+    schools,
+    stats,
+    weekData,
+    classGrades,
+    classAttendance,
+    incidents,
+    today,
+    lpAlerts,
+    earlyWarnings,
+    substitutes,
+  ] = await Promise.all([
+    getSchoolsList(),
+    getDashboardStats(schoolId),
+    getAttendanceByWeek(schoolId),
+    getGradesByClass(schoolId),
+    getClassAttendanceRanking(schoolId),
+    getRecentIncidents(10, schoolId),
+    getTodaySummary(schoolId),
+    getLessonPlanAlerts(schoolId),
+    getEarlyWarnings(6, schoolId),
+    getSubstituteDispatchSummary(schoolId),
+  ]);
 
   return {
     schools,
@@ -443,7 +456,83 @@ export async function getAdminDashboardData(schoolId?: string) {
     classAttendance,
     incidents,
     today,
+    lpAlerts,
+    earlyWarnings,
+    substitutes,
   };
+}
+
+export async function getEarlyWarnings(limit = 6, schoolId?: string) {
+  try {
+    const warnings = await prisma.earlyWarning.findMany({
+      where: { isResolved: false },
+      take: limit,
+      orderBy: [
+        { level: "desc" },
+        { createdAt: "desc" },
+      ],
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        level: true,
+        campusName: true,
+        schoolPointName: true,
+        className: true,
+        studentName: true,
+        description: true,
+        aiAnalysis: true,
+        createdAt: true,
+      },
+    });
+
+    return warnings.map((w) => ({
+      ...w,
+      createdAt: w.createdAt.toISOString(),
+    }));
+  } catch (error) {
+    console.error("Error in getEarlyWarnings:", error);
+    return [];
+  }
+}
+
+export async function getSubstituteDispatchSummary(schoolId?: string) {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [pendingCount, todayDispatches] = await Promise.all([
+      prisma.substituteAssignment.count({
+        where: { status: "PENDING" },
+      }),
+      prisma.substituteAssignment.findMany({
+        where: {
+          date: { gte: todayStart },
+        },
+        take: 5,
+        orderBy: { date: "desc" },
+        select: {
+          id: true,
+          originalTeacher: true,
+          substituteTeacher: true,
+          className: true,
+          subjectName: true,
+          period: true,
+          status: true,
+          reason: true,
+          aiRecommendation: true,
+        },
+      }),
+    ]);
+
+    return {
+      pendingCount,
+      todayDispatches,
+    };
+  } catch (error) {
+    console.error("Error in getSubstituteDispatchSummary:", error);
+    return { pendingCount: 0, todayDispatches: [] };
+  }
 }
 
 // ==================== AI CẢNH BÁO GIÁO ÁN ====================
