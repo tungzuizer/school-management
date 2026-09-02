@@ -93,7 +93,7 @@ export default function FinancialExpenditurePage() {
               Chi Tiêu Tài Chính Đa Phân Hiệu
             </h1>
             <p className="text-sm text-blue-100 max-w-3xl">
-              Giám sát ngân sách toàn trường, phân bổ kinh phí và đối sánh tốc độ giải ngân thực tế giữa các phân hiệu THCS Tân Xã, Hạ Bằng, FPT.
+              Giám sát ngân sách toàn trường, phân bổ kinh phí và đối sánh tốc độ giải ngân thực tế giữa các cơ sở của Trường THPT Chuyên Trần Phú và THPT Lương Khánh Thiện.
             </p>
           </div>
 
@@ -236,7 +236,7 @@ export default function FinancialExpenditurePage() {
                   </h4>
                 </div>
                 <p className="text-sm text-slate-700 leading-relaxed">
-                  Phân hiệu Hạ Bằng đã giải ngân <strong className="text-amber-800">88%</strong> (tiệm cận hạn mức năm), trong khi Phân hiệu FPT còn dư <strong className="text-blue-800">1.54 Tỷ VNĐ (72%)</strong> ở mảng Thiết bị CNTT.
+                  {data.aiRecommendations?.[0]?.content || "Hệ thống tự động giám sát và tối ưu hóa giải ngân định kỳ giữa các điểm trường theo chuẩn Sở GD&ĐT Hải Phòng."}
                 </p>
                 <div className="pt-2 flex flex-wrap gap-3">
                   <button className="text-xs font-bold text-white bg-[#1a237e] hover:bg-blue-900 px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">

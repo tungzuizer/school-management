@@ -30,9 +30,9 @@ export async function getApprovalItems() {
     });
 
     const principalOrg = {
-      schoolName: currentAdmin?.school?.name || "Trường THCS Tân Xã",
-      districtWardName: currentAdmin?.districtWard?.name || "Phòng GD&ĐT Thạch Thất",
-      departmentName: currentAdmin?.department?.name || "Sở GD&ĐT Hà Nội",
+      schoolName: currentAdmin?.school?.name || "Trường THPT Chuyên Trần Phú (Hải Phòng)",
+      districtWardName: currentAdmin?.districtWard?.name || "Quận Hải An - TP. Hải Phòng",
+      departmentName: currentAdmin?.department?.name || "Sở GD&ĐT TP. Hải Phòng",
     };
 
     const [allSchools, lessonPlans, changeRequests, pendingTeachers] = await Promise.all([

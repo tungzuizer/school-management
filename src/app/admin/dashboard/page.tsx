@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js App Router Page for `/admin/dashboard`.
+ * 2. Affected APIs: `src/app/admin/dashboard/page.tsx`.
+ * 3. Schemas: `getAdminDashboardData`, `getNQ37DashboardSummary`.
+ * 4. Verbatim User Instruction: "sửa lại cấu trúc Bảng Điều Khiển Ban Giám Hiệu cho logic và phù hợp với những gì tôi mô tả về dự án"
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -38,6 +46,7 @@ import {
   BookOpen,
   Award,
   RefreshCw,
+  Scale,
 } from "lucide-react";
 import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
@@ -54,6 +63,7 @@ import {
   getEarlyWarnings,
   getSubstituteDispatchSummary,
   getAdminDashboardData,
+  getNQ37DashboardSummary,
 } from "./actions";
 import {
   BarChart,
@@ -77,6 +87,7 @@ type TodaySummary = Awaited<ReturnType<typeof getTodaySummary>>;
 type LPAlertsData = Awaited<ReturnType<typeof getLessonPlanAlerts>>;
 type EarlyWarningItem = Awaited<ReturnType<typeof getEarlyWarnings>>[number];
 type SubstituteSummary = Awaited<ReturnType<typeof getSubstituteDispatchSummary>>;
+type NQ37Summary = Awaited<ReturnType<typeof getNQ37DashboardSummary>>;
 
 const COLORS = ["#4f46e5", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777", "#0891b2"];
 
@@ -95,6 +106,7 @@ export default function AdminDashboardPage() {
   const [lpAlerts, setLpAlerts] = useState<LPAlertsData | null>(null);
   const [earlyWarnings, setEarlyWarnings] = useState<EarlyWarningItem[]>([]);
   const [substitutes, setSubstitutes] = useState<SubstituteSummary | null>(null);
+  const [nq37Summary, setNq37Summary] = useState<NQ37Summary | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -113,6 +125,7 @@ export default function AdminDashboardPage() {
         setLpAlerts(data.lpAlerts);
         setEarlyWarnings(data.earlyWarnings);
         setSubstitutes(data.substitutes);
+        setNq37Summary(data.nq37Summary);
       } catch (err) {
         console.error("Failed to load initial dashboard data:", err);
       } finally {
@@ -136,6 +149,7 @@ export default function AdminDashboardPage() {
       setLpAlerts(data.lpAlerts);
       setEarlyWarnings(data.earlyWarnings);
       setSubstitutes(data.substitutes);
+      setNq37Summary(data.nq37Summary);
     } catch (err) {
       console.error("Failed to refresh school dashboard data:", err);
     } finally {
@@ -400,6 +414,129 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ========================================================================= */}
+      {/* 1.5 EXECUTIVE COMPLIANCE COMMAND CENTER: NGHỊ QUYẾT 37/2026/NQ-CP         */}
+      {/* ========================================================================= */}
+      {nq37Summary && nq37Summary.scorecard && (
+        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-blue-500/30 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-blue-900/60">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 bg-blue-600/30 border border-blue-400/40 text-blue-300 rounded-2xl">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-black uppercase tracking-wider rounded-md border border-blue-400/30">
+                      NQ 37/2026/NQ-CP (Hiệu lực: 05/08/2026 - 30/06/2028)
+                    </span>
+                    {nq37Summary.hasCriticalViolations ? (
+                      <span className="px-2.5 py-0.5 bg-rose-500/20 text-rose-300 text-[10px] font-black rounded-md border border-rose-400/30 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" /> Cảnh Báo Vi Phạm Tiêu Chuẩn
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-black rounded-md border border-emerald-400/30 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Đạt Chuẩn Định Mức & Bằng Cấp
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-base sm:text-lg font-black text-white mt-1">
+                    Thẩm Định Tuân Thủ Định Mức Lãnh Đạo & Nhân Sự Hỗ Trợ Giáo Dục
+                  </h2>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  href="/admin/nq37-compliance"
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-blue-600/30"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Trung Tâm Thẩm Định</span>
+                </Link>
+                <Link
+                  href="/admin/support-staff"
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-blue-200 border border-slate-700 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5"
+                >
+                  <UserCheck className="w-4 h-4 text-blue-400" />
+                  <span>DS Nhân Sự Hỗ Trợ</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Statutory Deadlines & Compliance Score Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {/* Deadline 30/09/2026 */}
+              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                <div className="flex items-center justify-between text-slate-400 mb-1">
+                  <span className="text-xs font-bold uppercase">Hạn Kiện Toàn Bộ Máy</span>
+                  <Clock className="w-4 h-4 text-amber-400" />
+                </div>
+                <p className="text-xl sm:text-2xl font-black text-amber-300">
+                  {nq37Summary.deadlines.arrangementDaysLeft > 0
+                    ? `Còn ${nq37Summary.deadlines.arrangementDaysLeft} ngày`
+                    : "Đến hạn hoàn tất"}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Hạn chót: <strong>30/09/2026</strong> (Điều 8 NQ 37)
+                </p>
+              </div>
+
+              {/* Deadline 05/08/2029 (36 Months) */}
+              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                <div className="flex items-center justify-between text-slate-400 mb-1">
+                  <span className="text-xs font-bold uppercase">Lộ Trình Chuẩn Hóa 36T</span>
+                  <CalendarDays className="w-4 h-4 text-sky-400" />
+                </div>
+                <p className="text-xl sm:text-2xl font-black text-sky-300">
+                  {nq37Summary.deadlines.standardizationMonthsLeft} tháng nữa
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Thời hạn: <strong>05/08/2029</strong> (Điều 5.3.a)
+                </p>
+              </div>
+
+              {/* Leadership Structure Status */}
+              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                <div className="flex items-center justify-between text-slate-400 mb-1">
+                  <span className="text-xs font-bold uppercase">Ban Giám Hiệu</span>
+                  <Crown className="w-4 h-4 text-amber-400" />
+                </div>
+                <p className="text-xl sm:text-2xl font-black text-emerald-400">
+                  {nq37Summary.scorecard.leadershipAudit.principalActual} HT • {nq37Summary.scorecard.leadershipAudit.vicePrincipalActual} PHT
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Định mức: 1 HT + 1 PHT trường chính + 1 PHT/phân hiệu
+                </p>
+              </div>
+
+              {/* Overall Score */}
+              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                <div className="flex items-center justify-between text-slate-400 mb-1">
+                  <span className="text-xs font-bold uppercase">Tỷ Lệ Tuân Thủ NQ 37</span>
+                  <Award className="w-4 h-4 text-emerald-400" />
+                </div>
+                <p className="text-xl sm:text-2xl font-black text-emerald-300">
+                  {nq37Summary.scorecard.overallScore}%
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {nq37Summary.scorecard.sharedStaffAudit.accountantActual +
+                    nq37Summary.scorecard.sharedStaffAudit.clerkActual +
+                    nq37Summary.scorecard.sharedStaffAudit.treasurerActual +
+                    nq37Summary.scorecard.campusStaffAudits.reduce(
+                      (acc, c) => acc + Object.values(c.actualPerRole).reduce((sum, v) => sum + v, 0),
+                      0
+                    )}{" "}
+                  vị trí hỗ trợ giáo dục
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* 2. PILLAR 1: ĐIỀU HÀNH TÁC NGHIỆP HÀNG NGÀY (DAILY OPERATIONAL PULSE)    */}
       {/* ========================================================================= */}
       <section className="space-y-4">
@@ -484,7 +621,7 @@ export default function AdminDashboardPage() {
                 <p className="text-[11px] text-slate-400 mt-0.5">Ghi nhận qua cổng điểm danh</p>
               </div>
               <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-                <p className="text-2xl sm:text-3xl font-black text-purple-400">{today.incidentsToday}</p>
+                <p className="text-2xl sm:text-3xl font-black text-orange-400">{today.incidentsToday}</p>
                 <p className="text-xs text-slate-300 font-semibold mt-1">Sự vụ nề nếp / Kỷ luật</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">Cần BGH theo dõi xử lý</p>
               </div>

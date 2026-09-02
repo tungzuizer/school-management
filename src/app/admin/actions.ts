@@ -36,14 +36,14 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
       user.email === "superadmin@school.com" ||
       (user.role as string) === "SUPER_ADMIN";
 
-    let schoolName = user.school?.name || "Trường THCS Tân Xã";
-    let districtWardName = user.districtWard?.name || "Phòng GD&ĐT Thạch Thất";
-    let departmentName = user.department?.name || "Sở GD&ĐT Hà Nội";
+    let schoolName = user.school?.name || "Trường THPT Chuyên Trần Phú (Hải Phòng)";
+    let districtWardName = user.districtWard?.name || "Quận Hải An - TP. Hải Phòng";
+    let departmentName = user.department?.name || "Sở GD&ĐT TP. Hải Phòng";
 
     if (isSuperAdmin) {
-      schoolName = "Toàn bộ các Trường (Hệ thống Toàn quốc)";
-      districtWardName = "Tất cả các Phòng GD&ĐT";
-      departmentName = "Bộ GD&ĐT & Tất cả các Sở GD&ĐT";
+      schoolName = "Toàn bộ các Trường (Hệ thống TP. Hải Phòng)";
+      districtWardName = "Tất cả các Quận/Huyện";
+      departmentName = "Bộ GD&ĐT & Sở GD&ĐT TP. Hải Phòng";
     }
 
     return {
