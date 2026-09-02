@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/lib/ai-assistant/analysis-engine.ts`.
+ * 2. Affected APIs: `src/lib/ai-assistant/task-evaluators/decision-support.ts`.
+ * 3. Schemas: `AggregatedSchoolSnapshot`, `DecisionSupportResult`, `DecisionOption`.
+ * 4. Verbatim User Instruction: "/ecc:plan cập nhập đự án phần mềm để phù hợp với nghị đinh mới này và phần mềm sẽ hỗ trợ hiệu trưởng hãy làm thật chi tiết và hoàn thiện"
+ */
+
 import {
   AggregatedSchoolSnapshot,
   DecisionSupportResult,
@@ -7,7 +15,7 @@ import {
 /**
  * Task Group 3: Decision Support Studio
  * Provides structured 3-option decision matrices, feasibility scores, pros/cons,
- * Vietnamese legal basis citations (TT 32/2020, TT 22/2021), and step-by-step roadmaps.
+ * Vietnamese legal basis citations (NQ 37/2026/NQ-CP, ND 178/2024, ND 67/2025, ND 154/2025, TT 32/2020), and step-by-step roadmaps.
  */
 export async function evaluateDecisionSupport(
   query: string,
@@ -17,7 +25,36 @@ export async function evaluateDecisionSupport(
 
   // Determine query domain to generate contextually relevant options
   let domain = "GENERAL";
-  if (normalizedQuery.includes("nghỉ") || normalizedQuery.includes("chuyên cần") || normalizedQuery.includes("bỏ học")) {
+  if (
+    normalizedQuery.includes("37/2026") ||
+    normalizedQuery.includes("nghị quyết 37") ||
+    normalizedQuery.includes("sắp xếp bộ máy") ||
+    normalizedQuery.includes("ban giám hiệu") ||
+    normalizedQuery.includes("phó hiệu trưởng") ||
+    normalizedQuery.includes("dôi dư")
+  ) {
+    domain = "NQ37_RESTRUCTURING";
+  } else if (
+    normalizedQuery.includes("bảo lưu") ||
+    normalizedQuery.includes("phụ cấp") ||
+    normalizedQuery.includes("178/2024") ||
+    normalizedQuery.includes("67/2025")
+  ) {
+    domain = "ALLOWANCE_PRESERVATION";
+  } else if (
+    normalizedQuery.includes("tinh giản") ||
+    normalizedQuery.includes("154/2025") ||
+    normalizedQuery.includes("nghỉ hưu trước tuổi")
+  ) {
+    domain = "STAFF_DOWNSIZING";
+  } else if (
+    normalizedQuery.includes("chuẩn hóa") ||
+    normalizedQuery.includes("36 tháng") ||
+    normalizedQuery.includes("nhân sự hỗ trợ") ||
+    normalizedQuery.includes("văn bằng")
+  ) {
+    domain = "SUPPORT_STAFF_STANDARDIZATION";
+  } else if (normalizedQuery.includes("nghỉ") || normalizedQuery.includes("chuyên cần") || normalizedQuery.includes("bỏ học")) {
     domain = "ATTENDANCE";
   } else if (normalizedQuery.includes("giáo viên") || normalizedQuery.includes("dạy thay") || normalizedQuery.includes("thiếu gv")) {
     domain = "TEACHER_SHORTAGE";
@@ -32,41 +69,168 @@ export async function evaluateDecisionSupport(
   let options: DecisionOption[] = [];
   let executiveSummary = "";
 
-  if (domain === "ATTENDANCE") {
-    executiveSummary = `Phân tích chuyên cần 4 điểm trường ghi nhận sĩ số toàn trường ${data.attendanceTotals.overallAttendanceRate}%. Đề xuất Hiệu trưởng áp dụng đồng bộ biện pháp vận động kết hợp hỗ trợ bán trú theo Thông tư 32/2020/TT-BGDĐT.`;
+  if (domain === "NQ37_RESTRUCTURING") {
+    executiveSummary = `Căn cứ Điều 4 Nghị quyết 37/2026/NQ-CP: Cơ sở giáo dục sau sắp xếp bố trí duy nhất 01 Hiệu trưởng, 01 Phó Hiệu trưởng tại Trường chính và 01 Phó Hiệu trưởng tại mỗi Phân hiệu. Thời hạn hoàn thành kiện toàn trước 30/09/2026 (Điều 8). Cán bộ dôi dư được bảo lưu phụ cấp theo NĐ 178/2024/NĐ-CP hoặc giải quyết tinh giản biên chế theo NĐ 154/2025/NĐ-CP.`;
     options = [
       {
         optionNumber: 1,
-        title: "Phương án 1 (Tối ưu - Toàn diện): Thành lập Tổ liên ngành vận động & Hỗ trợ tăng cường bán trú",
-        description: "Phối hợp với Trưởng bản, UBND Xã và Đoàn thanh niên tổ chức đến từng hộ gia đình có học sinh vắng từ 2 buổi trở lên; rà soát chế độ bán trú hỗ trợ bữa ăn trưa ấm cho điểm lẻ.",
-        score: 92,
+        title: "Phương án 1 (Khuyến nghị BGH): Bố trí Phó Hiệu trưởng dôi dư sang giảng dạy kiêm Tổ trưởng chuyên môn & Bảo lưu phụ cấp",
+        description: "Điều chuyển Phó Hiệu trưởng dôi dư sang ngạch giáo viên bộ môn có trình độ chuyên môn cao, giao kiêm nhiệm Tổ trưởng chuyên môn; áp dụng chế độ bảo lưu phụ cấp chức vụ lãnh đạo theo Nghị định 178/2024/NĐ-CP và Nghị định 67/2025/NĐ-CP.",
+        score: 95,
         pros: [
-          "Giải quyết tận gốc nguyên nhân vắng học (đường xa, hoàn cảnh kinh tế, mùa nương rẫy).",
-          "Tạo sự gắn kết chặt chẽ giữa nhà trường, chính quyền địa phương và cộng đồng phụ huynh bản.",
-          "Duy trì tỷ lệ chuyên cần bền vững trên 95% ở các điểm khó khăn (Bản Mó, Bản Pún, Phia Xam).",
+          "Giữ vững khối đoàn kết nội bộ, tận dụng tối đa kinh nghiệm quản lý và năng lực sư phạm của cán bộ.",
+          "Đảm bảo đầy đủ quyền lợi chính sách tiền lương và phụ cấp theo Điều 11 Nghị định 178/2024/NĐ-CP.",
+          "Đáp ứng 100% định mức biên chế chuẩn của Nghị quyết 37/2026/NQ-CP trước hạn chót 30/09/2026.",
         ],
         cons: [
-          "Cần thời gian phối hợp và nhân lực của giáo viên chủ nhiệm sau giờ dạy.",
-          "Cần bố trí kinh phí hỗ trợ công tác vận động cơ sở.",
+          "Cần phân bổ lại số tiết giảng dạy và thời khóa biểu trong tổ chuyên môn.",
         ],
-        estimatedCostOrResource: "Khoảng 2 - 3 triệu đồng từ quỹ khuyến học / ngân sách hoạt động xã hội hóa.",
+        estimatedCostOrResource: "Chi trả từ nguồn ngân sách nhà nước theo cơ chế bảo lưu phụ cấp hiện hành.",
         feasibility: "RẤT CAO",
         riskLevel: "THẤP",
         actionSteps: [
-          "1. Trích xuất danh sách học sinh vắng >= 2 buổi từ hệ thống AI Assistant.",
-          "2. Hiệu trưởng ký thông báo gửi Ban quản lý bản và UBND xã Tân Xã.",
-          "3. GVCN phối hợp cán bộ phụ trách điểm trường đến nhà học sinh trong vòng 24h.",
-          "4. Kiểm tra điều kiện bán trú và hỗ trợ bổ sung gạo/thực phẩm tại điểm trường.",
+          "1. Lập danh sách trích ngang và tờ trình phương án sắp xếp BGH theo mẫu NQ 37 gửi Sở GD&ĐT.",
+          "2. Họp trao đổi và nắm bắt tâm tư, nguyện vọng chuyên môn của Phó Hiệu trưởng dôi dư.",
+          "3. Ban hành quyết định phân công nhiệm vụ chuyên môn mới và xác nhận mức bảo lưu phụ cấp chức vụ.",
+          "4. Cập nhật hồ sơ nhân sự trên hệ thống School Management trước 30/09/2026.",
         ],
       },
       {
         optionNumber: 2,
-        title: "Phương án 2 (Nhanh - Linh hoạt): Giao ban trực tuyến điểm trường & Nhắn tin Zalo tự động",
-        description: "Tổ chức họp nhanh trực tuyến với 3 quản lý điểm trường vào 16h30 hằng ngày, kích hoạt thông báo tự động qua Zalo cho cha mẹ học sinh vắng.",
-        score: 80,
+        title: "Phương án 2: Đề xuất điều động, bổ nhiệm luân chuyển sang cơ sở giáo dục khác còn thiếu Phó Hiệu trưởng",
+        description: "Báo cáo Sở GD&ĐT điều động cán bộ sang trường học hoặc phân hiệu bạn trên cùng địa bàn đang khuyết vị trí lãnh đạo.",
+        score: 85,
         pros: [
-          "Triển khai ngay trong ngày, không phát sinh chi phí vận chuyển.",
-          "Ban giám hiệu nắm bắt số liệu tức thời mà không cần đi lại 12.5 km.",
+          "Giữ nguyên chức danh quản lý cho cán bộ, hỗ trợ kịp thời đơn vị bạn.",
+          "Bộ máy nhà trường tinh gọn tuyệt đối đúng định mức ngay lập tức.",
+        ],
+        cons: [
+          "Phụ thuộc vào chỉ tiêu điều động và quyết định phê duyệt của Giám đốc Sở GD&ĐT.",
+          "Cán bộ có thể phải thay đổi khoảng cách đi lại.",
+        ],
+        estimatedCostOrResource: "Không phát sinh chi phí cho trường.",
+        feasibility: "CAO",
+        riskLevel: "VỪA",
+        actionSteps: [
+          "1. Rà soát nhu cầu bổ nhiệm lãnh đạo của các trường lân cận qua cổng liên trường Sở GD&ĐT.",
+          "2. Soạn công văn đề xuất điều động gửi Phòng Tổ chức Cán bộ - Sở GD&ĐT.",
+        ],
+      },
+      {
+        optionNumber: 3,
+        title: "Phương án 3: Giải quyết chính sách tinh giản biên chế nếu cán bộ có nguyện vọng",
+        description: "Thực hiện quy trình nghỉ hưu trước tuổi hoặc thôi việc ngay có hưởng trợ cấp theo Nghị định số 154/2025/NĐ-CP đối với cán bộ tự nguyện xin nghỉ.",
+        score: 75,
+        pros: [
+          "Thực hiện triệt để chính sách tinh gọn bộ máy của Chính phủ.",
+          "Cán bộ nhận đầy đủ chế độ trợ cấp tài chính một lần theo quy định.",
+        ],
+        cons: [
+          "Mất đi cán bộ có nhiều năm kinh nghiệm quản lý giáo dục.",
+          "Thời gian thẩm định hồ sơ chế độ tại Sở Nội vụ kéo dài.",
+        ],
+        estimatedCostOrResource: "Chi trả từ nguồn kinh phí tinh giản biên chế của ngân sách thành phố.",
+        feasibility: "TRUNG BÌNH",
+        riskLevel: "THẤP",
+        actionSteps: [
+          "1. Tiếp nhận đơn tự nguyện tinh giản biên chế của cán bộ.",
+          "2. Họp Hội đồng trường và hoàn thiện hồ sơ theo Nghị định 154/2025/NĐ-CP trình cấp có thẩm quyền.",
+        ],
+      },
+    ];
+  } else if (domain === "SUPPORT_STAFF_STANDARDIZATION") {
+    executiveSummary = `Căn cứ Điều 5 Nghị quyết 37/2026/NQ-CP: Nhân sự hỗ trợ giáo dục được phân thành nhóm dùng chung (Kế toán 1-2, Văn thư 1, Thủ quỹ 1) và nhóm riêng theo từng phân hiệu (7 vị trí). Lộ trình đào tạo chuẩn hóa kéo dài 36 tháng (đến 05/08/2029). Nghiêm cấm bố trí người chưa đạt chuẩn vào vị trí Kế toán hoặc Y tế.`;
+    options = [
+      {
+        optionNumber: 1,
+        title: "Phương án 1 (Chuẩn hóa lộ trình 36 tháng): Cử nhân sự tham gia khóa đào tạo nâng chuẩn & Phân công kiêm nhiệm",
+        description: "Lập kế hoạch cử nhân sự chưa đạt chuẩn trình độ đi học văn bằng 2 hoặc bồi dưỡng chứng chỉ chuyên môn, hoàn thành trước ngày 05/08/2029; trong thời gian đào tạo vẫn hưởng nguyên lương và ngạch bậc.",
+        score: 94,
+        pros: [
+          "Đúng quy định chuyển tiếp tại Điều 5.3.a Nghị quyết 37/2026/NQ-CP.",
+          "Ổn định tâm lý người lao động và đảm bảo nguồn nhân sự gắn bó lâu dài.",
+          "Giữ nguyên hệ số lương và chế độ đãi ngộ trong suốt 36 tháng.",
+        ],
+        cons: [
+          "Nhà trường phải sắp xếp người hỗ trợ công việc trong thời gian nhân sự đi học tập trung.",
+        ],
+        estimatedCostOrResource: "Kinh phí đào tạo bồi dưỡng viên chức hàng năm của trường.",
+        feasibility: "RẤT CAO",
+        riskLevel: "THẤP",
+        actionSteps: [
+          "1. Ký cam kết lộ trình đào tạo đạt chuẩn trước 05/08/2029 với từng cá nhân.",
+          "2. Liên kết các cơ sở đào tạo được Bộ GD&ĐT / Bộ Y tế cấp phép để tổ chức lớp ngoài giờ.",
+          "3. Cập nhật trạng thái 'ĐANG ĐÀO TẠO 36 THÁNG' trên Cổng Tuân thủ NQ 37.",
+        ],
+      },
+      {
+        optionNumber: 2,
+        title: "Phương án 2: Ký hợp đồng dịch vụ / Hợp tác y tế học đường với Trung tâm Y tế cấp xã/phường",
+        description: "Đối với vị trí Y tế trường học nếu nhân sự hiện tại chưa có bằng y sĩ/điều dưỡng, ký thỏa thuận liên kết dịch vụ y tế với trạm y tế địa phương theo Điều 5.3.b NQ 37.",
+        score: 90,
+        pros: [
+          "Đảm bảo an toàn tuyệt đối và tuân thủ lệnh cấm phân công y tế không bằng cấp.",
+          "Đội ngũ y bác sĩ chuyên nghiệp phụ trách sơ cấp cứu học sinh.",
+        ],
+        cons: ["Phát sinh kinh phí hợp đồng dịch vụ y tế định kỳ."],
+        estimatedCostOrResource: "Trích từ nguồn bảo hiểm y tế học sinh và kinh phí thường xuyên.",
+        feasibility: "RẤT CAO",
+        riskLevel: "THẤP",
+        actionSteps: [
+          "1. Lập tờ trình ký kết biên bản ghi nhớ hợp tác với Trạm Y tế phường.",
+          "2. Bố trí phòng y tế học đường đạt chuẩn tại Trường chính và Phân hiệu 2.",
+        ],
+      },
+      {
+        optionNumber: 3,
+        title: "Phương án 3: Điều chuyển nội bộ giữa các cơ sở để tối ưu hóa vị trí việc làm",
+        description: "Hoán đổi nhân sự đạt chuẩn kế toán/y tế từ phân hiệu có dư sang cơ sở còn thiếu.",
+        score: 80,
+        pros: ["Tận dụng nguồn lực sẵn có trong nội bộ nhà trường."],
+        cons: ["Thay đổi địa điểm làm việc của nhân sự."],
+        estimatedCostOrResource: "Không phát sinh chi phí.",
+        feasibility: "CAO",
+        riskLevel: "VỪA",
+        actionSteps: [
+          "1. Khảo sát nguyện vọng nhân sự.",
+          "2. Ban hành quyết định điều động công tác nội bộ liên cơ sở.",
+        ],
+      },
+    ];
+  } else if (domain === "ATTENDANCE") {
+    executiveSummary = `Phân tích chuyên cần 4 điểm trường ghi nhận sĩ số toàn trường ${data.attendanceTotals.overallAttendanceRate}%. Đề xuất Hiệu trưởng áp dụng đồng bộ biện pháp vận động kết hợp hỗ trợ bán trú theo Thông tư 32/2020/TT-BGDĐT.`;
+    options = [
+      {
+        optionNumber: 1,
+        title: "Phương án 1 (Tối ưu - Toàn diện): Thành lập Tổ cố vấn học tập & Liên hệ gia đình trực tiếp",
+        description: "Phối hợp với GVCN, Đoàn trường và Ban đại diện CMHS liên hệ trực tiếp các trường hợp học sinh có nguy cơ chuyên cần hoặc sa sút học tập.",
+        score: 92,
+        pros: [
+          "Giải quyết tận gốc nguyên nhân vắng học và khó khăn trong học tập của học sinh THPT.",
+          "Tạo sự gắn kết chặt chẽ giữa nhà trường, giáo viên bộ môn và cha mẹ học sinh.",
+          "Duy trì tỷ lệ chuyên cần và chất lượng học tập trên 98% cho tất cả các lớp.",
+        ],
+        cons: [
+          "Cần thời gian phối hợp của giáo viên chủ nhiệm và ban tư vấn tâm lý học đường.",
+        ],
+        estimatedCostOrResource: "Sử dụng nguồn kinh phí hoạt động chuyên môn và tư vấn học đường của nhà trường.",
+        feasibility: "RẤT CAO",
+        riskLevel: "THẤP",
+        actionSteps: [
+          "1. Trích xuất danh sách học sinh cần hỗ trợ từ hệ thống AI Assistant.",
+          "2. Ban Giám hiệu ký phiếu thông báo gửi giáo viên chủ nhiệm và phụ huynh.",
+          "3. GVCN phối hợp Ban tư vấn học đường gặp gỡ phụ huynh và học sinh trong 24h.",
+          "4. Xây dựng kế hoạch bồi dưỡng và hỗ trợ học tập cá nhân hóa.",
+        ],
+      },
+      {
+        optionNumber: 2,
+        title: "Phương án 2 (Nhanh - Linh hoạt): Giao ban trực tuyến điểm trường & Nhắn tin thông báo tự động",
+        description: "Tổ chức họp nhanh trực tuyến với quản lý các cơ sở / điểm trường vào 16h30 hằng ngày, kích hoạt thông báo tự động qua ứng dụng cho phụ huynh.",
+        score: 85,
+        pros: [
+          "Triển khai ngay trong ngày, thông tin đa chiều tức thời giữa các cơ sở.",
+          "Ban Giám hiệu nắm bắt số liệu tức thời giữa các cơ sở đào tạo.",
         ],
         cons: [
           "Một số phụ huynh vùng cao không có smartphone hoặc sóng 4G chập chờn.",
@@ -213,55 +377,61 @@ export async function evaluateDecisionSupport(
 
   const legalGrounds = [
     {
+      code: "Nghị quyết số 37/2026/NQ-CP",
+      title: "Nghị quyết của Chính phủ về cơ cấu, số lượng và chính sách đối với Ban Giám hiệu và Nhân sự hỗ trợ giáo dục khi sắp xếp cơ sở GD công lập",
+      relevantArticle: "Điều 3 (Mô hình Trường chính - Phân hiệu), Điều 4 (Định mức BGH), Điều 5 (Định mức & Chuẩn hóa Nhân sự Hỗ trợ 36 tháng), Điều 8 (Hạn chót 30/09/2026)",
+      applicability: "Căn cứ pháp lý cao nhất và bắt buộc áp dụng khi tái cơ cấu tổ chức bộ máy trường học đa phân hiệu giai đoạn 2026-2028.",
+    },
+    {
+      code: "Nghị định 178/2024/NĐ-CP & NĐ 67/2025/NĐ-CP",
+      title: "Quy định về chế độ bảo lưu phụ cấp chức vụ lãnh đạo đối với cán bộ, công chức, viên chức sau sắp xếp tổ chức bộ máy",
+      relevantArticle: "Điều 11 (Bảo lưu phụ cấp chức vụ lãnh đạo dôi dư)",
+      applicability: "Đảm bảo quyền lợi bảo lưu phụ cấp chức vụ cho Phó Hiệu trưởng dôi dư khi chuyển sang vị trí việc làm giáo viên hoặc chuyên môn khác.",
+    },
+    {
+      code: "Nghị định 154/2025/NĐ-CP",
+      title: "Quy định về chính sách tinh giản biên chế",
+      relevantArticle: "Điều 5, Điều 9 (Chính sách về hưu trước tuổi và thôi việc ngay có trợ cấp)",
+      applicability: "Áp dụng giải quyết nguyện vọng nghỉ hưu trước tuổi hoặc thôi việc hưởng trợ cấp cho cán bộ, nhân sự dôi dư.",
+    },
+    {
       code: "Thông tư 32/2020/TT-BGDĐT",
       title: "Điều lệ trường trung học cơ sở, trường trung học phổ thông và trường phổ thông có nhiều cấp học",
       relevantArticle: "Điều 11 (Điểm trường), Điều 19 (Nhiệm vụ và quyền hạn của Hiệu trưởng), Điều 28 (Khen thưởng và kỷ luật)",
       applicability: "Quy định thẩm quyền điều hành của Hiệu trưởng đối với các phân hiệu/điểm trường lẻ và quản lý học sinh.",
     },
-    {
-      code: "Thông tư 22/2021/TT-BGDĐT",
-      title: "Quy định về đánh giá học sinh trung học cơ sở và học sinh trung học phổ thông",
-      relevantArticle: "Điều 5 (Hình thức đánh giá), Điều 12 (Đánh giá kết quả rèn luyện và học tập)",
-      applicability: "Căn cứ theo dõi tiến độ học vụ, rèn luyện phẩm chất và phân loại học sinh có nguy cơ học lực yếu.",
-    },
-    {
-      code: "Nghị định 127/2018/NĐ-CP",
-      title: "Quy định trách nhiệm quản lý nhà nước về giáo dục",
-      relevantArticle: "Điều 7 (Trách nhiệm của UBND cấp xã), Điều 11 (Trách nhiệm của cơ sở giáo dục)",
-      applicability: "Cơ sở pháp lý để nhà trường phối hợp với UBND cấp xã và Ban quản lý thôn bản trong công tác duy trì sĩ số.",
-    },
   ];
 
   const roadmap = [
     {
-      phase: "Giai đoạn 1: Chuẩn bị & Chỉ đạo ban đầu",
+      phase: "Giai đoạn 1: Chuẩn bị, Thẩm định Pháp lý & Chỉ đạo ban đầu",
       timeline: "Ngày 1 - 2",
       tasks: [
         "Họp nhanh Ban giám hiệu và phân công Phó Hiệu trưởng phụ trách trực tiếp.",
-        "Trích xuất dữ liệu rà soát từ Trợ lý AI và ban hành văn bản hướng dẫn.",
+        "Trích xuất dữ liệu rà soát định mức NQ 37 từ Trợ lý AI và ban hành văn bản hướng dẫn.",
       ],
     },
     {
-      phase: "Giai đoạn 2: Triển khai thực địa & Điều phối 4 điểm trường",
+      phase: "Giai đoạn 2: Triển khai thực địa & Kiện toàn tổ chức",
       timeline: "Ngày 3 - 10",
       tasks: [
-        "Tổ chức triển khai đồng bộ tại Điểm trung tâm và 3 điểm lẻ.",
-        "Theo dõi dữ liệu cập nhật hằng ngày qua bảng điều khiển AI.",
+        "Tổ chức triển khai đồng bộ tại Trường chính và các phân hiệu trực thuộc.",
+        "Hoàn tất phương án phân công nhân sự và kiểm soát chuẩn hóa chuyên môn.",
       ],
     },
     {
-      phase: "Giai đoạn 3: Đánh giá kết quả & Báo cáo cấp trên",
+      phase: "Giai đoạn 3: Đánh giá kết quả & Báo cáo Sở GD&ĐT",
       timeline: "Ngày 11 - 15",
       tasks: [
-        "Tổng hợp báo cáo tiến độ bằng công cụ tự động của AI Assistant.",
-        "Khen thưởng các cá nhân/tập thể hoàn thành xuất sắc nhiệm vụ.",
+        "Tổng hợp hồ sơ phương án sắp xếp bộ máy gửi Sở GD&ĐT / UBND TP.",
+        "Cập nhật hồ sơ điện tử đồng bộ trên toàn hệ thống.",
       ],
     },
   ];
 
   return {
     query,
-    contextSummary: `Yêu cầu điều hành: "${query}" - Phạm vi áp dụng: 4 điểm trường (Trung tâm, Bản Mó, Bản Pún, Phia Xam) - Tổng quy mô: ${data.attendanceTotals.totalStudents} học sinh, ${data.teachers.length} giáo viên.`,
+    contextSummary: `Yêu cầu điều hành: "${query}" - Thẩm định theo Nghị quyết 37/2026/NQ-CP và các quy định pháp luật hiện hành.`,
     options,
     recommendedOptionNumber: 1,
     executiveSummary,
@@ -269,3 +439,4 @@ export async function evaluateDecisionSupport(
     roadmap,
   };
 }
+

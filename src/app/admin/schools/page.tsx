@@ -323,7 +323,7 @@ export default function SchoolsPage() {
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="VD: Trường Tiểu học Tân Xã hoặc Trường THCS..."
+              placeholder="VD: Trường THPT Chuyên Trần Phú hoặc THPT Lương Khánh Thiện..."
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               required
             />
@@ -379,7 +379,7 @@ export default function SchoolsPage() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
-              placeholder="VD: Xã Tân Xã, Huyện Thạch Thất, Hà Nội"
+              placeholder="VD: Số 10 Lê Hồng Phong, Phường Đằng Hải, Quận Hải An, TP. Hải Phòng"
             />
           </div>
 

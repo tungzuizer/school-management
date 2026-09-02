@@ -23,8 +23,8 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
 
   beforeEach(() => {
     mockSnapshot = {
-      schoolId: "school-tan-xa",
-      schoolName: "Trường THCS Tân Xã",
+      schoolId: "THPT-TRANPHU-HP",
+      schoolName: "Trường THPT Chuyên Trần Phú (Hải Phòng)",
       date: new Date("2026-09-01"),
       thresholds: {
         ABSENCE_RATE_WARNING: 5.0,
@@ -41,12 +41,12 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
       schoolPoints: [
         {
           id: "pt-central",
-          campusId: "campus-tx",
-          campusName: "Cơ sở chính",
-          name: "Điểm trường Trung tâm",
+          campusId: "campus-tp-1",
+          campusName: "Cơ sở 1 (Lê Hồng Phong)",
+          name: "Điểm trường Lê Hồng Phong",
           distanceKm: 0.0,
           managerName: "Thầy Hiệu trưởng",
-          phone: "0912345678",
+          phone: "02253836888",
           totalStudents: 200,
           presentStudents: 195,
           absentStudents: 5,
@@ -64,13 +64,13 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
           statusColor: "GREEN",
         },
         {
-          id: "pt-ban-mo",
-          campusId: "campus-tx",
-          campusName: "Cơ sở chính",
-          name: "Điểm trường Bản Mó",
+          id: "pt-campus-2",
+          campusId: "campus-tp-2",
+          campusName: "Cơ sở 2 (Khu Giáo dục Thể chất)",
+          name: "Điểm trường Cơ sở 2",
           distanceKm: 4.5,
-          managerName: "Thầy Quyết",
-          phone: "0912345679",
+          managerName: "Thầy Phó Hiệu trưởng",
+          phone: "02253836889",
           totalStudents: 60,
           presentStudents: 55,
           absentStudents: 5,
@@ -88,13 +88,13 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
           statusColor: "YELLOW",
         },
         {
-          id: "pt-ban-pun",
-          campusId: "campus-tx",
-          campusName: "Cơ sở chính",
-          name: "Điểm trường Bản Pún",
-          distanceKm: 8.2,
-          managerName: "Cô Lan",
-          phone: "0912345680",
+          id: "pt-campus-3",
+          campusId: "campus-tp-1",
+          campusName: "Cơ sở 1 (Lê Hồng Phong)",
+          name: "Điểm Thực hành Thí nghiệm",
+          distanceKm: 2.0,
+          managerName: "Cô Trưởng phòng TN",
+          phone: "02253836890",
           totalStudents: 45,
           presentStudents: 42,
           absentStudents: 3,
@@ -113,12 +113,12 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
         },
         {
           id: "pt-phia-xam",
-          campusId: "campus-tx",
-          campusName: "Cơ sở chính",
-          name: "Điểm trường Phia Xam",
+          campusId: "campus-tp-2",
+          campusName: "Cơ sở 2 (Khu Giáo dục Thể chất)",
+          name: "Điểm trường Cơ sở Ngoại thành",
           distanceKm: 12.5,
-          managerName: "Thầy Sơn",
-          phone: "0912345681",
+          managerName: "Thầy Quản lý",
+          phone: "02253836891",
           totalStudents: 35,
           presentStudents: 28,
           absentStudents: 7,
@@ -151,7 +151,7 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
           specialty: "Toán học",
           subjectNames: ["Toán học", "Tin học"],
           schoolPointId: "pt-central",
-          schoolPointName: "Điểm trường Trung tâm",
+          schoolPointName: "Điểm trường Lê Hồng Phong",
           weeklyPeriodsCount: 16,
           busyPeriods: [1, 5],
           isAvailableToday: true,
@@ -162,8 +162,8 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
           name: "Thầy Lò Văn Quyết",
           specialty: "Toán học",
           subjectNames: ["Toán học"],
-          schoolPointId: "pt-ban-mo",
-          schoolPointName: "Điểm trường Bản Mó",
+          schoolPointId: "pt-campus-2",
+          schoolPointName: "Điểm trường Cơ sở 2",
           weeklyPeriodsCount: 18,
           busyPeriods: [1, 4], // period 2 is free
           isAvailableToday: true,
@@ -175,7 +175,7 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
           specialty: "Toán học",
           subjectNames: ["Toán học"],
           schoolPointId: "pt-phia-xam",
-          schoolPointName: "Điểm trường Phia Xam",
+          schoolPointName: "Điểm trường Cơ sở Ngoại thành",
           weeklyPeriodsCount: 20,
           busyPeriods: [1, 2, 3, 4, 5],
           isAvailableToday: false,
@@ -186,10 +186,10 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
         {
           id: "eq-1",
           code: "PC-TT",
-          name: "Máy vi tính Trung tâm",
+          name: "Máy vi tính Lê Hồng Phong",
           category: EquipmentCategory.IT_COMPUTER,
           schoolPointId: "pt-central",
-          schoolPointName: "Điểm trường Trung tâm",
+          schoolPointName: "Điểm trường Lê Hồng Phong",
           totalQuantity: 25,
           availableQuantity: 20,
           inUseQuantity: 5,
@@ -200,10 +200,10 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
         {
           id: "eq-2",
           code: "PC-BM",
-          name: "Máy vi tính Bản Mó",
+          name: "Máy vi tính Cơ sở 2",
           category: EquipmentCategory.IT_COMPUTER,
-          schoolPointId: "pt-ban-mo",
-          schoolPointName: "Điểm trường Bản Mó",
+          schoolPointId: "pt-campus-2",
+          schoolPointName: "Điểm trường Cơ sở 2",
           totalQuantity: 5,
           availableQuantity: 2,
           inUseQuantity: 3,
@@ -225,14 +225,14 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
             teacherName: "Thầy Vũ Minh",
             subjectName: "Tổ Toán - Tin học",
             delayedDays: 3,
-            schoolPointName: "Điểm trường Bản Mó",
+            schoolPointName: "Điểm trường Cơ sở 2",
           },
           {
             teacherId: "t-delay-2",
             teacherName: "Cô Mai Lan",
             subjectName: "Tổ Toán - Tin học",
             delayedDays: 2,
-            schoolPointName: "Điểm trường Bản Pún",
+            schoolPointName: "Điểm Thực hành Thí nghiệm",
           },
         ],
       },
@@ -454,8 +454,8 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
         mockSnapshot
       );
 
-      // Bản Mó is closer to Phia Xam (8.0 km away) than Trung tâm (12.5 km away)
-      expect(result.suggestedSourcePointName).toContain("Điểm trường Bản Mó");
+      // Cơ sở 2 is closer to Cơ sở Ngoại thành (8.0 km away) than Lê Hồng Phong (12.5 km away)
+      expect(result.suggestedSourcePointName).toContain("Điểm trường Cơ sở 2");
       expect(result.availableInSource).toBe(2);
       expect(result.transferSteps.length).toBeGreaterThan(0);
       expect(result.feasibilityScore).toBeGreaterThanOrEqual(70);
@@ -463,13 +463,13 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
 
     // Task 3: Decision Support Studio
     it("generates 3 structured decision options with legal citations and roadmap", async () => {
-      const query = "Vận động học sinh vắng học tại Điểm Bản Mó và Phia Xam";
+      const query = "Vận động học sinh vắng học tại Điểm Cơ sở 2 và Cơ sở Ngoại thành";
       const result = await defaultAiAnalysisEngine.evaluateDecisionOptions(query, mockSnapshot);
 
       expect(result.options).toHaveLength(3);
       expect(result.recommendedOptionNumber).toBe(1);
       expect(result.legalGrounds.length).toBeGreaterThan(0);
-      expect(result.legalGrounds[0].code).toContain("Thông tư");
+      expect(result.legalGrounds.some(g => g.code.includes("Thông tư") || g.code.includes("Nghị quyết"))).toBe(true);
       expect(result.roadmap).toHaveLength(3);
       expect(result.options[0].pros.length).toBeGreaterThan(0);
       expect(result.options[0].cons.length).toBeGreaterThan(0);
@@ -497,8 +497,8 @@ describe("Principal AI Assistant Suite (Multi-Campus)", () => {
       const reportResult = await defaultAiAnalysisEngine.generatePeriodicReport("DAILY", mockSnapshot);
       expect(reportResult.reportType).toBe("DAILY");
       expect(reportResult.markdownReport).toContain("BÁO CÁO ĐIỀU HÀNH");
-      expect(reportResult.markdownReport).toContain("Điểm trường Trung tâm");
-      expect(reportResult.markdownReport).toContain("Điểm trường Phia Xam");
+      expect(reportResult.markdownReport).toContain("Điểm trường Lê Hồng Phong");
+      expect(reportResult.markdownReport).toContain("Điểm trường Cơ sở Ngoại thành");
     });
 
     // Task 6: Early Warning Radar

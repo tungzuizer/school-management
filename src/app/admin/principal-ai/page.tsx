@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js App Router (`/admin/principal-ai`).
+ * 2. Affected APIs: `src/app/admin/principal-ai/page.tsx`.
+ * 3. Schemas: `Message`, `SavedDecision`, `SchoolPointInfo`, `AIGroundedResponse`.
+ * 4. Verbatim User Instruction: "/ecc:plan cập nhập đự án phần mềm để phù hợp với nghị đinh mới này và phần mềm sẽ hỗ trợ hiệu trưởng hãy làm thật chi tiết và hoàn thiện"
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -21,6 +29,7 @@ import {
   MapPin,
   Navigation,
   Loader2,
+  ShieldCheck,
 } from "lucide-react";
 import {
   askPrincipalAI,
@@ -75,7 +84,7 @@ export default function PrincipalAIPage() {
     {
       id: "1",
       sender: "ai",
-      text: "Xin chào Thầy/Cô Hiệu trưởng! Tôi là Trợ lý AI Tư vấn Ra Quyết định Ban Giám hiệu Đa Điểm Trường. Thầy/Cô cần tham vấn phương án chỉ đạo nào hôm nay?",
+      text: "Xin chào Thầy/Cô Hiệu trưởng! Tôi là Trợ lý AI Cố vấn Ban Giám hiệu & Thẩm định Nghị quyết 37/2026/NQ-CP. Thầy/Cô cần tham vấn phương án sắp xếp bộ máy BGH, bảo lưu phụ cấp NĐ 178, lộ trình chuẩn hóa nhân sự 36 tháng hay điều phối hoạt động nào hôm nay?",
       timestamp: "08:00",
     },
   ]);
@@ -117,10 +126,11 @@ export default function PrincipalAIPage() {
   }, [fetchDecisions, fetchSchoolPoints]);
 
   const presetQueries = [
-    "Điều chuyển giáo viên Tiếng Anh từ Điểm Trung Tâm lên điểm trường xa nhất",
-    "Phương án xử lý rủi ro học sinh nguy cơ bỏ học nhiều ngày liên tiếp",
-    "Phân bổ ngân sách đầu tư phòng máy di động cho các điểm trường",
-    "Kế hoạch đảm bảo an toàn giao thông & phòng chống thiên tai cho điểm trường vùng cao",
+    "⚖️ Phương án sắp xếp Phó Hiệu trưởng dôi dư và bảo lưu phụ cấp theo NQ 37/2026 và NĐ 178/2024",
+    "🎓 Lộ trình bồi dưỡng chuẩn hóa 36 tháng (đến 05/08/2029) cho nhân sự hỗ trợ chưa đạt chuẩn",
+    "🛡️ Thẩm định tính hợp pháp vị trí Y tế học đường và Kế toán toàn trường theo Điều 5 NQ 37",
+    "📍 Điều chuyển giáo viên dạy liên phân hiệu tối ưu khoảng cách di chuyển giữa các cơ sở",
+    "📈 Phương án xử lý nguy cơ học sinh vắng học & sa sút chuyên cần theo Thông tư 32/2020",
   ];
 
   const handleSend = async (textToSend?: string) => {

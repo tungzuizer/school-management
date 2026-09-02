@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js Root Admin Layout for `/admin/*`.
+ * 2. Affected APIs: `src/app/admin/layout.tsx`.
+ * 3. Schemas: `MenuItem`, `MenuGroup`, `AdminProfile`.
+ * 4. Verbatim User Instruction: "sửa lại cấu trúc Bảng Điều Khiển Ban Giám Hiệu cho logic và phù hợp với những gì tôi mô tả về dự án"
+ */
+
 "use client";
 
 import Link from "next/link";
@@ -65,6 +73,14 @@ const superAdminMenuGroups: MenuGroup[] = [
     ],
   },
   {
+    title: "⚖️ Tuân thủ Nghị quyết 37/2026/NQ-CP",
+    icon: ShieldCheck,
+    items: [
+      { label: "Thẩm định Định mức NQ 37", href: "/admin/nq37-compliance", icon: ShieldCheck, badge: "NQ 37" },
+      { label: "Nhân sự Hỗ trợ & Chuẩn hóa 36T", href: "/admin/support-staff", icon: UserCheck, badge: "36 Tháng" },
+    ],
+  },
+  {
     title: "📊 Điều hành Chiến lược & Báo cáo",
     icon: Sparkles,
     items: [
@@ -92,10 +108,10 @@ const superAdminMenuGroups: MenuGroup[] = [
     title: "🤖 Trợ lý AI Executive & Giám sát",
     icon: Bot,
     items: [
-      { label: "AI Executive Cấp cao", href: "/admin/principal-ai", icon: Bot },
+      { label: "AI Executive Cố vấn BGH", href: "/admin/principal-ai", icon: Bot, badge: "AI" },
       { label: "Cảnh báo sớm Toàn ngành", href: "/admin/early-warnings", icon: Zap },
-      { label: "Bố trí dạy thay", href: "/admin/substitute-dispatch", icon: UserCheck },
-      { label: "Cấu hình AI OmniRoute", href: "/admin/ai-config", icon: Sparkles },
+      { label: "Bố trí dạy thay", href: "/admin/substitute-teaching", icon: UserCheck },
+      { label: "Trợ lý AI Đa điểm trường", href: "/admin/ai-assistant", icon: Sparkles },
     ],
   },
   {
@@ -111,54 +127,64 @@ const superAdminMenuGroups: MenuGroup[] = [
   },
 ];
 
-// Menu Group for School Principal (BGH - Hiệu Trưởng Trường)
+// Menu Group for School Principal (BGH - Ban Giám Hiệu & Hiệu Trưởng Trường Đa Cơ Sở)
 const principalMenuGroups: MenuGroup[] = [
   {
-    title: "Phân hệ I: Quản trị chiến lược",
-    icon: Sparkles,
+    title: "🏛️ Trung tâm Điều hành BGH",
+    icon: LayoutDashboard,
     items: [
-      { label: "Quản trị chiến lược", href: "/admin/strategy", icon: Sparkles },
+      { label: "Bảng điều khiển Ban Giám hiệu", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Điều hành Liên phân hiệu", href: "/admin/multi-school", icon: Globe },
+      { label: "Báo cáo Ngày Toàn trường", href: "/admin/daily-reports", icon: FileBarChart },
+      { label: "Quản trị Chiến lược & KPI", href: "/admin/strategy", icon: Sparkles },
     ],
   },
   {
-    title: "Tổng quan",
-    icon: Home,
+    title: "⚖️ Tuân thủ Nghị quyết 37/2026/NQ-CP",
+    icon: ShieldCheck,
     items: [
-      { label: "Bảng điều khiển", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Liên trường", href: "/admin/multi-school", icon: Globe },
-      { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileBarChart },
+      { label: "Thẩm định Định mức NQ 37", href: "/admin/nq37-compliance", icon: ShieldCheck, badge: "NQ 37" },
+      { label: "Nhân sự Hỗ trợ & Chuẩn hóa 36T", href: "/admin/support-staff", icon: UserCheck, badge: "36 Tháng" },
     ],
   },
   {
-    title: "Quản lý trường học",
-    icon: Settings,
+    title: "👥 Quản trị Đội ngũ & Nhân sự",
+    icon: UserCog,
     items: [
-      { label: "Lớp học", href: "/admin/classes", icon: School },
-      { label: "Giáo viên", href: "/admin/teachers", icon: UserCog },
-      { label: "Học sinh", href: "/admin/students", icon: Users },
-      { label: "Môn học", href: "/admin/subjects", icon: BookOpen },
-      { label: "Tổ chuyên môn", href: "/admin/subject-groups", icon: Users },
+      { label: "Hiệu trưởng & Ban Giám hiệu", href: "/admin/principals", icon: Landmark },
+      { label: "Đội ngũ Giáo viên", href: "/admin/teachers", icon: UserCog },
+      { label: "Tổ Chuyên môn", href: "/admin/subject-groups", icon: Users },
+      { label: "Điều động Dạy thay Thông minh", href: "/admin/substitute-teaching", icon: Zap },
     ],
   },
   {
-    title: "Hệ thống & Vận hành",
-    icon: CalendarDays,
+    title: "🏫 Quản lý Dạy học & Học sinh",
+    icon: School,
     items: [
-      { label: "Thời khóa biểu", href: "/admin/schedule", icon: CalendarDays },
-      { label: "Phê duyệt Học bạ", href: "/admin/transcripts", icon: Lock },
-      { label: "Thông báo", href: "/admin/notifications", icon: Bell },
-      { label: "Sổ đầu bài", href: "/admin/journals", icon: FileBarChart },
-      { label: "Duyệt giáo án", href: "/admin/lesson-plans", icon: BookOpen },
-      { label: "Trung tâm Phê duyệt", href: "/admin/approvals", icon: ShieldCheck },
+      { label: "Lớp học theo Cơ sở", href: "/admin/classes", icon: School },
+      { label: "Hồ sơ Học sinh", href: "/admin/students", icon: Users },
+      { label: "Môn học & Chương trình", href: "/admin/subjects", icon: BookOpen },
+      { label: "Thời khóa biểu Liên cơ sở", href: "/admin/schedule", icon: CalendarDays },
+      { label: "Quản lý & Duyệt Giáo án", href: "/admin/lesson-plans", icon: BookOpen },
+      { label: "Sổ đầu bài Điện tử", href: "/admin/journals", icon: FileBarChart },
     ],
   },
   {
-    title: "🤖 Trợ lý AI & Cảnh báo",
+    title: "🛡️ Kiểm soát & Phê duyệt",
+    icon: Lock,
+    items: [
+      { label: "Trung tâm Phê duyệt BGH", href: "/admin/approvals", icon: ShieldCheck },
+      { label: "Phê duyệt & Khóa Học bạ", href: "/admin/transcripts", icon: Lock },
+      { label: "Bảng tin & Thông báo Khẩn", href: "/admin/notifications", icon: Bell },
+    ],
+  },
+  {
+    title: "🤖 Trợ lý AI Cố vấn Hiệu trưởng",
     icon: Bot,
     items: [
-      { label: "Trợ lý AI Đa điểm trường", href: "/admin/ai-assistant", icon: Bot, badge: "NEW" },
-      { label: "Tư vấn & Cảnh báo AI", href: "/admin/principal-ai", icon: Sparkles },
-      { label: "Bố trí dạy thay", href: "/admin/substitute-dispatch", icon: UserCheck },
+      { label: "AI Cố vấn Ra Quyết định", href: "/admin/principal-ai", icon: Bot, badge: "AI BGH" },
+      { label: "Radar Cảnh báo sớm AI", href: "/admin/early-warnings", icon: Zap },
+      { label: "Trợ lý AI Đa điểm trường", href: "/admin/ai-assistant", icon: Sparkles },
     ],
   },
 ];
@@ -193,12 +219,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const menuGroups = isSuperAdmin ? superAdminMenuGroups : principalMenuGroups;
 
-  const userName = profile?.name || session?.user?.name || (isSuperAdmin ? "Super Admin Tối Cao" : "TS. Nguyễn Văn Hùng");
+  const userName = profile?.name || session?.user?.name || (isSuperAdmin ? "Ban Quản Trị Hệ Thống Toàn Thành Phố" : "Thầy Đoàn Thái Sơn");
   const userEmail = profile?.email || session?.user?.email || "";
 
-  const schoolDisplay = profile?.schoolName || (isSuperAdmin ? "Toàn bộ các Trường (Hệ thống Toàn quốc)" : "Trường THCS Tân Xã");
-  const wardDisplay = profile?.districtWardName || (isSuperAdmin ? "Tất cả các Phòng GD&ĐT" : "Phòng GD&ĐT Thạch Thất");
-  const deptDisplay = profile?.departmentName || (isSuperAdmin ? "Bộ GD&ĐT & Tất cả các Sở GD&ĐT" : "Sở GD&ĐT Hà Nội");
+  const schoolDisplay = profile?.schoolName || (isSuperAdmin ? "Toàn bộ các Trường (Hệ thống TP. Hải Phòng)" : "Trường THPT Chuyên Trần Phú");
+  const wardDisplay = profile?.districtWardName || (isSuperAdmin ? "Tất cả các Quận/Huyện" : "Quận Hải An - TP. Hải Phòng");
+  const deptDisplay = profile?.departmentName || (isSuperAdmin ? "Bộ GD&ĐT & Sở GD&ĐT TP. Hải Phòng" : "Sở GD&ĐT TP. Hải Phòng");
 
   const toggleGroup = (title: string) => {
     setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
@@ -244,7 +270,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ring-2 shadow-lg transition-transform duration-300 hover:scale-105 ${
                 isSuperAdmin
                   ? "bg-gradient-to-br from-amber-500 to-amber-700 ring-amber-400/60 text-white"
-                  : "bg-gradient-to-br from-indigo-500 to-violet-600 ring-indigo-400/50 text-white"
+                  : "bg-blue-600 ring-blue-400/50 text-white"
               }`}
             >
               {isSuperAdmin ? (
@@ -332,7 +358,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             isActive
                               ? isSuperAdmin
                                 ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-extrabold shadow-lg shadow-amber-500/20"
-                                : "bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-extrabold shadow-lg shadow-indigo-500/25"
+                                : "bg-blue-600 text-white font-extrabold shadow-md shadow-blue-900/30"
                               : isSuperAdmin
                               ? "text-slate-300 hover:bg-slate-800/80 hover:text-white"
                               : "text-slate-300 hover:bg-white/10 hover:text-white"

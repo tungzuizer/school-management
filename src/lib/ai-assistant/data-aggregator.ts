@@ -54,7 +54,7 @@ export async function fetchAggregatedSchoolData(
     where: { id: effectiveSchoolId },
     select: { id: true, name: true },
   });
-  const schoolName = schoolInfo?.name || "Trường Phổ thông Dân tộc Bán trú THCS Tân Xã";
+  const schoolName = schoolInfo?.name || "Trường THPT Chuyên Trần Phú (Hải Phòng)";
 
   // Date boundaries for today (targetDate)
   const startOfDay = new Date(targetDate);
@@ -289,61 +289,40 @@ export async function fetchAggregatedSchoolData(
   const rawIncidents = incidentsRes.status === "fulfilled" ? incidentsRes.value : [];
   const rawJournals = journalsRes.status === "fulfilled" ? journalsRes.value : [];
 
-  // 3. Fallback School Points generation if none exist in DB (ensures 4 points are always modeled)
+  // 3. Fallback School Points generation from real DB campuses if none exist in DB
   let effectiveSchoolPoints = schoolPoints;
   if (effectiveSchoolPoints.length === 0) {
-    const defaultCampusId = campuses[0]?.id || "default-campus-1";
-    const defaultCampusName = campuses[0]?.name || "Cơ sở 1 (Trung tâm)";
-    effectiveSchoolPoints = [
-      {
-        id: "sp-trung-tam",
-        campusId: defaultCampusId,
-        campus: { id: defaultCampusId, name: defaultCampusName },
-        name: "Điểm trung tâm",
-        address: "Trung tâm xã Tân Xã",
-        distanceKm: 0.0,
-        managerName: "ThS. Hoàng Văn Quyết",
-        phone: "0912345678",
+    if (campuses.length > 0) {
+      effectiveSchoolPoints = campuses.map((cp, idx) => ({
+        id: `sp-${cp.id}`,
+        campusId: cp.id,
+        campus: { id: cp.id, name: cp.name },
+        name: cp.name,
+        address: idx === 0 ? "Số 10 Lê Hồng Phong, Hải An, Hải Phòng" : "Cơ sở 2, Hải Phòng",
+        distanceKm: idx === 0 ? 0.0 : 3.5,
+        managerName: "Ban Quản lý Điểm trường",
+        phone: "02253836888",
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
-      {
-        id: "sp-ban-mo",
-        campusId: defaultCampusId,
-        campus: { id: defaultCampusId, name: defaultCampusName },
-        name: "Điểm Bản Mó",
-        address: "Bản Mó, xã Tân Xã",
-        distanceKm: 4.5,
-        managerName: "Thầy Lò Văn Biên",
-        phone: "0923456789",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: "sp-ban-pun",
-        campusId: defaultCampusId,
-        campus: { id: defaultCampusId, name: defaultCampusName },
-        name: "Điểm Bản Pún",
-        address: "Bản Pún, xã Tân Xã",
-        distanceKm: 8.2,
-        managerName: "Cô Cà Thị Mai",
-        phone: "0934567890",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: "sp-phia-xam",
-        campusId: defaultCampusId,
-        campus: { id: defaultCampusId, name: defaultCampusName },
-        name: "Điểm Phia Xam",
-        address: "Bản Phia Xam, vùng cao",
-        distanceKm: 12.5,
-        managerName: "Thầy Vì Văn Thơm",
-        phone: "0945678901",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
+      }));
+    } else {
+      const defaultCampusId = "default-campus-1";
+      const defaultCampusName = "Cơ sở 1 (Trung tâm)";
+      effectiveSchoolPoints = [
+        {
+          id: "sp-trung-tam",
+          campusId: defaultCampusId,
+          campus: { id: defaultCampusId, name: defaultCampusName },
+          name: "Cơ sở Chính",
+          address: "Số 10 Lê Hồng Phong, Hải An, Hải Phòng",
+          distanceKm: 0.0,
+          managerName: "Ban Giám hiệu",
+          phone: "02253836888",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+    }
   }
 
   // 4. Build School Point Summaries
