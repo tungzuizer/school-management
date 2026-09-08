@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin navigation (`src/app/admin/schedule/page.tsx`).
+ * 2. Affected APIs: Server actions `bulkImportSchedules`.
+ * 3. Schema: Removed Google Drive import modal and dependencies.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,7 +21,6 @@ import {
 } from "./actions";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
-import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import { useEasyMode } from "@/lib/useEasyMode";
 import {
   CalendarDays,
@@ -27,7 +34,6 @@ import {
   Trash2,
   Edit3,
   FileSpreadsheet,
-  HardDrive,
   Download,
   School,
   Building2,
@@ -175,7 +181,6 @@ export default function SchedulePage() {
   });
 
   const [onlyMatchedTeachers, setOnlyMatchedTeachers] = useState(true);
-  const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [excelModalOpen, setExcelModalOpen] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -397,23 +402,6 @@ export default function SchedulePage() {
     }
   }
 
-  // Handle Drive Import Confirm
-  const handleDriveImportConfirm = async (parsedData: any[]) => {
-    const res = await bulkImportSchedules(parsedData, selectedClassId);
-    if (res.errors && res.errors.length > 0) {
-      setToast({
-        message: `Đã nhập ${res.importedCount} tiết. Có ${res.errors.length} cảnh báo (ví dụ: ${res.errors[0]})`,
-        type: "error",
-      });
-    } else {
-      setToast({
-        message: `Nhập hàng loạt thành công ${res.importedCount} tiết học từ Google Drive!`,
-        type: "success",
-      });
-    }
-    handleClassChange(selectedClassId);
-  };
-
   // Direct Excel File Upload Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -533,14 +521,6 @@ export default function SchedulePage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setDriveModalOpen(true)}
-              className="px-3.5 py-2.5 bg-indigo-600/80 hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-indigo-400/30 backdrop-blur-md shadow-xs"
-            >
-              <HardDrive className="w-4 h-4 text-indigo-200" />
-              <span>Nhập Từ Drive</span>
-            </button>
-
             <button
               onClick={() => setExcelModalOpen(true)}
               className="px-3.5 py-2.5 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-emerald-400/30 backdrop-blur-md shadow-xs"
@@ -1160,15 +1140,6 @@ export default function SchedulePage() {
           </div>
         </Modal>
       )}
-
-      {/* Google Drive Import Modal */}
-      <GoogleDriveImportModal
-        isOpen={driveModalOpen}
-        onClose={() => setDriveModalOpen(false)}
-        targetType="SCHEDULES"
-        title="Nhập Thời Khóa Biểu Hàng Loạt Từ Google Drive"
-        onConfirmImport={handleDriveImportConfirm}
-      />
 
       {/* Direct Excel Upload Modal */}
       {excelModalOpen && (

@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/teacher/subject-head/SubjectHeadClient.tsx`.
+ * 2. Affected APIs: Server actions `getHeadLessonPlans`, `headReviewLessonPlan`.
+ * 3. Schema: Replaces `driveFileUrl` with `fileUrl`, `fileName`, `fileSize`, `fileType`.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
@@ -255,7 +263,10 @@ export async function getHeadLessonPlans() {
       assessment: p.assessment || "",
       notes: p.notes || "",
       status: p.status,
-      driveFileUrl: p.driveFileUrl || null,
+      fileUrl: p.fileUrl || null,
+      fileName: p.fileName || null,
+      fileSize: p.fileSize || null,
+      fileType: p.fileType || null,
       reviews: p.reviews.map((r) => ({
         id: r.id,
         reviewerName: r.reviewerName,

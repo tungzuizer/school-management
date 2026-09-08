@@ -1,9 +1,18 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin lesson plans portal (`src/app/admin/lesson-plans/page.tsx`).
+ * 2. Affected APIs: Server actions `getLessonPlansForAdmin`, `reviewLessonPlan`, component `FileViewerModal`.
+ * 3. Schema: Replaces `driveFileUrl` with `fileUrl`, `fileName`, `fileSize`, `fileType`, providing instant in-app PDF preview.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { getLessonPlansForAdmin, reviewLessonPlan } from "./actions";
 import { useToast } from "@/components/ui/Toast";
 import { useEasyMode } from "@/lib/useEasyMode";
+import FileViewerModal from "@/components/storage/FileViewerModal";
 import {
   Check,
   X,
@@ -20,6 +29,9 @@ import {
   ExternalLink,
   ShieldCheck,
   Loader2,
+  FileText,
+  Eye,
+  Download,
 } from "lucide-react";
 
 interface LessonPlanReview {
@@ -47,7 +59,10 @@ interface LessonPlanItem {
   assessment: string;
   notes: string;
   status: string;
-  driveFileUrl: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  fileType: string | null;
   reviewNote: string;
   reviewedAt: Date | null;
   reviewedBy: string | null;
@@ -61,6 +76,19 @@ export default function AdminLessonPlansPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { isEasyMode } = useEasyMode();
   const { showToast, ToastComponent } = useToast();
+
+  // In-app File Viewer Modal state
+  const [viewerState, setViewerState] = useState<{
+    isOpen: boolean;
+    url: string | null;
+    name?: string | null;
+    title?: string;
+  }>({
+    isOpen: false,
+    url: null,
+    name: null,
+    title: "",
+  });
 
   // Filters & Search
   const [activeTab, setActiveTab] = useState<"PENDING" | "APPROVED" | "REJECTED" | "ALL">("PENDING");
@@ -425,19 +453,51 @@ export default function AdminLessonPlansPage() {
                 {/* Expanded Details */}
                 {isExpanded && (
                   <div className="border-t border-slate-100 bg-slate-50/60 p-3.5 sm:p-4 space-y-3.5 text-xs text-slate-700">
-                    {/* Google Drive Link if present */}
-                    {p.driveFileUrl && (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                        <span className="font-semibold text-blue-900 text-xs">File giáo án đính kèm Google Drive:</span>
-                        <a
-                          href={p.driveFileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors shrink-0"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          <span>Mở Thư Mục Drive ↗</span>
-                        </a>
+                    {/* Attached Lesson Plan Document / PDF */}
+                    {p.fileUrl && (
+                      <div className="p-3.5 bg-indigo-50/70 border border-indigo-200/80 rounded-xl flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between shadow-2xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-white text-rose-500 flex items-center justify-center shrink-0 border border-indigo-100 shadow-2xs">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-indigo-950 text-xs truncate">
+                              {p.fileName || "Tệp giáo án đính kèm"}
+                            </p>
+                            <p className="text-[11px] text-indigo-700/80">
+                              Đã lưu liên kết URL tối ưu database
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setViewerState({
+                                isOpen: true,
+                                url: p.fileUrl,
+                                name: p.fileName || `${p.title}.pdf`,
+                                title: `Giáo án: ${p.title} - GV: ${p.teacherName}`,
+                              })
+                            }
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Xem trực tiếp</span>
+                          </button>
+
+                          <a
+                            href={p.fileUrl}
+                            download={p.fileName || "giao-an"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl transition cursor-pointer shadow-2xs"
+                            title="Tải về máy"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
                       </div>
                     )}
 
@@ -532,6 +592,15 @@ export default function AdminLessonPlansPage() {
           })
         )}
       </div>
+
+      {/* Embedded In-App PDF / Document Viewer Modal */}
+      <FileViewerModal
+        isOpen={viewerState.isOpen}
+        onClose={() => setViewerState((prev) => ({ ...prev, isOpen: false }))}
+        fileUrl={viewerState.url}
+        fileName={viewerState.name}
+        title={viewerState.title}
+      />
     </div>
   );
 }

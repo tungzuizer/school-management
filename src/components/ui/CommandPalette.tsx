@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Global Header / Command palette (`src/components/ui/CommandPalette.tsx`).
+ * 2. Affected APIs: Command items list and search placeholder.
+ * 3. Schema: Removed obsolete Google Drive config command item and HardDrive icon.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -18,7 +26,6 @@ import {
   UserCheck,
   ScrollText,
   Lock,
-  HardDrive,
   Sparkles,
   X,
   ArrowRight,
@@ -48,7 +55,6 @@ const commands: CommandItem[] = [
   { id: "notifications", label: "Thông báo chung", category: "Hệ thống", href: "/admin/notifications", icon: Bell, keywords: ["thong bao", "tin tuc"] },
   { id: "journals", label: "Sổ đầu bài", category: "Hồ sơ sổ sách", href: "/admin/journals", icon: FileBarChart, keywords: ["so dau bai", "lop"] },
   { id: "lesson-plans", label: "Giáo án & Phê duyệt", category: "Hồ sơ sổ sách", href: "/admin/lesson-plans", icon: BookOpen, keywords: ["giao an", "phe duyet"] },
-  { id: "drive-config", label: "Cấu hình Google Drive & Kỳ nộp", category: "Hồ sơ sổ sách", href: "/admin/drive-config", icon: HardDrive, keywords: ["drive", "ky nop", "han nop"] },
   { id: "principal-ai", label: "Tư vấn & Cảnh báo AI", category: "Trợ lý AI", href: "/admin/principal-ai", icon: Bot, keywords: ["ai", "canh bao", "tu van"] },
   { id: "substitute-dispatch", label: "Bố trí dạy thay AI", category: "Trợ lý AI", href: "/admin/substitute-dispatch", icon: UserCheck, keywords: ["day thay", "phan cong"] },
   { id: "audit-log", label: "Nhật ký kiểm toán", category: "Bảo mật & Kiểm soát", href: "/admin/audit-log", icon: ScrollText, keywords: ["nhat ky", "kiet toan", "audit"] },
@@ -116,7 +122,7 @@ export default function CommandPalette({ isOpen, onClose }: { isOpen: boolean; o
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm kiếm nhanh chức năng hoặc gõ từ khóa (VD: Lớp học, Nhật ký, Drive)..."
+            placeholder="Tìm kiếm nhanh chức năng hoặc gõ từ khóa (VD: Lớp học, Nhật ký, Giáo án)..."
             className="w-full py-4 text-sm text-slate-800 placeholder-slate-400 bg-transparent outline-none"
           />
           {query && (

@@ -1,10 +1,35 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Subject Head Teacher Portal (`src/app/teacher/subject-head/page.tsx`).
+ * 2. Affected APIs: Server actions `getHeadLessonPlans`, `headReviewLessonPlan`, component `FileViewerModal`.
+ * 3. Schema: Replaces `driveFileUrl` with `fileUrl`, `fileName`, `fileSize`, `fileType` in `LessonPlanData` and embeds in-app PDF preview.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use client";
 
 import { useState, useCallback } from "react";
 import { getHeadSubjectsAndRequests, reviewTeacherChangeRequest, getHeadLessonPlans, headReviewLessonPlan } from "./actions";
 import { useToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
-import { Check, X, Shield, BookOpen, Clock, AlertCircle, FileText, CheckCircle, XCircle, ChevronDown, ChevronUp, MessageSquare, ExternalLink } from "lucide-react";
+import FileViewerModal from "@/components/storage/FileViewerModal";
+import {
+  Check,
+  X,
+  Shield,
+  BookOpen,
+  Clock,
+  AlertCircle,
+  FileText,
+  CheckCircle,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
+  ExternalLink,
+  Eye,
+  Download,
+} from "lucide-react";
 
 interface RequestData {
   id: string;
@@ -43,7 +68,10 @@ interface LessonPlanData {
   objectives: string;
   content: string;
   status: string;
-  driveFileUrl?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  fileType?: string | null;
   reviews: { id: string; reviewerName: string; reviewerRole: string; action: string; comment: string; createdAt: string }[];
 }
 
@@ -66,6 +94,19 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
   const [lpReviewNote, setLpReviewNote] = useState("");
   const [lpReviewing, setLpReviewing] = useState<string | null>(null);
   const { showToast, ToastComponent } = useToast();
+
+  // In-app File Viewer Modal state
+  const [viewerState, setViewerState] = useState<{
+    isOpen: boolean;
+    url: string | null;
+    name?: string | null;
+    title?: string;
+  }>({
+    isOpen: false,
+    url: null,
+    name: null,
+    title: "",
+  });
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -188,19 +229,51 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
 
                     {isExpanded && (
                       <div className="p-3.5 sm:p-5 border-t space-y-4 bg-slate-50">
-                        {/* Google Drive Link if present */}
-                        {p.driveFileUrl && (
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                            <span className="font-semibold text-blue-900 text-xs">File giáo án đính kèm Google Drive:</span>
-                            <a
-                              href={p.driveFileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shrink-0"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              <span>Mở File Drive ↗</span>
-                            </a>
+                        {/* Attached Lesson Plan Document / PDF */}
+                        {p.fileUrl && (
+                          <div className="p-3.5 bg-indigo-50/70 border border-indigo-200/80 rounded-xl flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between shadow-2xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-white text-rose-500 flex items-center justify-center shrink-0 border border-indigo-100 shadow-2xs">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-indigo-950 text-xs truncate">
+                                  {p.fileName || "Tệp giáo án đính kèm"}
+                                </p>
+                                <p className="text-[11px] text-indigo-700/80">
+                                  Đã lưu liên kết URL tối ưu database
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setViewerState({
+                                    isOpen: true,
+                                    url: p.fileUrl || null,
+                                    name: p.fileName || `${p.title}.pdf`,
+                                    title: `Giáo án: ${p.title} - GV: ${p.teacherName}`,
+                                  })
+                                }
+                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Xem trực tiếp</span>
+                              </button>
+
+                              <a
+                                href={p.fileUrl}
+                                download={p.fileName || "giao-an"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl transition cursor-pointer shadow-2xs"
+                                title="Tải về máy"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
                           </div>
                         )}
 
@@ -383,6 +456,15 @@ export default function SubjectHeadClient({ initialHeadSubjects, initialRequests
           </div>
         )}
       </Modal>
+
+      {/* Embedded In-App PDF / Document Viewer Modal */}
+      <FileViewerModal
+        isOpen={viewerState.isOpen}
+        onClose={() => setViewerState((prev) => ({ ...prev, isOpen: false }))}
+        fileUrl={viewerState.url}
+        fileName={viewerState.name}
+        title={viewerState.title}
+      />
     </div>
   );
 }

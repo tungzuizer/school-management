@@ -1,327 +1,546 @@
-﻿"use client";
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js root layout for `/student/*` (`src/app/student/dashboard/page.tsx`, `src/app/student/grades/page.tsx`, `src/app/student/transcript/page.tsx`, `src/app/student/attendance/page.tsx`, `src/app/student/schedule/page.tsx`, `src/app/student/profile/page.tsx`).
+ * 2. Affected APIs: `StudentLayout` default export in `src/app/student/layout.tsx`.
+ * 3. Schema: `MenuItem` (`label`: string, `href`: string, `icon`: LucideIcon, `badge`?: string, `description`?: string), `MenuGroup` (`id`: string, `code`: string, `title`: string, `tag`: string, `accent`: "blue" | "indigo" | "violet", `items`: MenuItem[]).
+ * 4. Verbatim User Instruction: "update giao diện sáng và dễ nhìn hơn và khi mở thì nhưng cái phụ sẽ thu bé lại".
+ */
+
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
+import {
+  Home,
+  GraduationCap,
+  CalendarCheck,
+  Calendar,
+  LogOut,
+  User,
+  FileSpreadsheet,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-import dynamic from "next/dynamic";
+import NavTooltip from "@/components/layout/NavTooltip";
+import { LayoutProvider, useSidebar } from "@/context/LayoutContext";
+
 const FloatingAIChatWidget = dynamic(
   () => import("@/components/ui/FloatingAIChatWidget").then((mod) => mod.FloatingAIChatWidget),
   { ssr: false }
 );
-import {
-  Home,
-  Award,
-  CalendarCheck,
-  Calendar,
-  LogOut,
-  Menu,
-  X,
-  Compass,
-  Sparkles,
-  ChevronRight,
-  User,
-  GraduationCap,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
-type NavItem = {
+type MenuItem = {
   label: string;
   href: string;
   icon: LucideIcon;
+  badge?: string;
   description?: string;
-  color: string;
-  activeColor: string;
 };
 
-export default function StudentLayout({ children }: { children: React.ReactNode }) {
+type MenuGroup = {
+  id: string;
+  code: string;
+  title: string;
+  tag: string;
+  accent: "blue" | "indigo" | "violet";
+  items: MenuItem[];
+};
+
+const menuGroups: MenuGroup[] = [
+  {
+    id: "overview",
+    code: "01",
+    title: "HỌC TẬP & KẾT QUẢ",
+    tag: "Chính",
+    accent: "blue",
+    items: [
+      { label: "Góc học tập", href: "/student/dashboard", icon: Home, description: "Tổng quan kết quả & nhắc nhở" },
+      { label: "Bảng điểm chi tiết", href: "/student/grades", icon: FileSpreadsheet, description: "Điểm số các môn học" },
+      { label: "Học bạ điện tử", href: "/student/transcript", icon: GraduationCap, description: "Xem tổng kết học bạ" },
+    ],
+  },
+  {
+    id: "schedule-attendance",
+    code: "02",
+    title: "LỊCH TRÌNH & CHUYÊN CẦN",
+    tag: "Thời khóa biểu",
+    accent: "indigo",
+    items: [
+      { label: "Thời khóa biểu tuần", href: "/student/schedule", icon: Calendar, description: "Lịch học theo tuần" },
+      { label: "Nhật ký chuyên cần", href: "/student/attendance", icon: CalendarCheck, description: "Theo dõi điểm danh" },
+    ],
+  },
+  {
+    id: "account",
+    code: "03",
+    title: "TÀI KHOẢN CÁ NHÂN",
+    tag: "Hồ sơ",
+    accent: "violet",
+    items: [
+      { label: "Hồ sơ cá nhân", href: "/student/profile", icon: User, description: "Thông tin học sinh" },
+    ],
+  },
+];
+
+const tagStyles = {
+  blue: "bg-blue-900/80 text-blue-200 border-blue-600/60",
+  indigo: "bg-indigo-900/80 text-indigo-200 border-indigo-600/60",
+  violet: "bg-violet-900/80 text-violet-200 border-violet-600/60",
+};
+
+const codeBadgeStyles = {
+  blue: "bg-blue-600 text-white border-blue-400/50 shadow-xs",
+  indigo: "bg-indigo-600 text-white border-indigo-400/50 shadow-xs",
+  violet: "bg-violet-600 text-white border-violet-400/50 shadow-xs",
+};
+
+const miniDotStyles = {
+  blue: "bg-blue-400 shadow-blue-500/50",
+  indigo: "bg-indigo-400 shadow-indigo-500/50",
+  violet: "bg-violet-400 shadow-violet-500/50",
+};
+
+const cardAccentStyles = {
+  blue: "border-slate-800 hover:border-blue-700/60 bg-slate-900/80",
+  indigo: "border-slate-800 hover:border-indigo-700/60 bg-slate-900/80",
+  violet: "border-slate-800 hover:border-violet-700/60 bg-slate-900/80",
+};
+
+const mobileMainTabs = [
+  { label: "Trang chủ", href: "/student/dashboard", icon: Home },
+  { label: "Điểm số", href: "/student/grades", icon: FileSpreadsheet },
+  { label: "TKB", href: "/student/schedule", icon: Calendar },
+  { label: "Chuyên cần", href: "/student/attendance", icon: CalendarCheck },
+];
+
+function StudentLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isCollapsed, toggleCollapsed, isMobileOpen, setMobileOpen, closeMobile } = useSidebar();
+
   const userName = session?.user?.name || "Học sinh";
-  const drawerRef = useRef<HTMLDivElement>(null);
+  const userEmail = session?.user?.email || "hocsinh@school.edu.vn";
+
+  const currentMatchingGroupId = useMemo(() => {
+    for (const group of menuGroups) {
+      if (
+        group.items.some(
+          (item) => pathname === item.href || (item.href !== "/student/dashboard" && pathname.startsWith(item.href))
+        )
+      ) {
+        return group.id;
+      }
+    }
+    return menuGroups[0]?.id || "overview";
+  }, [pathname]);
+
+  // Single active accordion state: expanding one group automatically collapses all secondary groups!
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(currentMatchingGroupId);
 
   useEffect(() => {
-    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileMenuOpen]);
+    if (currentMatchingGroupId) {
+      setActiveGroupId(currentMatchingGroupId);
+    }
+  }, [currentMatchingGroupId]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && mobileMenuOpen) setMobileMenuOpen(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [mobileMenuOpen]);
+  const toggleGroup = (groupId: string) => {
+    setActiveGroupId((prev) => (prev === groupId ? null : groupId));
+  };
 
   const getInitials = (name: string) => {
     const parts = name.split(" ").filter(Boolean);
-    return parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.substring(0, 2).toUpperCase();
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
-  const navItems: NavItem[] = [
-    { label: "Góc Học Tập 360°", href: "/student/dashboard", icon: Home, description: "Tổng quan kết quả & động lực", color: "text-blue-600", activeColor: "bg-blue-600" },
-    { label: "Bảng Điểm Môn Học", href: "/student/grades", icon: Award, description: "Chi tiết điểm số các môn", color: "text-violet-600", activeColor: "bg-violet-600" },
-    { label: "Học Bạ Điện Tử", href: "/student/transcript", icon: GraduationCap, description: "Học bạ chuẩn Bộ GD&ĐT", color: "text-emerald-600", activeColor: "bg-emerald-600" },
-    { label: "Nhật Ký Chuyên Cần", href: "/student/attendance", icon: CalendarCheck, description: "Lịch sử điểm danh", color: "text-rose-600", activeColor: "bg-rose-600" },
-    { label: "Thời Khóa Biểu Tuần", href: "/student/schedule", icon: Calendar, description: "Lịch học & giáo viên bộ môn", color: "text-amber-600", activeColor: "bg-amber-600" },
-    { label: "Hồ Sơ Cá Nhân", href: "/student/profile", icon: User, description: "Thông tin & đổi mật khẩu", color: "text-slate-600", activeColor: "bg-slate-700" },
-  ];
-
-  const bottomTabs = [
-    { label: "Trang chủ", href: "/student/dashboard", icon: Home },
-    { label: "Bảng điểm", href: "/student/grades", icon: Award },
-    { label: "Chuyên cần", href: "/student/attendance", icon: CalendarCheck },
-    { label: "Thời khóa biểu", href: "/student/schedule", icon: Calendar },
-  ];
-
-  const activeItem = navItems.find(
-    (item) => pathname === item.href || (item.href !== "/student/dashboard" && pathname.startsWith(item.href))
-  ) || navItems[0];
-  const ActiveIcon = activeItem?.icon || Home;
-
   return (
-    <div className="min-h-screen text-blue-950 flex flex-col font-sans" style={{ background: "var(--background)" }}>
-      {/* Ambient mesh background */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute -top-60 -left-60 w-[600px] h-[600px] bg-blue-300/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -right-48 w-[500px] h-[500px] bg-indigo-300/15 rounded-full blur-3xl" />
-        <div className="absolute -bottom-60 left-1/4 w-[700px] h-[700px] bg-violet-200/15 rounded-full blur-3xl" />
-        <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] bg-emerald-200/10 rounded-full blur-3xl" />
-      </div>
-
-      <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
-
-      {/* Mobile context strip */}
-      <div className="lg:hidden relative z-10 px-4 py-2 flex items-center justify-between bg-white/90 backdrop-blur-lg border-b border-slate-200/70 shadow-sm">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="p-1.5 rounded-xl bg-blue-100 text-blue-600 shrink-0 shadow-sm">
-            <ActiveIcon className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">Đang xem</span>
-            <h2 className="text-xs font-black text-blue-950 truncate mt-0.5">{activeItem?.label}</h2>
+    <div className="h-screen w-screen overflow-hidden flex flex-row bg-slate-50 text-slate-900 font-sans relative">
+      {/* ===== Sidebar - Desktop (Collapsible w-72 <-> w-20) ===== */}
+      <aside
+        className={`hidden lg:flex flex-col shrink-0 bg-[#0c1322] text-white border-r border-slate-800 shadow-2xl transition-[width] duration-300 ease-in-out relative z-30 select-none overflow-hidden ${
+          isCollapsed ? "w-20" : "w-72"
+        }`}
+      >
+        {/* User Profile Header */}
+        <div className="p-3.5 border-b border-slate-800/90 bg-[#080d18] shrink-0">
+          <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}>
+            <div
+              className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-md text-white font-extrabold text-sm ring-2 ring-blue-400/20"
+              title={isCollapsed ? `${userName} - Học sinh` : undefined}
+            >
+              {getInitials(userName)}
+            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 transition-opacity duration-200">
+                <p className="text-sm font-bold text-white truncate leading-snug">
+                  {userName}
+                </p>
+                <p className="text-[11px] text-blue-400 font-semibold truncate">
+                  Cổng Học Sinh
+                </p>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  {userEmail}
+                </p>
+              </div>
+            )}
           </div>
         </div>
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label="Mở menu"
-          className="px-3.5 py-2 min-h-[44px] bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-blue-500/30 active-press cursor-pointer shrink-0"
-        >
-          <Menu className="w-3.5 h-3.5" />
-          <span>Menu</span>
-        </button>
-      </div>
 
-      {/* Main workspace */}
-      <div className="relative z-10 flex-1 flex flex-col lg:flex-row w-full max-w-[1680px] mx-auto px-4 sm:px-6 py-4 sm:py-6 gap-6">
-        {/* Desktop sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0">
-          <div className="sticky top-20 space-y-3">
-            {/* Identity card */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 p-5 text-white shadow-xl shadow-blue-500/25">
-              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-800/40 rounded-full blur-2xl pointer-events-none" />
-              <div className="relative z-10 flex items-center gap-3">
-                <div className="relative shrink-0">
-                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 text-white font-black text-base flex items-center justify-center shadow-lg">
+        {/* Navigation Menu */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-2 custom-scrollbar">
+          {menuGroups.map((group) => {
+            const isExpanded = isCollapsed || activeGroupId === group.id;
+
+            return (
+              <div
+                key={group.id}
+                className={
+                  isCollapsed
+                    ? "space-y-1 py-1"
+                    : `rounded-2xl p-2 border transition-all duration-200 ${cardAccentStyles[group.accent]}`
+                }
+              >
+                {/* Domain Section Header with Accordion Toggle */}
+                {isCollapsed ? (
+                  <div className="flex justify-center py-1">
+                    <span
+                      className={`w-2.5 h-1 rounded-full ${miniDotStyles[group.accent]}`}
+                      title={group.title}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.id)}
+                    aria-expanded={isExpanded}
+                    aria-label={`Thu gọn/mở rộng ${group.title}`}
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-slate-800/80 transition-colors text-left group/hdr cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[9px] font-black tracking-wider border shrink-0 ${codeBadgeStyles[group.accent]}`}
+                      >
+                        {group.code}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-slate-100 uppercase tracking-wider truncate group-hover/hdr:text-white">
+                        {group.title}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase border ${tagStyles[group.accent]}`}
+                      >
+                        {group.tag}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronDown className="w-3.5 h-3.5 text-blue-300 group-hover/hdr:text-white transition-transform" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/hdr:text-white transition-transform" />
+                      )}
+                    </div>
+                  </button>
+                )}
+
+                {/* Section Menu Items (Single-Active Auto Collapse) */}
+                {isExpanded && (
+                  <div className="space-y-0.5 mt-1">
+                    {group.items.map((item) => {
+                      const isActive =
+                        pathname === item.href ||
+                        (item.href !== "/student/dashboard" && pathname.startsWith(item.href));
+                      const Icon = item.icon;
+
+                      if (isCollapsed) {
+                        return (
+                          <div key={item.href} className="relative group">
+                            <Link
+                              href={item.href}
+                              prefetch={true}
+                              aria-label={item.label}
+                              className={`flex items-center justify-center h-10 w-full rounded-xl text-xs font-semibold transition-all ${
+                                isActive
+                                  ? "bg-blue-600 text-white shadow-md shadow-blue-900/40 font-bold"
+                                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                              }`}
+                            >
+                              <Icon
+                                className={`w-4 h-4 shrink-0 transition-transform ${
+                                  isActive ? "scale-110 text-white" : "text-slate-400 group-hover:scale-110 group-hover:text-blue-300"
+                                }`}
+                              />
+                            </Link>
+                            <NavTooltip
+                              title={item.label}
+                              groupTitle={`${group.code} - ${group.title}`}
+                              badge={item.badge}
+                              description={item.description}
+                              visible={isCollapsed}
+                            />
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          prefetch={true}
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all group ${
+                            isActive
+                              ? "bg-blue-600 text-white font-bold shadow-md shadow-blue-900/40"
+                              : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Icon
+                              className={`w-4 h-4 shrink-0 transition-colors ${
+                                isActive ? "text-white" : "text-slate-400 group-hover:text-blue-300"
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                          {item.badge && (
+                            <span
+                              className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                isActive
+                                  ? "bg-white/20 text-white"
+                                  : "bg-slate-800 text-blue-300 border border-slate-700"
+                              }`}
+                            >
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Bottom Logout */}
+        <div className="p-2.5 border-t border-slate-800/90 bg-[#080d18] shrink-0">
+          {isCollapsed ? (
+            <div className="relative group">
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                aria-label="Đăng xuất"
+                className="w-full flex items-center justify-center h-10 text-rose-400 hover:bg-rose-950/50 rounded-xl transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+              <NavTooltip title="Đăng xuất" visible={isCollapsed} />
+            </div>
+          ) : (
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="w-full flex items-center justify-center px-3 py-2 text-xs text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/40 rounded-xl transition font-semibold cursor-pointer"
+            >
+              <span>Đăng xuất</span>
+            </button>
+          )}
+        </div>
+      </aside>
+
+      {/* ===== Main Independent Workspace Canvas ===== */}
+      <div className="flex-1 h-screen flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
+        {/* Global Unified Header */}
+        <Header
+          isCollapsed={isCollapsed}
+          onToggleCollapse={toggleCollapsed}
+          onMobileMenuToggle={() => setMobileOpen(true)}
+        />
+
+        {/* Workspace Subheader with Breadcrumbs */}
+        <div className="px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-slate-200 bg-white shadow-2xs shrink-0 z-20">
+          <Breadcrumb />
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-300">
+              Cổng Thông Tin Học Sinh
+            </span>
+          </div>
+        </div>
+
+        {/* Mobile Drawer */}
+        {isMobileOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs"
+              onClick={closeMobile}
+            />
+            <div className="fixed inset-y-0 left-0 w-72 bg-[#0c1322] border-r border-slate-800 z-50 lg:hidden flex flex-col shadow-2xl text-white">
+              {/* Drawer header */}
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#080d18]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-600 text-white font-bold text-xs">
                     {getInitials(userName)}
                   </div>
-                  <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-indigo-600 shadow-sm pulse-dot" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{userName}</p>
+                    <p className="text-[10px] text-blue-400 font-semibold truncate">
+                      Học sinh THPT
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-black truncate text-white leading-tight">{userName}</p>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-indigo-900 bg-white px-2 py-0.5 rounded-full mt-1 shadow-sm">
-                    <Sparkles className="w-2.5 h-2.5 text-blue-600" />
-                    Học sinh THPT
-                  </span>
-                </div>
+                <button
+                  onClick={closeMobile}
+                  className="px-2 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold border border-slate-700 cursor-pointer"
+                >
+                  Đóng
+                </button>
               </div>
-            </div>
 
-            {/* Nav card */}
-            <div className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-3 shadow-lg shadow-slate-200/60">
-              <div className="flex items-center gap-1.5 px-2 py-2 text-slate-400 font-black text-[10px] uppercase tracking-widest">
-                <Compass className="w-3.5 h-3.5 text-blue-500" />
-                <span>Mục lục học tập</span>
-              </div>
-              <div className="space-y-0.5">
-                {navItems.map((item) => {
-                  const isActive = pathname === item.href || (item.href !== "/student/dashboard" && pathname.startsWith(item.href));
-                  const Icon = item.icon;
+              {/* Drawer nav */}
+              <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-3 custom-scrollbar">
+                {menuGroups.map((group) => {
+                  const isExpanded = activeGroupId === group.id;
+
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      prefetch={true}
-                      className={`nav-item-in group flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-200 ${
-                        isActive
-                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
-                          : "text-slate-700 hover:bg-slate-100/80 hover:text-blue-950"
-                      }`}
+                    <div
+                      key={group.id}
+                      className={`rounded-2xl p-2 border ${cardAccentStyles[group.accent]}`}
                     >
-                      <div className={`p-1.5 rounded-xl shrink-0 transition-all ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : `bg-slate-100 ${item.color} group-hover:scale-110`
-                      }`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <span className={`text-xs font-black truncate block flex-1 ${isActive ? "text-white" : ""}`}>
-                        {item.label}
-                      </span>
-                      <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-transform ${
-                        isActive ? "text-white/70" : "text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5"
-                      }`} />
-                    </Link>
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(group.id)}
+                        className="w-full flex items-center justify-between px-2.5 py-1 mb-1 text-left cursor-pointer"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[8px] font-black border ${codeBadgeStyles[group.accent]}`}
+                          >
+                            {group.code}
+                          </span>
+                          <p className="text-[10px] font-extrabold text-slate-100 uppercase tracking-widest truncate">
+                            {group.title}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase border ${tagStyles[group.accent]}`}
+                          >
+                            {group.tag}
+                          </span>
+                          {isExpanded ? (
+                            <ChevronDown className="w-3.5 h-3.5 text-blue-300" />
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                          )}
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="space-y-0.5">
+                          {group.items.map((item) => {
+                            const isActive =
+                              pathname === item.href ||
+                              (item.href !== "/student/dashboard" && pathname.startsWith(item.href));
+                            const Icon = item.icon;
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                prefetch={true}
+                                onClick={closeMobile}
+                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all group ${
+                                  isActive
+                                    ? "bg-blue-600 text-white font-bold"
+                                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-slate-400 group-hover:text-blue-300"}`} />
+                                  <span className="truncate">{item.label}</span>
+                                </div>
+                                {item.badge && (
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] uppercase tracking-wider bg-slate-800 text-blue-300 font-semibold">
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
-              </div>
+              </nav>
 
-              <div className="mt-3 pt-3 border-t border-slate-100">
+              {/* Drawer footer */}
+              <div className="p-3 border-t border-slate-800 bg-[#080d18]">
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-600 hover:bg-rose-100 font-black text-xs transition-all active-press cursor-pointer"
+                  className="w-full flex items-center justify-center px-3 py-2 text-xs text-rose-300 hover:bg-rose-950/40 rounded-xl transition font-semibold cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>Đăng xuất</span>
+                  Đăng xuất
                 </button>
               </div>
             </div>
-          </div>
-        </aside>
+          </>
+        )}
 
-        {/* Main content */}
-        <main className="flex-1 min-w-0 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-4 sm:p-6 shadow-lg shadow-slate-200/60 pb-24 lg:pb-6">
-          <div className="mb-4 pb-2 border-b border-slate-100 hidden sm:block">
-            <Breadcrumb />
+        {/* Page content independent scrollable canvas */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 lg:pb-8">
+          <div className="max-w-[1680px] mx-auto w-full">
+            {children}
           </div>
-          {children}
         </main>
-      </div>
 
-      {/* Mobile bottom nav */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-3 mb-3 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-xl shadow-slate-400/20">
-          <div className="flex items-stretch justify-around px-2 py-1.5">
-            {bottomTabs.map((tab) => {
+        {/* ===== Mobile Bottom Tab Bar ===== */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-sm">
+          <div className="flex items-stretch justify-around max-w-lg mx-auto pb-[env(safe-area-inset-bottom)]">
+            {mobileMainTabs.map((tab) => {
+              const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
               const Icon = tab.icon;
-              const isActive = pathname === tab.href || (tab.href !== "/student/dashboard" && pathname.startsWith(tab.href));
+
               return (
                 <Link
                   key={tab.href}
                   href={tab.href}
                   prefetch={true}
-                  className={`flex flex-col items-center justify-center py-2 px-3 rounded-2xl relative transition-all duration-200 flex-1 ${
-                    isActive ? "text-blue-600 bg-blue-50/90 font-bold" : "text-slate-600 hover:text-blue-950"
+                  className={`flex flex-col items-center justify-center py-2 px-3 min-w-[64px] min-h-[44px] relative transition-transform duration-200 active:scale-95 ${
+                    isActive
+                      ? "text-blue-600 font-bold border-t-2 border-blue-600"
+                      : "text-slate-600 hover:text-slate-900 font-medium"
                   }`}
                 >
-                  {isActive && <span className="absolute top-0 w-6 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-b-full shadow-sm" />}
-                  <Icon className={`w-5 h-5 transition-transform ${isActive ? "stroke-[2.5] scale-110 text-blue-600" : ""}`} />
-                  <span className={`text-[10px] mt-0.5 tracking-tight truncate font-bold ${isActive ? "text-blue-700" : ""}`}>{tab.label}</span>
+                  <Icon className="w-4 h-4 mb-0.5" />
+                  <span className="text-[10px] leading-tight">
+                    {tab.label}
+                  </span>
                 </Link>
               );
             })}
             <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="flex flex-col items-center justify-center py-2 px-3 rounded-2xl text-slate-600 flex-1 cursor-pointer transition-colors hover:text-blue-700 active-press"
+              onClick={() => setMobileOpen(true)}
+              className="flex flex-col items-center justify-center py-2 px-3 min-w-[64px] min-h-[44px] text-slate-600 hover:text-slate-900 font-medium transition-transform duration-200 active:scale-95 cursor-pointer"
             >
-              <Menu className="w-5 h-5" />
-              <span className="text-[10px] mt-0.5 font-black text-slate-700 tracking-tight">Menu</span>
+              <span className="text-[10px] leading-tight">Mục lục</span>
             </button>
           </div>
-        </div>
-      </nav>
-
-      {/* Mobile drawer */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 animate-fade-in">
-          <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div
-            ref={drawerRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mục lục học sinh"
-            className="absolute inset-y-0 left-0 w-80 max-w-[88vw] bg-white z-50 flex flex-col shadow-2xl overflow-hidden animate-slide-in-left"
-          >
-            {/* Drawer header */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 p-5 text-white flex items-center justify-between shrink-0">
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-              <div className="relative flex items-center gap-3 min-w-0">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-lg">
-                  {getInitials(userName)}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-black truncate text-white">{userName}</h3>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-indigo-900 bg-white px-2 py-0.5 rounded-full mt-1 shadow-sm">
-                    <Sparkles className="w-2.5 h-2.5 text-blue-600" />
-                    Học sinh THPT
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="relative p-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white transition cursor-pointer active-press shrink-0 ml-2"
-                aria-label="Đóng menu"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Drawer nav body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-1 bg-slate-50/60">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 pt-1 pb-2 flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5 text-blue-500" />
-                Mục lục học sinh
-              </p>
-              {navItems.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/student/dashboard" && pathname.startsWith(item.href));
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs transition-all duration-200 ${
-                      isActive
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20"
-                        : "bg-white border border-slate-200/80 text-blue-950 hover:bg-blue-50/80 hover:border-blue-200 shadow-sm"
-                    }`}
-                  >
-                    <div className={`p-2 rounded-xl shrink-0 ${isActive ? "bg-white/20 text-white" : `bg-slate-100 ${item.color}`}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-black block truncate">{item.label}</span>
-                      {item.description && (
-                        <span className={`text-[10px] block truncate font-semibold mt-0.5 ${isActive ? "text-blue-100" : "text-slate-400"}`}>
-                          {item.description}
-                        </span>
-                      )}
-                    </div>
-                    <ChevronRight className={`w-4 h-4 shrink-0 ${isActive ? "text-white/70" : "text-slate-400"}`} />
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="p-4 border-t border-slate-200/80 bg-white shrink-0">
-              <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-700 hover:bg-rose-100 font-black text-xs transition-all active-press cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Đăng xuất</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        </nav>
+      </div>
 
       <FloatingAIChatWidget userRole="STUDENT" />
     </div>
+  );
+}
+
+export default function StudentLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <LayoutProvider>
+      <StudentLayoutInner>{children}</StudentLayoutInner>
+    </LayoutProvider>
   );
 }

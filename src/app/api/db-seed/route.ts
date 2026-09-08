@@ -28,6 +28,8 @@ import {
   DocumentStatus,
   EquipmentCategory,
   EquipmentCondition,
+  ExamSemester,
+  ExamType,
 } from "@prisma/client";
 
 const LAST_NAMES = [
@@ -621,6 +623,8 @@ async function performDatabaseResetAndSeed() {
 
     // Classes & Students
     let classCounter = 0;
+    const createdStudentsList: Array<{ id: string; name: string; classId: string; gradeLevel: number }> = [];
+
     for (const clsSpec of sItem.classes) {
       classCounter++;
       const homeroomTeacherObj = createdTeachers[(classCounter - 1) % createdTeachers.length].teacher;
@@ -642,41 +646,47 @@ async function performDatabaseResetAndSeed() {
 
       const roster = generateStudentRoster(clsSpec.count, clsSpec.gradeLevel, sItem.code, clsSpec.name);
 
-      await Promise.all(
-        roster.map(async (stData, sIdx) => {
-          const stUser = await prisma.user.create({
-            data: {
-              name: stData.name,
-              email: stData.email,
-              password: standardPassword,
-              role: Role.STUDENT,
-              isApproved: true,
-              schoolId: school.id,
-              campusId: mainCampus.id,
-            },
-          });
+      for (let sIdx = 0; sIdx < roster.length; sIdx++) {
+        const stData = roster[sIdx];
+        const stUser = await prisma.user.create({
+          data: {
+            name: stData.name,
+            email: stData.email,
+            password: standardPassword,
+            role: Role.STUDENT,
+            isApproved: true,
+            schoolId: school.id,
+            campusId: mainCampus.id,
+          },
+        });
 
-          await prisma.student.create({
-            data: {
-              userId: stUser.id,
-              studentCode: stData.studentCode,
-              classId: classRoom.id,
-              groupId: groups[sIdx % groups.length].id,
-              status: StudentStatus.STUDYING,
-              dob: stData.dob,
-              gender: stData.gender,
-              ethnicity: "Kinh",
-              nationality: "Việt Nam",
-              phone: stData.phone,
-              addressCurrent: stData.address,
-              parentName: stData.parentName,
-              parentPhone: stData.parentPhone,
-              isClassMonitor: sIdx === 0,
-              classRole: sIdx === 0 ? "LOP_TRUONG" : sIdx === 1 ? "LOP_PHO" : "THANH_VIEN",
-            },
-          });
-        })
-      );
+        const student = await prisma.student.create({
+          data: {
+            userId: stUser.id,
+            studentCode: stData.studentCode,
+            classId: classRoom.id,
+            groupId: groups[sIdx % groups.length].id,
+            status: StudentStatus.STUDYING,
+            dob: stData.dob,
+            gender: stData.gender,
+            ethnicity: "Kinh",
+            nationality: "Việt Nam",
+            phone: stData.phone,
+            addressCurrent: stData.address,
+            parentName: stData.parentName,
+            parentPhone: stData.parentPhone,
+            isClassMonitor: sIdx === 0,
+            classRole: sIdx === 0 ? "LOP_TRUONG" : sIdx === 1 ? "LOP_PHO" : "THANH_VIEN",
+          },
+        });
+
+        createdStudentsList.push({
+          id: student.id,
+          name: stData.name,
+          classId: classRoom.id,
+          gradeLevel: clsSpec.gradeLevel,
+        });
+      }
 
       // Teaching assignments
       for (const subject of createdSubjects) {
@@ -720,6 +730,58 @@ async function performDatabaseResetAndSeed() {
               break;
             }
           }
+        }
+      }
+    }
+
+    // Multi-Year Exam Periods (2023 - 2026) for Executive Analytics & OLS Regression
+    const examPeriodSpecs = [
+      { name: "Cuối kỳ 1 2023-2024", schoolYear: "2023-2024", semester: ExamSemester.HK1, examType: ExamType.FINAL, orderIndex: 1 },
+      { name: "Cuối kỳ 2 2023-2024", schoolYear: "2023-2024", semester: ExamSemester.HK2, examType: ExamType.FINAL, orderIndex: 2 },
+      { name: "Cuối kỳ 1 2024-2025", schoolYear: "2024-2025", semester: ExamSemester.HK1, examType: ExamType.FINAL, orderIndex: 3 },
+      { name: "Cuối kỳ 2 2024-2025", schoolYear: "2024-2025", semester: ExamSemester.HK2, examType: ExamType.FINAL, orderIndex: 4 },
+      { name: "Cuối kỳ 1 2025-2026", schoolYear: "2025-2026", semester: ExamSemester.HK1, examType: ExamType.FINAL, orderIndex: 5 },
+    ];
+
+    const createdExamPeriods = [];
+    for (const ep of examPeriodSpecs) {
+      const createdEp = await prisma.examPeriod.create({
+        data: {
+          schoolId: school.id,
+          campusId: mainCampus.id,
+          name: ep.name,
+          schoolYear: ep.schoolYear,
+          semester: ep.semester,
+          examType: ep.examType,
+          orderIndex: ep.orderIndex,
+          isLocked: true,
+        },
+      });
+      createdExamPeriods.push(createdEp);
+    }
+
+    // Seed realistic Multi-Year Exam Scores for longitudinal trajectory analysis
+    for (let stIdx = 0; stIdx < Math.min(createdStudentsList.length, 50); stIdx++) {
+      const st = createdStudentsList[stIdx];
+      const baseAbility = 6.0 + (stIdx % 40) * 0.08;
+      const growthFactor = (stIdx % 5 === 0) ? 0.35 : (stIdx % 7 === 0) ? -0.25 : 0.12;
+
+      for (const ep of createdExamPeriods) {
+        for (const sub of createdSubjects) {
+          const noise = ((stIdx + ep.orderIndex + sub.name.length) % 11 - 5) * 0.15;
+          let finalScore = Math.min(10.0, Math.max(2.5, baseAbility + (ep.orderIndex - 1) * growthFactor + noise));
+          finalScore = Math.round(finalScore * 10) / 10;
+
+          await prisma.studentScore.create({
+            data: {
+              studentId: st.id,
+              subjectId: sub.id,
+              examPeriodId: ep.id,
+              schoolId: school.id,
+              campusId: mainCampus.id,
+              score: finalScore,
+            },
+          });
         }
       }
     }

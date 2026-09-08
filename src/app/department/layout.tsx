@@ -1,65 +1,115 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js root layout for `/department/*` (`src/app/department/dashboard/page.tsx`, `src/app/department/wards/page.tsx`, `src/app/department/thpt-schools/page.tsx`, `src/app/department/all-schools/page.tsx`, `src/app/department/reports/page.tsx`).
+ * 2. Affected APIs: `DepartmentLayout` default export in `src/app/department/layout.tsx`.
+ * 3. Schema: `MenuItem` (`label`: string, `href`: string, `icon`: LucideIcon, `badge`?: string, `description`?: string), `MenuGroup` (`id`: string, `code`: string, `title`: string, `tag`: string, `accent`: "sky" | "blue" | "indigo", `icon`: LucideIcon, `items`: MenuItem[]).
+ * 4. Verbatim User Instruction: "update giao diện sáng và dễ nhìn hơn và khi mở thì nhưng cái phụ sẽ thu bé lại".
+ */
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState } from "react";
-import Header from "@/components/layout/Header";
-import Breadcrumb from "@/components/ui/Breadcrumb";
+import { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard,
   Landmark,
   Building2,
   LogOut,
-  Menu,
-  X,
-  ChevronDown,
-  ChevronRight,
   School,
   BarChart3,
-  Sparkles,
   Home,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  FileSpreadsheet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Header from "@/components/layout/Header";
+import Breadcrumb from "@/components/ui/Breadcrumb";
+import NavTooltip from "@/components/layout/NavTooltip";
+import { LayoutProvider, useSidebar } from "@/context/LayoutContext";
 
 type MenuItem = {
   label: string;
   href: string;
   icon: LucideIcon;
   badge?: string;
+  description?: string;
 };
 
 type MenuGroup = {
+  id: string;
+  code: string;
   title: string;
+  tag: string;
+  accent: "sky" | "blue" | "indigo";
   icon: LucideIcon;
   items: MenuItem[];
 };
 
 const menuGroups: MenuGroup[] = [
   {
-    title: "🏛️ Điều hành Sở GD&ĐT",
-    icon: LayoutDashboard,
+    id: "overview",
+    code: "01",
+    title: "ĐIỀU HÀNH SỞ GD&ĐT",
+    tag: "Tổng quan",
+    accent: "sky",
+    icon: Home,
     items: [
-      { label: "Bảng điều khiển Sở GD&ĐT", href: "/department/dashboard", icon: LayoutDashboard },
+      { label: "Bảng điều khiển Sở", href: "/department/dashboard", icon: LayoutDashboard, description: "Chỉ số toàn ngành GD&ĐT" },
     ],
   },
   {
-    title: "🏫 Quản lý Đơn vị Toàn tỉnh/TP",
+    id: "units",
+    code: "02",
+    title: "QUẢN LÝ ĐƠN VỊ",
+    tag: "Đơn vị",
+    accent: "blue",
     icon: Building2,
     items: [
-      { label: "Phòng GD&ĐT trực thuộc", href: "/department/wards", icon: Landmark },
-      { label: "Trường THPT trực thuộc", href: "/department/thpt-schools", icon: School },
-      { label: "Tất cả Trường học liên cấp", href: "/department/all-schools", icon: Building2 },
+      { label: "Phòng GD&ĐT trực thuộc", href: "/department/wards", icon: Landmark, description: "Các Phòng GD Quận/Huyện" },
+      { label: "Trường THPT trực thuộc", href: "/department/thpt-schools", icon: School, description: "Hệ thống các trường THPT" },
+      { label: "Tất cả trường liên cấp", href: "/department/all-schools", icon: Layers, description: "Mầm non, TH, THCS, THPT" },
     ],
   },
   {
-    title: "📊 Thống kê & Báo cáo Ngành",
+    id: "reports",
+    code: "03",
+    title: "BÁO CÁO & THỐNG KÊ",
+    tag: "Báo cáo",
+    accent: "indigo",
     icon: BarChart3,
     items: [
-      { label: "Báo cáo Tổng hợp Ngành", href: "/department/reports", icon: BarChart3 },
+      { label: "Báo cáo tổng hợp ngành", href: "/department/reports", icon: FileSpreadsheet, description: "Số liệu phổ cập & thi đua" },
     ],
   },
 ];
+
+const tagStyles = {
+  sky: "bg-sky-900/80 text-sky-200 border-sky-600/60",
+  blue: "bg-blue-900/80 text-blue-200 border-blue-600/60",
+  indigo: "bg-indigo-900/80 text-indigo-200 border-indigo-600/60",
+};
+
+const codeBadgeStyles = {
+  sky: "bg-sky-600 text-white border-sky-400/50 shadow-xs",
+  blue: "bg-blue-600 text-white border-blue-400/50 shadow-xs",
+  indigo: "bg-indigo-600 text-white border-indigo-400/50 shadow-xs",
+};
+
+const miniDotStyles = {
+  sky: "bg-sky-400 shadow-sky-500/50",
+  blue: "bg-blue-400 shadow-blue-500/50",
+  indigo: "bg-indigo-400 shadow-indigo-500/50",
+};
+
+const cardAccentStyles = {
+  sky: "border-slate-800 hover:border-sky-700/60 bg-slate-900/80",
+  blue: "border-slate-800 hover:border-blue-700/60 bg-slate-900/80",
+  indigo: "border-slate-800 hover:border-indigo-700/60 bg-slate-900/80",
+};
 
 const mobileMainTabs = [
   { label: "Tổng quan", href: "/department/dashboard", icon: Home },
@@ -68,17 +118,38 @@ const mobileMainTabs = [
   { label: "Báo cáo", href: "/department/reports", icon: BarChart3 },
 ];
 
-export default function DepartmentLayout({ children }: { children: React.ReactNode }) {
+function DepartmentLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const { isCollapsed, toggleCollapsed, isMobileOpen, setMobileOpen, closeMobile } = useSidebar();
 
   const userName = session?.user?.name || "Lãnh đạo Sở GD&ĐT";
   const userEmail = session?.user?.email || "so.gddt@hanoi.edu.vn";
 
-  const toggleGroup = (title: string) => {
-    setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
+  const currentMatchingGroupId = useMemo(() => {
+    for (const group of menuGroups) {
+      if (
+        group.items.some(
+          (item) => pathname === item.href || (item.href !== "/department/dashboard" && pathname.startsWith(item.href))
+        )
+      ) {
+        return group.id;
+      }
+    }
+    return menuGroups[0]?.id || "overview";
+  }, [pathname]);
+
+  // Single active accordion state: expanding one group automatically collapses all secondary groups!
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(currentMatchingGroupId);
+
+  useEffect(() => {
+    if (currentMatchingGroupId) {
+      setActiveGroupId(currentMatchingGroupId);
+    }
+  }, [currentMatchingGroupId]);
+
+  const toggleGroup = (groupId: string) => {
+    setActiveGroupId((prev) => (prev === groupId ? null : groupId));
   };
 
   const getInitials = (name: string) => {
@@ -90,91 +161,161 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-sans relative selection:bg-sky-500 selection:text-white">
-      {/* Ambient background mesh */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-      </div>
-
-      {/* ===== Sidebar - Desktop ===== */}
-      <aside className="hidden lg:flex flex-col w-72 bg-slate-950 text-white shrink-0 shadow-2xl transition-all border-r border-slate-800/80 relative z-20">
-        {/* Ambient Top Glow */}
-        <div className="absolute top-0 left-0 right-0 h-44 bg-gradient-to-b from-sky-500/15 via-sky-500/5 to-transparent pointer-events-none" />
-
+    <div className="h-screen w-screen overflow-hidden flex flex-row bg-slate-50 text-slate-900 font-sans relative">
+      {/* ===== Sidebar - Desktop (Collapsible w-72 <-> w-20) ===== */}
+      <aside
+        className={`hidden lg:flex flex-col shrink-0 bg-[#0c1322] text-white border-r border-slate-800 shadow-2xl transition-[width] duration-300 ease-in-out relative z-30 select-none overflow-hidden ${
+          isCollapsed ? "w-20" : "w-72"
+        }`}
+      >
         {/* User Profile Header */}
-        <div className="p-4 border-b border-slate-800/80 relative">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 ring-2 ring-sky-400/50 flex items-center justify-center shrink-0 shadow-lg text-white font-extrabold text-sm transition-transform duration-300 hover:scale-105">
+        <div className="p-3.5 border-b border-slate-800/90 bg-[#080d18] shrink-0">
+          <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}>
+            <div
+              className="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center shrink-0 shadow-md text-white font-extrabold text-sm ring-2 ring-sky-400/20"
+              title={isCollapsed ? `${userName} - Sở GD&ĐT` : undefined}
+            >
               {getInitials(userName)}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-extrabold text-white truncate flex items-center gap-1">
-                {userName}
-              </p>
-              <p className="text-[10px] text-sky-100/90 truncate">{userEmail}</p>
-              <div className="mt-1.5 pt-1 border-t border-slate-800 text-[10px] space-y-0.5">
-                <span className="px-1.5 py-0.5 bg-sky-500/20 text-sky-200 font-bold border border-sky-400/30 rounded text-[9px] uppercase tracking-wider inline-block">
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 transition-opacity duration-200">
+                <p className="text-sm font-bold text-white truncate leading-snug">
+                  {userName}
+                </p>
+                <p className="text-[11px] text-sky-400 font-semibold truncate">
                   Sở Giáo dục & Đào tạo
-                </span>
+                </p>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  {userEmail}
+                </p>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1.5 custom-scrollbar relative">
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-2 custom-scrollbar">
           {menuGroups.map((group) => {
-            const hasActiveItem = group.items.some(
-              item => pathname === item.href || pathname.startsWith(item.href + "/")
-            );
-            const isCollapsed = collapsedGroups[group.title] ?? !hasActiveItem;
-            const GroupIcon = group.icon;
+            const isExpanded = isCollapsed || activeGroupId === group.id;
 
             return (
-              <div key={group.title} className="mb-2">
-                <button
-                  onClick={() => toggleGroup(group.title)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    hasActiveItem
-                      ? "text-sky-300 bg-sky-500/15 border border-sky-500/30 shadow-xs"
-                      : "text-slate-300 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <GroupIcon className={`w-4 h-4 shrink-0 ${hasActiveItem ? "text-sky-400" : "text-slate-400"}`} />
-                  <span className="flex-1 text-left truncate">{group.title}</span>
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                  )}
-                </button>
+              <div
+                key={group.id}
+                className={
+                  isCollapsed
+                    ? "space-y-1 py-1"
+                    : `rounded-2xl p-2 border transition-all duration-200 ${cardAccentStyles[group.accent]}`
+                }
+              >
+                {/* Domain Section Header with Accordion Toggle */}
+                {isCollapsed ? (
+                  <div className="flex justify-center py-1">
+                    <span
+                      className={`w-2.5 h-1 rounded-full ${miniDotStyles[group.accent]}`}
+                      title={group.title}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.id)}
+                    aria-expanded={isExpanded}
+                    aria-label={`Thu gọn/mở rộng ${group.title}`}
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-slate-800/80 transition-colors text-left group/hdr cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[9px] font-black tracking-wider border shrink-0 ${codeBadgeStyles[group.accent]}`}
+                      >
+                        {group.code}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-slate-100 uppercase tracking-wider truncate group-hover/hdr:text-white">
+                        {group.title}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase border ${tagStyles[group.accent]}`}
+                      >
+                        {group.tag}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronDown className="w-3.5 h-3.5 text-sky-300 group-hover/hdr:text-white transition-transform" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/hdr:text-white transition-transform" />
+                      )}
+                    </div>
+                  </button>
+                )}
 
-                {!isCollapsed && (
-                  <div className="mt-1 ml-1 space-y-1 border-l-2 border-slate-800 pl-2">
+                {/* Section Menu Items (Auto-collapses when another group is opened) */}
+                {isExpanded && (
+                  <div className="space-y-0.5 mt-1">
                     {group.items.map((item) => {
-                      const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                      const isActive =
+                        pathname === item.href ||
+                        (item.href !== "/department/dashboard" && pathname.startsWith(item.href));
                       const Icon = item.icon;
+
+                      if (isCollapsed) {
+                        return (
+                          <div key={item.href} className="relative group">
+                            <Link
+                              href={item.href}
+                              prefetch={true}
+                              aria-label={item.label}
+                              className={`flex items-center justify-center h-10 w-full rounded-xl text-xs font-semibold transition-all ${
+                                isActive
+                                  ? "bg-sky-600 text-white shadow-md shadow-sky-900/40 font-bold"
+                                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                              }`}
+                            >
+                              <Icon
+                                className={`w-4 h-4 shrink-0 transition-transform ${
+                                  isActive ? "scale-110 text-white" : "text-slate-400 group-hover:scale-110 group-hover:text-sky-300"
+                                }`}
+                              />
+                            </Link>
+                            <NavTooltip
+                              title={item.label}
+                              groupTitle={`${group.code} - ${group.title}`}
+                              badge={item.badge}
+                              description={item.description}
+                              visible={isCollapsed}
+                            />
+                          </div>
+                        );
+                      }
+
                       return (
                         <Link
                           key={item.href}
                           href={item.href}
                           prefetch={true}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative ${
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all group ${
                             isActive
-                              ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold shadow-lg shadow-sky-500/25"
-                              : "text-slate-200 hover:bg-white/10 hover:text-white"
+                              ? "bg-sky-600 text-white font-bold shadow-md shadow-sky-900/40"
+                              : "text-slate-300 hover:bg-slate-800 hover:text-white"
                           }`}
                         >
-                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-sky-300"}`} />
-                          <span className="flex-1 truncate">{item.label}</span>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Icon
+                              className={`w-4 h-4 shrink-0 transition-colors ${
+                                isActive ? "text-white" : "text-slate-400 group-hover:text-sky-300"
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </div>
                           {item.badge && (
-                            <span className="px-1.5 py-0.5 bg-sky-300 text-sky-950 font-black rounded text-[9px] uppercase tracking-wider">
+                            <span
+                              className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                isActive
+                                  ? "bg-white/20 text-white"
+                                  : "bg-slate-800 text-sky-300 border border-slate-700"
+                              }`}
+                            >
                               {item.badge}
                             </span>
-                          )}
-                          {isActive && !item.badge && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
                           )}
                         </Link>
                       );
@@ -187,106 +328,160 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
         </nav>
 
         {/* Bottom Logout */}
-        <div className="p-3 border-t border-slate-800/80 relative">
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-slate-200 hover:text-rose-100 hover:bg-rose-500/25 rounded-xl transition-all font-bold cursor-pointer active-press group"
-          >
-            <LogOut className="w-4 h-4 text-slate-300 group-hover:text-rose-200" />
-            <span>Đăng xuất</span>
-          </button>
+        <div className="p-2.5 border-t border-slate-800/90 bg-[#080d18] shrink-0">
+          {isCollapsed ? (
+            <div className="relative group">
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                aria-label="Đăng xuất"
+                className="w-full flex items-center justify-center h-10 text-rose-400 hover:bg-rose-950/50 rounded-xl transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+              <NavTooltip title="Đăng xuất" visible={isCollapsed} />
+            </div>
+          ) : (
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="w-full flex items-center justify-center px-3 py-2 text-xs text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/40 rounded-xl transition font-semibold cursor-pointer"
+            >
+              <span>Đăng xuất</span>
+            </button>
+          )}
         </div>
       </aside>
 
-      {/* ===== Main Content Area ===== */}
-      <div className="flex-1 flex flex-col min-h-screen z-10 min-w-0">
+      {/* ===== Main Independent Workspace Canvas ===== */}
+      <div className="flex-1 h-screen flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
         {/* Global Unified Header */}
-        <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
+        <Header
+          isCollapsed={isCollapsed}
+          onToggleCollapse={toggleCollapsed}
+          onMobileMenuToggle={() => setMobileOpen(true)}
+        />
 
         {/* Workspace Subheader with Breadcrumbs */}
-        <div className="px-4 md:px-6 pt-3 pb-1 flex items-center justify-between border-b border-slate-200/60 bg-white/40 backdrop-blur-xs">
+        <div className="px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-slate-200 bg-white shadow-2xs shrink-0 z-20">
           <Breadcrumb />
           <div className="flex items-center gap-2">
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-100 text-sky-900 border border-sky-200">
-              <Sparkles className="w-3 h-3 text-sky-600" />
-              Cổng Quản lý Cấp Sở GD&ĐT
+            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-300">
+              Cổng Quản Lý Cấp Sở GD&ĐT
             </span>
           </div>
         </div>
 
         {/* Mobile Drawer */}
-        {mobileMenuOpen && (
+        {isMobileOpen && (
           <>
             <div
-              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm animate-fade-in"
-              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs"
+              onClick={closeMobile}
             />
-            <div className="fixed inset-y-0 left-0 w-80 bg-slate-950 border-r border-slate-800 z-50 lg:hidden flex flex-col shadow-2xl text-white animate-slide-in-left">
-              <div className="px-4 pt-5 pb-4 border-b border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white font-bold flex items-center justify-center">
+            <div className="fixed inset-y-0 left-0 w-72 bg-[#0c1322] border-r border-slate-800 z-50 lg:hidden flex flex-col shadow-2xl text-white">
+              {/* Drawer header */}
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#080d18]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-sky-600 text-white font-bold text-xs">
                     {getInitials(userName)}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-white truncate">{userName}</p>
-                    <p className="text-[11px] text-slate-300 truncate">{userEmail}</p>
-                    <span className="px-2 py-0.5 bg-sky-500/20 text-sky-300 font-bold border border-sky-400/30 rounded text-[9px] uppercase tracking-wider inline-block mt-1">
+                    <p className="text-xs font-bold text-white truncate">{userName}</p>
+                    <p className="text-[10px] text-sky-400 font-semibold truncate">
                       Sở GD&ĐT
-                    </span>
+                    </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                  onClick={closeMobile}
+                  className="px-2 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold border border-slate-700 cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  Đóng
                 </button>
               </div>
 
-              <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-2 custom-scrollbar">
+              {/* Drawer nav */}
+              <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-3 custom-scrollbar">
                 {menuGroups.map((group) => {
-                  const GroupIcon = group.icon;
+                  const isExpanded = activeGroupId === group.id;
+
                   return (
-                    <div key={group.title} className="mb-2">
-                      <div className="flex items-center gap-2 px-3 py-1.5">
-                        <GroupIcon className="w-4 h-4 text-sky-400" />
-                        <p className="text-[11px] font-extrabold text-sky-300 uppercase tracking-wider truncate">
-                          {group.title}
-                        </p>
-                      </div>
-                      <div className="space-y-1 ml-1">
-                        {group.items.map((item) => {
-                          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              prefetch={true}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                                isActive
-                                  ? "bg-sky-500 text-white font-extrabold shadow-md"
-                                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                              }`}
-                            >
-                              <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-sky-400/80"}`} />
-                              <span className="truncate">{item.label}</span>
-                            </Link>
-                          );
-                        })}
-                      </div>
+                    <div
+                      key={group.id}
+                      className={`rounded-2xl p-2 border ${cardAccentStyles[group.accent]}`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(group.id)}
+                        className="w-full flex items-center justify-between px-2.5 py-1 mb-1 text-left cursor-pointer"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[8px] font-black border ${codeBadgeStyles[group.accent]}`}
+                          >
+                            {group.code}
+                          </span>
+                          <p className="text-[10px] font-extrabold text-slate-100 uppercase tracking-widest truncate">
+                            {group.title}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase border ${tagStyles[group.accent]}`}
+                          >
+                            {group.tag}
+                          </span>
+                          {isExpanded ? (
+                            <ChevronDown className="w-3.5 h-3.5 text-sky-300" />
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                          )}
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="space-y-0.5">
+                          {group.items.map((item) => {
+                            const isActive =
+                              pathname === item.href ||
+                              (item.href !== "/department/dashboard" && pathname.startsWith(item.href));
+                            const Icon = item.icon;
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                prefetch={true}
+                                onClick={closeMobile}
+                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all group ${
+                                  isActive
+                                    ? "bg-sky-600 text-white font-bold"
+                                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-slate-400 group-hover:text-sky-300"}`} />
+                                  <span className="truncate">{item.label}</span>
+                                </div>
+                                {item.badge && (
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] uppercase tracking-wider bg-slate-800 text-sky-300 font-semibold">
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </nav>
 
-              <div className="p-3 border-t border-slate-800">
+              {/* Drawer footer */}
+              <div className="p-3 border-t border-slate-800 bg-[#080d18]">
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-rose-300 hover:bg-rose-500/20 rounded-xl transition font-bold cursor-pointer"
+                  className="w-full flex items-center justify-center px-3 py-2 text-xs text-rose-300 hover:bg-rose-950/40 rounded-xl transition font-semibold cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4" />
                   Đăng xuất
                 </button>
               </div>
@@ -294,19 +489,19 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
           </>
         )}
 
-        {/* Page content container */}
-        <main className="flex-1 overflow-y-auto pb-24 lg:pb-8 p-4 md:p-6">
+        {/* Page content independent scrollable canvas */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 lg:pb-8">
           <div className="max-w-[1680px] mx-auto w-full">
             {children}
           </div>
         </main>
 
         {/* ===== Mobile Bottom Tab Bar ===== */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-header border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-sm">
           <div className="flex items-stretch justify-around max-w-lg mx-auto pb-[env(safe-area-inset-bottom)]">
             {mobileMainTabs.map((tab) => {
-              const Icon = tab.icon;
               const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
+              const Icon = tab.icon;
 
               return (
                 <Link
@@ -315,30 +510,34 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
                   prefetch={true}
                   className={`flex flex-col items-center justify-center py-2 px-3 min-w-[64px] min-h-[44px] relative transition-transform duration-200 active:scale-95 ${
                     isActive
-                      ? "text-sky-600 font-extrabold"
+                      ? "text-sky-600 font-bold border-t-2 border-sky-600"
                       : "text-slate-600 hover:text-slate-900 font-medium"
                   }`}
                 >
-                  {isActive && (
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-sky-500 rounded-b-full shadow-xs" />
-                  )}
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[10px] mt-0.5 leading-tight">
+                  <Icon className="w-4 h-4 mb-0.5" />
+                  <span className="text-[10px] leading-tight">
                     {tab.label}
                   </span>
                 </Link>
               );
             })}
             <button
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={() => setMobileOpen(true)}
               className="flex flex-col items-center justify-center py-2 px-3 min-w-[64px] min-h-[44px] text-slate-600 hover:text-slate-900 font-medium transition-transform duration-200 active:scale-95 cursor-pointer"
             >
-              <Menu className="w-5 h-5" />
-              <span className="text-[10px] mt-0.5 leading-tight">Mục lục</span>
+              <span className="text-[10px] leading-tight">Mục lục</span>
             </button>
           </div>
         </nav>
       </div>
     </div>
+  );
+}
+
+export default function DepartmentLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <LayoutProvider>
+      <DepartmentLayoutInner>{children}</DepartmentLayoutInner>
+    </LayoutProvider>
   );
 }
