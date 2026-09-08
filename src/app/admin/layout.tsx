@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Next.js Root Admin Layout for `/admin/*`.
- * 2. Affected APIs: `src/app/admin/layout.tsx`.
- * 3. Schemas: `MenuItem`, `MenuGroup`, `AdminProfile`.
- * 4. Verbatim User Instruction: "sửa lại cấu trúc Bảng Điều Khiển Ban Giám Hiệu cho logic và phù hợp với những gì tôi mô tả về dự án"
+ * 1. Importers/Callers: Next.js Root Admin Layout for `/admin/*` (`src/app/admin/dashboard/page.tsx`, `src/app/admin/exam-analytics/page.tsx`, etc.).
+ * 2. Uniqueness: Dual-Scroll independent workspace canvas with collapsible sidebar (w-72 <-> w-20), single active accordion auto-collapsing secondary items, and floating tooltips.
+ * 3. Schema: `AdminProfile` (`id`, `name`, `email`, `isSuperAdmin`, `schoolName`, `departmentName`), `MenuGroup`, `MenuItem`.
+ * 4. Verbatim User Instruction: "update giao diện sáng và dễ nhìn hơn và khi mở thì nhưng cái phụ sẽ thu bé lại".
  */
 
 "use client";
@@ -11,41 +11,41 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  LogOut,
+  ChevronDown,
+  ChevronRight,
+  LayoutDashboard,
+  BarChart2,
+  AlertCircle,
+  FileText,
+  Bot,
+  BookOpen,
+  ClipboardList,
+  School,
+  GraduationCap,
+  Calendar,
+  Layers,
+  Scale,
+  UserCheck,
+  Users,
+  Clock,
+  CheckSquare,
+  FileSpreadsheet,
+  Building2,
+  Bell,
+  Target,
+  ShieldAlert,
+  ShieldCheck,
+  Activity,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { getCurrentAdminProfile, AdminProfile } from "./actions";
 import Header from "@/components/layout/Header";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-import {
-  LayoutDashboard,
-  Building2,
-  School,
-  UserCog,
-  Users,
-  BookOpen,
-  CalendarDays,
-  Bell,
-  Globe,
-  FileBarChart,
-  ShieldCheck,
-  LogOut,
-  Menu,
-  X,
-  ChevronDown,
-  ChevronRight,
-  Bot,
-  UserCheck,
-  Sparkles,
-  Home,
-  Settings,
-  Landmark,
-  Lock,
-  ScrollText,
-  HardDrive,
-  Crown,
-  SlidersHorizontal,
-  Zap,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import NavTooltip from "@/components/layout/NavTooltip";
+import { LayoutProvider, useSidebar } from "@/context/LayoutContext";
 
 type MenuItem = {
   label: string;
@@ -55,153 +55,184 @@ type MenuItem = {
 };
 
 type MenuGroup = {
+  id: string;
+  code: string;
   title: string;
+  tag: string;
+  accent: "blue" | "emerald" | "indigo" | "sky";
   icon: LucideIcon;
   items: MenuItem[];
 };
 
-// Menu Group for Super Admin (Quản Trị Viên Tối Cao / Bộ GD&ĐT & Sở GD&ĐT)
+// Menu Group for Super Admin - 4 Distinct Domain Hubs with Codes & Icons
 const superAdminMenuGroups: MenuGroup[] = [
   {
-    title: "👑 Quản trị Tối cao",
-    icon: Crown,
+    id: "executive",
+    code: "01",
+    title: "ĐIỀU HÀNH QUỐC GIA",
+    tag: "Thời gian thực",
+    accent: "blue",
+    icon: Activity,
     items: [
-      { label: "Bảng điều khiển Tối cao", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Hiệu trưởng & Cán bộ", href: "/admin/principals", icon: Landmark, badge: "FULL" },
-      { label: "Tất cả Trường học", href: "/admin/schools", icon: Building2 },
-      { label: "Trung tâm Phê duyệt", href: "/admin/approvals", icon: ShieldCheck },
+      { label: "Bảng điều khiển", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Điểm thi OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "OLS" },
+      { label: "Radar cảnh báo", href: "/admin/early-warnings", icon: AlertCircle },
+      { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileText },
+      { label: "Chiến lược & KPI", href: "/admin/strategy", icon: Target },
     ],
   },
   {
-    title: "⚖️ Tuân thủ Nghị quyết 37/2026/NQ-CP",
+    id: "academics",
+    code: "02",
+    title: "TRƯỜNG & CHUYÊN MÔN",
+    tag: "Học tập",
+    accent: "emerald",
+    icon: BookOpen,
+    items: [
+      { label: "Danh mục trường", href: "/admin/schools", icon: School },
+      { label: "Lớp học", href: "/admin/classes", icon: Building2 },
+      { label: "Hồ sơ học sinh", href: "/admin/students", icon: GraduationCap },
+      { label: "Kế hoạch bài dạy", href: "/admin/lesson-plans", icon: BookOpen },
+      { label: "Sổ đầu bài", href: "/admin/journals", icon: ClipboardList },
+    ],
+  },
+  {
+    id: "personnel",
+    code: "03",
+    title: "NHÂN SỰ & NQ 37",
+    tag: "NQ 37",
+    accent: "indigo",
+    icon: Users,
+    items: [
+      { label: "Định mức NQ 37", href: "/admin/nq37-compliance", icon: Scale, badge: "NQ 37" },
+      { label: "Nhân sự 36T", href: "/admin/support-staff", icon: UserCheck },
+      { label: "Cán bộ BGH", href: "/admin/principals", icon: ShieldCheck },
+      { label: "Đội ngũ giáo viên", href: "/admin/teachers", icon: Users },
+    ],
+  },
+  {
+    id: "governance",
+    code: "04",
+    title: "QUẢN TRỊ & PHÊ DUYỆT",
+    tag: "Vận hành",
+    accent: "sky",
     icon: ShieldCheck,
     items: [
-      { label: "Thẩm định Định mức NQ 37", href: "/admin/nq37-compliance", icon: ShieldCheck, badge: "NQ 37" },
-      { label: "Nhân sự Hỗ trợ & Chuẩn hóa 36T", href: "/admin/support-staff", icon: UserCheck, badge: "36 Tháng" },
-    ],
-  },
-  {
-    title: "📊 Điều hành Chiến lược & Báo cáo",
-    icon: Sparkles,
-    items: [
-      { label: "Liên trường Toàn quốc", href: "/admin/multi-school", icon: Globe },
-      { label: "Báo cáo Ngày Toàn ngành", href: "/admin/daily-reports", icon: FileBarChart },
-      { label: "Quản trị Chiến lược", href: "/admin/strategy", icon: Sparkles },
-      { label: "KPI & Ngân sách", href: "/admin/kpi", icon: SlidersHorizontal },
-    ],
-  },
-  {
-    title: "🏫 Giám sát Dữ liệu Trường học",
-    icon: Settings,
-    items: [
-      { label: "Lớp học Toàn quốc", href: "/admin/classes", icon: School },
-      { label: "Giáo viên", href: "/admin/teachers", icon: UserCog },
-      { label: "Học sinh", href: "/admin/students", icon: Users },
-      { label: "Môn học", href: "/admin/subjects", icon: BookOpen },
-      { label: "Tổ chuyên môn", href: "/admin/subject-groups", icon: Users },
-      { label: "Thời khóa biểu", href: "/admin/schedule", icon: CalendarDays },
-      { label: "Duyệt Giáo án", href: "/admin/lesson-plans", icon: BookOpen },
-      { label: "Sổ đầu bài", href: "/admin/journals", icon: FileBarChart },
-    ],
-  },
-  {
-    title: "🤖 Trợ lý AI Executive & Giám sát",
-    icon: Bot,
-    items: [
-      { label: "AI Executive Cố vấn BGH", href: "/admin/principal-ai", icon: Bot, badge: "AI" },
-      { label: "Cảnh báo sớm Toàn ngành", href: "/admin/early-warnings", icon: Zap },
-      { label: "Bố trí dạy thay", href: "/admin/substitute-teaching", icon: UserCheck },
-      { label: "Trợ lý AI Đa điểm trường", href: "/admin/ai-assistant", icon: Sparkles },
-    ],
-  },
-  {
-    title: "🛡️ An ninh, Kiểm toán & Hệ thống",
-    icon: ShieldCheck,
-    items: [
-      { label: "Duyệt & Khóa Học bạ", href: "/admin/transcripts", icon: Lock },
-      { label: "Nhật ký Kiểm toán An ninh", href: "/admin/audit-log", icon: ScrollText },
-      { label: "Khóa sổ Dữ liệu Toàn ngành", href: "/admin/data-lock", icon: Lock },
-      { label: "Cấu hình Drive & Ký nộp", href: "/admin/drive-config", icon: HardDrive },
-      { label: "Thông báo Khẩn Toàn hệ thống", href: "/admin/notifications", icon: Bell },
+      { label: "Phê duyệt yêu cầu", href: "/admin/approvals", icon: CheckSquare },
+      { label: "Quản lý học bạ", href: "/admin/transcripts", icon: FileSpreadsheet },
+      { label: "Nhật ký kiểm toán", href: "/admin/audit-log", icon: ShieldAlert },
+      { label: "Thông báo hệ thống", href: "/admin/notifications", icon: Bell },
     ],
   },
 ];
 
-// Menu Group for School Principal (BGH - Ban Giám Hiệu & Hiệu Trưởng Trường Đa Cơ Sở)
+// Menu Group for School Principal - 4 Distinct Domain Hubs with Codes & Icons
 const principalMenuGroups: MenuGroup[] = [
   {
-    title: "🏛️ Trung tâm Điều hành BGH",
-    icon: LayoutDashboard,
+    id: "executive",
+    code: "01",
+    title: "ĐIỀU HÀNH NHÀ TRƯỜNG",
+    tag: "Thời gian thực",
+    accent: "blue",
+    icon: Activity,
     items: [
-      { label: "Bảng điều khiển Ban Giám hiệu", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Điều hành Liên phân hiệu", href: "/admin/multi-school", icon: Globe },
-      { label: "Báo cáo Ngày Toàn trường", href: "/admin/daily-reports", icon: FileBarChart },
-      { label: "Quản trị Chiến lược & KPI", href: "/admin/strategy", icon: Sparkles },
+      { label: "Tổng quan BGH", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Điểm thi OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "Mới" },
+      { label: "Radar cảnh báo", href: "/admin/early-warnings", icon: AlertCircle },
+      { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileText },
+      { label: "Trợ lý BGH AI", href: "/admin/principal-ai", icon: Bot },
     ],
   },
   {
-    title: "⚖️ Tuân thủ Nghị quyết 37/2026/NQ-CP",
+    id: "academics",
+    code: "02",
+    title: "DẠY HỌC & CHUYÊN MÔN",
+    tag: "Chuyên môn",
+    accent: "emerald",
+    icon: BookOpen,
+    items: [
+      { label: "Kế hoạch bài dạy", href: "/admin/lesson-plans", icon: BookOpen },
+      { label: "Sổ đầu bài", href: "/admin/journals", icon: ClipboardList },
+      { label: "Lớp học", href: "/admin/classes", icon: School },
+      { label: "Hồ sơ học sinh", href: "/admin/students", icon: GraduationCap },
+      { label: "Thời khóa biểu", href: "/admin/schedule", icon: Calendar },
+      { label: "Tổ bộ môn", href: "/admin/subject-groups", icon: Layers },
+    ],
+  },
+  {
+    id: "personnel",
+    code: "03",
+    title: "NHÂN SỰ & NQ 37",
+    tag: "NQ 37",
+    accent: "indigo",
+    icon: Users,
+    items: [
+      { label: "Định mức NQ 37", href: "/admin/nq37-compliance", icon: Scale, badge: "NQ 37" },
+      { label: "Nhân sự 36T", href: "/admin/support-staff", icon: UserCheck },
+      { label: "Đội ngũ giáo viên", href: "/admin/teachers", icon: Users },
+      { label: "Dạy thay khẩn cấp", href: "/admin/substitute-teaching", icon: Clock },
+    ],
+  },
+  {
+    id: "governance",
+    code: "04",
+    title: "PHÊ DUYỆT & QUẢN TRỊ",
+    tag: "Phê duyệt",
+    accent: "sky",
     icon: ShieldCheck,
     items: [
-      { label: "Thẩm định Định mức NQ 37", href: "/admin/nq37-compliance", icon: ShieldCheck, badge: "NQ 37" },
-      { label: "Nhân sự Hỗ trợ & Chuẩn hóa 36T", href: "/admin/support-staff", icon: UserCheck, badge: "36 Tháng" },
-    ],
-  },
-  {
-    title: "👥 Quản trị Đội ngũ & Nhân sự",
-    icon: UserCog,
-    items: [
-      { label: "Hiệu trưởng & Ban Giám hiệu", href: "/admin/principals", icon: Landmark },
-      { label: "Đội ngũ Giáo viên", href: "/admin/teachers", icon: UserCog },
-      { label: "Tổ Chuyên môn", href: "/admin/subject-groups", icon: Users },
-      { label: "Điều động Dạy thay Thông minh", href: "/admin/substitute-teaching", icon: Zap },
-    ],
-  },
-  {
-    title: "🏫 Quản lý Dạy học & Học sinh",
-    icon: School,
-    items: [
-      { label: "Lớp học theo Cơ sở", href: "/admin/classes", icon: School },
-      { label: "Hồ sơ Học sinh", href: "/admin/students", icon: Users },
-      { label: "Môn học & Chương trình", href: "/admin/subjects", icon: BookOpen },
-      { label: "Thời khóa biểu Liên cơ sở", href: "/admin/schedule", icon: CalendarDays },
-      { label: "Quản lý & Duyệt Giáo án", href: "/admin/lesson-plans", icon: BookOpen },
-      { label: "Sổ đầu bài Điện tử", href: "/admin/journals", icon: FileBarChart },
-    ],
-  },
-  {
-    title: "🛡️ Kiểm soát & Phê duyệt",
-    icon: Lock,
-    items: [
-      { label: "Trung tâm Phê duyệt BGH", href: "/admin/approvals", icon: ShieldCheck },
-      { label: "Phê duyệt & Khóa Học bạ", href: "/admin/transcripts", icon: Lock },
-      { label: "Bảng tin & Thông báo Khẩn", href: "/admin/notifications", icon: Bell },
-    ],
-  },
-  {
-    title: "🤖 Trợ lý AI Cố vấn Hiệu trưởng",
-    icon: Bot,
-    items: [
-      { label: "AI Cố vấn Ra Quyết định", href: "/admin/principal-ai", icon: Bot, badge: "AI BGH" },
-      { label: "Radar Cảnh báo sớm AI", href: "/admin/early-warnings", icon: Zap },
-      { label: "Trợ lý AI Đa điểm trường", href: "/admin/ai-assistant", icon: Sparkles },
+      { label: "Duyệt yêu cầu BGH", href: "/admin/approvals", icon: CheckSquare },
+      { label: "Duyệt học bạ", href: "/admin/transcripts", icon: FileSpreadsheet },
+      { label: "Cơ sở phân hiệu", href: "/admin/multi-school", icon: Building2 },
+      { label: "Thông báo trường", href: "/admin/notifications", icon: Bell },
     ],
   },
 ];
+
+// Tag badge styles per accent - High contrast & bright clarity
+const tagStyles = {
+  blue: "bg-blue-900/80 text-blue-200 border-blue-600/60",
+  emerald: "bg-emerald-900/80 text-emerald-200 border-emerald-600/60",
+  indigo: "bg-indigo-900/80 text-indigo-200 border-indigo-600/60",
+  sky: "bg-sky-900/80 text-sky-200 border-sky-600/60",
+};
+
+// Code badge styles (01, 02, etc.)
+const codeBadgeStyles = {
+  blue: "bg-blue-600 text-white border-blue-400/50 shadow-xs",
+  emerald: "bg-emerald-600 text-white border-emerald-400/50 shadow-xs",
+  indigo: "bg-indigo-600 text-white border-indigo-400/50 shadow-xs",
+  sky: "bg-sky-600 text-white border-sky-400/50 shadow-xs",
+};
+
+// Card border highlight per accent
+const cardAccentStyles = {
+  blue: "border-slate-800 hover:border-blue-700/60 bg-slate-900/80",
+  emerald: "border-slate-800 hover:border-emerald-700/60 bg-slate-900/80",
+  indigo: "border-slate-800 hover:border-indigo-700/60 bg-slate-900/80",
+  sky: "border-slate-800 hover:border-sky-700/60 bg-slate-900/80",
+};
+
+// Mini badge accent dot
+const miniDotStyles = {
+  blue: "bg-blue-400 shadow-blue-500/50",
+  emerald: "bg-emerald-400 shadow-emerald-500/50",
+  indigo: "bg-indigo-400 shadow-indigo-500/50",
+  sky: "bg-sky-400 shadow-sky-500/50",
+};
 
 // Mobile bottom tabs
 const mobileMainTabs = [
-  { label: "Tổng quan", href: "/admin/dashboard", icon: Home },
-  { label: "Cán bộ", href: "/admin/principals", icon: Landmark },
-  { label: "Trường", href: "/admin/schools", icon: Building2 },
-  { label: "Phê duyệt", href: "/admin/approvals", icon: ShieldCheck },
+  { label: "Tổng quan", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Dạy học", href: "/admin/lesson-plans", icon: BookOpen },
+  { label: "NQ 37", href: "/admin/nq37-compliance", icon: Scale },
+  { label: "Phê duyệt", href: "/admin/approvals", icon: CheckSquare },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const { isCollapsed, toggleCollapsed, isMobileOpen, setMobileOpen, closeMobile } = useSidebar();
   const [profile, setProfile] = useState<AdminProfile | null>(null);
 
   useEffect(() => {
@@ -217,18 +248,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     session?.user?.email === "superadmin@school.com" ||
     (session?.user as { role?: string })?.role === "SUPER_ADMIN";
 
-  const menuGroups = isSuperAdmin ? superAdminMenuGroups : principalMenuGroups;
+  const menuGroups = useMemo(() => (isSuperAdmin ? superAdminMenuGroups : principalMenuGroups), [isSuperAdmin]);
 
-  const userName = profile?.name || session?.user?.name || (isSuperAdmin ? "Ban Quản Trị Hệ Thống Toàn Thành Phố" : "Thầy Đoàn Thái Sơn");
-  const userEmail = profile?.email || session?.user?.email || "";
+  // Find initial active group from current route
+  const currentMatchingGroupId = useMemo(() => {
+    for (const group of menuGroups) {
+      if (
+        group.items.some(
+          (item) => pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href))
+        )
+      ) {
+        return group.id;
+      }
+    }
+    return menuGroups[0]?.id || "executive";
+  }, [pathname, menuGroups]);
 
-  const schoolDisplay = profile?.schoolName || (isSuperAdmin ? "Toàn bộ các Trường (Hệ thống TP. Hải Phòng)" : "Trường THPT Chuyên Trần Phú");
-  const wardDisplay = profile?.districtWardName || (isSuperAdmin ? "Tất cả các Quận/Huyện" : "Quận Hải An - TP. Hải Phòng");
-  const deptDisplay = profile?.departmentName || (isSuperAdmin ? "Bộ GD&ĐT & Sở GD&ĐT TP. Hải Phòng" : "Sở GD&ĐT TP. Hải Phòng");
+  // Single active accordion state: expanding one group automatically collapses all secondary groups!
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(currentMatchingGroupId);
 
-  const toggleGroup = (title: string) => {
-    setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
+  // Synchronize active accordion group when navigating routes
+  useEffect(() => {
+    if (currentMatchingGroupId) {
+      setActiveGroupId(currentMatchingGroupId);
+    }
+  }, [currentMatchingGroupId]);
+
+  const toggleGroup = (groupId: string) => {
+    // If clicking already open group, collapse it; otherwise open it and collapse all other secondary groups!
+    setActiveGroupId((prev) => (prev === groupId ? null : groupId));
   };
+
+  const userName = profile?.name || session?.user?.name || (isSuperAdmin ? "Ban Quản Trị Hệ Thống" : "Thầy Đoàn Thái Sơn");
+  const schoolDisplay = profile?.schoolName || (isSuperAdmin ? "Hệ thống Toàn quốc" : "THPT Chuyên Trần Phú");
 
   const getInitials = (name: string) => {
     const parts = name.split(" ").filter(Boolean);
@@ -239,144 +291,162 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-sans relative selection:bg-indigo-500 selection:text-white">
-      {/* Ambient background mesh */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
-      </div>
-
-      {/* ===== Sidebar - Desktop ===== */}
+    <div className="h-screen w-screen overflow-hidden flex flex-row bg-slate-50 text-slate-900 font-sans relative">
+      {/* ===== Sidebar - Desktop (Collapsible w-72 <-> w-20) ===== */}
       <aside
-        className={`hidden lg:flex flex-col w-72 text-white shrink-0 shadow-2xl transition-all border-r relative z-20 ${
-          isSuperAdmin
-            ? "bg-slate-950 border-r border-amber-500/20"
-            : "bg-slate-950 border-r border-slate-800/80"
+        className={`hidden lg:flex flex-col shrink-0 bg-[#0c1322] text-white border-r border-slate-800 shadow-2xl transition-[width] duration-300 ease-in-out relative z-30 select-none overflow-hidden ${
+          isCollapsed ? "w-20" : "w-72"
         }`}
       >
-        {/* Ambient Top Glow */}
-        <div
-          className={`absolute top-0 left-0 right-0 h-44 bg-gradient-to-b pointer-events-none ${
-            isSuperAdmin
-              ? "from-amber-500/15 via-amber-500/5 to-transparent"
-              : "from-indigo-500/15 via-indigo-500/5 to-transparent"
-          }`}
-        />
-
-        {/* User Profile Header */}
-        <div className="p-4 border-b border-slate-800/80 relative">
-          <div className="flex items-center gap-3">
+        {/* User Identity Header */}
+        <div className="p-3.5 border-b border-slate-800/90 bg-[#080d18] shrink-0">
+          <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}>
             <div
-              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ring-2 shadow-lg transition-transform duration-300 hover:scale-105 ${
-                isSuperAdmin
-                  ? "bg-gradient-to-br from-amber-500 to-amber-700 ring-amber-400/60 text-white"
-                  : "bg-blue-600 ring-blue-400/50 text-white"
-              }`}
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-600 text-white font-extrabold text-sm shadow-md ring-2 ring-blue-400/20"
+              title={isCollapsed ? `${userName} - ${isSuperAdmin ? "Quản trị viên" : "BGH"}` : undefined}
             >
-              {isSuperAdmin ? (
-                <Crown className="w-5 h-5 text-amber-100 animate-pulse" />
-              ) : (
-                <span className="text-sm font-extrabold text-white">
-                  {getInitials(userName)}
-                </span>
-              )}
+              {getInitials(userName)}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-extrabold text-white truncate flex items-center gap-1">
-                {userName}
-              </p>
-              <p className="text-[10px] text-slate-300 truncate">{userEmail}</p>
-
-              {isSuperAdmin ? (
-                <div className="mt-2 pt-1.5 border-t border-amber-400/20 text-[10px] space-y-1">
-                  <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-extrabold rounded-md text-[9px] uppercase tracking-wider inline-flex items-center gap-1 shadow-xs">
-                    <Crown className="w-3 h-3 text-slate-950" /> QUẢN TRỊ VIÊN TỐI CAO
-                  </span>
-                  <p className="truncate font-bold text-amber-200 flex items-center gap-1">
-                    <Globe className="w-3 h-3 text-amber-300 shrink-0" /> {schoolDisplay}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-1.5 pt-1 border-t border-slate-800 text-[10px] space-y-0.5">
-                  <span className="px-1.5 py-0.5 bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-400/30 rounded text-[9px] uppercase tracking-wider inline-block mb-0.5">
-                    BGH - Hiệu Trưởng
-                  </span>
-                  <p className="truncate font-bold text-slate-200 flex items-center gap-1">
-                    <Building2 className="w-3 h-3 text-indigo-300 shrink-0" /> {schoolDisplay}
-                  </p>
-                </div>
-              )}
-            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 transition-opacity duration-200">
+                <p className="text-sm font-bold text-white truncate leading-snug">
+                  {userName}
+                </p>
+                <p className="text-[11px] text-blue-400 font-semibold truncate">
+                  {isSuperAdmin ? "Quản trị viên Hệ thống" : "Ban Giám Hiệu"}
+                </p>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  {schoolDisplay}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1.5 custom-scrollbar relative">
+        {/* Navigation Menu - Domain Hubs with Single-Active Collapsible Accordion */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-2 custom-scrollbar">
           {menuGroups.map((group) => {
-            const hasActiveItem = group.items.some(
-              item => pathname === item.href || pathname.startsWith(item.href + "/")
-            );
-            const isCollapsed = collapsedGroups[group.title] ?? !hasActiveItem;
-            const GroupIcon = group.icon;
+            const isExpanded = isCollapsed || activeGroupId === group.id;
 
             return (
-              <div key={group.title} className="mb-2">
-                {/* Group header */}
-                <button
-                  onClick={() => toggleGroup(group.title)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    hasActiveItem
-                      ? isSuperAdmin
-                        ? "text-amber-300 bg-amber-500/15 border border-amber-500/30 shadow-xs"
-                        : "text-white bg-white/10 border border-white/10 shadow-xs"
-                      : isSuperAdmin
-                      ? "text-slate-300 hover:text-white hover:bg-slate-800/60"
-                      : "text-slate-300 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <GroupIcon className={`w-4 h-4 shrink-0 ${isSuperAdmin && hasActiveItem ? "text-amber-400" : hasActiveItem ? "text-indigo-400" : "text-slate-400"}`} />
-                  <span className="flex-1 text-left truncate">{group.title}</span>
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                  )}
-                </button>
+              <div
+                key={group.id}
+                className={
+                  isCollapsed
+                    ? "space-y-1 py-1"
+                    : `rounded-2xl p-2 border transition-all duration-200 ${cardAccentStyles[group.accent]}`
+                }
+              >
+                {/* Domain Section Header (Clickable Accordion Trigger) */}
+                {isCollapsed ? (
+                  <div className="flex justify-center py-1">
+                    <span
+                      className={`w-2.5 h-1 rounded-full ${miniDotStyles[group.accent]}`}
+                      title={group.title}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.id)}
+                    aria-expanded={isExpanded}
+                    aria-label={`Thu gọn/mở rộng ${group.title}`}
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-slate-800/80 transition-colors text-left group/hdr cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {/* Code Prefix Symbol (01, 02, etc.) */}
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[9px] font-black tracking-wider border shrink-0 ${codeBadgeStyles[group.accent]}`}
+                      >
+                        {group.code}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-slate-100 group-hover/hdr:text-white uppercase tracking-wider truncate">
+                        {group.title}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase border ${tagStyles[group.accent]}`}
+                      >
+                        {group.tag}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronDown className="w-3.5 h-3.5 text-blue-300 group-hover/hdr:text-white transition-transform" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/hdr:text-white transition-transform" />
+                      )}
+                    </div>
+                  </button>
+                )}
 
-                {/* Group items */}
-                {!isCollapsed && (
-                  <div className="mt-1 ml-1 space-y-1 border-l-2 border-slate-800 pl-2">
+                {/* Section Menu Items (Auto-collapses when another group is active) */}
+                {isExpanded && (
+                  <div className="space-y-0.5 mt-1">
                     {group.items.map((item) => {
-                      const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                      const isActive =
+                        pathname === item.href ||
+                        (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
                       const Icon = item.icon;
+
+                      if (isCollapsed) {
+                        return (
+                          <div key={item.href} className="relative group">
+                            <Link
+                              href={item.href}
+                              prefetch={true}
+                              aria-label={item.label}
+                              className={`flex items-center justify-center h-10 w-full rounded-xl text-xs font-semibold transition-all ${
+                                isActive
+                                  ? "bg-blue-600 text-white shadow-md shadow-blue-900/40 font-bold"
+                                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                              }`}
+                            >
+                              <Icon
+                                className={`w-4 h-4 shrink-0 transition-transform ${
+                                  isActive ? "scale-110 text-white" : "text-slate-400 group-hover:scale-110 group-hover:text-blue-300"
+                                }`}
+                              />
+                            </Link>
+                            <NavTooltip
+                              title={item.label}
+                              groupTitle={`${group.code} - ${group.title}`}
+                              badge={item.badge}
+                              visible={isCollapsed}
+                            />
+                          </div>
+                        );
+                      }
+
                       return (
                         <Link
                           key={item.href}
                           href={item.href}
                           prefetch={true}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative ${
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all group ${
                             isActive
-                              ? isSuperAdmin
-                                ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-extrabold shadow-lg shadow-amber-500/20"
-                                : "bg-blue-600 text-white font-extrabold shadow-md shadow-blue-900/30"
-                              : isSuperAdmin
-                              ? "text-slate-300 hover:bg-slate-800/80 hover:text-white"
-                              : "text-slate-300 hover:bg-white/10 hover:text-white"
+                              ? "bg-blue-600 text-white font-bold shadow-md shadow-blue-900/40"
+                              : "text-slate-300 hover:bg-slate-800 hover:text-white"
                           }`}
                         >
-                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? (isSuperAdmin ? "text-slate-950" : "text-white") : isSuperAdmin ? "text-amber-400/80" : "text-slate-400"}`} />
-                          <span className="flex-1 truncate">{item.label}</span>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {/* Prefix Icon for each individual item */}
+                            <Icon
+                              className={`w-4 h-4 shrink-0 transition-colors ${
+                                isActive ? "text-white" : "text-slate-400 group-hover:text-blue-300"
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </div>
                           {item.badge && (
-                            <span className={`px-1.5 py-0.5 font-extrabold rounded text-[9px] uppercase tracking-wider ${
-                              isActive
-                                ? "bg-slate-950 text-amber-300"
-                                : "bg-amber-400 text-slate-950"
-                            }`}>
+                            <span
+                              className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                isActive
+                                  ? "bg-white/20 text-white"
+                                  : "bg-slate-800 text-blue-300 border border-slate-700"
+                              }`}
+                            >
                               {item.badge}
                             </span>
-                          )}
-                          {isActive && !item.badge && (
-                            <div className={`w-1.5 h-1.5 rounded-full ${isSuperAdmin ? "bg-slate-950" : "bg-white"}`} />
                           )}
                         </Link>
                       );
@@ -388,118 +458,153 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Bottom: Logout */}
-        <div className="p-3 border-t border-slate-800/80 relative">
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-slate-300 hover:text-rose-200 hover:bg-rose-500/20 rounded-xl transition-all font-bold cursor-pointer active-press group"
-          >
-            <LogOut className="w-4 h-4 text-slate-400 group-hover:text-rose-300" />
-            <span>Đăng xuất</span>
-          </button>
+        {/* Bottom Logout */}
+        <div className="p-2.5 border-t border-slate-800/90 bg-[#080d18] shrink-0">
+          {isCollapsed ? (
+            <div className="relative group">
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                aria-label="Đăng xuất"
+                className="w-full flex items-center justify-center h-10 text-rose-400 hover:bg-rose-950/50 rounded-xl transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+              <NavTooltip title="Đăng xuất" visible={isCollapsed} />
+            </div>
+          ) : (
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="w-full flex items-center justify-center px-3 py-2 text-xs text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/40 rounded-xl transition font-semibold cursor-pointer"
+            >
+              <span>Đăng xuất</span>
+            </button>
+          )}
         </div>
       </aside>
 
-      {/* ===== Main Content Area ===== */}
-      <div className="flex-1 flex flex-col min-h-screen z-10 min-w-0">
+      {/* ===== Main Independent Workspace Canvas ===== */}
+      <div className="flex-1 h-screen flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
         {/* Global Unified Header */}
-        <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
+        <Header
+          isCollapsed={isCollapsed}
+          onToggleCollapse={toggleCollapsed}
+          onMobileMenuToggle={() => setMobileOpen(true)}
+        />
 
         {/* Workspace Subheader with Breadcrumbs */}
-        <div className="px-4 md:px-6 pt-3 pb-1 flex items-center justify-between border-b border-slate-200/60 bg-white/40 backdrop-blur-xs">
+        <div className="px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-slate-200 bg-white shadow-2xs shrink-0 z-20">
           <Breadcrumb />
           <div className="flex items-center gap-2">
-            <span className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-              isSuperAdmin
-                ? "bg-amber-100 text-amber-900 border border-amber-300"
-                : "bg-indigo-100 text-indigo-900 border border-indigo-200"
-            }`}>
-              <Sparkles className="w-3 h-3" />
-              {isSuperAdmin ? "Cổng Điều hành Toàn quốc" : "Không gian Quản trị Nhà trường"}
+            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-300">
+              {isSuperAdmin ? "Cổng Quản Trị Quốc Gia" : "Không Gian Ban Giám Hiệu"}
             </span>
           </div>
         </div>
 
         {/* Mobile Drawer */}
-        {mobileMenuOpen && (
+        {isMobileOpen && (
           <>
             <div
-              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm animate-fade-in"
-              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs"
+              onClick={closeMobile}
             />
-            <div className="fixed inset-y-0 left-0 w-80 bg-slate-950 border-r border-slate-800 z-50 lg:hidden flex flex-col shadow-2xl text-white animate-slide-in-left">
+            <div className="fixed inset-y-0 left-0 w-72 bg-[#0c1322] border-r border-slate-800 z-50 lg:hidden flex flex-col shadow-2xl text-white">
               {/* Drawer header */}
-              <div className="px-4 pt-5 pb-4 border-b border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSuperAdmin ? "bg-amber-500 text-slate-950 font-bold" : "bg-indigo-600 text-white font-bold"}`}>
-                    {isSuperAdmin ? <Crown className="w-5 h-5" /> : getInitials(userName)}
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#080d18]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-600 text-white font-bold text-xs">
+                    {getInitials(userName)}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-white truncate">{userName}</p>
-                    <p className="text-[11px] text-slate-300 truncate">{userEmail}</p>
-                    {isSuperAdmin && (
-                      <span className="px-2 py-0.5 bg-amber-400 text-slate-950 font-extrabold rounded text-[9px] uppercase tracking-wider inline-block mt-1">
-                        👑 Super Admin Tối Cao
-                      </span>
-                    )}
+                    <p className="text-xs font-bold text-white truncate">{userName}</p>
+                    <p className="text-[10px] text-blue-400 font-semibold truncate">
+                      {isSuperAdmin ? "Quản trị viên" : "Ban Giám Hiệu"}
+                    </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                  onClick={closeMobile}
+                  className="px-2 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-bold border border-slate-700 cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  Đóng
                 </button>
               </div>
 
               {/* Drawer nav */}
-              <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-2 custom-scrollbar">
+              <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-3 custom-scrollbar">
                 {menuGroups.map((group) => {
-                  const GroupIcon = group.icon;
+                  const isExpanded = activeGroupId === group.id;
                   return (
-                    <div key={group.title} className="mb-2">
-                      <div className="flex items-center gap-2 px-3 py-1.5">
-                        <GroupIcon className="w-4 h-4 text-amber-400" />
-                        <p className="text-[11px] font-extrabold text-amber-300 uppercase tracking-wider truncate">
-                          {group.title}
-                        </p>
-                      </div>
-                      <div className="space-y-1 ml-1">
-                        {group.items.map((item) => {
-                          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              prefetch={true}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                                isActive
-                                  ? isSuperAdmin
-                                    ? "bg-amber-400 text-slate-950 font-extrabold shadow-md"
-                                    : "bg-indigo-600 text-white font-extrabold shadow-md"
-                                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                              }`}
-                            >
-                              <Icon className={`w-4 h-4 shrink-0 ${isActive ? (isSuperAdmin ? "text-slate-950" : "text-white") : isSuperAdmin ? "text-amber-400/80" : "text-slate-400"}`} />
-                              <span className="truncate">{item.label}</span>
-                            </Link>
-                          );
-                        })}
-                      </div>
+                    <div
+                      key={group.id}
+                      className={`rounded-2xl p-2 border ${cardAccentStyles[group.accent]}`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(group.id)}
+                        className="w-full flex items-center justify-between px-2.5 py-1 mb-1 text-left cursor-pointer"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[8px] font-black border ${codeBadgeStyles[group.accent]}`}
+                          >
+                            {group.code}
+                          </span>
+                          <p className="text-[10px] font-extrabold text-slate-100 uppercase tracking-widest truncate">
+                            {group.title}
+                          </p>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronDown className="w-3.5 h-3.5 text-blue-300" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                        )}
+                      </button>
+
+                      {isExpanded && (
+                        <div className="space-y-0.5">
+                          {group.items.map((item) => {
+                            const isActive =
+                              pathname === item.href ||
+                              (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
+                            const Icon = item.icon;
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                prefetch={true}
+                                onClick={closeMobile}
+                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all group ${
+                                  isActive
+                                    ? "bg-blue-600 text-white font-bold"
+                                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-slate-400 group-hover:text-blue-300"}`} />
+                                  <span className="truncate">{item.label}</span>
+                                </div>
+                                {item.badge && (
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] uppercase tracking-wider bg-slate-800 text-blue-300 font-semibold">
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </nav>
 
               {/* Drawer footer */}
-              <div className="p-3 border-t border-slate-800">
+              <div className="p-3 border-t border-slate-800 bg-[#080d18]">
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-rose-300 hover:bg-rose-500/20 rounded-xl transition font-bold cursor-pointer"
+                  className="w-full flex items-center justify-center px-3 py-2 text-xs text-rose-300 hover:bg-rose-950/40 rounded-xl transition font-semibold cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4" />
                   Đăng xuất
                 </button>
               </div>
@@ -507,18 +612,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </>
         )}
 
-        {/* Page content container */}
-        <main className="flex-1 overflow-y-auto pb-24 lg:pb-8 p-4 md:p-6">
+        {/* Page content independent scrollable canvas */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 lg:pb-8">
           <div className="max-w-[1680px] mx-auto w-full">
             {children}
           </div>
         </main>
 
         {/* ===== Mobile Bottom Tab Bar ===== */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-header border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-sm">
           <div className="flex items-stretch justify-around max-w-lg mx-auto pb-[env(safe-area-inset-bottom)]">
             {mobileMainTabs.map((tab) => {
-              const Icon = tab.icon;
               const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
 
               return (
@@ -528,28 +632,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   prefetch={true}
                   className={`flex flex-col items-center justify-center py-2 px-3 min-w-[64px] min-h-[44px] relative transition-transform duration-200 active:scale-95 ${
                     isActive
-                      ? isSuperAdmin ? "text-amber-600 font-extrabold" : "text-indigo-600 font-extrabold"
+                      ? "text-blue-600 font-bold border-t-2 border-blue-600"
                       : "text-slate-600 hover:text-slate-900 font-medium"
                   }`}
                 >
-                  {isActive && (
-                    <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full shadow-xs ${
-                      isSuperAdmin ? "bg-amber-500" : "bg-indigo-600"
-                    }`} />
-                  )}
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[10px] mt-0.5 leading-tight">
+                  <span className="text-xs leading-tight">
                     {tab.label}
                   </span>
                 </Link>
               );
             })}
             <button
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={() => setMobileOpen(true)}
               className="flex flex-col items-center justify-center py-2 px-3 min-w-[64px] min-h-[44px] text-slate-600 hover:text-slate-900 font-medium transition-transform duration-200 active:scale-95 cursor-pointer"
             >
-              <Menu className="w-5 h-5" />
-              <span className="text-[10px] mt-0.5 leading-tight">Mục lục</span>
+              <span className="text-xs leading-tight">Mục lục</span>
             </button>
           </div>
         </nav>
@@ -557,3 +654,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <LayoutProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </LayoutProvider>
+  );
+}
+

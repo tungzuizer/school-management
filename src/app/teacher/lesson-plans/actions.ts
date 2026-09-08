@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/teacher/lesson-plans/page.tsx`.
+ * 2. Affected APIs: Server actions `getLessonPlanMetadata`, `getLessonPlans`, `saveLessonPlan`, `submitLessonPlan`, `deleteLessonPlan`.
+ * 3. Schema: Replaces `driveFileUrl` with `fileUrl`, `fileName`, `fileSize`, `fileType`.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
@@ -23,17 +31,14 @@ async function getTeacherId(userId: string) {
 export async function getLessonPlanMetadata() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return { classes: [], subjects: [], teacherId: null, sharedDriveUrl: null, activePeriods: [] };
+    if (!session?.user?.id) return { classes: [], subjects: [], teacherId: null, activePeriods: [] };
 
     const teacherId = await getTeacherId(session.user.id);
-    if (!teacherId) return { classes: [], subjects: [], teacherId: null, sharedDriveUrl: null, activePeriods: [] };
+    if (!teacherId) return { classes: [], subjects: [], teacherId: null, activePeriods: [] };
 
-    const [classes, subjects, school, periods] = await Promise.all([
+    const [classes, subjects, periods] = await Promise.all([
       prisma.classRoom.findMany({ orderBy: { name: "asc" } }),
       prisma.subject.findMany({ orderBy: { name: "asc" } }),
-      session.user.schoolId
-        ? prisma.school.findUnique({ where: { id: session.user.schoolId }, select: { sharedDriveUrl: true } })
-        : null,
       session.user.schoolId
         ? prisma.lessonPlanPeriod.findMany({ where: { schoolId: session.user.schoolId, isActive: true }, orderBy: { deadline: "asc" } })
         : [],
@@ -43,12 +48,11 @@ export async function getLessonPlanMetadata() {
       classes: classes.map(c => ({ id: c.id, name: c.name })),
       subjects: subjects.map(s => ({ id: s.id, name: s.name })),
       teacherId,
-      sharedDriveUrl: school?.sharedDriveUrl || null,
       activePeriods: (periods as any[]).map((p: any) => ({ id: p.id, label: p.label, deadline: p.deadline })),
     };
   } catch (error) {
     console.error("Error fetching lesson plan metadata:", error);
-    return { classes: [], subjects: [], teacherId: null, sharedDriveUrl: null, activePeriods: [] };
+    return { classes: [], subjects: [], teacherId: null, activePeriods: [] };
   }
 }
 
@@ -90,7 +94,10 @@ export async function getLessonPlans() {
       materials: p.materials || "",
       assessment: p.assessment || "",
       notes: p.notes || "",
-      driveFileUrl: p.driveFileUrl || "",
+      fileUrl: p.fileUrl || "",
+      fileName: p.fileName || "",
+      fileSize: p.fileSize || 0,
+      fileType: p.fileType || "",
       status: p.status,
       reviewNote: p.reviewNote || "",
       reviewedAt: p.reviewedAt,
@@ -118,7 +125,10 @@ export async function saveLessonPlan(data: {
   materials: string;
   assessment: string;
   notes: string;
-  driveFileUrl?: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
@@ -166,7 +176,10 @@ export async function saveLessonPlan(data: {
           materials: data.materials,
           assessment: data.assessment,
           notes: data.notes,
-          driveFileUrl: data.driveFileUrl || null,
+          fileUrl: data.fileUrl || null,
+          fileName: data.fileName || null,
+          fileSize: data.fileSize || null,
+          fileType: data.fileType || null,
           status: LessonPlanStatus.DRAFT, // Saved as DRAFT
         },
       });
@@ -190,7 +203,10 @@ export async function saveLessonPlan(data: {
           materials: data.materials,
           assessment: data.assessment,
           notes: data.notes,
-          driveFileUrl: data.driveFileUrl || null,
+          fileUrl: data.fileUrl || null,
+          fileName: data.fileName || null,
+          fileSize: data.fileSize || null,
+          fileType: data.fileType || null,
           status: LessonPlanStatus.DRAFT,
         },
       });
@@ -216,33 +232,27 @@ export async function submitLessonPlan(planId: string) {
       where: { id: planId },
     });
 
-    if (!existing) {
-      return { success: false, error: "Không tìm thấy giáo án" };
-    }
-
-    if (existing.teacherId !== teacherId) {
-      return { success: false, error: "Không có quyền thao tác giáo án này" };
+    if (!existing || existing.teacherId !== teacherId) {
+      return { success: false, error: "Không tìm thấy giáo án hoặc không có quyền" };
     }
 
     if (existing.status === LessonPlanStatus.APPROVED) {
-      return { success: false, error: "Giáo án đã được phê duyệt" };
+      return { success: false, error: "Giáo án này đã được duyệt" };
     }
 
     await prisma.lessonPlan.update({
       where: { id: planId },
-      data: {
-        status: LessonPlanStatus.SUBMITTED,
-      },
+      data: { status: LessonPlanStatus.SUBMITTED },
     });
 
     return { success: true };
   } catch (error: any) {
     console.error("Error submitting lesson plan:", error);
-    return { success: false, error: "Lỗi hệ thống khi gửi phê duyệt: " + error.message };
+    return { success: false, error: "Lỗi nộp giáo án: " + error.message };
   }
 }
 
-// Delete lesson plan
+// Delete a draft lesson plan
 export async function deleteLessonPlan(planId: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
@@ -255,16 +265,12 @@ export async function deleteLessonPlan(planId: string) {
       where: { id: planId },
     });
 
-    if (!existing) {
+    if (!existing || existing.teacherId !== teacherId) {
       return { success: false, error: "Không tìm thấy giáo án" };
     }
 
-    if (existing.teacherId !== teacherId) {
-      return { success: false, error: "Không có quyền xóa giáo án này" };
-    }
-
     if (existing.status === LessonPlanStatus.APPROVED) {
-      return { success: false, error: "Không thể xóa giáo án đã được phê duyệt" };
+      return { success: false, error: "Không thể xóa giáo án đã phê duyệt" };
     }
 
     await prisma.lessonPlan.delete({
@@ -274,6 +280,6 @@ export async function deleteLessonPlan(planId: string) {
     return { success: true };
   } catch (error: any) {
     console.error("Error deleting lesson plan:", error);
-    return { success: false, error: "Lỗi khi xóa giáo án: " + error.message };
+    return { success: false, error: "Lỗi xóa giáo án: " + error.message };
   }
 }

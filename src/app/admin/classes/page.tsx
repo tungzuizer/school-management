@@ -1,11 +1,18 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin navigation (`src/app/admin/classes/page.tsx`).
+ * 2. Affected APIs: Server actions `getClasses`, `createBulkClasses`.
+ * 3. Schema: Removed Google Drive import modal and dependencies.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import { getClasses, getSchoolsForSelect, getTeachersForSelect, createClass, updateClass, deleteClass, createBulkClasses, BulkClassInput } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Cloud, FileSpreadsheet, Plus, School, Building2, LayoutGrid, Table, GraduationCap, Users } from "lucide-react";
+import { FileSpreadsheet, Plus, School, Building2, LayoutGrid, Table, GraduationCap, Users } from "lucide-react";
 
 interface ClassData {
   id: string;
@@ -40,7 +47,6 @@ export default function ClassesPage() {
   const { showToast, ToastComponent } = useToast();
 
   // Bulk import state
-  const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkSchoolId, setBulkSchoolId] = useState("");
   const [bulkInput, setBulkInput] = useState("");
@@ -215,28 +221,12 @@ export default function ClassesPage() {
     else showToast(result.error || "Không thể xóa", "error");
   };
 
-  const handleDriveImportClasses = async (validData: any[]) => {
-    const res = await createBulkClasses(validData);
-    if (res.success) {
-      showToast(`Đã nhập thành công ${res.count} lớp học từ Google Drive!`, "success");
-      loadData(true);
-    } else {
-      showToast(res.error || "Nhập từ Google Drive thất bại", "error");
-    }
-  };
-
   return (
     <div>
       {ToastComponent}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý Lớp học</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => setDriveModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium transition"
-          >
-            <Cloud className="w-4 h-4" /> Google Drive
-          </button>
           <button
             onClick={() => {
               setBulkModalOpen(true);
@@ -654,15 +644,6 @@ export default function ClassesPage() {
           </div>
         </div>
       </Modal>
-
-      {/* Google Drive Import Modal */}
-      <GoogleDriveImportModal
-        isOpen={driveModalOpen}
-        onClose={() => setDriveModalOpen(false)}
-        targetType="CLASSES"
-        onConfirmImport={handleDriveImportClasses}
-        title="Nhập danh sách Lớp học từ Google Drive"
-      />
     </div>
   );
 }

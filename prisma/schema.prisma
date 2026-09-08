@@ -250,7 +250,6 @@ model School {
   address        String?
   phone          String?
   email          String?
-  sharedDriveUrl String?          // Link Google Drive dùng chung cho trường
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -831,7 +830,10 @@ model LessonPlan {
   materials    String?          @db.Text // Đồ dùng / thiết bị
   assessment   String?          @db.Text // Đánh giá
   notes        String?          @db.Text // Ghi chú / rút kinh nghiệm
-  driveFileUrl String?          // Link file giáo án trên Google Drive
+  fileUrl      String?          @db.Text // Link file giáo án (PDF, Word, ...)
+  fileName     String?          // Tên file gốc
+  fileSize     Int?             // Dung lượng (bytes)
+  fileType     String?          // MIME type
   status       LessonPlanStatus @default(DRAFT)
   reviewNote   String?          @db.Text // Nhận xét của ban giám hiệu
   reviewedBy   String?

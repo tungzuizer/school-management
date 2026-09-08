@@ -1,9 +1,18 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin Approvals Page (`src/app/admin/approvals/page.tsx`).
+ * 2. Affected APIs: Server actions `getApprovalItems`, `processApproval`, component `FileViewerModal`.
+ * 3. Schema: Replaces `driveFileUrl` with `fileUrl`, `fileName`, `fileSize`, `fileType` and embeds in-app PDF preview.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { getApprovalItems, processApproval } from "./actions";
 import { useToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
+import FileViewerModal from "@/components/storage/FileViewerModal";
 import {
   CheckCircle,
   XCircle,
@@ -20,6 +29,9 @@ import {
   Phone,
   Mail,
   Award,
+  FileText,
+  Eye,
+  Download,
 } from "lucide-react";
 
 type LessonPlanItem = Awaited<ReturnType<typeof getApprovalItems>>["lessonPlans"][number];
@@ -56,6 +68,19 @@ export default function ApprovalsPage() {
   } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // In-app File Viewer Modal state
+  const [viewerState, setViewerState] = useState<{
+    isOpen: boolean;
+    url: string | null;
+    name?: string | null;
+    title?: string;
+  }>({
+    isOpen: false,
+    url: null,
+    name: null,
+    title: "",
+  });
 
   const { showToast, ToastComponent } = useToast();
 
@@ -460,15 +485,46 @@ export default function ApprovalsPage() {
                       </div>
                     )}
 
-                    {item.type === "LESSON_PLAN" && (item as LessonPlanItem).driveFileUrl && (
-                      <a
-                        href={(item as LessonPlanItem).driveFileUrl!}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" /> Xem File Giáo án (Drive)
-                      </a>
+                    {item.type === "LESSON_PLAN" && (item as LessonPlanItem).fileUrl && (
+                      <div className="p-3 bg-indigo-50/70 border border-indigo-200/80 rounded-xl flex flex-col sm:flex-row gap-2.5 sm:items-center sm:justify-between shadow-2xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-white text-rose-500 flex items-center justify-center shrink-0 border border-indigo-100 shadow-2xs">
+                            <FileText className="w-3.5 h-3.5" />
+                          </div>
+                          <p className="font-bold text-indigo-950 text-xs truncate">
+                            {(item as LessonPlanItem).fileName || "Tệp giáo án đính kèm"}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setViewerState({
+                                isOpen: true,
+                                url: (item as LessonPlanItem).fileUrl || null,
+                                name: (item as LessonPlanItem).fileName || `${item.title}.pdf`,
+                                title: `Giáo án: ${item.title} - GV: ${item.teacherName}`,
+                              })
+                            }
+                            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Xem</span>
+                          </button>
+
+                          <a
+                            href={(item as LessonPlanItem).fileUrl!}
+                            download={(item as LessonPlanItem).fileName || "giao-an"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg transition cursor-pointer shadow-2xs"
+                            title="Tải về máy"
+                          >
+                            <Download className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
                     )}
                   </div>
 
@@ -659,6 +715,15 @@ export default function ApprovalsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Embedded In-App PDF / Document Viewer Modal */}
+      <FileViewerModal
+        isOpen={viewerState.isOpen}
+        onClose={() => setViewerState((prev) => ({ ...prev, isOpen: false }))}
+        fileUrl={viewerState.url}
+        fileName={viewerState.name}
+        title={viewerState.title}
+      />
     </div>
   );
 }

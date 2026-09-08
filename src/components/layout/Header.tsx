@@ -1,9 +1,27 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Root Layouts across Next.js app (`src/app/admin/layout.tsx`, `src/app/teacher/layout.tsx`, `src/app/vice-principal/layout.tsx`, `src/app/ward/layout.tsx`, `src/app/department/layout.tsx`, `src/app/student/layout.tsx`).
+ * 2. Uniqueness: Global unified header with desktop sidebar collapse toggle (PanelLeftClose/PanelLeft) and Ctrl+B shortcut.
+ * 3. Schema: `HeaderProps` (`notificationCount`?: number, `onMobileMenuToggle`?: () => void, `isCollapsed`?: boolean, `onToggleCollapse`?: () => void).
+ * 4. Verbatim User Instruction: "tôi muố menu có thể thu gọn và tách menu và giao diện chính độc lập giao diện khác nhau".
+ */
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, Search, LogOut, ChevronDown, ShieldCheck, Menu, KeyRound } from "lucide-react";
+import {
+  Bell,
+  Search,
+  LogOut,
+  ChevronDown,
+  ShieldCheck,
+  Menu,
+  KeyRound,
+  PanelLeftClose,
+  PanelLeft,
+} from "lucide-react";
 import ChangePasswordModal from "@/components/auth/ChangePasswordModal";
 import SystemAccountsModal from "@/components/admin/SystemAccountsModal";
 import dynamic from "next/dynamic";
@@ -23,9 +41,16 @@ const roleLabels: Record<string, string> = {
 interface HeaderProps {
   notificationCount?: number;
   onMobileMenuToggle?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export default function Header({ notificationCount = 0, onMobileMenuToggle }: HeaderProps) {
+export default function Header({
+  notificationCount = 0,
+  onMobileMenuToggle,
+  isCollapsed = false,
+  onToggleCollapse,
+}: HeaderProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -50,9 +75,26 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
 
   return (
     <>
-      <header className="h-16 glass-header flex items-center justify-between px-4 md:px-6 shrink-0 z-30 sticky top-0 transition-all duration-300">
-        {/* Left: Mobile Menu Trigger & Logo */}
+      <header className="h-16 glass-header flex items-center justify-between px-4 md:px-6 shrink-0 z-30 sticky top-0 transition-all duration-300 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-2xs">
+        {/* Left: Desktop Collapse Toggle, Mobile Menu Trigger & Logo */}
         <div className="flex items-center gap-2.5 sm:gap-3.5">
+          {/* Desktop Sidebar Collapse Toggle */}
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              aria-label={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
+              title={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
+              className="hidden lg:flex items-center justify-center p-2 min-h-[40px] min-w-[40px] rounded-xl text-slate-900 hover:text-blue-700 hover:bg-blue-50 border border-slate-200/80 transition-all active-press cursor-pointer"
+            >
+              {isCollapsed ? (
+                <PanelLeft className="w-5 h-5 text-blue-600" aria-hidden="true" />
+              ) : (
+                <PanelLeftClose className="w-5 h-5 text-slate-700 hover:text-blue-600" aria-hidden="true" />
+              )}
+            </button>
+          )}
+
+          {/* Mobile Drawer Trigger */}
           {onMobileMenuToggle && (
             <button
               onClick={onMobileMenuToggle}
@@ -63,7 +105,12 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
               <span className="hidden xs:inline">Mục lục</span>
             </button>
           )}
-          <img src="/logo.png" alt="Logo Nhà Trường" className="w-8 h-8 object-contain rounded-xl shadow-xs transition-transform duration-300 hover:scale-105" />
+
+          <img
+            src="/logo.png"
+            alt="Logo Nhà Trường"
+            className="w-8 h-8 object-contain rounded-xl shadow-xs transition-transform duration-300 hover:scale-105"
+          />
         </div>
 
         {/* Right: Search + Notifications + User Menu */}
@@ -72,19 +119,19 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
           <button
             onClick={() => setCommandPaletteOpen(true)}
             aria-label="Tìm kiếm nhanh (Ctrl K)"
-            className="flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-xl border border-slate-200/80 bg-slate-50/90 text-slate-700 text-xs hover:bg-white hover:border-indigo-300 hover:text-indigo-900 hover:shadow-xs transition-all active-press cursor-pointer"
+            className="flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-xl border border-slate-200/80 bg-slate-50/90 text-slate-900 text-xs hover:bg-white hover:border-indigo-300 hover:text-indigo-900 hover:shadow-xs transition-all active-press cursor-pointer"
           >
             <Search className="w-4 h-4 text-indigo-600" aria-hidden="true" />
             <span className="hidden md:inline font-bold">Tìm nhanh...</span>
-            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-extrabold text-slate-600 bg-white rounded-md border border-slate-200 shadow-2xs">
+            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-extrabold text-slate-900 bg-white rounded-md border border-slate-200 shadow-2xs">
               Ctrl K
             </kbd>
           </button>
 
           {/* Notification Bell */}
           <button
-            aria-label={`Thông báo ${notificationCount > 0 ? `(${notificationCount} mới)` : ''}`}
-            className="relative p-2.5 min-h-[44px] min-w-[44px] rounded-xl text-slate-700 hover:bg-slate-100 hover:text-indigo-900 transition-all bell-swing active-press flex items-center justify-center"
+            aria-label={`Thông báo ${notificationCount > 0 ? `(${notificationCount} mới)` : ""}`}
+            className="relative p-2.5 min-h-[44px] min-w-[44px] rounded-xl text-slate-800 hover:bg-slate-100 hover:text-indigo-900 transition-all bell-swing active-press flex items-center justify-center"
             title="Thông báo"
           >
             <Bell className="w-4 h-4" aria-hidden="true" />
@@ -133,7 +180,9 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
                   <div className="py-1">
                     <div className="px-3 py-1.5 text-[11px] text-slate-700 font-semibold flex items-center gap-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" aria-hidden="true" />
-                      <span>Vai trò: <strong className="text-indigo-900 font-extrabold">{userRole}</strong></span>
+                      <span>
+                        Vai trò: <strong className="text-indigo-900 font-extrabold">{userRole}</strong>
+                      </span>
                     </div>
                   </div>
                   <div className="border-t border-slate-100 pt-1">
@@ -142,9 +191,9 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
                         setUserDropdownOpen(false);
                         setSystemAccountsModalOpen(true);
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-amber-800 font-extrabold rounded-xl hover:bg-amber-50 transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-slate-800 font-extrabold rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                     >
-                      <KeyRound className="w-4 h-4 text-amber-600" aria-hidden="true" />
+                      <KeyRound className="w-4 h-4 text-slate-600" aria-hidden="true" />
                       <span>Danh sách TK & Mật khẩu</span>
                     </button>
                     <button
@@ -152,9 +201,9 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
                         setUserDropdownOpen(false);
                         setChangePasswordModalOpen(true);
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-indigo-700 font-extrabold rounded-xl hover:bg-indigo-50 transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-blue-700 font-extrabold rounded-xl hover:bg-blue-50 transition-colors cursor-pointer"
                     >
-                      <KeyRound className="w-4 h-4 text-indigo-600" aria-hidden="true" />
+                      <KeyRound className="w-4 h-4 text-blue-600" aria-hidden="true" />
                       <span>Đổi mật khẩu</span>
                     </button>
                     <button
@@ -175,14 +224,9 @@ export default function Header({ notificationCount = 0, onMobileMenuToggle }: He
       {/* Command Palette Component */}
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       {/* Change Password Modal */}
-      {changePasswordModalOpen && (
-        <ChangePasswordModal onClose={() => setChangePasswordModalOpen(false)} />
-      )}
+      {changePasswordModalOpen && <ChangePasswordModal onClose={() => setChangePasswordModalOpen(false)} />}
       {/* System Accounts & Passwords Modal */}
-      <SystemAccountsModal
-        isOpen={systemAccountsModalOpen}
-        onClose={() => setSystemAccountsModalOpen(false)}
-      />
+      <SystemAccountsModal isOpen={systemAccountsModalOpen} onClose={() => setSystemAccountsModalOpen(false)} />
       {/* Force Password Change Modal */}
       <ForcePasswordChangeModal />
     </>

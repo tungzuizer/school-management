@@ -1,8 +1,15 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin navigation (`src/app/admin/subject-groups/page.tsx`).
+ * 2. Affected APIs: Server actions `getSubjectGroups`, `createBulkSubjectGroups`.
+ * 3. Schema: Removed Google Drive import modal and dependencies.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Cloud,
   FileSpreadsheet,
   Plus,
   School,
@@ -13,7 +20,6 @@ import {
   Upload,
   HelpCircle,
 } from "lucide-react";
-import GoogleDriveImportModal from "@/components/ui/GoogleDriveImportModal";
 import {
   getSubjectGroups,
   getSchoolsForSelect,
@@ -105,7 +111,6 @@ export default function SubjectGroupsPage() {
   const [removingSubjectId, setRemovingSubjectId] = useState<string | null>(null);
 
   // Bulk import state
-  const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkSchoolId, setBulkSchoolId] = useState("");
   const [bulkInput, setBulkInput] = useState("");
@@ -389,24 +394,6 @@ export default function SubjectGroupsPage() {
     }
   };
 
-  const handleDriveImportSubjectGroups = async (validData: any[]) => {
-    const formattedData: BulkSubjectGroupInput[] = validData.map((r) => ({
-      name: r.name,
-      headTeacherName: r.headTeacherName || undefined,
-      subjects: r.subjects || undefined,
-      schoolName: r.schoolName || undefined,
-      description: r.description || undefined,
-    }));
-
-    const res = await createBulkSubjectGroups(formattedData);
-    if (res.success) {
-      showToast(`Đã nhập thành công ${res.count} tổ chuyên môn từ Google Drive!`, "success");
-      loadData(true);
-    } else {
-      showToast(res.error || "Nhập từ Google Drive thất bại", "error");
-    }
-  };
-
   return (
     <div>
       {ToastComponent}
@@ -415,12 +402,6 @@ export default function SubjectGroupsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý Tổ chuyên môn</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => setDriveModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium transition"
-          >
-            <Cloud className="w-4 h-4" /> Google Drive
-          </button>
           <button
             onClick={() => {
               setBulkModalOpen(true);
@@ -1121,15 +1102,6 @@ export default function SubjectGroupsPage() {
           </div>
         </div>
       </Modal>
-
-      {/* Google Drive Import Modal */}
-      <GoogleDriveImportModal
-        isOpen={driveModalOpen}
-        onClose={() => setDriveModalOpen(false)}
-        targetType="SUBJECT_GROUPS"
-        onConfirmImport={handleDriveImportSubjectGroups}
-        title="Nhập danh sách Tổ Chuyên Môn từ Google Drive"
-      />
     </div>
   );
 }

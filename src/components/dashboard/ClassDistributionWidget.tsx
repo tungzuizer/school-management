@@ -1,7 +1,14 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/admin/dashboard/page.tsx`, `src/app/vice-principal/dashboard/page.tsx`
+ * 2. Uniqueness: Modifying existing `src/components/dashboard/ClassDistributionWidget.tsx`.
+ * 3. Schema: `ClassItemData` (`className`, `gradeLevel`, `studentCount`, `teacherName`, `avgScore`, `attendanceRate`, `maxCapacity`).
+ * 4. Verbatim User Instruction: "giao diện đơn sắc quá và có quá nhiều tab bị không cần thiết, bạn hãy tối ưu lại  và quan tâm đến người dùng bạn hãy là coi mình là người dùng để tối ưu" & "tôi cần bạn xóa bỏ hết các icon và không được dùng cái màu sắc vàng và cái huy chương nó quá thiếu chuyên nghiệp".
+ */
+
 "use client";
 
 import { useState } from "react";
-import { Users, School, ChevronRight } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -25,7 +32,7 @@ export interface ClassItemData {
   maxCapacity?: number;
 }
 
-const COLORS = ["#6366f1", "#0284c7", "#0d9488", "#16a34a", "#ca8a04", "#d97706", "#dc2626", "#9333ea"];
+const COLORS = ["#1e293b", "#0284c7", "#0d9488", "#16a34a", "#2563eb", "#475569", "#dc2626", "#4f46e5"];
 
 export default function ClassDistributionWidget({
   classes = [],
@@ -57,27 +64,27 @@ export default function ClassDistributionWidget({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl shadow-xs">
-              <School className="w-5 h-5" />
-            </div>
+            <span className="px-2 py-0.5 bg-blue-950/80 border border-blue-800 text-blue-300 rounded text-[10px] font-bold uppercase tracking-wider">
+              Cơ Cấu Khối
+            </span>
             <h2 className="text-base font-bold text-slate-900">Phân Bổ Học Sinh Theo Lớp Học</h2>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Tổng số <span className="font-extrabold text-slate-800">{totalStudents}</span> học sinh trong{" "}
-            <span className="font-extrabold text-slate-800">{classes.length}</span> lớp • Trung bình{" "}
-            <span className="font-extrabold text-indigo-600">{avgStudentsPerClass}</span> HS/lớp
+            Tổng số <span className="font-bold text-slate-900">{totalStudents}</span> học sinh trong{" "}
+            <span className="font-bold text-slate-900">{classes.length}</span> lớp • Trung bình{" "}
+            <span className="font-bold text-blue-700">{avgStudentsPerClass}</span> HS/lớp
           </p>
         </div>
 
         {/* Mode Toggle & Filters */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Grade Filter Tabs */}
-          <div className="flex items-center bg-slate-100/80 p-1 rounded-xl text-xs font-semibold overflow-x-auto no-scrollbar">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold overflow-x-auto no-scrollbar border border-slate-200">
             <button
               onClick={() => setSelectedGrade("ALL")}
-              className={`px-3 py-1.5 rounded-lg transition-all active-press shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 selectedGrade === "ALL"
-                  ? "bg-white text-indigo-700 shadow-xs font-bold"
+                  ? "bg-slate-900 text-white shadow-xs font-bold"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -87,9 +94,9 @@ export default function ClassDistributionWidget({
               <button
                 key={g}
                 onClick={() => setSelectedGrade(g)}
-                className={`px-3 py-1.5 rounded-lg transition-all active-press shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                   selectedGrade === g
-                    ? "bg-white text-indigo-700 shadow-xs font-bold"
+                    ? "bg-slate-900 text-white shadow-xs font-bold"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -99,26 +106,26 @@ export default function ClassDistributionWidget({
           </div>
 
           {/* View Switcher */}
-          <div className="flex items-center bg-slate-100/80 p-1 rounded-xl text-xs font-semibold">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold border border-slate-200">
             <button
               onClick={() => setViewMode("GRID")}
-              className={`px-2.5 py-1.5 rounded-lg transition-all active-press ${
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === "GRID"
-                  ? "bg-white text-indigo-700 shadow-xs font-bold"
+                  ? "bg-slate-900 text-white shadow-xs font-bold"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              🎴 Dạng Thẻ
+              Dạng Thẻ
             </button>
             <button
               onClick={() => setViewMode("CHART")}
-              className={`px-2.5 py-1.5 rounded-lg transition-all active-press ${
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === "CHART"
-                  ? "bg-white text-indigo-700 shadow-xs font-bold"
+                  ? "bg-slate-900 text-white shadow-xs font-bold"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              📊 Biểu Đồ
+              Biểu Đồ
             </button>
           </div>
         </div>
@@ -136,48 +143,48 @@ export default function ClassDistributionWidget({
               const maxCap = item.maxCapacity || 40;
               const percent = Math.min(100, Math.round((item.studentCount / maxCap) * 100));
 
-              // Capacity status color
-              let barColor = "bg-gradient-to-r from-emerald-400 to-emerald-600";
-              let badgeBg = "bg-emerald-50 text-emerald-700 border-emerald-200";
+              // Capacity status color (strictly without yellow/amber)
+              let barColor = "bg-emerald-600";
+              let badgeBg = "bg-emerald-50 text-emerald-800 border-emerald-200";
               let statusText = "Sĩ số chuẩn";
 
               if (percent >= 100) {
-                barColor = "bg-gradient-to-r from-rose-400 to-rose-600";
-                badgeBg = "bg-rose-50 text-rose-700 border-rose-200";
+                barColor = "bg-rose-600";
+                badgeBg = "bg-rose-50 text-rose-800 border-rose-200";
                 statusText = "Đầy chỉ tiêu";
               } else if (percent >= 85) {
-                barColor = "bg-gradient-to-r from-amber-400 to-amber-600";
-                badgeBg = "bg-amber-50 text-amber-700 border-amber-200";
+                barColor = "bg-blue-600";
+                badgeBg = "bg-blue-50 text-blue-800 border-blue-200";
                 statusText = "Gần đầy";
               } else if (percent < 50) {
-                barColor = "bg-gradient-to-r from-sky-400 to-sky-600";
-                badgeBg = "bg-sky-50 text-sky-700 border-sky-200";
+                barColor = "bg-slate-500";
+                badgeBg = "bg-slate-100 text-slate-700 border-slate-200";
                 statusText = "Số lượng ít";
               }
 
               return (
                 <div
                   key={item.id || idx}
-                  className="bg-slate-50/70 hover:bg-white rounded-2xl p-4 border border-slate-200/80 hover:border-indigo-300 hover-lift space-y-3 group flex flex-col justify-between"
+                  className="bg-slate-50/80 hover:bg-white rounded-xl p-4 border border-slate-200 hover:border-slate-400 space-y-3 transition flex flex-col justify-between"
                 >
                   <div className="space-y-2">
                     {/* Header: Class Name + Grade Badge */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
+                        <span className="font-bold text-slate-900 text-base">
                           {item.className}
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-800">
                           Khối {item.gradeLevel}
                         </span>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeBg}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${badgeBg}`}>
                         {statusText}
                       </span>
                     </div>
 
                     {/* Teacher info */}
-                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <p className="text-xs text-slate-500">
                       <span className="font-semibold text-slate-700">GVCN:</span>{" "}
                       {item.teacherName || "Chưa phân công"}
                     </p>
@@ -185,20 +192,16 @@ export default function ClassDistributionWidget({
                     {/* Progress Bar & Student Count */}
                     <div className="space-y-1 pt-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500 font-medium flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5 text-indigo-500" /> Sĩ số:
-                        </span>
+                        <span className="text-slate-500 font-medium">Sĩ số:</span>
                         <span className="font-bold text-slate-900">
                           {item.studentCount} / {maxCap} HS
                         </span>
                       </div>
-                      <div className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden relative">
+                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 relative ${barColor}`}
+                          className={`h-full rounded-full transition-all duration-300 ${barColor}`}
                           style={{ width: `${percent}%` }}
-                        >
-                          <div className="absolute inset-0 animate-shimmer" />
-                        </div>
+                        />
                       </div>
                     </div>
                   </div>
@@ -207,10 +210,10 @@ export default function ClassDistributionWidget({
                   {onSelectClass && (
                     <button
                       onClick={() => onSelectClass(item.classId || item.id || "", item.className)}
-                      className="w-full mt-2 pt-2 border-t border-slate-200/60 text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-1 group-hover:underline active-press"
+                      className="w-full mt-2 pt-2 border-t border-slate-200 text-xs font-bold text-slate-800 hover:text-blue-700 flex items-center justify-between cursor-pointer"
                     >
                       <span>Xem danh sách HS</span>
-                      <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+                      <span className="text-slate-400 font-mono text-[11px]">[→]</span>
                     </button>
                   )}
                 </div>
@@ -230,7 +233,7 @@ export default function ClassDistributionWidget({
               <XAxis type="number" fontSize={11} tickLine={false} />
               <YAxis dataKey="className" type="category" fontSize={11} tickLine={false} width={70} />
               <Tooltip formatter={(val) => [`${val} Học sinh`, "Sĩ số"]} />
-              <Bar dataKey="studentCount" radius={[0, 6, 6, 0]}>
+              <Bar dataKey="studentCount" radius={[0, 4, 4, 0]}>
                 {filteredClasses.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}

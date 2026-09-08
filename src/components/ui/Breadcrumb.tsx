@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Global Header / Breadcrumb navigation (`src/components/ui/Breadcrumb.tsx`).
+ * 2. Affected APIs: Breadcrumb label map.
+ * 3. Schema: Removed obsolete Google Drive config segment label.
+ * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ */
+
 "use client";
 
 import Link from "next/link";
@@ -27,7 +35,6 @@ const labelMap: Record<string, string> = {
   "substitute-dispatch": "Phân công dạy thay",
   "audit-log": "Nhật ký kiểm toán",
   "data-lock": "Khóa sổ dữ liệu",
-  "drive-config": "Cấu hình Drive & Kỳ nộp",
   "subject-groups": "Tổ chuyên môn",
   strategy: "Quản trị chiến lược",
   "thpt-schools": "Trường THPT",
