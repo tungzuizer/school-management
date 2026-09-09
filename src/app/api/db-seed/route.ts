@@ -44,7 +44,7 @@ const FIRST_FEMALE = [
   "Anh", "Linh", "Trang", "Hà", "Phương", "Chi", "Nhi", "Mai", "Châu", "Vy", "Hương", "Lan", "Ngọc", "Dương", "Hân", "Thư", "Tú", "Yến", "Ngân"
 ];
 
-function generateStudentRoster(count: number, gradeLevel: number, schoolCode: string, className: string) {
+function generateStudentRoster(count: number, gradeLevel: number, schoolCode: string, className: string, startSeq: number = 1) {
   const roster = [];
   const birthYear = 2026 - (gradeLevel + 5);
 
@@ -62,10 +62,11 @@ function generateStudentRoster(count: number, gradeLevel: number, schoolCode: st
     const birthMonth = ((i * 4) % 12) + 1;
     const birthDay = ((i * 7) % 28) + 1;
     const dob = new Date(`${birthYear}-${String(birthMonth).padStart(2, "0")}-${String(birthDay).padStart(2, "0")}`);
-    const codeNum = String(i).padStart(2, "0");
-    const cleanClassName = className.replace(/\s+/g, "").toUpperCase();
-    const studentCode = `${schoolCode}-${cleanClassName}-${codeNum}`;
-    const emailPrefix = `${schoolCode.toLowerCase()}.${cleanClassName.toLowerCase()}.${codeNum}`;
+
+    // Chuẩn hóa mã định danh & email: HS + 26 + [Khối 01-12] + [STT 0001-9999] & <mã_hs>@gmail.com
+    const seq = startSeq + i - 1;
+    const studentCode = `HS26${String(gradeLevel).padStart(2, "0")}${String(seq).padStart(4, "0")}`;
+    const email = `${studentCode.toLowerCase()}@gmail.com`;
 
     roster.push({
       index: i,
@@ -73,7 +74,7 @@ function generateStudentRoster(count: number, gradeLevel: number, schoolCode: st
       gender: isMale ? Gender.MALE : Gender.FEMALE,
       dob,
       studentCode,
-      email: `${emailPrefix}@ninhbinh.edu.vn`,
+      email,
       phone: `09${String(10000000 + i * 12345).slice(0, 8)}`,
       parentName: `${lastName} ${isMale ? "Văn" : "Thị"} ${isMale ? "Hùng" : "Mai"}`,
       parentPhone: `09${String(80000000 + i * 54321).slice(0, 8)}`,
@@ -528,7 +529,9 @@ async function performDatabaseResetAndSeed() {
     }
 
     const busyTeacherSlots = new Set<string>();
+    // Classes & Students
     let classCounter = 0;
+    const studentSeqByGrade: Record<number, number> = {};
     const createdStudentsList: Array<{ id: string; name: string; classId: string; gradeLevel: number }> = [];
 
     for (const clsSpec of sItem.classes) {
@@ -550,7 +553,10 @@ async function performDatabaseResetAndSeed() {
       const group2 = await prisma.group.create({ data: { classId: classRoom.id, name: "Tổ 2" } });
       const groups = [group1, group2];
 
-      const roster = generateStudentRoster(clsSpec.count, clsSpec.gradeLevel, sItem.code, clsSpec.name);
+      const startGradeSeq = (studentSeqByGrade[clsSpec.gradeLevel] || 0) + 1;
+      studentSeqByGrade[clsSpec.gradeLevel] = (studentSeqByGrade[clsSpec.gradeLevel] || 0) + clsSpec.count;
+
+      const roster = generateStudentRoster(clsSpec.count, clsSpec.gradeLevel, sItem.code, clsSpec.name, startGradeSeq);
 
       for (let sIdx = 0; sIdx < roster.length; sIdx++) {
         const stData = roster[sIdx];

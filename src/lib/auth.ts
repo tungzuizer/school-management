@@ -67,7 +67,7 @@ export const authOptions: NextAuthOptions = {
 
             // Allow default demo passwords for accounts in development/demo mode
             if (!isPasswordValid && isDemoAllowed) {
-              const demoPasswords = ["123456", "abc123", "admin", "teacher", "student", "Demo@2026!", "SuperAdmin@2026!"];
+              const demoPasswords = ["123456", "abc123", "Password@123", "admin", "teacher", "student", "Demo@2026!", "SuperAdmin@2026!"];
               if (demoPasswords.includes(inputPassword)) {
                 isPasswordValid = true;
               }
@@ -75,14 +75,13 @@ export const authOptions: NextAuthOptions = {
 
             if (isPasswordValid) {
               // Chỉ buộc đổi mật khẩu cho tài khoản KHÔNG phải demo
-              // Demo accounts (abc123/123456) không cần buộc đổi
               const demoEmails = [
                 "superadmin@school.com", "admin@school.com", "dept@school.com",
                 "ward@school.com", "vp1@school.com", "teacher@school.com", "student@school.com",
                 "sysadmin@so-gddt.gov.vn", "cbso@so-gddt.gov.vn", "cbphong@phonggd.gov.vn",
                 "ht.tanxa@school.edu.vn"
               ];
-              const isDemoAccount = demoEmails.includes(email);
+              const isDemoAccount = demoEmails.includes(email) || email.startsWith("hs");
               let isDefaultPassword = false;
 
               if (!isDemoAccount) {
@@ -110,14 +109,18 @@ export const authOptions: NextAuthOptions = {
           }
         }
 
-        // Demo Mode Fallback (Enabled only when ALLOW_DEMO_LOGIN === "true" or Development)
-        // CHá»ˆ cháº¡y khi user KHĂ”NG tá»“n táº¡i trong DB (khĂ´ng tĂ¬m tháº¥y email)
-        // Náº¿u user tá»“n táº¡i nhÆ°ng password sai â†’ return null (khĂ´ng táº¡o user má»›i)
+        // Demo Mode Fallback (Enabled only when ALLOW_DEMO_LOGIN !== "false" or Development)
+        // Chạy khi user chưa tồn tại trong DB (không tìm thấy email)
         if (!user && isDemoAllowed) {
           const isDefaultPass =
             credentials.password === "abc123" ||
             credentials.password === "123456" ||
-            credentials.password === "SuperAdmin@2026!";
+            credentials.password === "Password@123" ||
+            credentials.password === "student" ||
+            credentials.password === "teacher" ||
+            credentials.password === "admin" ||
+            credentials.password === "SuperAdmin@2026!" ||
+            credentials.password === "Demo@2026!";
 
           if (
             isDefaultPass &&
@@ -125,6 +128,8 @@ export const authOptions: NextAuthOptions = {
               email.includes("superadmin") ||
               email.includes("teacher") ||
               email.includes("student") ||
+              email.startsWith("hs") ||
+              email.includes("hocsinh") ||
               email.includes("vp") || email.includes("pht") ||
               email.includes("dept") || email.includes("sogd") ||
               email.includes("ward") || email.includes("district") ||
@@ -150,18 +155,20 @@ export const authOptions: NextAuthOptions = {
               : "STUDENT";
 
             const name = email.includes("superadmin")
-              ? "Quáº£n Trá»‹ ViĂªn Tá»‘i Cao (Super Admin)"
+              ? "Quản Trị Viên Tối Cao (Super Admin)"
               : email.includes("dept")
-              ? "LĂ£nh Ä‘áº¡o Sá»Ÿ GD&ÄT"
+              ? "Lãnh đạo Sở GD&ĐT"
               : email.includes("ward")
-              ? "CĂ¡n bá»™ PhĂ²ng GD&ÄT"
+              ? "Cán bộ Phòng GD&ĐT"
               : email.includes("admin")
-              ? "Nguyá»…n VÄƒn Admin"
+              ? "TS. Nguyễn Văn Hùng"
               : email.includes("vp")
-              ? "PhĂ³ Hiá»‡u trÆ°á»Ÿng"
+              ? "ThS. Trịnh Văn Sơn (BGH)"
               : email.includes("teacher")
-              ? "Tráº§n Thá»‹ Hoa"
-              : "Pháº¡m Quang Huy";
+              ? "Trần Thị Hoa (GVCN 10A1)"
+              : email === "hs26100002@gmail.com"
+              ? "Trần Thị Bình (Mã: HS26100002)"
+              : "Nguyễn Văn An (Mã: HS26100001)";
 
             const hashedPassword = await bcrypt.hash(credentials.password, 10);
             try {
@@ -174,6 +181,47 @@ export const authOptions: NextAuthOptions = {
                 },
               });
               if (user) {
+                // If role is STUDENT, automatically ensure a Student record is linked
+                if (role === "STUDENT") {
+                  try {
+                    const defaultClass = await prisma.classRoom.findFirst({
+                      orderBy: { name: "asc" },
+                    });
+                    const studentCode = email.startsWith("hs")
+                      ? email.split("@")[0].toUpperCase()
+                      : "HS26100001";
+
+                    let studentRec = await prisma.student.findFirst({
+                      where: {
+                        OR: [
+                          { userId: user.id },
+                          { studentCode },
+                        ],
+                      },
+                    });
+
+                    if (!studentRec) {
+                      await prisma.student.create({
+                        data: {
+                          userId: user.id,
+                          studentCode,
+                          classId: defaultClass?.id || null,
+                          gender: email.includes("0002") ? "FEMALE" : "MALE",
+                          dob: new Date("2010-05-15"),
+                          phone: "0901234567",
+                        },
+                      });
+                    } else if (!studentRec.userId) {
+                      await prisma.student.update({
+                        where: { id: studentRec.id },
+                        data: { userId: user.id },
+                      });
+                    }
+                  } catch (studentErr) {
+                    console.error("Auto create student record error:", studentErr);
+                  }
+                }
+
                 return {
                   id: user.id,
                   email: user.email,

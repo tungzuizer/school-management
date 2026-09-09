@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, Eye, EyeOff, Copy, Check, X, Shield, Building2, User, BookOpen, Crown } from "lucide-react";
-import { generateStudentEmail } from "@/lib/student-email";
+import { KeyRound, Eye, EyeOff, Copy, Check, X, Shield, Building2, User, BookOpen, Crown, GraduationCap, Calculator, Users } from "lucide-react";
 
 interface AccountInfo {
   role: string;
@@ -13,9 +12,6 @@ interface AccountInfo {
   color: string;
   highlight?: boolean;
 }
-
-const student1Email = generateStudentEmail("Nguyễn Việt Tùng", "FPT-HS139");
-const student2Email = generateStudentEmail("Bùi Quốc Vũ", "FPT-HS140");
 
 const accountsList: AccountInfo[] = [
   {
@@ -28,6 +24,22 @@ const accountsList: AccountInfo[] = [
     highlight: true,
   },
   {
+    role: "Lãnh đạo Sở GD&ĐT",
+    name: "Ban Giám Đốc Sở GD&ĐT",
+    email: "dept@school.com",
+    defaultPass: "abc123",
+    icon: Building2,
+    color: "bg-purple-100 border-purple-300 text-purple-900",
+  },
+  {
+    role: "Cán bộ Phòng GD&ĐT",
+    name: "Phòng Giáo Dục & Đào Tạo",
+    email: "ward@school.com",
+    defaultPass: "abc123",
+    icon: Building2,
+    color: "bg-rose-100 border-rose-300 text-rose-900",
+  },
+  {
     role: "Hiệu Trưởng",
     name: "TS. Nguyễn Văn Hùng",
     email: "admin@school.com",
@@ -37,32 +49,25 @@ const accountsList: AccountInfo[] = [
     highlight: true,
   },
   {
-    role: "Lãnh đạo Sở GD&ĐT",
-    name: "Lãnh đạo Sở GD&ĐT",
-    email: "dept@school.com",
-    defaultPass: "abc123",
-    icon: Building2,
-    color: "bg-purple-100 border-purple-300 text-purple-900",
-  },
-  {
-    role: "Cán bộ Phòng GD&ĐT",
-    name: "Cán bộ Phòng GD&ĐT",
-    email: "ward@school.com",
-    defaultPass: "abc123",
-    icon: Building2,
-    color: "bg-amber-100 border-amber-300 text-amber-900",
-  },
-  {
-    role: "Phó Hiệu trưởng",
-    name: "ThS. Trịnh Văn Sơn",
+    role: "Phó Hiệu Trưởng",
+    name: "ThS. Trịnh Văn Sơn (BGH)",
     email: "vp1@school.com",
     defaultPass: "abc123",
     icon: Building2,
     color: "bg-teal-100 border-teal-300 text-teal-900",
+    highlight: true,
   },
   {
-    role: "Giáo viên",
-    name: "Trần Thị Hoa (Giáo viên)",
+    role: "Tổ Trưởng Chuyên Môn",
+    name: "ThS. Lê Hoàng Nam (TTCM Toán)",
+    email: "ttcm.toan@school.edu.vn",
+    defaultPass: "abc123",
+    icon: Users,
+    color: "bg-cyan-100 border-cyan-300 text-cyan-900",
+  },
+  {
+    role: "GVCN / GV Bộ Môn",
+    name: "Trần Thị Hoa (GVCN 10A1)",
     email: "teacher@school.com",
     defaultPass: "abc123",
     icon: BookOpen,
@@ -70,20 +75,28 @@ const accountsList: AccountInfo[] = [
     highlight: true,
   },
   {
-    role: "Học sinh (VD 1)",
-    name: "Nguyễn Việt Tùng (Mã: FPT-HS139)",
-    email: student1Email,
+    role: "Kế Toán / Nhân Viên",
+    name: "Nguyễn Thị Mai (Kế toán)",
+    email: "ketoan@school.edu.vn",
     defaultPass: "abc123",
-    icon: User,
+    icon: Calculator,
+    color: "bg-orange-100 border-orange-300 text-orange-900",
+  },
+  {
+    role: "Học sinh (Khối 10 - Mẫu 1)",
+    name: "Nguyễn Văn An (Mã: HS26100001)",
+    email: "hs26100001@gmail.com",
+    defaultPass: "Password@123",
+    icon: GraduationCap,
     color: "bg-blue-100 border-blue-300 text-blue-900",
     highlight: true,
   },
   {
-    role: "Học sinh (VD 2)",
-    name: "Bùi Quốc Vũ (Mã: FPT-HS140)",
-    email: student2Email,
-    defaultPass: "abc123",
-    icon: User,
+    role: "Học sinh (Khối 10 - Mẫu 2)",
+    name: "Trần Thị Bình (Mã: HS26100002)",
+    email: "hs26100002@gmail.com",
+    defaultPass: "Password@123",
+    icon: GraduationCap,
     color: "bg-blue-100 border-blue-300 text-blue-900",
   },
 ];
