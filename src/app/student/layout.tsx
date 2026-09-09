@@ -384,7 +384,7 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
         />
 
         {/* Workspace Subheader with Breadcrumbs */}
-        <div className="px-4 md:px-6 py-2.5 flex items-center justify-between border-b border-blue-200/60 bg-gradient-to-r from-blue-50/70 via-sky-50/50 to-cyan-50/60 shadow-2xs shrink-0 z-20">
+        <div className="px-2.5 sm:px-4 md:px-6 py-1.5 sm:py-2.5 flex items-center justify-between border-b border-blue-200/60 bg-gradient-to-r from-blue-50/70 via-sky-50/50 to-cyan-50/60 shadow-2xs shrink-0 z-20">
           <Breadcrumb />
           <div className="flex items-center gap-2">
             <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100/90 text-blue-800 border border-blue-200">
@@ -404,7 +404,7 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
         />
 
         {/* Page content independent scrollable canvas */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 lg:pb-8">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-24 lg:pb-8">
           <div className="max-w-[1680px] mx-auto w-full">
             {children}
           </div>
