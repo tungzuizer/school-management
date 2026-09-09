@@ -257,23 +257,23 @@ export default function MobileDrawer({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className={`fixed inset-y-0 left-0 w-[88vw] max-w-[360px] ${theme.drawerBg} flex flex-col z-50 overflow-hidden transform transition-transform duration-300 ease-out`}
+            className={`fixed inset-y-0 left-0 w-[80vw] max-w-[300px] ${theme.drawerBg} flex flex-col z-50 overflow-hidden transform transition-transform duration-300 ease-out`}
           >
             {/* Header Bar */}
-            <div className={`pt-[max(env(safe-area-inset-top),1rem)] px-4 pb-3 ${theme.headerBg} backdrop-blur-md flex items-center justify-between gap-3 shrink-0`}>
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className={`w-9 h-9 rounded-xl text-white flex items-center justify-center font-black text-sm shadow-sm ring-2 shrink-0 ${theme.avatarBg}`}>
+            <div className={`pt-[max(env(safe-area-inset-top),0.75rem)] px-3 pb-2.5 ${theme.headerBg} backdrop-blur-md flex items-center justify-between gap-2 shrink-0`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-8 h-8 rounded-lg text-white flex items-center justify-center font-black text-xs shadow-sm ring-2 shrink-0 ${theme.avatarBg}`}>
                   {userName.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-extrabold truncate leading-tight">{userName}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border truncate ${theme.roleBadge}`}>
+                  <p className="text-[11.5px] font-extrabold truncate leading-tight">{userName}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border truncate ${theme.roleBadge}`}>
                       {displayRole}
                     </span>
-                    <span className="text-[10px] opacity-80 flex items-center gap-0.5 shrink-0 font-medium">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>Trực tuyến</span>
+                    <span className="text-[9px] opacity-80 flex items-center gap-0.5 shrink-0 font-medium">
+                      <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                      <span>Online</span>
                     </span>
                   </div>
                 </div>
@@ -283,46 +283,46 @@ export default function MobileDrawer({
                 type="button"
                 onClick={onClose}
                 aria-label="Đóng menu"
-                className="p-2 min-h-[40px] min-w-[40px] rounded-xl bg-white/70 hover:bg-white border border-white/60 transition-all active:scale-95 flex items-center justify-center cursor-pointer shadow-2xs"
+                className="p-1.5 min-h-[34px] min-w-[34px] rounded-lg bg-white/70 hover:bg-white border border-white/60 transition-all active:scale-95 flex items-center justify-center cursor-pointer shadow-2xs"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Instant Search Bar */}
-            <div className="p-3 border-b border-black/5 bg-black/[0.02] shrink-0">
+            <div className="p-2.5 border-b border-black/5 bg-black/[0.02] shrink-0">
               <div className="relative">
-                <Search className="w-4 h-4 opacity-50 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-3.5 h-3.5 opacity-50 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm nhanh tính năng..."
-                  className={`w-full pl-9 pr-8 py-2 ${theme.searchInputBg} rounded-xl text-xs focus:outline-hidden focus:ring-1 transition-all shadow-2xs ${theme.searchFocus}`}
+                  className={`w-full pl-8 pr-7 py-1.5 ${theme.searchInputBg} rounded-xl text-[11px] focus:outline-hidden focus:ring-1 transition-all shadow-2xs ${theme.searchFocus}`}
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 p-0.5"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 p-0.5"
                     aria-label="Xóa tìm kiếm"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
             </div>
 
             {/* Scrollable Navigation Body */}
-            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto px-2.5 py-2.5 space-y-2 custom-scrollbar">
               {searchQuery.trim() !== "" ? (
                 /* Search Results List */
-                <div className="space-y-1.5">
-                  <div className="px-2 py-1 text-[11px] font-bold opacity-70 uppercase tracking-wider flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="px-1.5 py-0.5 text-[10px] font-bold opacity-70 uppercase tracking-wider flex items-center justify-between">
                     <span>Kết quả tìm kiếm ({searchResults.length})</span>
                   </div>
                   {searchResults.length === 0 ? (
-                    <div className="py-8 text-center opacity-60 text-xs">
+                    <div className="py-6 text-center opacity-60 text-[11px]">
                       Không tìm thấy mục nào khớp với &ldquo;{searchQuery}&rdquo;
                     </div>
                   ) : (
@@ -336,21 +336,21 @@ export default function MobileDrawer({
                           href={item.href}
                           onClick={onClose}
                           prefetch={true}
-                          className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all ${
+                          className={`flex items-center justify-between p-2 rounded-xl text-[11px] transition-all ${
                             isActive
                               ? theme.activeLink
                               : "bg-white/70 hover:bg-white border border-white/60 shadow-2xs"
                           }`}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "opacity-70"}`} />
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-white" : "opacity-70"}`} />
                             <div className="min-w-0 text-left">
                               <p className="truncate font-semibold">{item.label}</p>
-                              <p className={`text-[10px] truncate ${isActive ? "text-white/80" : "opacity-60"}`}>{groupTitle}</p>
+                              <p className={`text-[9.5px] truncate ${isActive ? "text-white/80" : "opacity-60"}`}>{groupTitle}</p>
                             </div>
                           </div>
                           {item.badge && (
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${
                               isActive ? "bg-white/20 text-white" : theme.activeSearchBadge
                             }`}>
                               {item.badge}
@@ -378,14 +378,14 @@ export default function MobileDrawer({
                       <button
                         type="button"
                         onClick={() => setActiveAccordion(isExpanded ? null : group.id)}
-                        className={`w-full px-3 py-2.5 flex items-center justify-between text-left transition-colors cursor-pointer ${
+                        className={`w-full px-2.5 py-2 flex items-center justify-between text-left transition-colors cursor-pointer ${
                           hasActiveChild ? theme.activeAccordionHeader : theme.inactiveAccordionHeader
                         }`}
                         aria-expanded={isExpanded}
                       >
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           {group.code ? (
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] tracking-tight ${
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] tracking-tight ${
                               hasActiveChild
                                 ? theme.activeCodeBadge
                                 : theme.inactiveCodeBadge
@@ -393,21 +393,21 @@ export default function MobileDrawer({
                               {group.code}
                             </span>
                           ) : (
-                            <span className={`w-1.5 h-1.5 rounded-full ${hasActiveChild ? theme.activeDot : "bg-black/30"}`} />
+                            <span className={`w-1 h-1 rounded-full ${hasActiveChild ? theme.activeDot : "bg-black/30"}`} />
                           )}
-                          <span className="text-xs font-bold truncate uppercase tracking-wider">
+                          <span className="text-[11px] font-bold truncate uppercase tracking-wider">
                             {group.title}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
                           {group.tag && (
-                            <span className={`hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border ${theme.roleBadge}`}>
+                            <span className={`hidden sm:inline-block text-[8.5px] font-bold px-1 py-0.5 rounded border ${theme.roleBadge}`}>
                               {group.tag}
                             </span>
                           )}
                           <ChevronDown
-                            className={`w-4 h-4 transition-transform duration-200 ${
+                            className={`w-3.5 h-3.5 transition-transform duration-200 ${
                               isExpanded ? `rotate-180 ${theme.activeChevron}` : hasActiveChild ? theme.activeChevron : "opacity-50"
                             }`}
                           />
@@ -416,7 +416,7 @@ export default function MobileDrawer({
 
                       {/* Accordion Items Body */}
                       {isExpanded && (
-                        <div className={`px-2 py-1.5 space-y-1 animate-fade-in ${theme.subItemBg}`}>
+                        <div className={`px-1.5 py-1 space-y-0.5 animate-fade-in ${theme.subItemBg}`}>
                           {group.items.map((item) => {
                             const isActive = pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href + "/"));
                             const Icon = item.icon;
@@ -427,18 +427,18 @@ export default function MobileDrawer({
                                 href={item.href}
                                 onClick={onClose}
                                 prefetch={true}
-                                className={`flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all ${
+                                className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] transition-all ${
                                   isActive
                                     ? theme.activeLink
                                     : theme.inactiveLink
                                 }`}
                               >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "opacity-70"}`} />
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-white" : "opacity-70"}`} />
                                   <span className="truncate">{item.label}</span>
                                 </div>
                                 {item.badge && (
-                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${
                                     isActive
                                       ? "bg-white/20 text-white"
                                       : theme.activeSearchBadge
@@ -458,7 +458,7 @@ export default function MobileDrawer({
             </div>
 
             {/* Footer User Quick Actions */}
-            <div className={`p-3 pb-[max(env(safe-area-inset-bottom),1rem)] shrink-0 space-y-1.5 backdrop-blur-md ${theme.footerBg}`}>
+            <div className={`p-2.5 pb-[max(env(safe-area-inset-bottom),0.75rem)] shrink-0 space-y-1.5 backdrop-blur-md ${theme.footerBg}`}>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
@@ -466,7 +466,7 @@ export default function MobileDrawer({
                     onClose();
                     setSystemAccountsModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-1.5 px-2.5 py-2 min-h-[38px] rounded-xl bg-white/80 hover:bg-white border border-black/10 text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
+                  className="flex items-center justify-center gap-1.5 px-2 py-1.5 min-h-[34px] rounded-xl bg-white/80 hover:bg-white border border-black/10 text-[10.5px] font-bold transition-all cursor-pointer shadow-2xs"
                 >
                   <KeyRound className="w-3.5 h-3.5 opacity-70" />
                   <span>Danh sách TK</span>
@@ -478,7 +478,7 @@ export default function MobileDrawer({
                     onClose();
                     setChangePasswordModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-1.5 px-2.5 py-2 min-h-[38px] rounded-xl bg-white/80 hover:bg-white border border-black/10 text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
+                  className="flex items-center justify-center gap-1.5 px-2 py-1.5 min-h-[34px] rounded-xl bg-white/80 hover:bg-white border border-black/10 text-[10.5px] font-bold transition-all cursor-pointer shadow-2xs"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 opacity-70" />
                   <span>Đổi MK</span>
@@ -488,7 +488,7 @@ export default function MobileDrawer({
               <button
                 type="button"
                 onClick={() => handleClientSignOut("/login")}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] rounded-xl bg-rose-500/10 border border-rose-400/40 text-rose-700 hover:bg-rose-500/20 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 min-h-[34px] rounded-xl bg-rose-500/10 border border-rose-400/40 text-rose-700 hover:bg-rose-500/20 text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Đăng xuất tài khoản</span>
