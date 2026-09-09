@@ -42,27 +42,42 @@ const labelMap: Record<string, string> = {
   "all-schools": "Tất cả Trường",
 };
 
+const rootRedirectMap: Record<string, string> = {
+  admin: "/admin/dashboard",
+  department: "/department/dashboard",
+  ward: "/ward/dashboard",
+  teacher: "/teacher/dashboard",
+  student: "/student/dashboard",
+  "vice-principal": "/vice-principal/dashboard",
+};
+
 export default function Breadcrumb() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
 
   if (segments.length === 0) return null;
 
+  const homeHref = segments.length > 0 && rootRedirectMap[segments[0]]
+    ? rootRedirectMap[segments[0]]
+    : "/admin/dashboard";
+
   return (
     <nav className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
       <Link
-        href="/admin/dashboard"
+        href={homeHref}
         className="hover:text-indigo-600 transition-colors flex items-center gap-1"
+        title="Trang chủ"
       >
         <Home className="w-3.5 h-3.5 text-slate-400" />
       </Link>
       {segments.map((segment, index) => {
-        const url = `/${segments.slice(0, index + 1).join("/")}`;
+        const rawUrl = `/${segments.slice(0, index + 1).join("/")}`;
+        const url = index === 0 && rootRedirectMap[segment] ? rootRedirectMap[segment] : rawUrl;
         const isLast = index === segments.length - 1;
         const label = labelMap[segment] || segment;
 
         return (
-          <div key={url} className="flex items-center gap-1.5">
+          <div key={rawUrl} className="flex items-center gap-1.5">
             <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
             {isLast ? (
               <span className="text-slate-800 font-semibold truncate max-w-[120px] sm:max-w-[200px]">

@@ -12,7 +12,7 @@ export default async function Home() {
     } else if (role === "DEPARTMENT_ADMIN") {
       redirect("/department/dashboard");
     } else if (role === "DISTRICT_ADMIN") {
-      redirect("/district/dashboard");
+      redirect("/ward/dashboard");
     } else if (role === "WARD_ADMIN") {
       redirect("/ward/dashboard");
     } else if (role === "ADMIN") {
@@ -20,7 +20,7 @@ export default async function Home() {
     } else if (role === "VICE_PRINCIPAL") {
       redirect("/vice-principal/dashboard");
     } else if (role === "SUBJECT_HEAD") {
-      redirect("/subject-head/dashboard");
+      redirect("/teacher/subject-head");
     } else if (role === "TEACHER") {
       redirect("/teacher/dashboard");
     } else if (role === "STUDENT") {
