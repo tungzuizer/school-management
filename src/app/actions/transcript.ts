@@ -6,9 +6,23 @@ import { authOptions } from "@/lib/auth";
 import { TranscriptStatus, UnlockStatus, ConductRating, AcademicRating } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
-// 1. Lấy toàn bộ học bạ cá nhân học sinh
-export async function getStudentTranscripts(studentId: string) {
+// 1. Lấy toàn bộ học bạ cá nhân học sinh (hỗ trợ cả student.id lẫn session.user.id)
+export async function getStudentTranscripts(studentIdOrUserId: string) {
   try {
+    let studentId = studentIdOrUserId;
+    // Kiểm tra nếu ID truyền vào là User.id thì phân giải sang Student.id
+    const student = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { id: studentIdOrUserId },
+          { userId: studentIdOrUserId },
+        ],
+      },
+    });
+    if (student) {
+      studentId = student.id;
+    }
+
     const transcripts = await prisma.academicTranscript.findMany({
       where: { studentId },
       include: {

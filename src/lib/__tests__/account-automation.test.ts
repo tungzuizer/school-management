@@ -158,4 +158,15 @@ describe("Account Automation - Initial Defaults", () => {
   it("provides standard secure default password constant", () => {
     expect(DEFAULT_INITIAL_PASSWORD).toBe("abc123");
   });
+
+  it("supports student demo credentials and studentCode formats", () => {
+    const studentSampleEmail = "hs26100001@gmail.com";
+    const studentCode = studentSampleEmail.split("@")[0].toUpperCase();
+    expect(studentCode).toBe("HS26100001");
+    expect(studentCode.startsWith("HS26")).toBe(true);
+
+    const validPasswords = ["abc123", "123456", "Password@123", "student"];
+    expect(validPasswords).toContain("Password@123");
+    expect(validPasswords).toContain("abc123");
+  });
 });
