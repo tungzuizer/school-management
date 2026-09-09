@@ -141,10 +141,10 @@ export default function MobileBottomNav({
   return (
     <nav
       aria-label="Điều hướng nhanh di động"
-      className="fixed bottom-2.5 inset-x-2.5 sm:inset-x-6 sm:bottom-4 z-40 lg:hidden max-w-[340px] mx-auto select-none"
+      className="fixed bottom-3 inset-x-3 sm:inset-x-6 sm:bottom-4 z-40 lg:hidden max-w-[380px] mx-auto select-none"
     >
       {/* iPhone Liquid Glass Pill Bar */}
-      <div className="bg-slate-950/75 backdrop-blur-3xl border border-white/20 shadow-[0_12px_32px_-6px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.3)] rounded-full px-2.5 py-1 flex items-center justify-between gap-0.5 text-slate-300">
+      <div className="bg-slate-950/80 backdrop-blur-3xl border border-white/25 shadow-[0_14px_36px_-6px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35)] rounded-full px-3.5 py-1.5 flex items-center justify-between gap-1 text-slate-300">
         {/* Left 2 Quick Items */}
         {leftItems.map((item) => {
           const isActive =
@@ -163,21 +163,21 @@ export default function MobileBottomNav({
               key={`${item.label}-${item.href}`}
               href={item.href}
               prefetch={true}
-              className={`flex-1 flex flex-col items-center justify-center py-1 px-0.5 rounded-full transition-all duration-300 active:scale-90 relative group ${
+              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-full transition-all duration-300 active:scale-90 relative group ${
                 isActive
                   ? "text-white font-semibold"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <Icon
-                className={`w-4.5 h-4.5 transition-all duration-300 ${
+                className={`w-5 h-5 transition-all duration-300 ${
                   isActive
                     ? theme.activeIcon
                     : "text-slate-400 group-hover:text-slate-200"
                 }`}
               />
               <span
-                className={`text-[8.5px] mt-0.5 tracking-tight truncate max-w-[50px] leading-tight transition-colors duration-200 ${
+                className={`text-[10px] mt-1 tracking-tight truncate max-w-[62px] leading-tight transition-colors duration-200 ${
                   isActive ? theme.activeText : "text-slate-400 group-hover:text-slate-200"
                 }`}
               >
@@ -185,7 +185,7 @@ export default function MobileBottomNav({
               </span>
               {/* Luminous Apple Active Dot Indicator */}
               {isActive && (
-                <span className={`w-1 h-1 rounded-full absolute -bottom-0.5 ${theme.activeDot}`} />
+                <span className={`w-1.5 h-1.5 rounded-full absolute -bottom-0.5 ${theme.activeDot}`} />
               )}
             </Link>
           );
@@ -197,23 +197,23 @@ export default function MobileBottomNav({
           onClick={onOpenMenu}
           aria-label={isMenuOpen ? "Đóng danh mục tính năng" : "Mở danh mục tính năng"}
           aria-expanded={isMenuOpen}
-          className="flex-1 flex flex-col items-center justify-center -my-3 py-0.5 px-0.5 transition-all duration-200 active:scale-90 cursor-pointer group relative"
+          className="flex-1 flex flex-col items-center justify-center -my-3.5 py-0.5 px-0.5 transition-all duration-200 active:scale-90 cursor-pointer group relative"
         >
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border ${
+            className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border ${
               isMenuOpen
                 ? theme.menuOpenBtn
-                : "bg-slate-900/80 backdrop-blur-2xl text-slate-200 border-white/25 shadow-[0_6px_16px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.35)] hover:bg-slate-800 hover:text-white"
+                : "bg-slate-900/85 backdrop-blur-2xl text-slate-200 border-white/30 shadow-[0_8px_20px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:bg-slate-800 hover:text-white"
             }`}
           >
             <Menu
-              className={`w-4.5 h-4.5 transition-transform duration-300 ${
+              className={`w-5 h-5 transition-transform duration-300 ${
                 isMenuOpen ? "rotate-90 text-white" : "group-hover:scale-110"
               }`}
             />
           </div>
           <span
-            className={`text-[8.5px] mt-0.5 font-extrabold tracking-tight transition-colors duration-200 ${
+            className={`text-[10px] mt-1 font-extrabold tracking-tight transition-colors duration-200 ${
               isMenuOpen ? theme.menuOpenText : "text-slate-300"
             }`}
           >
@@ -239,21 +239,21 @@ export default function MobileBottomNav({
               key={`${item.label}-${item.href}`}
               href={item.href}
               prefetch={true}
-              className={`flex-1 flex flex-col items-center justify-center py-1 px-0.5 rounded-full transition-all duration-300 active:scale-90 relative group ${
+              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-full transition-all duration-300 active:scale-90 relative group ${
                 isActive
                   ? "text-white font-semibold"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <Icon
-                className={`w-4.5 h-4.5 transition-all duration-300 ${
+                className={`w-5 h-5 transition-all duration-300 ${
                   isActive
                     ? theme.activeIcon
                     : "text-slate-400 group-hover:text-slate-200"
                 }`}
               />
               <span
-                className={`text-[8.5px] mt-0.5 tracking-tight truncate max-w-[50px] leading-tight transition-colors duration-200 ${
+                className={`text-[10px] mt-1 tracking-tight truncate max-w-[62px] leading-tight transition-colors duration-200 ${
                   isActive ? theme.activeText : "text-slate-400 group-hover:text-slate-200"
                 }`}
               >
@@ -261,7 +261,7 @@ export default function MobileBottomNav({
               </span>
               {/* Luminous Apple Active Dot Indicator */}
               {isActive && (
-                <span className={`w-1 h-1 rounded-full absolute -bottom-0.5 ${theme.activeDot}`} />
+                <span className={`w-1.5 h-1.5 rounded-full absolute -bottom-0.5 ${theme.activeDot}`} />
               )}
             </Link>
           );
