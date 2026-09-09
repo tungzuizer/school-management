@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Next.js root layout for `/department/*` (`src/app/department/dashboard/page.tsx`, `src/app/department/wards/page.tsx`, `src/app/department/thpt-schools/page.tsx`, `src/app/department/all-schools/page.tsx`, `src/app/department/reports/page.tsx`).
  * 2. Affected APIs: `DepartmentLayout` default export in `src/app/department/layout.tsx`.
  * 3. Schema: `MenuItem` (`label`: string, `href`: string, `icon`: LucideIcon, `badge`?: string, `description`?: string), `MenuGroup` (`id`: string, `code`: string, `title`: string, `tag`: string, `accent`: "sky" | "blue" | "indigo", `icon`: LucideIcon, `items`: MenuItem[]).
- * 4. Verbatim User Instruction: "tôi muốn màu nó như phần đăng nhập và mỗi tài khoản sẽ 1 sắc thái khác nhua hiệu trưởng giáo viên học sinh".
+ * 4. Verbatim User Instruction: "cho cao lên nữa".
  */
 
 "use client";
@@ -386,7 +386,7 @@ function DepartmentLayoutInner({ children }: { children: React.ReactNode }) {
         />
 
         {/* Page content independent scrollable canvas */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-28 lg:pb-8">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-32 lg:pb-8">
           <div className="max-w-[1680px] mx-auto w-full">
             {children}
           </div>
