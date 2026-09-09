@@ -861,7 +861,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <Link
-                href="/admin/substitute-teaching"
+                href="/admin/substitute-dispatch"
                 className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center transition cursor-pointer text-center shadow-xs"
               >
                 Vào Cổng Điều Động Dạy Thay
