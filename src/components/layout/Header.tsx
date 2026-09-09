@@ -9,6 +9,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
@@ -59,7 +60,20 @@ export default function Header({
   const [systemAccountsModalOpen, setSystemAccountsModalOpen] = useState(false);
 
   const userName = session?.user?.name || "Người dùng";
-  const userRole = roleLabels[(session?.user as { role?: string })?.role || ""] || "Thành viên";
+  const userRoleRaw = (session?.user as { role?: string })?.role;
+  const userRole = roleLabels[userRoleRaw || ""] || "Thành viên";
+  const homeHref =
+    userRoleRaw === "STUDENT"
+      ? "/student/dashboard"
+      : userRoleRaw === "TEACHER"
+      ? "/teacher/dashboard"
+      : userRoleRaw === "DEPARTMENT_ADMIN"
+      ? "/department/dashboard"
+      : userRoleRaw === "WARD_ADMIN"
+      ? "/ward/dashboard"
+      : userRoleRaw === "VICE_PRINCIPAL"
+      ? "/vice-principal/dashboard"
+      : "/admin/dashboard";
 
   // Ctrl + K listener
   useEffect(() => {
@@ -84,12 +98,12 @@ export default function Header({
               onClick={onToggleCollapse}
               aria-label={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
               title={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
-              className="hidden lg:flex items-center justify-center p-2 min-h-[40px] min-w-[40px] rounded-xl text-slate-900 hover:text-blue-700 hover:bg-blue-50 border border-slate-200/80 transition-all active-press cursor-pointer"
+              className="hidden lg:flex items-center justify-center p-2 min-h-[40px] min-w-[40px] rounded-xl text-slate-800 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 transition-all active-press cursor-pointer group"
             >
               {isCollapsed ? (
                 <PanelLeft className="w-5 h-5 text-blue-600" aria-hidden="true" />
               ) : (
-                <PanelLeftClose className="w-5 h-5 text-slate-700 hover:text-blue-600" aria-hidden="true" />
+                <PanelLeftClose className="w-5 h-5 text-slate-700 group-hover:text-blue-700 transition-colors" aria-hidden="true" />
               )}
             </button>
           )}
@@ -106,11 +120,18 @@ export default function Header({
             </button>
           )}
 
-          <img
-            src="/logo.png"
-            alt="Logo Nhà Trường"
-            className="w-8 h-8 object-contain rounded-xl shadow-xs transition-transform duration-300 hover:scale-105"
-          />
+          <Link
+            href={homeHref}
+            className="flex items-center gap-2 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 rounded-xl"
+            title="Về Trang tổng quan"
+            aria-label="Về Trang tổng quan"
+          >
+            <img
+              src="/logo.png"
+              alt="Logo Nhà Trường"
+              className="w-8 h-8 object-contain rounded-xl shadow-xs transition-transform duration-300 hover:scale-105"
+            />
+          </Link>
         </div>
 
         {/* Right: Search + Notifications + User Menu */}
