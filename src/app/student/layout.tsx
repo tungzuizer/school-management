@@ -404,7 +404,7 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
         />
 
         {/* Page content independent scrollable canvas */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-32 lg:pb-8">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-36 lg:pb-8">
           <div className="max-w-[1680px] mx-auto w-full">
             {children}
           </div>

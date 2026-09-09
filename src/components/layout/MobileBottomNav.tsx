@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Root Role Layouts (`src/app/admin/layout.tsx`, `src/app/teacher/layout.tsx`, `src/app/student/layout.tsx`, `src/app/vice-principal/layout.tsx`, `src/app/department/layout.tsx`, `src/app/ward/layout.tsx`).
  * 2. Affected APIs: `MobileBottomNav` component in `src/components/layout/MobileBottomNav.tsx`.
  * 3. Schema: `MobileBottomNavProps` (`role`: string, `onOpenMenu`: () => void, `isMenuOpen`?: boolean).
- * 4. Verbatim User Instruction: "bạn hãy xem 2 ảnh ở file C:\\Users\\tungh\\Desktop\\school-management\\anh thứ 1 tab vụ không trong suốt như Liquid Glass và thứ 2 khi tôi bấm vô lịch khóa biểu nó bị hiên lên những cái kia ở trên web tôi đang thêm web vào màn hình chính trên iphone".
+ * 4. Verbatim User Instruction: "đẩy thành tab vụ đó cao hơn nữa" -> "theo khuyến nghị của bạn".
  */
 
 "use client";
@@ -141,10 +141,10 @@ export default function MobileBottomNav({
   return (
     <nav
       aria-label="Điều hướng nhanh di động"
-      className="fixed bottom-3.5 inset-x-3 sm:inset-x-6 sm:bottom-5 z-40 lg:hidden max-w-[400px] mx-auto select-none"
+      className="fixed bottom-6 inset-x-3 sm:inset-x-6 sm:bottom-8 z-40 lg:hidden max-w-[420px] mx-auto select-none"
     >
-      {/* Apple iOS Liquid Glass Optical Frosted Capsule Dock */}
-      <div className="bg-white/75 backdrop-blur-2xl border border-white/60 shadow-[0_12px_40px_-6px_rgba(15,23,42,0.18),inset_0_1px_1.5px_rgba(255,255,255,0.9)] rounded-full px-4 py-2 flex items-center justify-between gap-1 text-slate-700">
+      {/* Apple iOS Liquid Glass Optical Frosted Capsule Dock (Elevated) */}
+      <div className="bg-white/80 backdrop-blur-2xl border border-white/70 shadow-[0_16px_48px_-6px_rgba(15,23,42,0.22),inset_0_1.5px_2px_rgba(255,255,255,0.95)] rounded-full px-4 py-2.5 flex items-center justify-between gap-1 text-slate-700">
         {/* Left 2 Quick Items */}
         {leftItems.map((item) => {
           const isActive =
@@ -163,7 +163,7 @@ export default function MobileBottomNav({
               key={`${item.label}-${item.href}`}
               href={item.href}
               prefetch={true}
-              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-full transition-all duration-300 active:scale-90 relative group ${
+              className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-full transition-all duration-300 active:scale-90 relative group ${
                 isActive
                   ? "text-slate-900 font-semibold"
                   : "text-slate-500 hover:text-slate-800"
@@ -177,7 +177,7 @@ export default function MobileBottomNav({
                 }`}
               />
               <span
-                className={`text-[10px] mt-0.5 tracking-tight truncate max-w-[64px] leading-tight transition-colors duration-200 ${
+                className={`text-[10px] mt-0.5 tracking-tight truncate max-w-[68px] leading-tight transition-colors duration-200 ${
                   isActive ? theme.activeText : "text-slate-500 group-hover:text-slate-800 font-medium"
                 }`}
               >
@@ -197,17 +197,17 @@ export default function MobileBottomNav({
           onClick={onOpenMenu}
           aria-label={isMenuOpen ? "Đóng danh mục tính năng" : "Mở danh mục tính năng"}
           aria-expanded={isMenuOpen}
-          className="flex-1 flex flex-col items-center justify-center -my-3.5 py-0.5 px-0.5 transition-all duration-200 active:scale-90 cursor-pointer group relative"
+          className="flex-1 flex flex-col items-center justify-center -my-4 py-0.5 px-0.5 transition-all duration-200 active:scale-90 cursor-pointer group relative"
         >
           <div
-            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 border ${
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border ${
               isMenuOpen
                 ? theme.menuOpenBtn
-                : "bg-gradient-to-b from-white/95 to-slate-100/90 text-slate-800 border-white/80 shadow-[0_8px_20px_rgba(15,23,42,0.15),inset_0_1px_2px_rgba(255,255,255,1)] hover:bg-white hover:text-sky-600"
+                : "bg-gradient-to-b from-white/95 to-slate-100/90 text-slate-800 border-white/90 shadow-[0_10px_24px_rgba(15,23,42,0.18),inset_0_1px_2.5px_rgba(255,255,255,1)] hover:bg-white hover:text-sky-600"
             }`}
           >
             <Menu
-              className={`w-5 h-5 transition-transform duration-300 ${
+              className={`w-5.5 h-5.5 transition-transform duration-300 ${
                 isMenuOpen ? "rotate-90 text-white" : "group-hover:scale-110"
               }`}
             />
@@ -239,7 +239,7 @@ export default function MobileBottomNav({
               key={`${item.label}-${item.href}`}
               href={item.href}
               prefetch={true}
-              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-full transition-all duration-300 active:scale-90 relative group ${
+              className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-full transition-all duration-300 active:scale-90 relative group ${
                 isActive
                   ? "text-slate-900 font-semibold"
                   : "text-slate-500 hover:text-slate-800"
@@ -253,7 +253,7 @@ export default function MobileBottomNav({
                 }`}
               />
               <span
-                className={`text-[10px] mt-0.5 tracking-tight truncate max-w-[64px] leading-tight transition-colors duration-200 ${
+                className={`text-[10px] mt-0.5 tracking-tight truncate max-w-[68px] leading-tight transition-colors duration-200 ${
                   isActive ? theme.activeText : "text-slate-500 group-hover:text-slate-800 font-medium"
                 }`}
               >
