@@ -45,6 +45,7 @@ import {
   saveMonthlyPlan,
   saveWeeklyActivity,
   addStudentToHomeroomClass,
+  getNextStudentCodePreviewAction,
   setClassMonitor,
   setStudentClassRole,
   quickSetupFourGroups,
@@ -340,6 +341,17 @@ function StudentsTab({
   const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [codePreview, setCodePreview] = useState<{ studentCode: string; email: string } | null>(null);
+
+  useEffect(() => {
+    if (showAddModal) {
+      getNextStudentCodePreviewAction(classId).then((res) => {
+        if (res.success) {
+          setCodePreview({ studentCode: res.studentCode, email: res.email });
+        }
+      });
+    }
+  }, [showAddModal, classId]);
 
   // Bonus Points Modal state
   const [bonusStudent, setBonusStudent] = useState<StudentItem | null>(null);
@@ -359,8 +371,8 @@ function StudentsTab({
 
   async function handleAddStudent(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !studentCode.trim()) {
-      setAddError("Vui lòng nhập Họ tên và Mã học sinh");
+    if (!name.trim()) {
+      setAddError("Vui lòng nhập Họ và Tên học sinh");
       return;
     }
     setAdding(true);
@@ -369,11 +381,11 @@ function StudentsTab({
       await addStudentToHomeroomClass({
         classId,
         name,
-        studentCode,
+        studentCode: codePreview?.studentCode || studentCode || undefined,
         dob: dob || undefined,
         gender,
         phone: phone || undefined,
-        email: email || undefined,
+        email: codePreview?.email || email || undefined,
       });
       showToast(`Đã thêm thành công học sinh ${name}!`);
       setName("");
@@ -563,6 +575,45 @@ function StudentsTab({
             )}
 
             <form onSubmit={handleAddStudent} className="space-y-3.5 mt-4">
+              {/* Auto Identifier & Email Badge */}
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-3.5 rounded-2xl border border-indigo-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-indigo-950 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                    MÃ ĐỊNH DANH & EMAIL TỰ ĐỘNG
+                  </span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-200/70 text-indigo-800">
+                    🔒 Cố định chuẩn hóa
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white/90 p-2 rounded-xl border border-indigo-100 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-black text-[10px] shrink-0">
+                      HS
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[9px] font-bold text-slate-700 block">Mã học sinh</span>
+                      <span className="font-mono font-black text-xs text-indigo-800 block truncate">
+                        {codePreview?.studentCode || studentCode || "HS26100001"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/90 p-2 rounded-xl border border-indigo-100 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center font-black text-[10px] shrink-0">
+                      @
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[9px] font-bold text-slate-700 block">Email học sinh</span>
+                      <span className="font-mono font-bold text-[11px] text-purple-800 block truncate">
+                        {codePreview?.email || email || "hs26100001@gmail.com"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Họ và Tên Học Sinh <span className="text-rose-500">*</span>
@@ -574,20 +625,6 @@ function StudentsTab({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Mã Học Sinh <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: HS10A1-001"
-                  value={studentCode}
-                  onChange={(e) => setStudentCode(e.target.value)}
-                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
                 />
               </div>
 
@@ -624,22 +661,6 @@ function StudentsTab({
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Email đăng nhập (Tuỳ chọn)
-                </label>
-                <input
-                  type="email"
-                  placeholder="Để trống sẽ tự tạo (VD: nguyenvana.hs10a1@gmail.com)"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Mật khẩu khởi tạo mặc định cho học sinh mới là <strong className="font-mono text-amber-700">abc123</strong>
-                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -799,6 +820,17 @@ function OverviewTab({
   const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [codePreview, setCodePreview] = useState<{ studentCode: string; email: string } | null>(null);
+
+  useEffect(() => {
+    if (showAddModal) {
+      getNextStudentCodePreviewAction(classId).then((res) => {
+        if (res.success) {
+          setCodePreview({ studentCode: res.studentCode, email: res.email });
+        }
+      });
+    }
+  }, [showAddModal, classId]);
 
   // Bonus Points Modal state
   const [bonusStudent, setBonusStudent] = useState<StudentItem | null>(null);
@@ -816,8 +848,8 @@ function OverviewTab({
 
   async function handleAddStudent(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !studentCode.trim()) {
-      setAddError("Vui lòng nhập Họ tên và Mã học sinh");
+    if (!name.trim()) {
+      setAddError("Vui lòng nhập Họ và Tên học sinh");
       return;
     }
     setAdding(true);
@@ -826,11 +858,11 @@ function OverviewTab({
       await addStudentToHomeroomClass({
         classId,
         name,
-        studentCode,
+        studentCode: codePreview?.studentCode || studentCode || undefined,
         dob: dob || undefined,
         gender,
         phone: phone || undefined,
-        email: email || undefined,
+        email: codePreview?.email || email || undefined,
       });
       showToast(`Đã thêm thành công học sinh ${name}!`);
       setName("");
@@ -940,6 +972,45 @@ function OverviewTab({
             )}
 
             <form onSubmit={handleAddStudent} className="space-y-3.5 mt-4">
+              {/* Auto Identifier & Email Badge */}
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-3.5 rounded-2xl border border-indigo-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-indigo-950 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                    MÃ ĐỊNH DANH & EMAIL TỰ ĐỘNG
+                  </span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-200/70 text-indigo-800">
+                    🔒 Cố định chuẩn hóa
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white/90 p-2 rounded-xl border border-indigo-100 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-black text-[10px] shrink-0">
+                      HS
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[9px] font-bold text-slate-700 block">Mã học sinh</span>
+                      <span className="font-mono font-black text-xs text-indigo-800 block truncate">
+                        {codePreview?.studentCode || studentCode || "HS26100001"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/90 p-2 rounded-xl border border-indigo-100 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center font-black text-[10px] shrink-0">
+                      @
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[9px] font-bold text-slate-700 block">Email học sinh</span>
+                      <span className="font-mono font-bold text-[11px] text-purple-800 block truncate">
+                        {codePreview?.email || email || "hs26100001@gmail.com"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Họ và tên học sinh <span className="text-red-500">*</span>
@@ -950,20 +1021,6 @@ function OverviewTab({
                   placeholder="Ví dụ: Nguyễn Việt Tùng"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Mã học sinh <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: FPT-HS141"
-                  value={studentCode}
-                  onChange={(e) => setStudentCode(e.target.value)}
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
@@ -1001,22 +1058,6 @@ function OverviewTab({
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Email đăng nhập (Tuỳ chọn)
-                </label>
-                <input
-                  type="email"
-                  placeholder="Để trống sẽ tự động tạo (VD: tungnvfpths141@gmail.com)"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Mật khẩu khởi tạo mặc định cho học sinh mới là <strong className="font-mono text-amber-700">abc123</strong>
-                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1643,8 +1684,8 @@ function SeatingTab({
             onClick={() => setMode("eval")}
             className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
               mode === "eval"
-                ? "bg-amber-500 text-slate-950 shadow-md"
-                : "text-slate-300 hover:text-white"
+                ? "bg-amber-500 text-amber-950 shadow-md"
+                : "text-slate-200 hover:text-white"
             }`}
           >
             <Star className="w-4 h-4 fill-current" /> ⭐ Chế Độ Tuyên Dương
@@ -1654,7 +1695,7 @@ function SeatingTab({
             className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
               mode === "arrange"
                 ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-300 hover:text-white"
+                : "text-slate-200 hover:text-white"
             }`}
           >
             <LayoutGrid className="w-4 h-4" /> ⚙️ Chế Độ Xếp Ghế

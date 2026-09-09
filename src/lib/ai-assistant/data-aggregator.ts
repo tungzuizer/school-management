@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: AI Assistant engines, analytics pipelines, Executive Briefing actions.
+ * 2. Affected APIs: `aggregateSchoolData`.
+ * 3. Schemas: Prisma models (School, Campus, SchoolPoint, ClassRoom, Student, Teacher, Equipment, etc.).
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
+ */
+
 import prisma from "@/lib/prisma";
 import {
   TenantContext,
@@ -54,7 +62,7 @@ export async function fetchAggregatedSchoolData(
     where: { id: effectiveSchoolId },
     select: { id: true, name: true },
   });
-  const schoolName = schoolInfo?.name || "Trường THPT Chuyên Trần Phú (Hải Phòng)";
+  const schoolName = schoolInfo?.name || "Trường THPT Trần Phú (Ninh Bình)";
 
   // Date boundaries for today (targetDate)
   const startOfDay = new Date(targetDate);
@@ -298,10 +306,10 @@ export async function fetchAggregatedSchoolData(
         campusId: cp.id,
         campus: { id: cp.id, name: cp.name },
         name: cp.name,
-        address: idx === 0 ? "Số 10 Lê Hồng Phong, Hải An, Hải Phòng" : "Cơ sở 2, Hải Phòng",
-        distanceKm: idx === 0 ? 0.0 : 3.5,
+        address: idx === 0 ? "Số 26 Đinh Tiên Hoàng, Đông Thành, TP. Ninh Bình" : "Cơ sở 2, Ninh Khánh, TP. Ninh Bình",
+        distanceKm: idx === 0 ? 0.0 : 1.8,
         managerName: "Ban Quản lý Điểm trường",
-        phone: "02253836888",
+        phone: "02293871648",
         createdAt: new Date(),
         updatedAt: new Date(),
       }));
@@ -314,10 +322,10 @@ export async function fetchAggregatedSchoolData(
           campusId: defaultCampusId,
           campus: { id: defaultCampusId, name: defaultCampusName },
           name: "Cơ sở Chính",
-          address: "Số 10 Lê Hồng Phong, Hải An, Hải Phòng",
+          address: "Số 26 Đinh Tiên Hoàng, Đông Thành, TP. Ninh Bình",
           distanceKm: 0.0,
           managerName: "Ban Giám hiệu",
-          phone: "02253836888",
+          phone: "02293871648",
           createdAt: new Date(),
           updatedAt: new Date(),
         },

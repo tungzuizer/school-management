@@ -13,6 +13,7 @@ import {
   DEFAULT_TIMETABLE_CONFIG,
   getShiftForPeriod,
   generateAvailableTimeSlots,
+  generateAiScheduleSuggestions,
 } from "@/lib/smart-timetable-engine";
 
 describe("Smart AI Timetable Engine & Pedagogical Constraints", () => {
@@ -184,5 +185,95 @@ describe("Smart AI Timetable Engine & Pedagogical Constraints", () => {
     expect(result.evaluation.qualityScore).toBeGreaterThanOrEqual(70);
     expect(result.evaluation.totalScheduledPeriods).toBeGreaterThan(0);
     expect(result.evaluation.shiftPreferenceMatchRate).toBeGreaterThanOrEqual(80);
+  });
+
+  describe("AI Co-pilot Suggestion Engine & Shift Limit Warnings", () => {
+    it("detects when adding a period causes a teacher to exceed 5 shifts/week", () => {
+      const engine = new SmartTimetableEngine();
+
+      // Mock schedule where teacher tch_toan has 5 morning shifts (Mon-Fri morning)
+      const mockSchedules = [
+        { id: "s1", classId: "cls_1", subjectId: "sub_1", subjectName: "Toán", teacherId: "tch_toan", teacherName: "Thầy Toán", dayOfWeek: 1, period: 2, shift: "MORNING" as const },
+        { id: "s2", classId: "cls_1", subjectId: "sub_1", subjectName: "Toán", teacherId: "tch_toan", teacherName: "Thầy Toán", dayOfWeek: 2, period: 2, shift: "MORNING" as const },
+        { id: "s3", classId: "cls_1", subjectId: "sub_1", subjectName: "Toán", teacherId: "tch_toan", teacherName: "Thầy Toán", dayOfWeek: 3, period: 2, shift: "MORNING" as const },
+        { id: "s4", classId: "cls_1", subjectId: "sub_1", subjectName: "Toán", teacherId: "tch_toan", teacherName: "Thầy Toán", dayOfWeek: 4, period: 2, shift: "MORNING" as const },
+        { id: "s5", classId: "cls_1", subjectId: "sub_1", subjectName: "Toán", teacherId: "tch_toan", teacherName: "Thầy Toán", dayOfWeek: 5, period: 2, shift: "MORNING" as const },
+      ];
+
+      // 1. Adding a slot on Saturday morning (6th shift) should trigger willExceed
+      const satMorningImpact = engine.checkTeacherShiftImpact(
+        mockSchedules,
+        "tch_toan",
+        6, // Saturday
+        2  // Period 2 (Morning)
+      );
+      expect(satMorningImpact.currentCount).toBe(5);
+      expect(satMorningImpact.newCount).toBe(6);
+      expect(satMorningImpact.isNewShift).toBe(true);
+      expect(satMorningImpact.willExceed).toBe(true);
+
+      // 2. Adding a slot on Tuesday morning (already has shift on Tuesday morning) should NOT trigger willExceed
+      const tueMorningImpact = engine.checkTeacherShiftImpact(
+        mockSchedules,
+        "tch_toan",
+        2, // Tuesday
+        3  // Period 3 (Morning)
+      );
+      expect(tueMorningImpact.currentCount).toBe(5);
+      expect(tueMorningImpact.newCount).toBe(5);
+      expect(tueMorningImpact.isNewShift).toBe(false);
+      expect(tueMorningImpact.willExceed).toBe(false);
+    });
+
+    it("generates intelligent AI suggestions (Alternative Teachers & Safe Time Slots)", () => {
+      const mockSchedules = [
+        { id: "s1", classId: "cls_1", subjectId: "sub_toan", subjectName: "Toán", teacherId: "tch_toan_1", teacherName: "Thầy Toán 1", dayOfWeek: 1, period: 2, shift: "MORNING" as const },
+        { id: "s2", classId: "cls_1", subjectId: "sub_toan", subjectName: "Toán", teacherId: "tch_toan_1", teacherName: "Thầy Toán 1", dayOfWeek: 2, period: 2, shift: "MORNING" as const },
+        { id: "s3", classId: "cls_1", subjectId: "sub_toan", subjectName: "Toán", teacherId: "tch_toan_1", teacherName: "Thầy Toán 1", dayOfWeek: 3, period: 2, shift: "MORNING" as const },
+        { id: "s4", classId: "cls_1", subjectId: "sub_toan", subjectName: "Toán", teacherId: "tch_toan_1", teacherName: "Thầy Toán 1", dayOfWeek: 4, period: 2, shift: "MORNING" as const },
+        { id: "s5", classId: "cls_1", subjectId: "sub_toan", subjectName: "Toán", teacherId: "tch_toan_1", teacherName: "Thầy Toán 1", dayOfWeek: 5, period: 2, shift: "MORNING" as const },
+      ];
+
+      const availableTeachers = [
+        {
+          id: "tch_toan_1",
+          name: "Thầy Toán 1",
+          specialty: "Toán",
+          teachingAssignments: [{ subjectId: "sub_toan" }],
+        },
+        {
+          id: "tch_toan_2",
+          name: "Cô Toán 2",
+          specialty: "Toán",
+          teachingAssignments: [{ subjectId: "sub_toan" }],
+        },
+      ];
+
+      const suggestions = generateAiScheduleSuggestions({
+        classId: "cls_1",
+        className: "10A1",
+        subjectId: "sub_toan",
+        subjectName: "Toán",
+        currentTeacherId: "tch_toan_1",
+        dayOfWeek: 6, // Saturday
+        period: 2,    // Morning
+        allSchedules: mockSchedules,
+        availableTeachers,
+        maxShifts: 5,
+      });
+
+      expect(suggestions.length).toBeGreaterThan(0);
+
+      // Should suggest tch_toan_2 who is free and only has 1 shift
+      const teacherSuggestion = suggestions.find((s) => s.type === "TEACHER");
+      expect(teacherSuggestion).toBeDefined();
+      expect(teacherSuggestion?.teacherId).toBe("tch_toan_2");
+
+      // Should suggest safe time slots on days where tch_toan_1 already teaches (e.g. Tuesday P3)
+      const slotSuggestion = suggestions.find((s) => s.type === "SLOT");
+      expect(slotSuggestion).toBeDefined();
+      expect(slotSuggestion?.dayOfWeek).toBeDefined();
+      expect(slotSuggestion?.period).toBeDefined();
+    });
   });
 });

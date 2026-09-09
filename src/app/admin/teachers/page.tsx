@@ -1,18 +1,50 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin navigation (`src/app/admin/teachers/page.tsx`).
- * 2. Affected APIs: Server actions `getTeachers`, `createBulkTeachers`.
- * 3. Schema: Removed Google Drive import modal and dependencies.
- * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ * 2. Affected APIs: Server actions `getTeachers`, `createBulkTeachers`, `getTeacherCredentialsOverview`, `resetTeacherPasswordSecure`, `getTeacherCredentialSlips`.
+ * 3. Schema: Prisma `Teacher`, `User`, `School`.
+ * 4. Verbatim User Instruction: "tôi muốn mỗi giáo viên mỗi học sinh sẽ có tài khoản mà mật khẩu và có thể hiện thị chỉ cho hiệu trưởng hoặc admin nhìn thấy được".
  */
 
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getTeachers, getSchoolsForTeacherSelect, createTeacher, updateTeacher, resetTeacherPassword, deleteTeacher, createBulkTeachers, BulkTeacherInput } from "./actions";
+import {
+  getTeachers,
+  getSchoolsForTeacherSelect,
+  createTeacher,
+  updateTeacher,
+  resetTeacherPassword,
+  resetTeacherPasswordSecure,
+  deleteTeacher,
+  createBulkTeachers,
+  getTeacherCredentialsOverview,
+  getTeacherCredentialSlips,
+  BulkTeacherInput,
+  TeacherCredentialItem,
+} from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Loader2, KeyRound, Lock, CheckCircle2, FileSpreadsheet, Plus, School, Building2, BookOpen, GraduationCap, LayoutGrid, Table, Crown, Clock } from "lucide-react";
+import {
+  Loader2,
+  KeyRound,
+  Lock,
+  CheckCircle2,
+  FileSpreadsheet,
+  Plus,
+  School,
+  Building2,
+  BookOpen,
+  GraduationCap,
+  LayoutGrid,
+  Table,
+  Crown,
+  Clock,
+  ShieldCheck,
+  Printer,
+} from "lucide-react";
+import TeacherCredentialsModal from "./components/TeacherCredentialsModal";
+import TeacherCredentialSlipsModal from "./components/TeacherCredentialSlipsModal";
 
 interface TeacherData {
   id: string;
@@ -46,6 +78,14 @@ export default function TeachersPage() {
   const [selectedTeacherForPwd, setSelectedTeacherForPwd] = useState<TeacherData | null>(null);
   const [newPwdInput, setNewPwdInput] = useState("abc123");
   const [resettingPwd, setResettingPwd] = useState(false);
+
+  // Credentials Hub state (Principal & Admin only)
+  const [credModalOpen, setCredModalOpen] = useState(false);
+  const [credSlipsModalOpen, setCredSlipsModalOpen] = useState(false);
+  const [credentialsList, setCredentialsList] = useState<TeacherCredentialItem[]>([]);
+  const [credSlips, setCredSlips] = useState<any[]>([]);
+  const [credSchoolName, setCredSchoolName] = useState("");
+  const [loadingCreds, setLoadingCreds] = useState(false);
 
   // Bulk import state
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
@@ -306,8 +346,61 @@ export default function TeachersPage() {
     if (res.success) {
       showToast(`Đã đặt lại mật khẩu cho ${selectedTeacherForPwd.user.name}: ${res.newPassword}`, "success");
       setPwdModalOpen(false);
+      // Reload credentials if opened
+      if (credModalOpen) {
+        openCredentialsHub(true);
+      }
     } else {
       showToast(res.error || "Không thể đặt lại mật khẩu", "error");
+    }
+  };
+
+  const openCredentialsHub = async (silent = false) => {
+    if (!silent) setLoadingCreds(true);
+    setCredModalOpen(true);
+    const res = await getTeacherCredentialsOverview({
+      schoolId: filterSchool || undefined,
+      specialty: filterSpecialty || undefined,
+    });
+    setLoadingCreds(false);
+    if (res.success && res.data) {
+      setCredentialsList(res.data);
+    } else {
+      showToast(res.error || "Không thể tải danh sách tài khoản", "error");
+    }
+  };
+
+  const handleOpenSlips = async () => {
+    const res = await getTeacherCredentialSlips({
+      schoolId: filterSchool || undefined,
+      specialty: filterSpecialty || undefined,
+    });
+    if (res.success && res.slips) {
+      setCredSchoolName(res.schoolName);
+      setCredSlips(res.slips);
+      setCredSlipsModalOpen(true);
+    } else {
+      showToast(res.error || "Lỗi tạo phiếu bàn giao", "error");
+    }
+  };
+
+  const handleResetFromCredModal = (item: TeacherCredentialItem) => {
+    const matched = teachers.find((t) => t.id === item.id);
+    if (matched) {
+      openPasswordModal(matched);
+    } else {
+      setSelectedTeacherForPwd({
+        id: item.id,
+        userId: item.userId,
+        specialty: item.specialty,
+        phone: item.phone,
+        degree: item.degree,
+        user: { id: item.userId, name: item.name, email: item.email },
+        homeroomClasses: [],
+        teachingAssignments: [],
+      });
+      setNewPwdInput("abc123");
+      setPwdModalOpen(true);
     }
   };
 
@@ -316,7 +409,15 @@ export default function TeachersPage() {
       {ToastComponent}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý Giáo viên</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => openCredentialsHub(false)}
+            className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all active-press"
+            title="Xem và quản lý tài khoản, mật khẩu giáo viên (Độc quyền BGH)"
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <span>🔐 Quản lý TK & Mật khẩu (BGH)</span>
+          </button>
           <button
             onClick={() => {
               setBulkModalOpen(true);
@@ -324,11 +425,14 @@ export default function TeachersPage() {
               setParsedTeachers([]);
               setBulkResult(null);
             }}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 text-sm font-medium"
+            className="bg-emerald-600 text-white px-3.5 py-2 rounded-xl hover:bg-emerald-700 flex items-center gap-1.5 text-xs font-bold transition-all active-press"
           >
             <FileSpreadsheet className="w-4 h-4" /> Nhập CSV/Text
           </button>
-          <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium">
+          <button
+            onClick={openCreate}
+            className="bg-indigo-600 text-white px-3.5 py-2 rounded-xl hover:bg-indigo-700 flex items-center gap-1.5 text-xs font-bold transition-all active-press"
+          >
             <Plus className="w-4 h-4" /> Thêm giáo viên
           </button>
         </div>
@@ -863,6 +967,25 @@ export default function TeachersPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Teacher Credentials Modal (BGH Only) */}
+      <TeacherCredentialsModal
+        isOpen={credModalOpen}
+        onClose={() => setCredModalOpen(false)}
+        credentials={credentialsList}
+        schools={schools}
+        onResetPassword={handleResetFromCredModal}
+        onOpenSlips={handleOpenSlips}
+        loading={loadingCreds}
+      />
+
+      {/* Teacher Credential Slips Modal (A4 Handover Print) */}
+      <TeacherCredentialSlipsModal
+        isOpen={credSlipsModalOpen}
+        onClose={() => setCredSlipsModalOpen(false)}
+        schoolName={credSchoolName}
+        slips={credSlips}
+      />
     </div>
   );
 }

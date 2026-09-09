@@ -335,10 +335,15 @@ export default function TimetableMatrixView({
                                     </span>
                                     {item.isFixed && (
                                       <span
-                                        title="Tiết cố định theo quy định sư phạm (Chào cờ/Sinh hoạt)"
-                                        className="p-0.5 rounded bg-indigo-200 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200"
+                                        title="Tiết cố định theo quy định sư phạm (Chào cờ/Sinh hoạt do GVCN phụ trách)"
+                                        className="px-1.5 py-0.5 rounded bg-indigo-200 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-[10px] font-bold flex items-center gap-1 shrink-0"
                                       >
-                                        <Lock className="w-3 h-3" />
+                                        <Lock className="w-2.5 h-2.5" />
+                                        <span>
+                                          {item.subjectName.toLowerCase().includes("chào cờ")
+                                            ? "👑 GVCN Chào cờ"
+                                            : "👑 GVCN Sinh hoạt"}
+                                        </span>
                                       </span>
                                     )}
                                   </div>

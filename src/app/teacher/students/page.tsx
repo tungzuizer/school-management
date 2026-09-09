@@ -7,6 +7,7 @@ import {
   importBulkStudents,
   resetStudentPasswordTeacher,
   deleteStudentTeacher,
+  getNextStudentCodePreviewAction,
   TeacherStudentData,
   BulkStudentRow,
 } from "./actions";
@@ -43,6 +44,7 @@ export default function TeacherStudentsPage() {
 
   // Single Add Form state
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [codePreview, setCodePreview] = useState<{ studentCode: string; email: string } | null>(null);
   const [form, setForm] = useState({
     classId: "",
     name: "",
@@ -53,6 +55,32 @@ export default function TeacherStudentsPage() {
     email: "",
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const fetchCodePreview = async (classId?: string) => {
+    try {
+      const res = await getNextStudentCodePreviewAction(classId);
+      if (res.success) {
+        setCodePreview({ studentCode: res.studentCode, email: res.email });
+        setForm((f) => ({
+          ...f,
+          studentCode: res.studentCode,
+          email: res.email,
+        }));
+      }
+    } catch {}
+  };
+
+  const openAddModal = async () => {
+    setActiveTab("LIST");
+    setAddModalOpen(true);
+    const targetClassId = form.classId || (classes.length > 0 ? classes[0].id : undefined);
+    await fetchCodePreview(targetClassId);
+  };
+
+  const handleClassChangeInForm = async (newClassId: string) => {
+    setForm((f) => ({ ...f, classId: newClassId }));
+    await fetchCodePreview(newClassId || undefined);
+  };
 
   // Bulk Excel import state
   const [bulkClassId, setBulkClassId] = useState("");
@@ -230,10 +258,7 @@ export default function TeacherStudentsPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => {
-                setActiveTab("LIST");
-                setAddModalOpen(true);
-              }}
+              onClick={openAddModal}
               className="px-5 py-3 rounded-2xl bg-white text-purple-900 font-extrabold text-sm shadow-lg hover:bg-purple-50 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4 text-purple-700" />
@@ -652,11 +677,54 @@ export default function TeacherStudentsPage() {
       {/* SINGLE ADD MODAL */}
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)} title="Thêm Học Sinh Mới">
         <form onSubmit={handleSingleAdd} className="space-y-4">
+          {/* Auto Identifier & Email Badge */}
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-2xl border border-purple-100/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                MÃ ĐỊNH DANH & TÀI KHOẢN TỰ ĐỘNG
+              </span>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-200/70 text-purple-800">
+                🔒 Cố định chuẩn hóa
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="bg-white/90 p-2.5 rounded-xl border border-purple-100 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-black text-xs shrink-0">
+                  HS
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-slate-500 block">Mã Học Sinh Cố Định</span>
+                  <span className="font-mono font-black text-sm text-purple-700 block truncate">
+                    {codePreview?.studentCode || form.studentCode || "HS26100001"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white/90 p-2.5 rounded-xl border border-purple-100 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-black text-xs shrink-0">
+                  @
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-slate-500 block">Email Học Sinh</span>
+                  <span className="font-mono font-bold text-xs text-indigo-700 block truncate">
+                    {codePreview?.email || form.email || "hs26100001@gmail.com"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-purple-800/80 leading-tight">
+              Mã học sinh và email được cấp phát cố định vĩnh viễn theo Khóa & Khối lớp để học sinh đăng nhập và tra cứu kết quả.
+            </p>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Lớp Học *</label>
             <select
               value={form.classId}
-              onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value }))}
+              onChange={(e) => handleClassChangeInForm(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:ring-2 focus:ring-purple-500 outline-none"
               required
             >
@@ -670,7 +738,7 @@ export default function TeacherStudentsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Họ và Tên *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Họ và Tên Học Sinh *</label>
             <input
               type="text"
               placeholder="VD: Nguyễn Văn Anh"
@@ -683,16 +751,6 @@ export default function TeacherStudentsPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Mã Học Sinh</label>
-              <input
-                type="text"
-                placeholder="Để trống để tự tạo"
-                value={form.studentCode}
-                onChange={(e) => setForm((f) => ({ ...f, studentCode: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:ring-2 focus:ring-purple-500 outline-none"
-              />
-            </div>
-            <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Giới tính</label>
               <select
                 value={form.gender}
@@ -703,9 +761,6 @@ export default function TeacherStudentsPage() {
                 <option value="FEMALE">Nữ</option>
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Ngày Sinh</label>
               <input
@@ -715,16 +770,17 @@ export default function TeacherStudentsPage() {
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none"
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Số Điện Thoại</label>
-              <input
-                type="text"
-                placeholder="VD: 0912345678"
-                value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none"
-              />
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Số Điện Thoại Liên Hệ</label>
+            <input
+              type="text"
+              placeholder="VD: 0912345678"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none"
+            />
           </div>
 
           <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">

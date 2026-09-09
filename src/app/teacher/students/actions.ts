@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/teacher/students/page.tsx`, `src/app/teacher/students/components/TeacherAddStudentModal.tsx`, `src/app/teacher/students/components/TeacherBulkImportModal.tsx`.
+ * 2. Affected APIs: `createSingleStudent`, `importBulkStudents`, `getTeacherClassesAndStudents`.
+ * 3. Data Schemas: Prisma models `User`, `Student`, `ClassRoom`.
+ * 4. Verbatim User Instruction: "tôi cần tọa thuật toán tự động hóa thêm học sinh hay giáo viên sẽ tự tạo tài khoản".
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
@@ -5,6 +13,7 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateStudentEmail } from "@/lib/student-email";
+import { resolveUniqueStudentCodeAndEmail, previewNextStudentCodeAndEmail, DEFAULT_INITIAL_PASSWORD } from "@/lib/account-automation";
 
 export interface TeacherStudentData {
   id: string;
@@ -142,6 +151,29 @@ export async function getTeacherClassesAndStudents() {
   }
 }
 
+export async function getNextStudentCodePreviewAction(classId?: string, gradeLevel?: number) {
+  try {
+    let resolvedGrade = gradeLevel;
+    if (classId && !resolvedGrade) {
+      const cls = await prisma.classRoom.findUnique({
+        where: { id: classId },
+        select: { gradeLevel: true },
+      });
+      if (cls?.gradeLevel) resolvedGrade = cls.gradeLevel;
+    }
+
+    const existingStudents = await prisma.student.findMany({ select: { studentCode: true } });
+    const existingCodes = new Set(
+      existingStudents.map((s) => (s.studentCode ? s.studentCode.toLowerCase() : "")).filter(Boolean)
+    );
+
+    const preview = previewNextStudentCodeAndEmail(existingCodes, resolvedGrade);
+    return { success: true, ...preview };
+  } catch (error: any) {
+    return { success: false, studentCode: "HS26100001", email: "hs26100001@gmail.com" };
+  }
+}
+
 export async function createSingleStudent(data: {
   classId: string;
   name: string;
@@ -158,28 +190,48 @@ export async function createSingleStudent(data: {
     const name = data.name.trim();
     if (!name) return { success: false, error: "Tên học sinh là bắt buộc." };
 
-    const code = (data.studentCode && data.studentCode.trim()) || `HS${Date.now().toString().slice(-6)}`;
-    const email = (data.email && data.email.trim()) || generateStudentEmail(name, code);
-
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return { success: false, error: `Email ${email} đã tồn tại trên hệ thống.` };
+    let gradeLevel: number | undefined;
+    if (data.classId) {
+      const cls = await prisma.classRoom.findUnique({
+        where: { id: data.classId },
+        select: { gradeLevel: true },
+      });
+      if (cls?.gradeLevel) gradeLevel = cls.gradeLevel;
     }
 
-    const defaultPassword = "abc123";
+    const existingUsers = await prisma.user.findMany({ select: { email: true } });
+    const existingEmails = new Set(existingUsers.map((u) => u.email.toLowerCase()));
+    const existingStudents = await prisma.student.findMany({ select: { studentCode: true } });
+    const existingCodes = new Set(
+      existingStudents.map((s) => (s.studentCode ? s.studentCode.toLowerCase() : "")).filter(Boolean)
+    );
+
+    const { studentCode: resolvedCode, email: resolvedEmail } = resolveUniqueStudentCodeAndEmail(
+      existingCodes,
+      existingEmails,
+      {
+        preferredCode: data.studentCode,
+        preferredEmail: data.email,
+        name,
+        gradeLevel,
+      }
+    );
+
+    const defaultPassword = DEFAULT_INITIAL_PASSWORD;
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     const newUser = await prisma.user.create({
       data: {
         name,
-        email,
+        email: resolvedEmail,
         password: hashedPassword,
         role: "STUDENT",
         isApproved: true,
+        mustChangePassword: true,
         schoolId: teacherUser.schoolId || undefined,
         student: {
           create: {
-            studentCode: code,
+            studentCode: resolvedCode,
             classId: data.classId,
             dob: data.dob ? new Date(data.dob) : null,
             gender: data.gender || null,
@@ -190,7 +242,7 @@ export async function createSingleStudent(data: {
       include: { student: true },
     });
 
-    return { success: true, studentId: newUser.student?.id };
+    return { success: true, studentId: newUser.student?.id, studentCode: resolvedCode, email: resolvedEmail };
   } catch (error: any) {
     console.error("Error creating student:", error);
     return { success: false, error: error.message || "Lỗi khi thêm học sinh." };
@@ -204,9 +256,23 @@ export async function importBulkStudents(classId: string, rows: BulkStudentRow[]
     if (!classId) return { success: false, error: "Chưa chọn lớp học.", count: 0 };
     if (!rows || rows.length === 0) return { success: false, error: "Danh sách nhập rỗng.", count: 0 };
 
+    let gradeLevel: number | undefined;
+    const cls = await prisma.classRoom.findUnique({
+      where: { id: classId },
+      select: { gradeLevel: true },
+    });
+    if (cls?.gradeLevel) gradeLevel = cls.gradeLevel;
+
+    const existingUsers = await prisma.user.findMany({ select: { email: true } });
+    const existingEmails = new Set(existingUsers.map((u) => u.email.toLowerCase()));
+    const existingStudents = await prisma.student.findMany({ select: { studentCode: true } });
+    const existingCodes = new Set(
+      existingStudents.map((s) => (s.studentCode ? s.studentCode.toLowerCase() : "")).filter(Boolean)
+    );
+
     let createdCount = 0;
     const errors: string[] = [];
-    const defaultPassword = "abc123";
+    const defaultPassword = DEFAULT_INITIAL_PASSWORD;
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     for (let i = 0; i < rows.length; i++) {
@@ -214,14 +280,17 @@ export async function importBulkStudents(classId: string, rows: BulkStudentRow[]
       const name = row.name ? row.name.trim() : "";
       if (!name) continue;
 
-      const code = (row.studentCode && row.studentCode.trim()) || `HS${Date.now().toString().slice(-6)}${i}`;
-      const email = (row.email && row.email.trim()) || generateStudentEmail(name, code);
-
-      const existing = await prisma.user.findUnique({ where: { email } });
-      if (existing) {
-        errors.push(`Dòng ${i + 1}: Email ${email} đã tồn tại.`);
-        continue;
-      }
+      const { studentCode: resolvedCode, email: resolvedEmail } = resolveUniqueStudentCodeAndEmail(
+        existingCodes,
+        existingEmails,
+        {
+          preferredCode: row.studentCode,
+          preferredEmail: row.email,
+          name,
+          gradeLevel,
+          startSequence: i + 1,
+        }
+      );
 
       let genderEnum: "MALE" | "FEMALE" | null = null;
       if (row.gender) {
@@ -234,14 +303,15 @@ export async function importBulkStudents(classId: string, rows: BulkStudentRow[]
         await prisma.user.create({
           data: {
             name,
-            email,
+            email: resolvedEmail,
             password: hashedPassword,
             role: "STUDENT",
             isApproved: true,
+            mustChangePassword: true,
             schoolId: teacherUser.schoolId || undefined,
             student: {
               create: {
-                studentCode: code,
+                studentCode: resolvedCode,
                 classId,
                 dob: row.dob ? new Date(row.dob) : null,
                 gender: genderEnum,
@@ -250,6 +320,9 @@ export async function importBulkStudents(classId: string, rows: BulkStudentRow[]
             },
           },
         });
+
+        existingEmails.add(resolvedEmail.toLowerCase());
+        existingCodes.add(resolvedCode.toLowerCase());
         createdCount++;
       } catch (err: any) {
         errors.push(`Dòng ${i + 1}: ${err.message || "Lỗi tạo học sinh"}`);

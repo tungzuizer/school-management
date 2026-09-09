@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin navigation (`/admin/schools`).
+ * 2. Affected APIs: `src/app/admin/schools/page.tsx`.
+ * 3. Schemas: `SchoolData`, `SelectItem`.
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -379,7 +387,7 @@ export default function SchoolsPage() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
-              placeholder="VD: Số 10 Lê Hồng Phong, Phường Đằng Hải, Quận Hải An, TP. Hải Phòng"
+              placeholder="VD: Số 26 Đinh Tiên Hoàng, Phường Đông Thành, TP. Ninh Bình, Tỉnh Ninh Bình"
             />
           </div>
 

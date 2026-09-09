@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin navigation menu (`/admin/finance`).
+ * 2. Affected APIs: `src/app/admin/finance/page.tsx`.
+ * 3. Schemas: `CampusFinancialSummary`.
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
+ */
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -236,7 +244,7 @@ export default function FinancialExpenditurePage() {
                   </h4>
                 </div>
                 <p className="text-sm text-slate-700 leading-relaxed">
-                  {data.aiRecommendations?.[0]?.content || "Hệ thống tự động giám sát và tối ưu hóa giải ngân định kỳ giữa các điểm trường theo chuẩn Sở GD&ĐT Hải Phòng."}
+                  {data.aiRecommendations?.[0]?.content || "Hệ thống tự động giám sát và tối ưu hóa giải ngân định kỳ giữa các điểm trường theo chuẩn Sở GD&ĐT Ninh Bình."}
                 </p>
                 <div className="pt-2 flex flex-wrap gap-3">
                   <button className="text-xs font-bold text-white bg-[#1a237e] hover:bg-blue-900 px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">

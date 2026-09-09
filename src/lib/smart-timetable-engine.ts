@@ -68,6 +68,8 @@ export interface TimetableGenerationConfig {
   afternoonPeriods?: number[]; // [5, 6, 7]
   fixedAssemblySlot?: { dayOfWeek: number; period: number }; // Thứ 2 Tiết 1
   fixedHomeroomSlot?: { dayOfWeek: number; period: number }; // Thứ 6 Tiết cuối (Tiết 7 hoặc Tiết 4)
+  fixedAssemblySubjectId?: string; // ID môn Chào cờ trong DB
+  fixedHomeroomSubjectId?: string; // ID môn Sinh hoạt lớp trong DB
   subjectShiftPreferences?: Record<string, ShiftType>; // Tên môn / ID -> Buổi ưu tiên
 }
 
@@ -223,12 +225,22 @@ export class SmartTimetableEngine {
       const homeroomTeacherId = cls.homeroomTeacherId || "GVCN_" + cls.classId;
       const homeroomTeacherName = cls.homeroomTeacherName || `GVCN ${cls.className}`;
 
+      const assemblySubjId =
+        this.config.fixedAssemblySubjectId ||
+        cls.demands.find((d) => d.subjectName.toLowerCase().includes("chào cờ"))?.subjectId ||
+        "SUB_CHAO_CO";
+
+      const homeroomSubjId =
+        this.config.fixedHomeroomSubjectId ||
+        cls.demands.find((d) => d.subjectName.toLowerCase().includes("sinh hoạt"))?.subjectId ||
+        "SUB_SINH_HOAT";
+
       // 1.1 Chào cờ (Thứ 2 - Tiết 1)
       const assemblySlot = this.config.fixedAssemblySlot || { dayOfWeek: 1, period: 1 };
       const assemblyPeriod: ScheduledPeriod = {
         classId: cls.classId,
         className: cls.className,
-        subjectId: "SUB_CHAO_CO",
+        subjectId: assemblySubjId,
         subjectName: "Chào cờ",
         teacherId: homeroomTeacherId,
         teacherName: homeroomTeacherName,
@@ -244,7 +256,7 @@ export class SmartTimetableEngine {
       const homeroomPeriod: ScheduledPeriod = {
         classId: cls.classId,
         className: cls.className,
-        subjectId: "SUB_SINH_HOAT",
+        subjectId: homeroomSubjId,
         subjectName: "Sinh hoạt lớp",
         teacherId: homeroomTeacherId,
         teacherName: homeroomTeacherName,
@@ -692,4 +704,193 @@ export class SmartTimetableEngine {
       conflicts,
     };
   }
+
+  /**
+   * Helper to check the impact on a teacher's shift count when adding or updating a slot
+   */
+  public checkTeacherShiftImpact(
+    schedules: ScheduledPeriod[],
+    teacherId: string,
+    dayOfWeek: number,
+    period: number,
+    excludeScheduleId?: string
+  ): {
+    willExceed: boolean;
+    currentCount: number;
+    newCount: number;
+    isNewShift: boolean;
+    shiftKey: string;
+    existingShifts: string[];
+  } {
+    const shift = getShiftForPeriod(period, this.config.morningPeriods);
+    const targetShiftKey = `${dayOfWeek}_${shift}`;
+    const maxAllowed = this.config.maxTeacherShiftsPerWeek || 5;
+
+    const teacherPeriods = schedules.filter(
+      (p) => p.teacherId === teacherId && (!excludeScheduleId || p.id !== excludeScheduleId)
+    );
+
+    const shiftSet = new Set<string>();
+    teacherPeriods.forEach((p) => {
+      shiftSet.add(`${p.dayOfWeek}_${p.shift}`);
+    });
+
+    const currentCount = shiftSet.size;
+    const isNewShift = !shiftSet.has(targetShiftKey);
+    const newCount = isNewShift ? currentCount + 1 : currentCount;
+    const willExceed = newCount > maxAllowed;
+
+    return {
+      willExceed,
+      currentCount,
+      newCount,
+      isNewShift,
+      shiftKey: targetShiftKey,
+      existingShifts: Array.from(shiftSet),
+    };
+  }
+}
+
+/**
+ * AI Smart Suggestions Generator for Schedule Conflicts / Over-limit warnings
+ */
+export interface AiScheduleSuggestion {
+  type: "TEACHER" | "SLOT";
+  title: string;
+  description: string;
+  teacherId?: string;
+  teacherName?: string;
+  dayOfWeek?: number;
+  period?: number;
+  shift?: ShiftType;
+}
+
+export function generateAiScheduleSuggestions(params: {
+  classId: string;
+  className?: string;
+  subjectId: string;
+  subjectName: string;
+  currentTeacherId: string;
+  dayOfWeek: number;
+  period: number;
+  allSchedules: ScheduledPeriod[];
+  availableTeachers: Array<{
+    id: string;
+    name: string;
+    specialty?: string | null;
+    teachingAssignments?: Array<{ subjectId: string }>;
+  }>;
+  maxShifts?: number;
+}): AiScheduleSuggestion[] {
+  const {
+    classId,
+    subjectId,
+    subjectName,
+    currentTeacherId,
+    dayOfWeek,
+    period,
+    allSchedules,
+    availableTeachers,
+    maxShifts = 5,
+  } = params;
+
+  const suggestions: AiScheduleSuggestion[] = [];
+  const shift = getShiftForPeriod(period);
+  const targetShiftKey = `${dayOfWeek}_${shift}`;
+
+  // 1. Suggest alternative qualified teachers who teach this subject and have < 5 shifts and are free
+  const qualifiedTeachers = availableTeachers.filter((t) => {
+    if (t.id === currentTeacherId) return false;
+    const matchesSubject =
+      t.teachingAssignments?.some((ta) => ta.subjectId === subjectId) ||
+      (t.specialty &&
+        (t.specialty.toLowerCase().includes(subjectName.toLowerCase()) ||
+          subjectName.toLowerCase().includes(t.specialty.toLowerCase())));
+    return matchesSubject;
+  });
+
+  for (const qTeacher of qualifiedTeachers) {
+    // Check if free at this slot
+    const isBusy = allSchedules.some(
+      (p) => p.teacherId === qTeacher.id && p.dayOfWeek === dayOfWeek && p.period === period
+    );
+    if (isBusy) continue;
+
+    // Check shift count
+    const tShifts = new Set<string>();
+    allSchedules
+      .filter((p) => p.teacherId === qTeacher.id)
+      .forEach((p) => tShifts.add(`${p.dayOfWeek}_${p.shift}`));
+
+    const willAddShift = !tShifts.has(targetShiftKey);
+    const afterCount = willAddShift ? tShifts.size + 1 : tShifts.size;
+
+    if (afterCount <= maxShifts) {
+      suggestions.push({
+        type: "TEACHER",
+        title: `Đổi sang GV ${qTeacher.name} (Tải: ${afterCount}/${maxShifts} buổi)`,
+        description: `Thầy/Cô ${qTeacher.name} cùng chuyên môn ${subjectName}, đang trống Tiết ${period} Thứ ${
+          dayOfWeek === 7 ? "CN" : dayOfWeek + 1
+        } và chỉ dạy ${afterCount}/${maxShifts} buổi/tuần.`,
+        teacherId: qTeacher.id,
+        teacherName: qTeacher.name,
+      });
+      if (suggestions.filter((s) => s.type === "TEACHER").length >= 2) break;
+    }
+  }
+
+  // 2. Suggest alternative slots in the week for the current teacher (where teacher already has a shift, so 0 extra shift added)
+  const currentTeacherShifts = new Set<string>();
+  allSchedules
+    .filter((p) => p.teacherId === currentTeacherId)
+    .forEach((p) => currentTeacherShifts.add(`${p.dayOfWeek}_${p.shift}`));
+
+  const allSlots = generateAvailableTimeSlots();
+  for (const candidateSlot of allSlots) {
+    if (candidateSlot.dayOfWeek === dayOfWeek && candidateSlot.period === period) continue;
+    // Skip fixed assembly and homeroom
+    if (candidateSlot.dayOfWeek === 1 && candidateSlot.period === 1) continue;
+    if (candidateSlot.dayOfWeek === 5 && (candidateSlot.period === 4 || candidateSlot.period === 7)) continue;
+
+    const candShiftKey = `${candidateSlot.dayOfWeek}_${candidateSlot.shift}`;
+
+    // Prefer slots where the teacher already teaches (does not increase shifts)
+    const isSameShift = currentTeacherShifts.has(candShiftKey);
+    if (!isSameShift && currentTeacherShifts.size >= maxShifts) continue;
+
+    // Check if teacher is free
+    const teacherBusy = allSchedules.some(
+      (p) =>
+        p.teacherId === currentTeacherId &&
+        p.dayOfWeek === candidateSlot.dayOfWeek &&
+        p.period === candidateSlot.period
+    );
+    if (teacherBusy) continue;
+
+    // Check if class is free
+    const classBusy = allSchedules.some(
+      (p) =>
+        p.classId === classId &&
+        p.dayOfWeek === candidateSlot.dayOfWeek &&
+        p.period === candidateSlot.period
+    );
+    if (classBusy) continue;
+
+    suggestions.push({
+      type: "SLOT",
+      title: `Chuyển sang Thứ ${candidateSlot.dayOfWeek === 7 ? "CN" : candidateSlot.dayOfWeek + 1} - Tiết ${
+        candidateSlot.period
+      } (${candidateSlot.shift === "MORNING" ? "Sáng" : "Chiều"})`,
+      description: isSameShift
+        ? `Giáo viên đã có lịch dạy ca này, không làm phát sinh thêm buổi dạy thứ ${currentTeacherShifts.size + 1}.`
+        : `Lớp và Giáo viên đều trống lịch, số buổi dạy của GV nằm trong ngưỡng cho phép (${currentTeacherShifts.size + 1}/${maxShifts}).`,
+      dayOfWeek: candidateSlot.dayOfWeek,
+      period: candidateSlot.period,
+      shift: candidateSlot.shift,
+    });
+
+    if (suggestions.filter((s) => s.type === "SLOT").length >= 2) break;
+  }
+
+  return suggestions;
 }

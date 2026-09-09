@@ -38,9 +38,9 @@ export async function getApprovalItems() {
     });
 
     const principalOrg = {
-      schoolName: currentAdmin?.school?.name || "Trường THPT Chuyên Trần Phú (Hải Phòng)",
-      districtWardName: currentAdmin?.districtWard?.name || "Quận Hải An - TP. Hải Phòng",
-      departmentName: currentAdmin?.department?.name || "Sở GD&ĐT TP. Hải Phòng",
+      schoolName: currentAdmin?.school?.name || "Trường THPT Trần Phú (Ninh Bình)",
+      districtWardName: currentAdmin?.districtWard?.name || "TP. Ninh Bình - Tỉnh Ninh Bình",
+      departmentName: currentAdmin?.department?.name || "Sở GD&ĐT Tỉnh Ninh Bình",
     };
 
     const [allSchools, lessonPlans, changeRequests, pendingTeachers] = await Promise.all([

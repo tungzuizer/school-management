@@ -7,7 +7,7 @@ import prisma from "@/lib/prisma";
  * 1. Importers/Callers: `src/app/admin/finance/page.tsx`
  * 2. Affected APIs: `getFinancialExpenditureData`
  * 3. Schemas: `School`, `Campus`, `ClassRoom`, `Student`
- * 4. Verbatim User Instruction: "/ecc:plan cấm sử dụng dữ liệu giả hay fake và xóa hết tất cả dữ liệu và sẽ tạo 2 điểm trường trần phú và  trường lương khách thiện hải phòng"
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa"
  */
 
 export interface CampusFinancialSummary {
@@ -113,7 +113,7 @@ export async function getFinancialExpenditureData(year: number = 2026, campusId?
       return entry;
     });
 
-    // Principal AI Financial Insights tailored to Hai Phong Schools
+    // Principal AI Financial Insights tailored to Ninh Binh Schools
     const aiRecommendations = [
       {
         type: "OPTIMIZATION",
@@ -123,7 +123,7 @@ export async function getFinancialExpenditureData(year: number = 2026, campusId?
       {
         type: "COST_SAVING",
         title: "Tối ưu hóa chi phí năng lượng và bảo dưỡng cơ sở vật chất",
-        content: "Áp dụng cơ chế đấu thầu bảo trì tập trung cho toàn bộ các điểm trường trực thuộc trường THPT Chuyên Trần Phú và THPT Lương Khánh Thiện ước tính tiết kiệm 12-15% chi phí vận hành hàng năm.",
+        content: "Áp dụng cơ chế đấu thầu bảo trì tập trung cho toàn bộ các điểm trường trực thuộc trường THPT Trần Phú và THPT Lương Khánh Thiện ước tính tiết kiệm 12-15% chi phí vận hành hàng năm.",
       },
       {
         type: "COMPLIANCE",

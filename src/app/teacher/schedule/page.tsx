@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Teacher Navigation (`/teacher/schedule`).
+ * 2. Affected APIs: `getTeacherSchedule` (`src/app/teacher/schedule/actions.ts`).
+ * 3. Schema: `Schedule`, `Subject`, `ClassRoom`, `Teacher`, `Attendance`.
+ * 4. Verbatim User Instruction: "thêm chức năng thời khóa biểu thông minh Các tiết Chào cờ sinh hoạt phải đc cố định vào thứ 2 và thứ 6. Các môn có thể được cố định buổi dạy. Và gv chỉ dạy 5 buổi/ tuần không bị trùng nhau. 1 ngày chỉ đc 7 tiết và phải thông minh và hỗ trợ ban giám hiệu lập thời khóa biểu"
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -35,6 +43,8 @@ const PERIOD_TIMES: Record<number, { label: string; time: string; shift: "MORNIN
 };
 
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  "Chào cờ": { bg: "bg-red-500/10", text: "text-red-700", border: "border-red-200" },
+  "Sinh hoạt": { bg: "bg-violet-500/10", text: "text-violet-700", border: "border-violet-200" },
   Toán: { bg: "bg-indigo-500/10", text: "text-indigo-700", border: "border-indigo-200" },
   "Ngữ Văn": { bg: "bg-emerald-500/10", text: "text-emerald-700", border: "border-emerald-200" },
   "Tiếng Anh": { bg: "bg-amber-500/10", text: "text-amber-700", border: "border-amber-200" },
