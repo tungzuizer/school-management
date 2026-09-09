@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Next.js Root Admin Layout for `/admin/*` (`src/app/admin/dashboard/page.tsx`, `src/app/admin/exam-analytics/page.tsx`, etc.).
  * 2. Uniqueness: Dual-Scroll independent workspace canvas with collapsible sidebar (w-72 <-> w-20), single active accordion auto-collapsing secondary items, and floating tooltips.
  * 3. Schema: `AdminProfile` (`id`, `name`, `email`, `isSuperAdmin`, `schoolName`, `departmentName`), `MenuGroup`, `MenuItem`.
- * 4. Verbatim User Instruction: "tôi muốn màu nó như phần đăng nhập và mỗi tài khoản sẽ 1 sắc thái khác nhua hiệu trưởng giáo viên học sinh".
+ * 4. Verbatim User Instruction: "cho cao lên nữa".
  */
 
 "use client";
@@ -519,7 +519,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         />
 
         {/* Page content independent scrollable canvas */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-28 lg:pb-8">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-32 lg:pb-8">
           <div className="max-w-[1680px] mx-auto w-full">
             {children}
           </div>

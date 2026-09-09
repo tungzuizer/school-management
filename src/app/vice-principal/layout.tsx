@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Next.js root layout for `/vice-principal/*` (`src/app/vice-principal/dashboard/page.tsx`, `src/app/vice-principal/classes/page.tsx`, `src/app/vice-principal/students/page.tsx`, `src/app/vice-principal/attendance/page.tsx`, `src/app/vice-principal/journals/page.tsx`, `src/app/vice-principal/lesson-plans/page.tsx`, `src/app/vice-principal/warnings/page.tsx`).
  * 2. Affected APIs: `VicePrincipalLayout` default export in `src/app/vice-principal/layout.tsx`.
  * 3. Schema: `MenuItem` (`label`: string, `href`: string, `icon`: LucideIcon, `badge`?: string, `description`?: string), `MenuGroup` (`id`: string, `code`: string, `title`: string, `tag`: string, `accent`: "blue" | "emerald" | "sky", `icon`: LucideIcon, `items`: MenuItem[]).
- * 4. Verbatim User Instruction: "tôi muốn màu nó như phần đăng nhập và mỗi tài khoản sẽ 1 sắc thái khác nhua hiệu trưởng giáo viên học sinh".
+ * 4. Verbatim User Instruction: "cho cao lên nữa".
  */
 
 "use client";
@@ -390,7 +390,7 @@ function VicePrincipalLayoutInner({ children }: { children: React.ReactNode }) {
         />
 
         {/* Page content independent scrollable canvas */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-28 lg:pb-8">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-32 lg:pb-8">
           <div className="max-w-[1680px] mx-auto w-full">
             {children}
           </div>

@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Next.js root layout for `/teacher/*` (e.g. `src/app/teacher/dashboard/page.tsx`, `src/app/teacher/students/page.tsx`, `src/app/teacher/seating-cinema/page.tsx`, `src/app/teacher/commendations/page.tsx`, `src/app/teacher/homeroom/page.tsx`, `src/app/teacher/attendance/page.tsx`, `src/app/teacher/transcript/page.tsx`, `src/app/teacher/daily-report/page.tsx`, `src/app/teacher/journal/page.tsx`, `src/app/teacher/lesson-plans/page.tsx`, `src/app/teacher/grades/page.tsx`, `src/app/teacher/subject-head/page.tsx`, `src/app/teacher/profile/page.tsx`).
  * 2. Affected APIs: `TeacherLayout` default export in `src/app/teacher/layout.tsx`.
  * 3. Schema: `NavItem` (`label`: string, `href`: string, `icon`: LucideIcon, `badge`?: string, `description`?: string), `WorkspaceMode` (`id`: string, `code`: string, `title`: string, `tag`: string, `accent`: "indigo" | "emerald" | "blue" | "sky" | "purple", `items`: NavItem[]).
- * 4. Verbatim User Instruction: "tôi muốn màu nó như phần đăng nhập và mỗi tài khoản sẽ 1 sắc thái khác nhua hiệu trưởng giáo viên học sinh".
+ * 4. Verbatim User Instruction: "cho cao lên nữa".
  */
 
 "use client";
@@ -444,7 +444,7 @@ function TeacherLayoutInner({ children }: { children: React.ReactNode }) {
         />
 
         {/* Page content independent scrollable canvas */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-28 lg:pb-8">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-2.5 sm:p-4 md:p-6 pb-32 lg:pb-8">
           <div className="max-w-[1680px] mx-auto w-full">
             {children}
           </div>

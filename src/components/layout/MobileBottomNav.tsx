@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Root Role Layouts (`src/app/admin/layout.tsx`, `src/app/teacher/layout.tsx`, `src/app/student/layout.tsx`, `src/app/vice-principal/layout.tsx`, `src/app/department/layout.tsx`, `src/app/ward/layout.tsx`).
  * 2. Uniqueness: Modern Floating Liquid Glass Dock Mobile Bottom Bar (iPhone Ultra-Pill circular shape with luminous Apple active dot and synchronized role-based accents).
  * 3. Schema: `MobileBottomNavProps` (`role`: string, `onOpenMenu`: () => void, `isMenuOpen`?: boolean).
- * 4. Verbatim User Instruction: "dùng icon giống như menu và tôi muốn thanh tap vụ đó giống như giao diện trang chủ của iphone liquid glass và tròn chứ đường vuông", "tôi muốn màu nó như phần đăng nhập và mỗi tài khoản sẽ 1 sắc thái khác nhua hiệu trưởng giáo viên học sinh".
+ * 4. Verbatim User Instruction: "cho cao lên nữa".
  */
 
 "use client";
@@ -141,10 +141,10 @@ export default function MobileBottomNav({
   return (
     <nav
       aria-label="Điều hướng nhanh di động"
-      className="fixed bottom-3 inset-x-3 sm:inset-x-6 sm:bottom-4 z-40 lg:hidden max-w-[380px] mx-auto select-none"
+      className="fixed bottom-3.5 inset-x-3 sm:inset-x-6 sm:bottom-5 z-40 lg:hidden max-w-[390px] mx-auto select-none"
     >
       {/* iPhone Liquid Glass Pill Bar */}
-      <div className="bg-slate-950/80 backdrop-blur-3xl border border-white/25 shadow-[0_14px_36px_-6px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35)] rounded-full px-3.5 py-1.5 flex items-center justify-between gap-1 text-slate-300">
+      <div className="bg-slate-950/85 backdrop-blur-3xl border border-white/25 shadow-[0_16px_40px_-6px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35)] rounded-full px-4 py-2.5 flex items-center justify-between gap-1 text-slate-300">
         {/* Left 2 Quick Items */}
         {leftItems.map((item) => {
           const isActive =
@@ -163,22 +163,22 @@ export default function MobileBottomNav({
               key={`${item.label}-${item.href}`}
               href={item.href}
               prefetch={true}
-              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-full transition-all duration-300 active:scale-90 relative group ${
+              className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all duration-300 active:scale-90 relative group ${
                 isActive
                   ? "text-white font-semibold"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <Icon
-                className={`w-5 h-5 transition-all duration-300 ${
+                className={`w-5.5 h-5.5 transition-all duration-300 ${
                   isActive
                     ? theme.activeIcon
                     : "text-slate-400 group-hover:text-slate-200"
                 }`}
               />
               <span
-                className={`text-[10px] mt-1 tracking-tight truncate max-w-[62px] leading-tight transition-colors duration-200 ${
-                  isActive ? theme.activeText : "text-slate-400 group-hover:text-slate-200"
+                className={`text-[11px] mt-1 tracking-tight truncate max-w-[66px] leading-tight transition-colors duration-200 ${
+                  isActive ? theme.activeText : "text-slate-400 group-hover:text-slate-200 font-medium"
                 }`}
               >
                 {item.label}
@@ -197,23 +197,23 @@ export default function MobileBottomNav({
           onClick={onOpenMenu}
           aria-label={isMenuOpen ? "Đóng danh mục tính năng" : "Mở danh mục tính năng"}
           aria-expanded={isMenuOpen}
-          className="flex-1 flex flex-col items-center justify-center -my-3.5 py-0.5 px-0.5 transition-all duration-200 active:scale-90 cursor-pointer group relative"
+          className="flex-1 flex flex-col items-center justify-center -my-4.5 py-0.5 px-0.5 transition-all duration-200 active:scale-90 cursor-pointer group relative"
         >
           <div
-            className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border ${
+            className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 border ${
               isMenuOpen
                 ? theme.menuOpenBtn
-                : "bg-slate-900/85 backdrop-blur-2xl text-slate-200 border-white/30 shadow-[0_8px_20px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:bg-slate-800 hover:text-white"
+                : "bg-slate-900/90 backdrop-blur-2xl text-slate-200 border-white/35 shadow-[0_10px_24px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.45)] hover:bg-slate-800 hover:text-white"
             }`}
           >
             <Menu
-              className={`w-5 h-5 transition-transform duration-300 ${
+              className={`w-5.5 h-5.5 transition-transform duration-300 ${
                 isMenuOpen ? "rotate-90 text-white" : "group-hover:scale-110"
               }`}
             />
           </div>
           <span
-            className={`text-[10px] mt-1 font-extrabold tracking-tight transition-colors duration-200 ${
+            className={`text-[11px] mt-1 font-extrabold tracking-tight transition-colors duration-200 ${
               isMenuOpen ? theme.menuOpenText : "text-slate-300"
             }`}
           >
@@ -239,22 +239,22 @@ export default function MobileBottomNav({
               key={`${item.label}-${item.href}`}
               href={item.href}
               prefetch={true}
-              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-full transition-all duration-300 active:scale-90 relative group ${
+              className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all duration-300 active:scale-90 relative group ${
                 isActive
                   ? "text-white font-semibold"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <Icon
-                className={`w-5 h-5 transition-all duration-300 ${
+                className={`w-5.5 h-5.5 transition-all duration-300 ${
                   isActive
                     ? theme.activeIcon
                     : "text-slate-400 group-hover:text-slate-200"
                 }`}
               />
               <span
-                className={`text-[10px] mt-1 tracking-tight truncate max-w-[62px] leading-tight transition-colors duration-200 ${
-                  isActive ? theme.activeText : "text-slate-400 group-hover:text-slate-200"
+                className={`text-[11px] mt-1 tracking-tight truncate max-w-[66px] leading-tight transition-colors duration-200 ${
+                  isActive ? theme.activeText : "text-slate-400 group-hover:text-slate-200 font-medium"
                 }`}
               >
                 {item.label}
