@@ -1,7 +1,11 @@
-/*
-  THESIS: Pristine Luminous Glassmorphism & Vibrant Architectural Mesh ("Sáng sủa, Rực rỡ, Xịn xò & Hiện đại").
-  Features: Multi-layer Aurora Orbs, Micro-dot Architectural Mesh, Luminous Floating Node Canvas, Cursor Spotlight Glow & 3D Card Tilt.
-*/
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js auth routing & client navigations to `/login` across the entire application.
+ * 2. Affected APIs: `LoginFormContent` and `LoginPage` default export in `src/app/login/page.tsx`.
+ * 3. Schema: NextAuth `useSession()` status and `useSearchParams()` query parameters (`signout`, `registered`, `email`).
+ * 4. Verbatim User Instruction: "khi bấm đăng xuất vân lỗi như vây" -> "theo khuyến nghị của bạn".
+ */
+
 "use client";
 
 import { signIn, getSession, useSession } from "next-auth/react";
@@ -192,22 +196,26 @@ function LoginFormContent() {
     cardRef.current.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
   };
 
+  const isSignOut = searchParams.get("signout") === "success";
+
   useEffect(() => {
     const isRegistered = searchParams.get("registered");
     const registeredEmail = searchParams.get("email");
     if (registeredEmail) setEmail(registeredEmail);
     if (isRegistered === "1") {
       setSuccessNotice("Đăng ký tài khoản thành công! Vui lòng nhập mật khẩu để đăng nhập.");
+    } else if (isSignOut) {
+      setSuccessNotice("Đã đăng xuất thành công khỏi hệ thống. Vui lòng đăng nhập lại.");
     }
-  }, [searchParams]);
+  }, [searchParams, isSignOut]);
 
   const { data: session, status } = useSession();
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user) {
+    if (!isSignOut && status === "authenticated" && session?.user) {
       redirectByRole(session.user.email || undefined);
     }
-  }, [status, session]);
+  }, [status, session, isSignOut]);
 
   const getDashboardPathForRole = (role?: string) => {
     switch (role) {
@@ -304,7 +312,7 @@ function LoginFormContent() {
     }
   };
 
-  if (status === "loading") {
+  if (!isSignOut && status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
@@ -312,7 +320,7 @@ function LoginFormContent() {
     );
   }
 
-  if (status === "authenticated") {
+  if (!isSignOut && status === "authenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="flex items-center gap-3 text-sm font-semibold text-sky-300">
@@ -475,11 +483,11 @@ function LoginFormContent() {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             <div>
-              <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-1.5">
                 Địa chỉ Email
               </label>
               <div className="relative group">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-600 group-focus-within:text-sky-600 transition-colors pointer-events-none" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-sky-800 group-focus-within:text-sky-600 transition-colors pointer-events-none" />
                 <input
                   id="email"
                   type="email"
@@ -495,12 +503,12 @@ function LoginFormContent() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wider text-slate-800">
                   Mật khẩu
                 </label>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-600 group-focus-within:text-sky-600 transition-colors pointer-events-none" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-sky-800 group-focus-within:text-sky-600 transition-colors pointer-events-none" />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -514,7 +522,7 @@ function LoginFormContent() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-700 hover:text-sky-700 hover:bg-sky-50 p-1.5 rounded-lg transition-all"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sky-900 hover:text-sky-950 hover:bg-sky-100/80 p-1.5 rounded-lg transition-all"
                   aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
