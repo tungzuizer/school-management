@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { handleClientSignOut } from "@/lib/client-auth";
 import { Lock, AlertCircle, CheckCircle2, ShieldAlert, KeyRound } from "lucide-react";
 import { changeOwnPassword } from "@/app/actions/user-password";
 
@@ -122,7 +123,7 @@ export default function ForcePasswordChangeModal() {
 
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => handleClientSignOut("/login")}
               className="w-full py-2.5 text-gray-500 hover:text-gray-700 font-semibold text-xs transition-colors"
             >
               Đăng xuất tài khoản

@@ -11,7 +11,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { handleClientSignOut } from "@/lib/client-auth";
 import {
   Bell,
   Search,
@@ -98,12 +99,12 @@ export default function Header({
               onClick={onToggleCollapse}
               aria-label={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
               title={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
-              className="hidden lg:flex items-center justify-center p-2 min-h-[40px] min-w-[40px] rounded-xl text-slate-800 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 transition-all active-press cursor-pointer group"
+              className="hidden lg:flex items-center justify-center p-2 min-h-[40px] min-w-[40px] rounded-xl text-slate-900 hover:text-blue-700 hover:bg-blue-50/80 border border-slate-200 transition-all active-press cursor-pointer group"
             >
               {isCollapsed ? (
                 <PanelLeft className="w-5 h-5 text-blue-600" aria-hidden="true" />
               ) : (
-                <PanelLeftClose className="w-5 h-5 text-slate-700 group-hover:text-blue-700 transition-colors" aria-hidden="true" />
+                <PanelLeftClose className="w-5 h-5 text-slate-800 group-hover:text-blue-700 transition-colors" aria-hidden="true" />
               )}
             </button>
           )}
@@ -228,7 +229,7 @@ export default function Header({
                       <span>Đổi mật khẩu</span>
                     </button>
                     <button
-                      onClick={() => signOut({ callbackUrl: "/login" })}
+                      onClick={() => handleClientSignOut("/login")}
                       className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] text-xs text-rose-700 font-extrabold rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 text-rose-600" aria-hidden="true" />
