@@ -10,7 +10,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { handleClientSignOut } from "@/lib/client-auth";
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -353,7 +354,7 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="relative group">
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => handleClientSignOut("/login")}
                 aria-label="Đăng xuất"
                 className="w-full flex items-center justify-center h-10 text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-xl transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               >
@@ -364,7 +365,7 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
           ) : (
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => handleClientSignOut("/login")}
               className="w-full flex items-center justify-center px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 border border-rose-200/60 hover:border-rose-300 bg-white/70 rounded-xl transition font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 shadow-2xs"
             >
               <span>Đăng xuất tài khoản</span>

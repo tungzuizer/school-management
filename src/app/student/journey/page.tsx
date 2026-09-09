@@ -3,6 +3,8 @@ import StudentJourneyViewClient from "./journey-client";
 import Link from "next/link";
 import { Compass } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Hành Trình Học Tập Của Tôi | Học Sinh & Phụ Huynh",
   description: "Theo dõi quá trình tiến bộ học tập, phong độ thi cử và kế hoạch đồng hành",

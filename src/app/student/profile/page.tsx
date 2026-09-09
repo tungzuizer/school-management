@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { handleClientSignOut } from "@/lib/client-auth";
 import {
   User,
   Mail,
@@ -113,7 +114,7 @@ export default function StudentProfilePage() {
         </button>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => handleClientSignOut("/login")}
           className="flex items-center gap-3 px-4 py-4 bg-rose-50 rounded-3xl border border-rose-200/80 shadow-sm hover:shadow-md hover:bg-rose-100 hover:border-rose-300 hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer text-left"
         >
           <div className="w-10 h-10 rounded-2xl bg-rose-100 flex items-center justify-center group-hover:bg-rose-600 transition-colors shrink-0">

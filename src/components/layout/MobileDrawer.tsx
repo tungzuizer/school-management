@@ -11,7 +11,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { handleClientSignOut } from "@/lib/client-auth";
 import {
   X,
   Search,
@@ -487,7 +487,7 @@ export default function MobileDrawer({
 
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => handleClientSignOut("/login")}
                 className="w-full flex items-center justify-center gap-1.5 px-3 py-2 min-h-[38px] rounded-xl bg-rose-500/10 border border-rose-400/40 text-rose-700 hover:bg-rose-500/20 text-xs font-bold transition-all cursor-pointer shadow-2xs"
               >
                 <LogOut className="w-3.5 h-3.5" />

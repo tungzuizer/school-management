@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { handleClientSignOut } from "@/lib/client-auth";
 import { useState } from "react";
 import {
   LogOut,
@@ -192,11 +192,11 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
         {/* Footer: Logout */}
         <div className="border-t border-slate-800/80 p-3 relative">
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-3.5 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-slate-100 hover:bg-rose-500/25 hover:text-white transition-all duration-200 active-press cursor-pointer group"
+            onClick={() => handleClientSignOut("/login")}
+            className="flex items-center gap-3.5 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white hover:bg-rose-500/25 hover:text-white transition-all duration-200 active-press cursor-pointer group"
             title="Đăng xuất"
           >
-            <LogOut className="w-5 h-5 shrink-0 text-slate-300 group-hover:text-white" />
+            <LogOut className="w-5 h-5 shrink-0 text-white/80 group-hover:text-white" />
             <span>Đăng xuất</span>
           </button>
         </div>
@@ -306,7 +306,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
               {/* Logout in mobile menu */}
               <div className="border-t border-slate-100 mt-2 pt-2">
                 <button
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={() => handleClientSignOut("/login")}
                   className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                 >
                   <LogOut className="w-5 h-5 shrink-0" />
