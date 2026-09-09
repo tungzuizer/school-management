@@ -1,31 +1,42 @@
 /**
- * Công thức tạo Email học sinh chuẩn theo yêu cầu:
- * Email = Tên + Chữ cái đầu của Họ & Đệm + Mã số học sinh + @gmail.com
- * Ví dụ: Nguyễn Việt Tùng & FPT-HS139 -> tungnvfpths139@gmail.com
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/admin/students/actions.ts`, `src/app/teacher/students/actions.ts`, `src/app/teacher/homeroom/actions.ts`, `src/components/admin/SystemAccountsModal.tsx`, Vitest tests.
+ * 2. Affected APIs: `generateStudentEmail` utility function for student account and email generation.
+ * 3. Data Schemas: `User` model `email` field in Prisma schema (`prisma.user.email`).
+ * 4. Verbatim User Instruction: "tôi muốn tài khoản email là mã sinh viên + @gmail.com".
  */
-export function generateStudentEmail(name: string, studentCode: string): string {
-  if (!name || !studentCode) return "student@gmail.com";
 
-  // Loại bỏ dấu tiếng Việt, chuyển chữ thường
-  const unaccented = name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "d")
-    .toLowerCase()
-    .trim();
+/**
+ * Công thức tạo Email học sinh chuẩn theo yêu cầu:
+ * Email = Mã học sinh (chữ thường, làm sạch ký tự) + @gmail.com
+ * Ví dụ:
+ * - Mã "HS001" -> hs001@gmail.com
+ * - Mã "HS2026101" -> hs2026101@gmail.com
+ * - Mã "FPT-HS139" -> fpths139@gmail.com
+ */
+export function generateStudentEmail(name?: string, studentCode?: string): string {
+  const code = (studentCode || "").trim();
+  if (code) {
+    const cleanCode = code.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (cleanCode) {
+      return `${cleanCode}@gmail.com`;
+    }
+  }
 
-  const parts = unaccented.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "student@gmail.com";
+  // Fallback nếu chưa có mã số học sinh
+  if (name && name.trim()) {
+    const unaccented = name
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "d")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]/g, "");
+    if (unaccented) {
+      return `hs.${unaccented}@gmail.com`;
+    }
+  }
 
-  // Tên = từ cuối cùng (VD: "tung")
-  const firstName = parts[parts.length - 1];
-
-  // Ký tự đầu của Họ và Đệm (VD: "nguyen viet" -> "n", "v" -> "nv")
-  const initials = parts.slice(0, parts.length - 1).map((p) => p[0]).join("");
-
-  // Mã số học sinh làm sạch (VD: "FPT-HS139" -> "fpths139")
-  const cleanCode = studentCode.toLowerCase().replace(/[^a-z0-9]/g, "");
-
-  return `${firstName}${initials}${cleanCode}@gmail.com`;
+  return "student@gmail.com";
 }

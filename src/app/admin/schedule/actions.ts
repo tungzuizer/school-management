@@ -20,6 +20,8 @@ import {
   TimetableGenerationConfig,
   DEFAULT_TIMETABLE_CONFIG,
   getShiftForPeriod,
+  generateAiScheduleSuggestions,
+  AiScheduleSuggestion,
 } from "@/lib/smart-timetable-engine";
 
 function revalidateSchedulePaths() {
@@ -123,6 +125,15 @@ export async function getScheduleData(classId?: string, schoolId?: string, dateS
       id: true,
       name: true,
       gradeLevel: true,
+      schoolId: true,
+      homeroomTeacherId: true,
+      homeroomTeacher: {
+        select: {
+          id: true,
+          specialty: true,
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
       school: { select: { id: true, name: true } },
     },
     orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
@@ -176,13 +187,23 @@ export async function getScheduleData(classId?: string, schoolId?: string, dateS
 }
 
 export async function getScheduleFormData(schoolId?: string) {
-  const [subjects, teachers] = await Promise.all([
+  const subjectWhere = schoolId && schoolId !== "ALL"
+    ? {
+        OR: [
+          { subjectGroup: { schoolId } },
+          { subjectGroupId: null },
+        ],
+      }
+    : undefined;
+
+  const [subjectsRaw, teachers, allSchedules] = await Promise.all([
     prisma.subject.findMany({
+      where: subjectWhere,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     prisma.teacher.findMany({
-      where: schoolId
+      where: schoolId && schoolId !== "ALL"
         ? {
             user: { schoolId },
           }
@@ -191,19 +212,212 @@ export async function getScheduleFormData(schoolId?: string) {
         id: true,
         specialty: true,
         user: { select: { id: true, name: true, email: true } },
-        homeroomClasses: { select: { school: { select: { id: true, name: true } } } },
+        homeroomClasses: { select: { id: true, name: true, school: { select: { id: true, name: true } } } },
         teachingAssignments: {
           select: {
             subjectId: true,
-            classRoom: { select: { school: { select: { id: true, name: true } } } },
+            classRoom: { select: { id: true, name: true, school: { select: { id: true, name: true } } } },
           },
         },
       },
       orderBy: { user: { name: "asc" } },
     }),
+    prisma.schedule.findMany({
+      select: {
+        teacherId: true,
+        dayOfWeek: true,
+        period: true,
+      },
+    }),
   ]);
 
-  return { subjects, teachers };
+  // Deduplicate subjects by normalized name so each distinct subject appears only once in the dropdown
+  const seenSubjectNames = new Set<string>();
+  const subjects: Array<{ id: string; name: string }> = [];
+  for (const s of subjectsRaw) {
+    const key = normalizeStr(s.name);
+    if (!seenSubjectNames.has(key)) {
+      seenSubjectNames.add(key);
+      subjects.push({ id: s.id, name: s.name });
+    }
+  }
+
+  // Compute shifts for each teacher
+  const teacherShiftsMap = new Map<string, Set<string>>();
+  for (const s of allSchedules) {
+    if (!teacherShiftsMap.has(s.teacherId)) {
+      teacherShiftsMap.set(s.teacherId, new Set());
+    }
+    const shift = getShiftForPeriod(s.period);
+    teacherShiftsMap.get(s.teacherId)!.add(`${s.dayOfWeek}_${shift}`);
+  }
+
+  const enrichedTeachers = teachers.map((t) => {
+    const shiftsCount = teacherShiftsMap.get(t.id)?.size || 0;
+    return {
+      ...t,
+      currentShiftsCount: shiftsCount,
+      isOptimalForNewShift: shiftsCount < 5,
+    };
+  });
+
+  return { subjects, teachers: enrichedTeachers };
+}
+
+/**
+ * Validates a single schedule entry before creation/update:
+ * - Hard constraint 1: Chào cờ (Mon P1) must be assigned to Homeroom Teacher (GVCN)
+ * - Hard constraint 2: Teacher conflict (teacher in another class at the same time)
+ * - Soft constraint with user override & AI suggestion: Teacher teaching > 5 shifts/week
+ */
+export async function validateScheduleEntryAction(data: {
+  classId: string;
+  subjectId: string;
+  teacherId: string;
+  dayOfWeek: number;
+  period: number;
+  existingScheduleId?: string;
+}): Promise<{
+  valid: boolean;
+  hardError?: string;
+  softWarning?: boolean;
+  warningMessage?: string;
+  currentShifts?: number;
+  newShifts?: number;
+  aiSuggestions?: AiScheduleSuggestion[];
+}> {
+  try {
+    const [targetClass, teacher, subject, allSchedulesRaw, allTeachersRaw] = await Promise.all([
+      prisma.classRoom.findUnique({
+        where: { id: data.classId },
+        include: {
+          homeroomTeacher: { include: { user: { select: { id: true, name: true } } } },
+        },
+      }),
+      prisma.teacher.findUnique({
+        where: { id: data.teacherId },
+        include: { user: { select: { id: true, name: true, schoolId: true } } },
+      }),
+      prisma.subject.findUnique({
+        where: { id: data.subjectId },
+        select: { id: true, name: true },
+      }),
+      prisma.schedule.findMany({
+        include: {
+          subject: { select: { id: true, name: true } },
+          teacher: { include: { user: { select: { id: true, name: true } } } },
+          classRoom: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.teacher.findMany({
+        include: {
+          user: { select: { id: true, name: true } },
+          teachingAssignments: { select: { subjectId: true } },
+        },
+      }),
+    ]);
+
+    if (!targetClass) {
+      return { valid: false, hardError: "Không tìm thấy lớp học trong hệ thống." };
+    }
+    if (!teacher) {
+      return { valid: false, hardError: "Không tìm thấy giáo viên trong hệ thống." };
+    }
+    if (!subject) {
+      return { valid: false, hardError: "Không tìm thấy môn học trong hệ thống." };
+    }
+
+    // 1. Check Chào Cờ (Mon P1) constraint
+    const isMonP1 = data.dayOfWeek === 1 && data.period === 1;
+    const isChaoCo = normalizeStr(subject.name).includes("chaoco");
+    if (isMonP1 || isChaoCo) {
+      if (targetClass.homeroomTeacherId && data.teacherId !== targetClass.homeroomTeacherId) {
+        const gvcnName = targetClass.homeroomTeacher?.user.name || "GVCN";
+        return {
+          valid: false,
+          hardError: `Tiết Chào cờ (Thứ 2 - Tiết 1) là tiết cố định dành riêng cho Giáo viên Chủ nhiệm (${gvcnName}) của lớp ${targetClass.name}.`,
+        };
+      }
+    }
+
+    // 2. Check Teacher Double-Booking (Hard Constraint)
+    const teacherConflict = allSchedulesRaw.find(
+      (s) =>
+        s.teacherId === data.teacherId &&
+        s.dayOfWeek === data.dayOfWeek &&
+        s.period === data.period &&
+        (!data.existingScheduleId || s.id !== data.existingScheduleId) &&
+        s.classId !== data.classId
+    );
+
+    if (teacherConflict) {
+      return {
+        valid: false,
+        hardError: `Giáo viên ${teacher.user.name} đã có lịch dạy ở lớp ${teacherConflict.classRoom.name} vào Thứ ${
+          data.dayOfWeek === 7 ? "Chủ Nhật" : data.dayOfWeek + 1
+        } - Tiết ${data.period}.`,
+      };
+    }
+
+    // 3. Check Teacher Shift Impact (Soft Constraint: Max 5 shifts/week)
+    const scheduledPeriods: ScheduledPeriod[] = allSchedulesRaw.map((s) => ({
+      id: s.id,
+      classId: s.classId,
+      className: s.classRoom.name,
+      subjectId: s.subjectId,
+      subjectName: s.subject.name,
+      teacherId: s.teacherId,
+      teacherName: s.teacher.user.name,
+      dayOfWeek: s.dayOfWeek,
+      period: s.period,
+      shift: getShiftForPeriod(s.period),
+      room: s.room,
+    }));
+
+    const engine = new SmartTimetableEngine();
+    const impact = engine.checkTeacherShiftImpact(
+      scheduledPeriods,
+      data.teacherId,
+      data.dayOfWeek,
+      data.period,
+      data.existingScheduleId
+    );
+
+    if (impact.willExceed) {
+      const availableTeachersForSuggestions = allTeachersRaw.map((t) => ({
+        id: t.id,
+        name: t.user.name,
+        specialty: t.specialty,
+        teachingAssignments: t.teachingAssignments,
+      }));
+
+      const aiSuggestions = generateAiScheduleSuggestions({
+        classId: data.classId,
+        className: targetClass.name,
+        subjectId: data.subjectId,
+        subjectName: subject.name,
+        currentTeacherId: data.teacherId,
+        dayOfWeek: data.dayOfWeek,
+        period: data.period,
+        allSchedules: scheduledPeriods,
+        availableTeachers: availableTeachersForSuggestions,
+        maxShifts: 5,
+      });
+
+      return {
+        valid: true,
+        softWarning: true,
+        warningMessage: `⚠️ Cảnh báo định mức: Thầy/Cô ${teacher.user.name} hiện đã dạy ${impact.currentCount} buổi/tuần. Việc xếp thêm tiết này sẽ làm tăng lên ${impact.newCount} buổi (vượt định mức tối đa 5 buổi/tuần).`,
+        currentShifts: impact.currentCount,
+        newShifts: impact.newCount,
+        aiSuggestions,
+      };
+    }
+
+    return { valid: true };
+  } catch (err: any) {
+    return { valid: false, hardError: `Lỗi kiểm tra tính hợp lệ: ${err.message}` };
+  }
 }
 
 export async function createScheduleEntry(data: {
@@ -213,7 +427,31 @@ export async function createScheduleEntry(data: {
   dayOfWeek: number;
   period: number;
   room?: string;
+  overrideShiftCap?: boolean;
 }) {
+  // Pre-validate
+  const validation = await validateScheduleEntryAction({
+    classId: data.classId,
+    subjectId: data.subjectId,
+    teacherId: data.teacherId,
+    dayOfWeek: data.dayOfWeek,
+    period: data.period,
+  });
+
+  if (!validation.valid) {
+    return { error: validation.hardError || "Dữ liệu tiết học không hợp lệ" };
+  }
+
+  if (validation.softWarning && !data.overrideShiftCap) {
+    return {
+      softWarning: true,
+      error: validation.warningMessage,
+      currentShifts: validation.currentShifts,
+      newShifts: validation.newShifts,
+      aiSuggestions: validation.aiSuggestions,
+    };
+  }
+
   // Check for class conflict (same class, same day, same period)
   const existing = await prisma.schedule.findFirst({
     where: {
@@ -233,6 +471,7 @@ export async function createScheduleEntry(data: {
         room: data.room || null,
       },
     });
+    revalidateSchedulePaths();
     return { success: true, updated: true };
   }
 
@@ -249,26 +488,6 @@ export async function createScheduleEntry(data: {
   if (targetClass && teacher?.user?.schoolId && teacher.user.schoolId !== targetClass.schoolId) {
     return {
       error: `Giáo viên ${teacher.user.name} thuộc trường khác, không thể phân công dạy ở lớp ${targetClass.name}.`,
-    };
-  }
-
-  // Check teacher conflict (same teacher, same day, same period in another class)
-  const teacherConflict = await prisma.schedule.findFirst({
-    where: {
-      teacherId: data.teacherId,
-      dayOfWeek: data.dayOfWeek,
-      period: data.period,
-    },
-    include: {
-      classRoom: { select: { name: true } },
-    },
-  });
-
-  if (teacherConflict) {
-    return {
-      error: `Giáo viên đã có lịch dạy ở lớp ${teacherConflict.classRoom.name} vào Thứ ${
-        data.dayOfWeek === 7 ? "Chủ Nhật" : data.dayOfWeek + 1
-      } - Tiết ${data.period}`,
     };
   }
 
@@ -293,6 +512,7 @@ export async function updateScheduleEntry(
     subjectId: string;
     teacherId: string;
     room?: string;
+    overrideShiftCap?: boolean;
   }
 ) {
   const current = await prisma.schedule.findUnique({
@@ -301,6 +521,30 @@ export async function updateScheduleEntry(
 
   if (!current) {
     return { error: "Không tìm thấy tiết học cần cập nhật" };
+  }
+
+  // Pre-validate
+  const validation = await validateScheduleEntryAction({
+    classId: current.classId,
+    subjectId: data.subjectId,
+    teacherId: data.teacherId,
+    dayOfWeek: current.dayOfWeek,
+    period: current.period,
+    existingScheduleId: id,
+  });
+
+  if (!validation.valid) {
+    return { error: validation.hardError || "Dữ liệu tiết học không hợp lệ" };
+  }
+
+  if (validation.softWarning && !data.overrideShiftCap) {
+    return {
+      softWarning: true,
+      error: validation.warningMessage,
+      currentShifts: validation.currentShifts,
+      newShifts: validation.newShifts,
+      aiSuggestions: validation.aiSuggestions,
+    };
   }
 
   // Verify teacher belongs to the same school as the target class
@@ -316,25 +560,6 @@ export async function updateScheduleEntry(
   if (targetClass && teacher?.user?.schoolId && teacher.user.schoolId !== targetClass.schoolId) {
     return {
       error: `Giáo viên ${teacher.user.name} thuộc trường khác, không thể phân công dạy ở lớp ${targetClass.name}.`,
-    };
-  }
-
-  // Check teacher conflict
-  const teacherConflict = await prisma.schedule.findFirst({
-    where: {
-      id: { not: id },
-      teacherId: data.teacherId,
-      dayOfWeek: current.dayOfWeek,
-      period: current.period,
-    },
-    include: {
-      classRoom: { select: { name: true } },
-    },
-  });
-
-  if (teacherConflict) {
-    return {
-      error: `Giáo viên đã có lịch dạy ở lớp ${teacherConflict.classRoom.name} vào thời gian này.`,
     };
   }
 
@@ -544,6 +769,46 @@ export async function generateAiTimetableAction(options?: AiGenerateOptions) {
       return { error: "Chưa có dữ liệu giáo viên trong hệ thống để thực hiện phân công xếp TKB." };
     }
 
+    // Ensure "Chào cờ" and "Sinh hoạt lớp" subjects exist in database
+    let chaoCoSubject = allSubjects.find((s) => normalizeStr(s.name) === normalizeStr("Chào cờ"));
+    let sinhHoatSubject = allSubjects.find(
+      (s) => normalizeStr(s.name) === normalizeStr("Sinh hoạt lớp") || normalizeStr(s.name) === normalizeStr("Sinh hoạt")
+    );
+
+    if (!chaoCoSubject || !sinhHoatSubject) {
+      let defaultGroup = await prisma.subjectGroup.findFirst({
+        where: options?.schoolId && options.schoolId !== "ALL" ? { schoolId: options.schoolId } : {},
+      });
+      if (!defaultGroup) {
+        const targetSchoolId =
+          options?.schoolId && options.schoolId !== "ALL"
+            ? options.schoolId
+            : classes[0]?.schoolId || (await prisma.school.findFirst({ select: { id: true } }))?.id;
+        if (targetSchoolId) {
+          defaultGroup = await prisma.subjectGroup.create({
+            data: { name: "Tổ Hoạt Động Giáo Dục", schoolId: targetSchoolId },
+          });
+        }
+      }
+
+      if (defaultGroup) {
+        if (!chaoCoSubject) {
+          chaoCoSubject = await prisma.subject.create({
+            data: { name: "Chào cờ", subjectGroupId: defaultGroup.id },
+            select: { id: true, name: true, gradeLevel: true },
+          });
+          allSubjects.push(chaoCoSubject);
+        }
+        if (!sinhHoatSubject) {
+          sinhHoatSubject = await prisma.subject.create({
+            data: { name: "Sinh hoạt lớp", subjectGroupId: defaultGroup.id },
+            select: { id: true, name: true, gradeLevel: true },
+          });
+          allSubjects.push(sinhHoatSubject);
+        }
+      }
+    }
+
     // Standard subject curriculum template
     const standardSubjectConfigs: { name: string; periods: number; requiresConsecutive?: boolean; preferredShift?: "MORNING" | "AFTERNOON" }[] = [
       { name: "Toán", periods: 4, requiresConsecutive: true, preferredShift: "MORNING" },
@@ -633,7 +898,11 @@ export async function generateAiTimetableAction(options?: AiGenerateOptions) {
     }
 
     // Run Smart Timetable CSP Engine
-    const engine = new SmartTimetableEngine(options?.config);
+    const engine = new SmartTimetableEngine({
+      ...options?.config,
+      fixedAssemblySubjectId: chaoCoSubject?.id,
+      fixedHomeroomSubjectId: sinhHoatSubject?.id,
+    });
     const result = engine.generate(classRequirements);
 
     // Save generated schedules into database inside an atomic transaction

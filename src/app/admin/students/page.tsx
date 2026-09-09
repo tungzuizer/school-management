@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin Students Management Page (`src/app/admin/students/page.tsx`).
- * 2. Affected APIs: Removes `GoogleDriveImportModal`, `driveModalOpen`, `handleDriveImportStudents`.
- * 3. Schema: Direct management of students without external Google Drive dependency.
- * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ * 2. Affected APIs: `getStudentCredentialsOverview`, `getStudentCredentialSlips`, `resetStudentPassword`, `StudentCredentialsModal`, `StudentCredentialSlipsModal`.
+ * 3. Data Schemas: `StudentCredentialItem` (id, userId, studentCode, name, email, className, defaultPasswordHint), `StudentData`, `ClassOption`.
+ * 4. Verbatim User Instruction: "tôi muốn mỗi giáo viên mỗi học sinh sẽ có tài khoản mà mật khẩu và có thể hiện thị chỉ cho hiệu trưởng hoặc admin nhìn thấy được".
  */
 
 "use client";
@@ -18,11 +18,18 @@ import {
   resetStudentPassword,
   deleteStudent,
   createBulkStudents,
+  getStudentCredentialsOverview,
+  getStudentCredentialSlips,
+  getNextStudentCodePreviewAction,
+  StudentCredentialItem,
   BulkStudentInput,
 } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { KeyRound, Lock, Loader2, Cloud, FileSpreadsheet, Plus, School, Building2, LayoutGrid, Table, GraduationCap, Users } from "lucide-react";
+import { KeyRound, Lock, Loader2, Cloud, FileSpreadsheet, Plus, School, Building2, LayoutGrid, Table, GraduationCap, Users, ShieldCheck } from "lucide-react";
+import StudentCredentialsModal from "./components/StudentCredentialsModal";
+import StudentCredentialSlipsModal from "./components/StudentCredentialSlipsModal";
+import { generateStudentEmail } from "@/lib/student-email";
 
 interface StudentData {
   id: string;
@@ -89,6 +96,15 @@ export default function StudentsPage() {
   const [newPwdInput, setNewPwdInput] = useState("abc123");
   const [resettingPwd, setResettingPwd] = useState(false);
 
+  // Credential Management Hub state (BGH exclusive)
+  const [credModalOpen, setCredModalOpen] = useState(false);
+  const [credentialsList, setCredentialsList] = useState<StudentCredentialItem[]>([]);
+  const [loadingCreds, setLoadingCreds] = useState(false);
+  const [credSlipsModalOpen, setCredSlipsModalOpen] = useState(false);
+  const [credSlips, setCredSlips] = useState<any[]>([]);
+  const [credSchoolName, setCredSchoolName] = useState("");
+  const [credClassName, setCredClassName] = useState<string | undefined>(undefined);
+
   // Dynamic grade options derived from active classes
   const uniqueGrades = Array.from(new Set(classes.map((c) => c.gradeLevel))).filter(Boolean).sort((a, b) => a - b);
   const gradeOptions = uniqueGrades.length > 0 ? uniqueGrades : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -118,10 +134,34 @@ export default function StudentsPage() {
     loadData(true);
   }, [loadData]);
 
-  const openCreate = () => {
+  const [codePreview, setCodePreview] = useState<{ studentCode: string; email: string } | null>(null);
+
+  const fetchCodePreview = async (classId?: string) => {
+    try {
+      const res = await getNextStudentCodePreviewAction(classId);
+      if (res.success) {
+        setCodePreview({ studentCode: res.studentCode, email: res.email });
+        setForm((prev) => ({
+          ...prev,
+          studentCode: res.studentCode,
+          email: res.email,
+        }));
+      }
+    } catch {}
+  };
+
+  const openCreate = async () => {
     setEditing(null);
     setForm(defaultForm);
     setModalOpen(true);
+    await fetchCodePreview(filterClass || undefined);
+  };
+
+  const handleClassChangeInForm = async (newClassId: string) => {
+    setForm((prev) => ({ ...prev, classId: newClassId }));
+    if (!editing) {
+      await fetchCodePreview(newClassId || undefined);
+    }
   };
 
   const safeFormatIsoDate = (val: any): string => {
@@ -249,8 +289,70 @@ export default function StudentsPage() {
     if (res.success) {
       showToast(`Đã đặt lại mật khẩu cho ${selectedStudentForPwd.user.name}: ${res.newPassword}`, "success");
       setPwdModalOpen(false);
+      if (credModalOpen) {
+        openCredentialsHub(true);
+      }
     } else {
       showToast(res.error || "Không thể đặt lại mật khẩu", "error");
+    }
+  };
+
+  const openCredentialsHub = async (silent = false) => {
+    if (!silent) setLoadingCreds(true);
+    setCredModalOpen(true);
+    const res = await getStudentCredentialsOverview({
+      schoolId: filterSchool !== "ALL" ? filterSchool : undefined,
+      classId: filterClass || undefined,
+      gradeLevel: filterGrade ? Number(filterGrade) : undefined,
+    });
+    setLoadingCreds(false);
+    if (res.success && res.data) {
+      setCredentialsList(res.data);
+    } else {
+      showToast(res.error || "Không thể tải danh sách tài khoản học sinh", "error");
+    }
+  };
+
+  const handleOpenSlips = async () => {
+    const res = await getStudentCredentialSlips({
+      schoolId: filterSchool !== "ALL" ? filterSchool : undefined,
+      classId: filterClass || undefined,
+      gradeLevel: filterGrade ? Number(filterGrade) : undefined,
+    });
+    if (res.success && res.slips) {
+      setCredSchoolName(res.schoolName);
+      setCredClassName(res.className);
+      setCredSlips(res.slips);
+      setCredSlipsModalOpen(true);
+    } else {
+      showToast(res.error || "Lỗi tạo phiếu bàn giao học sinh", "error");
+    }
+  };
+
+  const handleResetFromCredModal = (item: StudentCredentialItem) => {
+    const matched = students.find((s) => s.id === item.id);
+    if (matched) {
+      openPasswordModal(matched);
+    } else {
+      setSelectedStudentForPwd({
+        id: item.id,
+        studentCode: item.studentCode,
+        dob: null,
+        gender: null,
+        phone: item.phone,
+        status: item.status,
+        ethnicity: null,
+        addressCurrent: null,
+        fatherName: item.parentName,
+        fatherJob: null,
+        motherName: null,
+        motherJob: null,
+        user: { id: item.userId, name: item.name, email: item.email },
+        classRoom: item.classId ? { id: item.classId, name: item.className, gradeLevel: item.gradeLevel || 10 } : null,
+        group: null,
+      });
+      setNewPwdInput("abc123");
+      setPwdModalOpen(true);
     }
   };
 
@@ -411,7 +513,15 @@ export default function StudentsPage() {
       {ToastComponent}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Quản lý Học sinh</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => openCredentialsHub(false)}
+            className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all active-press"
+            title="Xem và quản lý tài khoản, mật khẩu học sinh (Độc quyền BGH)"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>🔐 Quản lý TK & Mật khẩu (BGH)</span>
+          </button>
           <button
             onClick={() => {
               setBulkModalOpen(true);
@@ -419,13 +529,13 @@ export default function StudentsPage() {
               setParsedStudents([]);
               setBulkResult(null);
             }}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2 text-sm font-medium"
+            className="bg-emerald-600 text-white px-3.5 py-2 rounded-xl hover:bg-emerald-700 flex items-center gap-1.5 text-xs font-bold transition-all active-press"
           >
             <FileSpreadsheet className="w-4 h-4" /> Nhập CSV/Text
           </button>
           <button
             onClick={openCreate}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium"
+            className="bg-indigo-600 text-white px-3.5 py-2 rounded-xl hover:bg-indigo-700 flex items-center gap-1.5 text-xs font-bold transition-all active-press"
           >
             <Plus className="w-4 h-4" /> Thêm học sinh
           </button>
@@ -705,61 +815,102 @@ export default function StudentsPage() {
         size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-          {/* Thông tin tài khoản */}
-          <h3 className="font-semibold text-gray-800 border-b pb-1">Thông tin tài khoản</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên *</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                required
-              />
+          {!editing ? (
+            /* Định Danh & Tài Khoản Cố Định (Chế độ Thêm mới) */
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  <span>MÃ ĐỊNH DANH & TÀI KHOẢN TỰ ĐỘNG (CỐ ĐỊNH CHUẨN HÓA)</span>
+                </div>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-200/60 text-indigo-800">
+                  Auto-Generated
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-white/80 backdrop-blur-xs p-3 rounded-xl border border-indigo-100 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-black text-xs">
+                    HS
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 block">Mã Học Sinh Cố Định</span>
+                    <span className="font-mono font-black text-sm text-indigo-700">
+                      {codePreview?.studentCode || form.studentCode || "HS26100001"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white/80 backdrop-blur-xs p-3 rounded-xl border border-indigo-100 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center font-black text-xs">
+                    @
+                  </div>
+                  <div className="truncate">
+                    <span className="text-[10px] font-bold text-slate-500 block">Email Đăng Nhập Chuẩn Hóa</span>
+                    <span className="font-mono font-bold text-xs text-purple-700 truncate block">
+                      {codePreview?.email || form.email || "hs26100001@gmail.com"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                <span>Mã định danh và Email được cấp phát cố định duy nhất theo Khóa & Khối lớp, gắn liền với học sinh suốt quá trình học tập.</span>
+              </p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                required
-              />
-            </div>
-          </div>
-          {!editing && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu (mặc định: abc123)</label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                placeholder="Để trống sẽ tự động đặt là abc123"
-              />
+          ) : (
+            /* Thông tin tài khoản (Chế độ Sửa) */
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-800 border-b pb-1">Thông tin tài khoản</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mã học sinh</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={form.studentCode}
+                      disabled
+                      className="w-full px-3 py-2 border rounded-lg bg-slate-100 text-slate-600 font-mono cursor-not-allowed text-sm"
+                    />
+                    <Lock className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-0.5 block">Cố định - Không được phép sửa đổi</span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email đăng nhập</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm font-mono"
+                    required
+                  />
+                </div>
+              </div>
             </div>
           )}
 
           {/* Thông tin học sinh */}
-          <h3 className="font-semibold text-gray-800 border-b pb-1 pt-2">Thông tin học sinh</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <h3 className="font-semibold text-gray-800 border-b pb-1 pt-2">Thông tin cá nhân & Lớp học</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mã học sinh</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên *</label>
               <input
                 type="text"
-                value={form.studentCode}
-                onChange={(e) => setForm({ ...form, studentCode: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="VD: Nguyễn Văn Anh"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Lớp học</label>
               <select
                 value={form.classId}
-                onChange={(e) => setForm({ ...form, classId: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) => handleClassChangeInForm(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               >
                 <option value="">Chưa xếp lớp</option>
                 {classes.map((c) => (
@@ -769,6 +920,9 @@ export default function StudentsPage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh</label>
               <input
@@ -1137,6 +1291,27 @@ export default function StudentsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Student Credentials Modal (BGH Only) */}
+      <StudentCredentialsModal
+        isOpen={credModalOpen}
+        onClose={() => setCredModalOpen(false)}
+        credentials={credentialsList}
+        classes={classes}
+        schools={schools}
+        onResetPassword={handleResetFromCredModal}
+        onOpenSlips={handleOpenSlips}
+        loading={loadingCreds}
+      />
+
+      {/* Student Credential Slips Modal (A4 Handover Print) */}
+      <StudentCredentialSlipsModal
+        isOpen={credSlipsModalOpen}
+        onClose={() => setCredSlipsModalOpen(false)}
+        schoolName={credSchoolName}
+        className={credClassName}
+        slips={credSlips}
+      />
     </div>
   );
 }

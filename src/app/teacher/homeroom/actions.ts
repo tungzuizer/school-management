@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/teacher/homeroom/page.tsx`, `src/app/teacher/homeroom/components/AddStudentHomeroomModal.tsx`.
+ * 2. Affected APIs: `addStudentToHomeroomClass`, `getHomeroomClass`, `getConductRecords`.
+ * 3. Data Schemas: Prisma models `User`, `Student`, `ClassRoom`.
+ * 4. Verbatim User Instruction: "tôi cần tọa thuật toán tự động hóa thêm học sinh hay giáo viên sẽ tự tạo tài khoản".
+ */
+
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -5,6 +13,7 @@ import { aiChatCompletion } from "@/lib/ai-provider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateStudentEmail } from "@/lib/student-email";
+import { resolveUniqueStudentCodeAndEmail, previewNextStudentCodeAndEmail, DEFAULT_INITIAL_PASSWORD } from "@/lib/account-automation";
 import bcrypt from "bcryptjs";
 
 async function isApprovedUser(userId: string): Promise<boolean> {
@@ -103,7 +112,7 @@ export async function getClassStudents(classId: string) {
 export async function addStudentToHomeroomClass(data: {
   classId: string;
   name: string;
-  studentCode: string;
+  studentCode?: string;
   dob?: string;
   gender?: "MALE" | "FEMALE";
   phone?: string;
@@ -114,35 +123,56 @@ export async function addStudentToHomeroomClass(data: {
   if (!(await isApprovedUser(session.user.id))) throw new Error("Tài khoản chưa được phê duyệt.");
 
   const name = data.name.trim();
-  const studentCode = data.studentCode.trim();
-  if (!name || !studentCode) {
-    throw new Error("Họ tên và mã học sinh là bắt buộc");
+  if (!name) {
+    throw new Error("Họ tên học sinh là bắt buộc");
   }
 
-  // Tự động tạo email học sinh nếu chưa nhập
-  const email = (data.email && data.email.trim()) || generateStudentEmail(name, studentCode);
-
-  // Kiểm tra email đã tồn tại hay chưa
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
-    throw new Error(`Email ${email} đã được đăng ký trong hệ thống.`);
+  let gradeLevel: number | undefined;
+  let schoolId: string | undefined;
+  if (data.classId) {
+    const cls = await prisma.classRoom.findUnique({
+      where: { id: data.classId },
+      select: { gradeLevel: true, schoolId: true },
+    });
+    if (cls?.gradeLevel) gradeLevel = cls.gradeLevel;
+    if (cls?.schoolId) schoolId = cls.schoolId;
   }
+
+  const existingUsers = await prisma.user.findMany({ select: { email: true } });
+  const existingEmails = new Set(existingUsers.map((u) => u.email.toLowerCase()));
+  const existingStudents = await prisma.student.findMany({ select: { studentCode: true } });
+  const existingCodes = new Set(
+    existingStudents.map((s) => (s.studentCode ? s.studentCode.toLowerCase() : "")).filter(Boolean)
+  );
+
+  const { studentCode: resolvedCode, email: resolvedEmail } = resolveUniqueStudentCodeAndEmail(
+    existingCodes,
+    existingEmails,
+    {
+      preferredCode: data.studentCode,
+      preferredEmail: data.email,
+      name,
+      gradeLevel,
+    }
+  );
 
   // Mật khẩu mặc định
-  const defaultPassword = "abc123";
+  const defaultPassword = DEFAULT_INITIAL_PASSWORD;
   const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
   // Tạo User và Student
   const newUser = await prisma.user.create({
     data: {
       name,
-      email,
+      email: resolvedEmail,
       password: hashedPassword,
       role: "STUDENT",
       isApproved: true,
+      mustChangePassword: true,
+      schoolId: schoolId || undefined,
       student: {
         create: {
-          studentCode,
+          studentCode: resolvedCode,
           classId: data.classId,
           dob: data.dob ? new Date(data.dob) : null,
           gender: data.gender || null,
@@ -156,6 +186,29 @@ export async function addStudentToHomeroomClass(data: {
   });
 
   return newUser.student;
+}
+
+export async function getNextStudentCodePreviewAction(classId?: string, gradeLevel?: number) {
+  try {
+    let resolvedGrade = gradeLevel;
+    if (classId && !resolvedGrade) {
+      const cls = await prisma.classRoom.findUnique({
+        where: { id: classId },
+        select: { gradeLevel: true },
+      });
+      if (cls?.gradeLevel) resolvedGrade = cls.gradeLevel;
+    }
+
+    const existingStudents = await prisma.student.findMany({ select: { studentCode: true } });
+    const existingCodes = new Set(
+      existingStudents.map((s) => (s.studentCode ? s.studentCode.toLowerCase() : "")).filter(Boolean)
+    );
+
+    const preview = previewNextStudentCodeAndEmail(existingCodes, resolvedGrade);
+    return { success: true, ...preview };
+  } catch (error: any) {
+    return { success: false, studentCode: "HS26100001", email: "hs26100001@gmail.com" };
+  }
 }
 
 // ============ Phân quyền / Bổ nhiệm Lớp Trưởng ============

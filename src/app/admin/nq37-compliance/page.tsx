@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Next.js App Router route `/admin/nq37-compliance`, referenced in `src/app/admin/layout.tsx`.
  * 2. Affected APIs: `src/app/admin/nq37-compliance/page.tsx`.
  * 3. Schemas: Prisma ORM models (`School`, `Campus`, `User`, `Teacher`).
- * 4. Verbatim User Instruction: "/ecc:plan cập nhập đự án phần mềm để phù hợp với nghị đinh mới này và phần mềm sẽ hỗ trợ hiệu trưởng hãy làm thật chi tiết và hoàn thiện"
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
  */
 
 "use client";
@@ -122,7 +122,7 @@ export default function NQ37CompliancePage() {
                 Ban hành: 05/08/2026 • Hiệu lực đến: 30/06/2028
               </span>
               <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-xs font-medium">
-                Cấp quản lý: Sở GD&ĐT Hải Phòng
+                Cấp quản lý: Sở GD&ĐT Ninh Bình
               </span>
             </div>
 
@@ -864,7 +864,7 @@ export default function NQ37CompliancePage() {
                 Tờ Trình Phê Duyệt Phương Án Sắp Xếp Bộ Máy & Định Mức Biên Chế
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                Kính gửi: <strong>Sở Giáo dục và Đào tạo TP. Hải Phòng</strong> • Căn cứ: Nghị quyết 37/2026/NQ-CP và Nghị định 178/2024/NĐ-CP.
+                Kính gửi: <strong>Sở Giáo dục và Đào tạo Tỉnh Ninh Bình</strong> • Căn cứ: Nghị quyết 37/2026/NQ-CP và Nghị định 178/2024/NĐ-CP.
               </p>
             </div>
 

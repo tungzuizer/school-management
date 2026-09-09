@@ -3,7 +3,7 @@
  * 1. Importers/Callers: `src/app/admin/nq37-compliance/page.tsx`.
  * 2. Affected APIs: `src/app/admin/nq37-compliance/actions.ts`.
  * 3. Schemas: Prisma ORM models (`School`, `Campus`, `User`, `ClassRoom`, `Teacher`).
- * 4. Verbatim User Instruction: "/ecc:plan cập nhập đự án phần mềm để phù hợp với nghị đinh mới này và phần mềm sẽ hỗ trợ hiệu trưởng hãy làm thật chi tiết và hoàn thiện"
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
  */
 
 "use server";
@@ -240,7 +240,7 @@ export async function submitRestructuringPlanAction(data: {
 
   return {
     success: true,
-    message: "Phương án sắp xếp bộ máy theo Nghị quyết 37/2026/NQ-CP đã được lập và sẵn sàng gửi Sở GD&ĐT Hải Phòng.",
+    message: "Phương án sắp xếp bộ máy theo Nghị quyết 37/2026/NQ-CP đã được lập và sẵn sàng gửi Sở GD&ĐT Ninh Bình.",
     submittedAt: new Date().toISOString(),
   };
 }

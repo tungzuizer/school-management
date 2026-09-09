@@ -50,6 +50,7 @@ import {
   ArrowLeftRight,
   Activity,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { StatCardSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { parseSpreadsheetBuffer, mapRowsToSchedules } from "@/lib/excel-parser";
@@ -127,7 +128,14 @@ type ScheduleEntry = {
 };
 
 type SchoolOption = { id: string; name: string };
-type ClassOption = { id: string; name: string; gradeLevel: number; school?: { id: string; name: string } };
+type ClassOption = {
+  id: string;
+  name: string;
+  gradeLevel: number;
+  school?: { id: string; name: string };
+  homeroomTeacherId?: string | null;
+  homeroomTeacher?: { id: string; user: { name: string } } | null;
+};
 type SubjectOption = { id: string; name: string; code?: string | null };
 type TeacherOption = {
   id: string;
@@ -138,7 +146,25 @@ type TeacherOption = {
     subjectId: string;
     classRoom?: { school?: { id: string; name: string } };
   }[];
+  currentShiftsCount?: number;
+  isOptimalForNewShift?: boolean;
 };
+
+interface SoftWarningState {
+  isOpen: boolean;
+  message: string;
+  currentShifts?: number;
+  newShifts?: number;
+  aiSuggestions?: Array<{
+    type: "TEACHER" | "SLOT";
+    title: string;
+    description: string;
+    teacherId?: string;
+    teacherName?: string;
+    dayOfWeek?: number;
+    period?: number;
+  }>;
+}
 
 function getTeacherSchoolName(t: TeacherOption): string {
   const hrSchool = t.homeroomClasses?.[0]?.school?.name;
@@ -219,6 +245,10 @@ export default function SchedulePage() {
     teacherId: "",
     room: "",
   });
+
+  const [softWarning, setSoftWarning] = useState<SoftWarningState | null>(null);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(true);
+  const [submittingForm, setSubmittingForm] = useState(false);
 
   const [onlyMatchedTeachers, setOnlyMatchedTeachers] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -354,6 +384,7 @@ export default function SchedulePage() {
       const activeSchoolId = data.selectedClass?.school?.id || selectedSchoolId;
       if (activeSchoolId) {
         const formOptions = await getScheduleFormData(activeSchoolId);
+        setSubjects(formOptions.subjects);
         setTeachers(formOptions.teachers as any);
       }
 
@@ -370,20 +401,13 @@ export default function SchedulePage() {
   }
 
   function handleCellClick(day: number, period: number) {
-    // Check if fixed slot
-    if (day === 1 && period === 1) {
-      setToast({ message: "Tiết 1 Thứ 2 là Tiết Chào Cờ cố định toàn trường theo quy định.", type: "error" });
-      return;
-    }
-    if (day === 5 && period === 7) {
-      setToast({ message: "Tiết cuối Thứ 6 là Tiết Sinh Hoạt Lớp cố định theo quy định.", type: "error" });
-      return;
-    }
-
     const existing = getEntry(day, period);
+    setSelectedSlot({ day, period });
+    setSoftWarning(null);
+    setShowAiSuggestions(true);
+
     if (existing) {
       setEditingEntry(existing);
-      setSelectedSlot({ day, period });
       setFormData({
         subjectId: existing.subject.id,
         teacherId: existing.teacher.id,
@@ -392,9 +416,43 @@ export default function SchedulePage() {
       setOnlyMatchedTeachers(false);
     } else {
       setEditingEntry(null);
-      setSelectedSlot({ day, period });
-      setFormData({ subjectId: "", teacherId: "", room: "" });
-      setOnlyMatchedTeachers(true);
+      // If Monday Period 1 (Chào Cờ) or Friday Period 7 (Sinh Hoạt), pre-suggest subject and GVCN
+      let defaultSubjId = "";
+      let defaultTeacherId = "";
+
+      if (day === 1 && period === 1) {
+        const chaoCoSubj = subjects.find(
+          (s) =>
+            s.name.toLowerCase().includes("chào cờ") ||
+            s.name.toLowerCase().includes("sinh hoạt dưới cờ") ||
+            s.name.toLowerCase().includes("hoạt động trải nghiệm")
+        );
+        if (chaoCoSubj) defaultSubjId = chaoCoSubj.id;
+        if (selectedClass?.homeroomTeacher?.id) {
+          defaultTeacherId = selectedClass.homeroomTeacher.id;
+        } else if (selectedClass?.homeroomTeacherId) {
+          defaultTeacherId = selectedClass.homeroomTeacherId;
+        }
+      } else if (day === 5 && period === 7) {
+        const shlSubj = subjects.find(
+          (s) =>
+            s.name.toLowerCase().includes("sinh hoạt") ||
+            s.name.toLowerCase().includes("hoạt động trải nghiệm")
+        );
+        if (shlSubj) defaultSubjId = shlSubj.id;
+        if (selectedClass?.homeroomTeacher?.id) {
+          defaultTeacherId = selectedClass.homeroomTeacher.id;
+        } else if (selectedClass?.homeroomTeacherId) {
+          defaultTeacherId = selectedClass.homeroomTeacherId;
+        }
+      }
+
+      setFormData({
+        subjectId: defaultSubjId,
+        teacherId: defaultTeacherId,
+        room: "",
+      });
+      setOnlyMatchedTeachers(defaultSubjId ? true : false);
     }
     setTeacherSearch("");
     setShowEntryModal(true);
@@ -405,17 +463,31 @@ export default function SchedulePage() {
     let suggestedTeacherId = "";
 
     if (selectedSubj) {
-      const matched = teachers.filter((t) => {
-        const isAssigned = t.teachingAssignments?.some((ta) => ta.subjectId === selectedSubj.id);
-        if (isAssigned) return true;
-        if (!t.specialty) return false;
-        const normSpec = normalizeStr(t.specialty);
-        const normSubj = normalizeStr(selectedSubj.name);
-        return normSpec.includes(normSubj) || normSubj.includes(normSpec);
-      });
+      // If it's Chào cờ or Sinh hoạt lớp, suggest homeroom teacher
+      const isChaoCo =
+        selectedSubj.name.toLowerCase().includes("chào cờ") ||
+        (selectedSlot?.day === 1 && selectedSlot?.period === 1);
+      const isSinhHoat =
+        selectedSubj.name.toLowerCase().includes("sinh hoạt") ||
+        (selectedSlot?.day === 5 && selectedSlot?.period === 7);
 
-      if (matched.length > 0) {
-        suggestedTeacherId = matched[0].id;
+      if ((isChaoCo || isSinhHoat) && (selectedClass?.homeroomTeacher?.id || selectedClass?.homeroomTeacherId)) {
+        suggestedTeacherId = (selectedClass.homeroomTeacher?.id || selectedClass.homeroomTeacherId)!;
+      } else {
+        const matched = teachers.filter((t) => {
+          const isAssigned = t.teachingAssignments?.some((ta) => ta.subjectId === selectedSubj.id);
+          if (isAssigned) return true;
+          if (!t.specialty) return false;
+          const normSpec = normalizeStr(t.specialty);
+          const normSubj = normalizeStr(selectedSubj.name);
+          return normSpec.includes(normSubj) || normSubj.includes(normSpec);
+        });
+
+        if (matched.length > 0) {
+          // Prefer teacher with optimal shifts (< 5 sessions)
+          const optimal = matched.find((t) => t.isOptimalForNewShift);
+          suggestedTeacherId = optimal ? optimal.id : matched[0].id;
+        }
       }
     }
 
@@ -425,45 +497,114 @@ export default function SchedulePage() {
       teacherId: suggestedTeacherId || formData.teacherId,
     });
     setOnlyMatchedTeachers(true);
+    setSoftWarning(null);
   };
 
-  async function handleSubmitForm() {
+  const handleApplyAiSuggestion = (suggestion: {
+    type: "TEACHER" | "SLOT";
+    teacherId?: string;
+    teacherName?: string;
+    dayOfWeek?: number;
+    period?: number;
+  }) => {
+    if (suggestion.type === "TEACHER" && suggestion.teacherId) {
+      setFormData((prev) => ({ ...prev, teacherId: suggestion.teacherId! }));
+      setToast({
+        message: `Đã chọn giáo viên thay thế theo AI: ${suggestion.teacherName}`,
+        type: "success",
+      });
+      setSoftWarning(null);
+    } else if (suggestion.type === "SLOT" && suggestion.dayOfWeek && suggestion.period) {
+      setSelectedSlot({ day: suggestion.dayOfWeek, period: suggestion.period });
+      setToast({
+        message: `Đã đổi sang khung giờ tối ưu: ${DAY_LABELS[suggestion.dayOfWeek]} - Tiết ${suggestion.period}`,
+        type: "success",
+      });
+      setSoftWarning(null);
+    }
+  };
+
+  async function handleSubmitForm(overrideShiftCap: boolean = false) {
     if (!selectedSlot || !formData.subjectId || !formData.teacherId) {
       setToast({ message: "Vui lòng chọn môn học và giáo viên phụ trách", type: "error" });
       return;
     }
 
-    if (editingEntry) {
-      const res = await updateScheduleEntry(editingEntry.id, {
-        subjectId: formData.subjectId,
-        teacherId: formData.teacherId,
-        room: formData.room,
-      });
+    setSubmittingForm(true);
 
-      if (res.error) {
-        setToast({ message: res.error, type: "error" });
-        return;
-      }
-      setToast({ message: "Đã cập nhật tiết học thành công!", type: "success" });
-    } else {
-      const res = await createScheduleEntry({
-        classId: selectedClassId,
-        subjectId: formData.subjectId,
-        teacherId: formData.teacherId,
-        dayOfWeek: selectedSlot.day,
-        period: selectedSlot.period,
-        room: formData.room,
-      });
+    try {
+      if (editingEntry) {
+        const res = await updateScheduleEntry(editingEntry.id, {
+          subjectId: formData.subjectId,
+          teacherId: formData.teacherId,
+          room: formData.room,
+          overrideShiftCap,
+        });
 
-      if (res.error) {
-        setToast({ message: res.error, type: "error" });
-        return;
+        if (res.softWarning) {
+          const warnMsg = res.error || "Cảnh báo: Giáo viên vượt quá định mức 5 buổi/tuần.";
+          setSoftWarning({
+            isOpen: true,
+            message: warnMsg,
+            currentShifts: res.currentShifts,
+            newShifts: res.newShifts,
+            aiSuggestions: res.aiSuggestions,
+          });
+          setShowAiSuggestions(true);
+          setToast({ message: warnMsg, type: "error" });
+          setSubmittingForm(false);
+          return;
+        }
+
+        if (res.error) {
+          setToast({ message: res.error, type: "error" });
+          setSubmittingForm(false);
+          return;
+        }
+        setToast({ message: "Đã cập nhật tiết học thành công!", type: "success" });
+      } else {
+        const res = await createScheduleEntry({
+          classId: selectedClassId,
+          subjectId: formData.subjectId,
+          teacherId: formData.teacherId,
+          dayOfWeek: selectedSlot.day,
+          period: selectedSlot.period,
+          room: formData.room,
+          overrideShiftCap,
+        });
+
+        if (res.softWarning) {
+          const warnMsg = res.error || "Cảnh báo: Giáo viên vượt quá định mức 5 buổi/tuần.";
+          setSoftWarning({
+            isOpen: true,
+            message: warnMsg,
+            currentShifts: res.currentShifts,
+            newShifts: res.newShifts,
+            aiSuggestions: res.aiSuggestions,
+          });
+          setShowAiSuggestions(true);
+          setToast({ message: warnMsg, type: "error" });
+          setSubmittingForm(false);
+          return;
+        }
+
+        if (res.error) {
+          setToast({ message: res.error, type: "error" });
+          setSubmittingForm(false);
+          return;
+        }
+        setToast({ message: "Đã thêm tiết học mới thành công!", type: "success" });
       }
-      setToast({ message: "Đã thêm tiết học mới thành công!", type: "success" });
+
+      setSoftWarning(null);
+      setShowAiSuggestions(false);
+      setShowEntryModal(false);
+      handleClassChange(selectedClassId);
+    } catch (err: any) {
+      setToast({ message: err.message || "Lỗi khi lưu tiết học", type: "error" });
+    } finally {
+      setSubmittingForm(false);
     }
-
-    setShowEntryModal(false);
-    handleClassChange(selectedClassId);
   }
 
   async function handleDeleteEntry() {
@@ -1189,7 +1330,10 @@ export default function SchedulePage() {
       {showEntryModal && selectedSlot && (
         <Modal
           isOpen={showEntryModal}
-          onClose={() => setShowEntryModal(false)}
+          onClose={() => {
+            setShowEntryModal(false);
+            setSoftWarning(null);
+          }}
           title={
             editingEntry
               ? `Chỉnh Sửa Tiết Học (${DAY_LABELS[selectedSlot.day]} - Tiết ${selectedSlot.period})`
@@ -1200,6 +1344,11 @@ export default function SchedulePage() {
             <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between">
               <div>
                 Lớp: <strong className="text-slate-900 dark:text-slate-100">{selectedClass?.name}</strong>
+                {selectedClass?.homeroomTeacher && (
+                  <span className="ml-1.5 text-indigo-600 dark:text-indigo-400 font-semibold">
+                    (GVCN: {selectedClass.homeroomTeacher.user.name})
+                  </span>
+                )}
               </div>
               <div>
                 Thời gian:{" "}
@@ -1208,6 +1357,21 @@ export default function SchedulePage() {
                 </strong>
               </div>
             </div>
+
+            {/* Special Fixed Slot Notices */}
+            {selectedSlot.day === 1 && selectedSlot.period === 1 && (
+              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 flex items-center gap-2 font-bold">
+                <Lock className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>👑 Tiết 1 Thứ 2: Tiết Chào cờ cố định toàn trường. Tự động gán và kiểm tra nghiêm ngặt cho Giáo viên Chủ nhiệm ({selectedClass?.homeroomTeacher?.user.name || "GVCN"}).</span>
+              </div>
+            )}
+
+            {selectedSlot.day === 5 && selectedSlot.period === 7 && (
+              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 flex items-center gap-2 font-bold">
+                <Lock className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>👑 Tiết cuối Thứ 6: Tiết Sinh hoạt lớp cố định. Bắt buộc do Giáo viên Chủ nhiệm ({selectedClass?.homeroomTeacher?.user.name || "GVCN"}) phụ trách.</span>
+              </div>
+            )}
 
             {/* Subject Select */}
             <div>
@@ -1273,10 +1437,13 @@ export default function SchedulePage() {
                 />
               </div>
 
-              {/* Smart Dropdown */}
+              {/* Smart Dropdown with Teaching Sessions and GVCN Badges */}
               <select
                 value={formData.teacherId}
-                onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, teacherId: e.target.value });
+                  setSoftWarning(null);
+                }}
                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
               >
                 <option value="">-- Chọn giáo viên phụ trách --</option>
@@ -1293,12 +1460,26 @@ export default function SchedulePage() {
                           getTeacherSchoolName(t).toLowerCase().includes(query)
                         );
                       })
-                      .map((t) => (
-                        <option key={t.id} value={t.id}>
-                          ⭐ {t.user.name} {t.specialty ? `— [Môn: ${t.specialty}]` : ""}{" "}
-                          {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
-                        </option>
-                      ))}
+                      .map((t) => {
+                        const isGVCN =
+                          t.id === selectedClass?.homeroomTeacherId ||
+                          t.id === selectedClass?.homeroomTeacher?.id;
+                        const gvcnPrefix = isGVCN ? "👑 [GVCN] " : "";
+                        const shiftText =
+                          t.currentShiftsCount !== undefined ? ` [${t.currentShiftsCount}/5 buổi]` : "";
+                        const optimalText = t.isOptimalForNewShift ? " ✨ Tối ưu" : "";
+
+                        return (
+                          <option key={t.id} value={t.id}>
+                            ⭐ {gvcnPrefix}
+                            {t.user.name}
+                            {shiftText}
+                            {optimalText}
+                            {t.specialty ? ` — [Môn: ${t.specialty}]` : ""}{" "}
+                            {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
+                          </option>
+                        );
+                      })}
                   </optgroup>
                 ) : (
                   <>
@@ -1314,12 +1495,26 @@ export default function SchedulePage() {
                               getTeacherSchoolName(t).toLowerCase().includes(query)
                             );
                           })
-                          .map((t) => (
-                            <option key={t.id} value={t.id}>
-                              ⭐ {t.user.name} {t.specialty ? `— [Môn: ${t.specialty}]` : ""}{" "}
-                              {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
-                            </option>
-                          ))}
+                          .map((t) => {
+                            const isGVCN =
+                              t.id === selectedClass?.homeroomTeacherId ||
+                              t.id === selectedClass?.homeroomTeacher?.id;
+                            const gvcnPrefix = isGVCN ? "👑 [GVCN] " : "";
+                            const shiftText =
+                              t.currentShiftsCount !== undefined ? ` [${t.currentShiftsCount}/5 buổi]` : "";
+                            const optimalText = t.isOptimalForNewShift ? " ✨ Tối ưu" : "";
+
+                            return (
+                              <option key={t.id} value={t.id}>
+                                ⭐ {gvcnPrefix}
+                                {t.user.name}
+                                {shiftText}
+                                {optimalText}
+                                {t.specialty ? ` — [Môn: ${t.specialty}]` : ""}{" "}
+                                {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
+                              </option>
+                            );
+                          })}
                       </optgroup>
                     )}
 
@@ -1334,12 +1529,24 @@ export default function SchedulePage() {
                             getTeacherSchoolName(t).toLowerCase().includes(query)
                           );
                         })
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.user.name} {t.specialty ? `— [Môn: ${t.specialty}]` : ""}{" "}
-                            {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
-                          </option>
-                        ))}
+                        .map((t) => {
+                          const isGVCN =
+                            t.id === selectedClass?.homeroomTeacherId ||
+                            t.id === selectedClass?.homeroomTeacher?.id;
+                          const gvcnPrefix = isGVCN ? "👑 [GVCN] " : "";
+                          const shiftText =
+                            t.currentShiftsCount !== undefined ? ` [${t.currentShiftsCount}/5 buổi]` : "";
+
+                          return (
+                            <option key={t.id} value={t.id}>
+                              {gvcnPrefix}
+                              {t.user.name}
+                              {shiftText}
+                              {t.specialty ? ` — [Môn: ${t.specialty}]` : ""}{" "}
+                              {getTeacherSchoolName(t) ? `(${getTeacherSchoolName(t)})` : ""}
+                            </option>
+                          );
+                        })}
                     </optgroup>
                   </>
                 )}
@@ -1360,6 +1567,81 @@ export default function SchedulePage() {
               />
             </div>
 
+            {/* SOFT WARNING: OVER 5 SESSIONS WITH AI SUGGESTIONS & USER OVERRIDE */}
+            {softWarning && (
+              <div className="p-3.5 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 rounded-xl space-y-2.5 animate-in fade-in">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                      ⚠️ CẢNH BÁO: GIÁO VIÊN VƯỢT ĐỊNH MỨC 5 BUỔI DẠY / TUẦN
+                    </h4>
+                    <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                      {softWarning.message}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-200 dark:border-amber-800/80">
+                  <button
+                    type="button"
+                    disabled={submittingForm}
+                    onClick={() => handleSubmitForm(true)}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                  >
+                    <span>✓ Vẫn Lưu (Xác Nhận Vượt Định Mức)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAiSuggestions(!showAiSuggestions)}
+                    className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-slate-700 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>
+                      {showAiSuggestions
+                        ? "Ẩn gợi ý AI"
+                        : `Xem Gợi Ý AI (${softWarning.aiSuggestions?.length || 0})`}
+                    </span>
+                  </button>
+                </div>
+
+                {/* AI Suggestions Dropdown / List */}
+                {showAiSuggestions && softWarning.aiSuggestions && softWarning.aiSuggestions.length > 0 && (
+                  <div className="mt-2.5 pt-2.5 border-t border-amber-200 dark:border-amber-800/80 space-y-2">
+                    <p className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      <span>Đề xuất từ AI Co-pilot (Ưu tiên người dùng, AI chỉ là gợi ý):</span>
+                    </p>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {softWarning.aiSuggestions.map((sug, sIdx) => (
+                        <div
+                          key={sIdx}
+                          className="p-2.5 bg-white dark:bg-slate-800/95 rounded-lg border border-amber-200 dark:border-amber-800/60 flex items-center justify-between gap-2 shadow-2xs hover:border-indigo-400 transition"
+                        >
+                          <div className="text-[11px] space-y-0.5">
+                            <p className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                              {sug.type === "TEACHER" ? "👨🏫 Đổi GV:" : "⏰ Chuyển giờ:"} {sug.title}
+                            </p>
+                            <p className="text-slate-500 dark:text-slate-400 text-[10px]">
+                              {sug.description}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleApplyAiSuggestion(sug)}
+                            className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-md text-[10px] font-bold shrink-0 transition"
+                          >
+                            Áp dụng
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
               {editingEntry ? (
@@ -1377,17 +1659,25 @@ export default function SchedulePage() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowEntryModal(false)}
+                  onClick={() => {
+                    setShowEntryModal(false);
+                    setSoftWarning(null);
+                  }}
                   className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-xs font-bold transition"
                 >
                   Hủy
                 </button>
                 <button
                   type="button"
-                  onClick={handleSubmitForm}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                  disabled={submittingForm}
+                  onClick={() => handleSubmitForm(false)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
                 >
-                  {editingEntry ? "Cập Nhật" : "Thêm Mới"}
+                  {submittingForm
+                    ? "Đang lưu..."
+                    : editingEntry
+                    ? "Cập Nhật"
+                    : "Thêm Mới"}
                 </button>
               </div>
             </div>

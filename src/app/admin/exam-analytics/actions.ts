@@ -148,7 +148,7 @@ export async function getMultiYearExamOverviewAction(filters?: {
       campusName: s.campus.name,
     }));
   } catch (error) {
-    console.warn("[ExamAnalytics] Error querying StudentScore, falling back to mock generator:", error);
+    console.error("[ExamAnalytics] Error querying StudentScore:", error);
     scoreRecords = [];
   }
 
@@ -159,9 +159,27 @@ export async function getMultiYearExamOverviewAction(filters?: {
     );
   }
 
-  // 4. Fallback demo data generation if database is fresh without exams
+  // If no score records exist in the database, return clean empty state
   if (scoreRecords.length === 0) {
-    scoreRecords = generateFallbackExamScoreRecords(campuses);
+    return {
+      availableYears: [],
+      availableCampuses: campuses,
+      availableGrades: [],
+      subjectTrends: [],
+      gradeDistribution: computeGradeDistribution([]),
+      tt22Classification: computeTT22Classification([]),
+      campusComparison: [],
+      aiInsights: [
+        "Chưa có dữ liệu kỳ thi và điểm thi thực tế trong cơ sở dữ liệu.",
+        "Vui lòng nhập liệu điểm thi học sinh hoặc đồng bộ kỳ thi để kích hoạt hệ thống phân tích.",
+      ],
+      totalStudents: 0,
+      totalExams: 0,
+      overallAverage: 0,
+      atRiskCount: 0,
+      improvingCount: 0,
+      excellentCount: 0,
+    };
   }
 
   // 5. Extract available years and grades
@@ -363,12 +381,12 @@ export async function getStudentProfilesTrajectoryAction(filters?: {
       campusName: s.campus.name,
     }));
   } catch (error) {
-    console.warn("[ExamAnalytics] Error querying StudentScore in getCohortTrackingAction:", error);
+    console.error("[ExamAnalytics] Error querying StudentScore in getStudentProfilesTrajectoryAction:", error);
     scoreRecords = [];
   }
 
   if (scoreRecords.length === 0) {
-    scoreRecords = generateFallbackExamScoreRecords(campuses);
+    return [];
   }
 
   // Group by student
@@ -485,19 +503,8 @@ export async function getStudentDetailTrajectoryAction(
       campusName: s.campus.name,
     }));
   } catch (error) {
-    console.warn("[ExamAnalytics] Error querying StudentScore in getStudentJourneyAction:", error);
+    console.error("[ExamAnalytics] Error querying StudentScore in getStudentDetailTrajectoryAction:", error);
     scoreRecords = [];
-  }
-
-  // If student is from fallback set
-  if (scoreRecords.length === 0) {
-    const fallbackRecords = generateFallbackExamScoreRecords();
-    scoreRecords = fallbackRecords.filter((r) => r.studentId === studentId);
-    if (scoreRecords.length === 0 && fallbackRecords.length > 0) {
-      scoreRecords = fallbackRecords.filter(
-        (r) => r.studentId === fallbackRecords[0].studentId
-      );
-    }
   }
 
   if (scoreRecords.length === 0) {
@@ -512,162 +519,4 @@ export async function getStudentDetailTrajectoryAction(
     subjectRadar: result.subjectRadar,
     allExamScores: scoreRecords,
   };
-}
-
-/**
- * High-fidelity fallback sample generator representing 3 school years:
- * 2023-2024, 2024-2025, 2025-2026 across Main Campus and Phân hiệu 2 (Lê Hồng Phong)
- */
-function generateFallbackExamScoreRecords(
-  campuses?: Array<{ id: string; name: string }>
-): ExamScoreRecord[] {
-  const mainCampId = campuses?.[0]?.id || "camp-main";
-  const mainCampName = campuses?.[0]?.name || "Trụ sở chính (An Dương)";
-  const branchCampId = campuses?.[1]?.id || "camp-branch";
-  const branchCampName = campuses?.[1]?.name || "Phân hiệu 2 (Lê Hồng Phong)";
-
-  const subjects = [
-    { id: "sub-toan", name: "Toán học" },
-    { id: "sub-van", name: "Ngữ văn" },
-    { id: "sub-anh", name: "Tiếng Anh" },
-    { id: "sub-ly", name: "Vật lí" },
-    { id: "sub-hoa", name: "Hóa học" },
-    { id: "sub-tin", name: "Tin học" },
-    { id: "sub-su", name: "Lịch sử" },
-  ];
-
-  const periods = [
-    { id: "ep-23-hk1", name: "Cuối kỳ 1 2023-2024", year: "2023-2024", sem: "HK1", type: "FINAL" as const, order: 1 },
-    { id: "ep-23-hk2", name: "Cuối kỳ 2 2023-2024", year: "2023-2024", sem: "HK2", type: "FINAL" as const, order: 2 },
-    { id: "ep-24-hk1", name: "Cuối kỳ 1 2024-2025", year: "2024-2025", sem: "HK1", type: "FINAL" as const, order: 3 },
-    { id: "ep-24-hk2", name: "Cuối kỳ 2 2024-2025", year: "2024-2025", sem: "HK2", type: "FINAL" as const, order: 4 },
-    { id: "ep-25-hk1", name: "Cuối kỳ 1 2025-2026", year: "2025-2026", sem: "HK1", type: "FINAL" as const, order: 5 },
-  ];
-
-  const studentDefs = [
-    {
-      id: "stu-101",
-      name: "Nguyễn Bảo Châu",
-      code: "HS-23001",
-      class: "12A1",
-      grade: 12,
-      campusId: mainCampId,
-      campusName: mainCampName,
-      base: 8.5,
-      trend: 0.25, // Excellent talent
-    },
-    {
-      id: "stu-102",
-      name: "Trần Quốc Tuấn",
-      code: "HS-23002",
-      class: "12A1",
-      grade: 12,
-      campusId: mainCampId,
-      campusName: mainCampName,
-      base: 6.2,
-      trend: 0.55, // Strong growth
-    },
-    {
-      id: "stu-103",
-      name: "Phạm Thúy Hằng",
-      code: "HS-23003",
-      class: "12A2",
-      grade: 12,
-      campusId: mainCampId,
-      campusName: mainCampName,
-      base: 7.2,
-      trend: 0.1, // Steady progress
-    },
-    {
-      id: "stu-104",
-      name: "Lê Văn Hùng",
-      code: "HS-23004",
-      class: "12A3",
-      grade: 12,
-      campusId: mainCampId,
-      campusName: mainCampName,
-      base: 6.8,
-      trend: -0.65, // Critical decline
-    },
-    {
-      id: "stu-105",
-      name: "Hoàng Minh Trí",
-      code: "HS-23005",
-      class: "12A3",
-      grade: 12,
-      campusId: mainCampId,
-      campusName: mainCampName,
-      base: 4.8,
-      trend: -0.15, // At risk fail
-    },
-    {
-      id: "stu-201",
-      name: "Đỗ Thị Quỳnh Trang",
-      code: "HS-24101",
-      class: "11B1",
-      grade: 11,
-      campusId: branchCampId,
-      campusName: branchCampName,
-      base: 7.0,
-      trend: 0.3,
-    },
-    {
-      id: "stu-202",
-      name: "Vũ Quang Minh",
-      code: "HS-24102",
-      class: "11B2",
-      grade: 11,
-      campusId: branchCampId,
-      campusName: branchCampName,
-      base: 5.5,
-      trend: 0.4,
-    },
-    {
-      id: "stu-203",
-      name: "Bùi Hoàng Nam",
-      code: "HS-24103",
-      class: "11B2",
-      grade: 11,
-      campusId: branchCampId,
-      campusName: branchCampName,
-      base: 5.0,
-      trend: -0.4, // At risk
-    },
-  ];
-
-  const results: ExamScoreRecord[] = [];
-
-  studentDefs.forEach((st) => {
-    periods.forEach((p, pIdx) => {
-      subjects.forEach((sub, sIdx) => {
-        // Compute pseudo-score
-        const variation = ((sIdx * 7 + pIdx * 11) % 15) / 10 - 0.7;
-        let score = st.base + pIdx * st.trend + variation;
-        score = Math.max(2.0, Math.min(10.0, score));
-        score = Number(score.toFixed(1));
-
-        results.push({
-          id: `score-${st.id}-${p.id}-${sub.id}`,
-          studentId: st.id,
-          studentName: st.name,
-          studentCode: st.code,
-          className: st.class,
-          gradeLevel: st.grade,
-          subjectId: sub.id,
-          subjectName: sub.name,
-          examPeriodId: p.id,
-          examPeriodName: p.name,
-          schoolYear: p.year,
-          semester: p.sem,
-          examType: p.type,
-          orderIndex: p.order,
-          score,
-          campusId: st.campusId,
-          campusName: st.campusName,
-        });
-      });
-    });
-  });
-
-  return results;
 }

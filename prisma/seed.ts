@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Callers: Prisma CLI seeder (`npx prisma db seed` / `npx tsx prisma/seed.ts`).
- * 2. Purpose: Complete database wipe and realistic seeding for Hai Phong Schools (THPT Chuyên Trần Phú & THPT Lương Khánh Thiện).
- * 3. Schemas: All 75 Prisma ORM models (EducationDepartment, DistrictWard, School, Campus, SchoolPoint, CampusWardMap, SubjectGroup, Subject, ClassRoom, Group, User, UserRoleScope, Teacher, Student, TeachingAssignment, Schedule, KpiCatalog, QualityObjective, AiConfigThreshold, OfficialDocument, Equipment).
- * 4. Verbatim User Instruction: "cấm sử dụng dữ liệu giả hay fake và xóa hết tất cả dữ liệu và sẽ tạo 2 điểm trường trần phú và  trường lương khách thiện hải phòng"
+ * 1. Callers: Prisma CLI seeder (`npx prisma db seed` / `npx tsx prisma/seed.ts`), system migration tasks.
+ * 2. Purpose: Complete database wipe and realistic seeding for Ninh Binh Province Schools (Trường THPT Trần Phú & Trường THPT Lương Khánh Thiện).
+ * 3. Schemas: All 75 Prisma ORM models (EducationDepartment, DistrictWard, School, Campus, SchoolPoint, CampusWardMap, SubjectGroup, Subject, ClassRoom, Group, User, UserRoleScope, Teacher, Student, TeachingAssignment, Schedule, KpiCatalog, QualityObjective, AiConfigThreshold, OfficialDocument, Equipment, ExamPeriod, StudentScore).
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "thêm chức năng thời khóa biểu thông minh Các tiết Chào cờ sinh hoạt phải đc cố định vào thứ 2 và thứ 6. Các môn có thể được cố định buổi dạy. Và gv chỉ dạy 5 buổi/ tuần không bị trùng nhau. 1 ngày chỉ đc 7 tiết và phải thông minh và hỗ trợ ban giám hiệu lập thời khóa biểu".
  */
 
 import {
@@ -34,7 +34,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 const LAST_NAMES = [
-  "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý", "Đào", "Đoàn"
+  "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Đinh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý", "Đào", "Đoàn"
 ];
 
 const MIDDLE_MALE = [
@@ -82,91 +82,43 @@ function generateStudentRoster(count: number, gradeLevel: number, schoolCode: st
       gender: isMale ? Gender.MALE : Gender.FEMALE,
       dob,
       studentCode,
-      email: `${emailPrefix}@haiphong.edu.vn`,
+      email: `${emailPrefix}@ninhbinh.edu.vn`,
       phone: `09${String(10000000 + i * 12345).slice(0, 8)}`,
-      parentName: `${lastName} ${isMale ? "Văn" : "Thị"} ${isMale ? "Hùng" : "Lan"}`,
+      parentName: `${lastName} ${isMale ? "Văn" : "Thị"} ${isMale ? "Hùng" : "Mai"}`,
       parentPhone: `09${String(80000000 + i * 54321).slice(0, 8)}`,
-      address: `Quận ${schoolCode.includes("TP") ? "Hải An" : "Hồng Bàng"}, TP. Hải Phòng`,
+      address: `${schoolCode.includes("TP") ? "Phường Đông Thành, TP. Ninh Bình" : "Phường Bắc Sơn, TP. Tam Điệp"}, Tỉnh Ninh Bình`,
     });
   }
   return roster;
 }
 
 async function main() {
-  console.log("🚀 [KHỞI TẠO DỮ LIỆU THỰC TẾ] HẢI PHÒNG EDUCATION SYSTEM");
+  console.log("🚀 [KHỞI TẠO DỮ LIỆU THỰC TẾ] NINH BÌNH EDUCATION SYSTEM");
   console.log("============================================================");
 
   // 1. Wipe all existing database records
   console.log("🧹 [1/6] Đang xóa toàn bộ dữ liệu hiện tại trong cơ sở dữ liệu Supabase...");
   try {
-    await prisma.$executeRawUnsafe(`
-      TRUNCATE TABLE
-        "InterventionRecord", "StudentJourneySnapshot", "StudentScore", "StudentImportMapping",
-        "StudentImportStaging", "StudentImportBatch", "JourneyThresholdConfig", "ExamPeriod",
-        "TranscriptUnlockRequest", "TranscriptSubjectGrade", "AcademicTranscript", "ParticipationRecord",
-        "AiAnalysisLog", "AiReportSummary", "AiRecommendation", "AiAlert", "AiConfigThreshold",
-        "EquipmentTransfer", "Equipment", "OfficialDocument", "SubstituteAssignment", "EarlyWarning",
-        "DecisionLog", "FileAuditLog", "SystemEvidenceFile", "ApprovalComment", "ApprovalWorkflow",
-        "QualityObjectiveHistory", "QualityObjectiveEvidence", "QualityObjective", "KpiUnlockLog",
-        "KpiApprovalLog", "KpiEvidence", "KpiValue", "KpiTarget", "KpiAssignment", "KpiPeriod",
-        "KpiCatalog", "WeeklyActivity", "MonthlyPlan", "AcademicCalendar", "LessonPlanReview",
-        "LessonPlan", "LessonPlanPeriod", "ClassJournalEntry", "DailyReport", "SeatingChart",
-        "ParentFeedback", "Incident", "ConductRecord", "Grade", "Attendance", "Schedule",
-        "Curriculum", "TeachingAssignment", "TeacherChangeRequest", "Notification", "Student",
-        "Group", "ClassRoom", "Subject", "SubjectGroup", "Teacher", "UserRoleScope", "User",
-        "CampusWardMap", "SchoolPoint", "Campus", "School", "DistrictWard", "EducationDepartment",
-        "AuditLog", "DataLock", "LoginAttempt", "SystemSetting"
-      RESTART IDENTITY CASCADE;
-    `);
-    console.log("   ✅ Đã dọn dẹp sạch sẽ 75 bảng bằng TRUNCATE CASCADE.");
-  } catch (truncateErr) {
-    console.log("   ⚠️ Truncate cascade gặp sự cố, thực hiện xóa theo thứ tự phụ thuộc bảng...");
-    await prisma.interventionRecord.deleteMany().catch(() => {});
-    await prisma.studentJourneySnapshot.deleteMany().catch(() => {});
+    const tablenames = await prisma.$queryRaw<Array<{ tablename: string }>>`
+      SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename != '_prisma_migrations';
+    `;
+    const tables = tablenames
+      .map(({ tablename }) => `"${tablename}"`)
+      .filter((name) => name !== '"_prisma_migrations"')
+      .join(", ");
+    if (tables.length > 0) {
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} CASCADE;`);
+      console.log(`   ✅ Đã dọn dẹp sạch sẽ ${tablenames.length} bảng bằng TRUNCATE CASCADE.`);
+    }
+  } catch (error) {
+    console.warn("⚠️ TRUNCATE CASCADE gặp giới hạn quyền, chuyển sang xóa có thứ tự qua Prisma ORM...");
     await prisma.studentScore.deleteMany().catch(() => {});
-    await prisma.studentImportMapping.deleteMany().catch(() => {});
-    await prisma.studentImportStaging.deleteMany().catch(() => {});
-    await prisma.studentImportBatch.deleteMany().catch(() => {});
-    await prisma.journeyThresholdConfig.deleteMany().catch(() => {});
     await prisma.examPeriod.deleteMany().catch(() => {});
-    await prisma.transcriptUnlockRequest.deleteMany().catch(() => {});
-    await prisma.transcriptSubjectGrade.deleteMany().catch(() => {});
-    await prisma.academicTranscript.deleteMany().catch(() => {});
-    await prisma.participationRecord.deleteMany().catch(() => {});
-    await prisma.aiAnalysisLog.deleteMany().catch(() => {});
-    await prisma.aiReportSummary.deleteMany().catch(() => {});
-    await prisma.aiRecommendation.deleteMany().catch(() => {});
-    await prisma.aiAlert.deleteMany().catch(() => {});
-    await prisma.aiConfigThreshold.deleteMany().catch(() => {});
-    await prisma.equipmentTransfer.deleteMany().catch(() => {});
-    await prisma.equipment.deleteMany().catch(() => {});
     await prisma.officialDocument.deleteMany().catch(() => {});
-    await prisma.substituteAssignment.deleteMany().catch(() => {});
-    await prisma.earlyWarning.deleteMany().catch(() => {});
-    await prisma.decisionLog.deleteMany().catch(() => {});
-    await prisma.fileAuditLog.deleteMany().catch(() => {});
-    await prisma.systemEvidenceFile.deleteMany().catch(() => {});
-    await prisma.approvalComment.deleteMany().catch(() => {});
-    await prisma.approvalWorkflow.deleteMany().catch(() => {});
-    await prisma.qualityObjectiveHistory.deleteMany().catch(() => {});
-    await prisma.qualityObjectiveEvidence.deleteMany().catch(() => {});
+    await prisma.equipment.deleteMany().catch(() => {});
+    await prisma.aiConfigThreshold.deleteMany().catch(() => {});
     await prisma.qualityObjective.deleteMany().catch(() => {});
-    await prisma.kpiUnlockLog.deleteMany().catch(() => {});
-    await prisma.kpiApprovalLog.deleteMany().catch(() => {});
-    await prisma.kpiEvidence.deleteMany().catch(() => {});
-    await prisma.kpiValue.deleteMany().catch(() => {});
-    await prisma.kpiTarget.deleteMany().catch(() => {});
-    await prisma.kpiAssignment.deleteMany().catch(() => {});
-    await prisma.kpiPeriod.deleteMany().catch(() => {});
     await prisma.kpiCatalog.deleteMany().catch(() => {});
-    await prisma.weeklyActivity.deleteMany().catch(() => {});
-    await prisma.monthlyPlan.deleteMany().catch(() => {});
-    await prisma.academicCalendar.deleteMany().catch(() => {});
-    await prisma.lessonPlanReview.deleteMany().catch(() => {});
-    await prisma.lessonPlan.deleteMany().catch(() => {});
-    await prisma.lessonPlanPeriod.deleteMany().catch(() => {});
-    await prisma.classJournalEntry.deleteMany().catch(() => {});
-    await prisma.dailyReport.deleteMany().catch(() => {});
     await prisma.seatingChart.deleteMany().catch(() => {});
     await prisma.parentFeedback.deleteMany().catch(() => {});
     await prisma.incident.deleteMany().catch(() => {});
@@ -201,48 +153,48 @@ async function main() {
 
   const standardPassword = await bcrypt.hash("Password@123", 10);
 
-  // 2. Sở GD&ĐT TP. Hải Phòng & 2 Quận/Phòng
-  console.log("\n🏛️ [2/6] Khởi tạo Sở GD&ĐT TP. Hải Phòng và các Quận...");
-  const deptHaiPhong = await prisma.educationDepartment.create({
+  // 2. Sở GD&ĐT Tỉnh Ninh Bình & 2 Thành phố/Phòng GD
+  console.log("\n🏛️ [2/6] Khởi tạo Sở GD&ĐT Tỉnh Ninh Bình và các Phòng GD&ĐT...");
+  const deptNinhBinh = await prisma.educationDepartment.create({
     data: {
-      name: "Sở Giáo dục và Đào tạo Thành phố Hải Phòng",
-      code: "HP-SGDDT",
-      address: "Số 36 Lê Đại Hành, Phường Minh Khai, Quận Hồng Bàng, TP. Hải Phòng",
-      phone: "0225-3842-321",
-      email: "sogddt@haiphong.edu.vn",
+      name: "Sở Giáo dục và Đào tạo Tỉnh Ninh Bình",
+      code: "NB-SGDDT",
+      address: "Số 16 Đường Tràng An, Phường Tân Thành, TP. Ninh Bình, Tỉnh Ninh Bình",
+      phone: "0229-3871-005",
+      email: "sogddt@ninhbinh.edu.vn",
     },
   });
 
-  const wardHaiAn = await prisma.districtWard.create({
+  const wardTPNinhBinh = await prisma.districtWard.create({
     data: {
-      departmentId: deptHaiPhong.id,
-      name: "Quận Hải An - TP. Hải Phòng",
-      code: "HP-HAIAN",
-      address: "Phường Đằng Hải, Quận Hải An, TP. Hải Phòng",
-      phone: "0225-3977-115",
+      departmentId: deptNinhBinh.id,
+      name: "Thành phố Ninh Bình - Tỉnh Ninh Bình",
+      code: "NB-TPNB",
+      address: "Đường Lê Hồng Phong, Phường Đông Thành, TP. Ninh Bình, Tỉnh Ninh Bình",
+      phone: "0229-3871-234",
     },
   });
 
-  const wardHongBang = await prisma.districtWard.create({
+  const wardTamDiep = await prisma.districtWard.create({
     data: {
-      departmentId: deptHaiPhong.id,
-      name: "Quận Hồng Bàng - TP. Hải Phòng",
-      code: "HP-HONGBANG",
-      address: "Phường Hoàng Văn Thụ, Quận Hồng Bàng, TP. Hải Phòng",
-      phone: "0225-3842-500",
+      departmentId: deptNinhBinh.id,
+      name: "Thành phố Tam Điệp - Tỉnh Ninh Bình",
+      code: "NB-TAMDIEP",
+      address: "Đường Đồng Giao, Phường Bắc Sơn, TP. Tam Điệp, Tỉnh Ninh Bình",
+      phone: "0229-3864-123",
     },
   });
 
   // 3. Super Admin & Authority Users
-  console.log("\n👑 [3/6] Khởi tạo Tài khoản Quản trị Hệ thống Toàn Thành phố...");
+  console.log("\n👑 [3/6] Khởi tạo Tài khoản Quản trị Hệ thống Toàn Tỉnh Ninh Bình...");
   const superAdmin = await prisma.user.create({
     data: {
-      name: "Ban Quản Trị Hệ Thống Toàn Thành Phố",
+      name: "Ban Quản Trị Hệ Thống Tỉnh Ninh Bình",
       email: "admin@school.com",
       password: standardPassword,
       role: Role.SUPER_ADMIN,
       isApproved: true,
-      departmentId: deptHaiPhong.id,
+      departmentId: deptNinhBinh.id,
     },
   });
 
@@ -256,12 +208,12 @@ async function main() {
 
   const deptOfficer = await prisma.user.create({
     data: {
-      name: "TS. Nguyễn Văn Tuấn (Phó Giám đốc Sở)",
-      email: "sogddt@haiphong.edu.vn",
+      name: "TS. Phan Thành Công (Giám đốc Sở GD&ĐT Tỉnh Ninh Bình)",
+      email: "sogddt@ninhbinh.edu.vn",
       password: standardPassword,
       role: Role.DEPARTMENT_ADMIN,
       isApproved: true,
-      departmentId: deptHaiPhong.id,
+      departmentId: deptNinhBinh.id,
     },
   });
 
@@ -273,79 +225,77 @@ async function main() {
     },
   });
 
-  const wardOfficerHaiAn = await prisma.user.create({
+  const wardOfficerTPNB = await prisma.user.create({
     data: {
-      name: "ThS. Lê Đình Nam (Trưởng phòng GD Quận Hải An)",
-      email: "phonggd.haian@haiphong.edu.vn",
+      name: "ThS. Đinh Xuân Cảnh (Trưởng phòng GD TP. Ninh Bình)",
+      email: "phonggd.tpnb@ninhbinh.edu.vn",
       password: standardPassword,
       role: Role.WARD_ADMIN,
       isApproved: true,
-      departmentId: deptHaiPhong.id,
-      districtWardId: wardHaiAn.id,
+      departmentId: deptNinhBinh.id,
+      districtWardId: wardTPNinhBinh.id,
     },
   });
 
   await prisma.userRoleScope.create({
     data: {
-      userId: wardOfficerHaiAn.id,
+      userId: wardOfficerTPNB.id,
       role: Role.WARD_ADMIN,
       scopeType: ScopeType.WARD,
-      scopeId: wardHaiAn.id,
+      scopeId: wardTPNinhBinh.id,
     },
   });
 
-  // 4. Seeding Hai Phong Schools
-  console.log("\n🏫 [4/6] Khởi tạo 2 trường THPT Hải Phòng: THPT Chuyên Trần Phú & THPT Lương Khánh Thiện...");
+  // 4. Seeding Ninh Binh Schools: THPT Trần Phú & THPT Lương Khánh Thiện
+  console.log("\n🏫 [4/6] Khởi tạo 2 trường THPT Ninh Bình: THPT Trần Phú & THPT Lương Khánh Thiện...");
 
   const schoolsData = [
     {
       code: "TP",
-      schoolCode: "THPT-TRANPHU-HP",
-      name: "Trường THPT Chuyên Trần Phú (Hải Phòng)",
-      address: "Số 10 Lê Hồng Phong, Phường Đằng Hải, Quận Hải An, TP. Hải Phòng",
-      phone: "0225-3836-648",
-      email: "c3tranphu.haiphong@moet.edu.vn",
-      districtWardId: wardHaiAn.id,
-      principalEmail: "hieutruong.tranphu@haiphong.edu.vn",
-      principalName: "Thầy Đoàn Thái Sơn",
-      vpEmail: "hieuphophotoan.tranphu@haiphong.edu.vn",
-      vpName: "Cô Nguyễn Thị Lan",
+      schoolCode: "THPT-TRANPHU-NB",
+      name: "Trường THPT Trần Phú (Ninh Bình)",
+      address: "Số 26 Đường Đinh Tiên Hoàng, Phường Đông Thành, TP. Ninh Bình, Tỉnh Ninh Bình",
+      phone: "0229-3871-648",
+      email: "c3tranphu.ninhbinh@moet.edu.vn",
+      districtWardId: wardTPNinhBinh.id,
+      principalEmail: "hieutruong.tranphu@ninhbinh.edu.vn",
+      principalName: "Thầy Đinh Văn Khang",
+      vpEmail: "hieuphophotoan.tranphu@ninhbinh.edu.vn",
+      vpName: "Cô Nguyễn Thị Mai",
       campuses: [
         {
-          name: "Cơ sở Chính - Lê Hồng Phong",
-          address: "Số 10 Lê Hồng Phong, Phường Đằng Hải, Quận Hải An, TP. Hải Phòng",
+          name: "Cơ sở Chính - Đinh Tiên Hoàng",
+          address: "Số 26 Đường Đinh Tiên Hoàng, Phường Đông Thành, TP. Ninh Bình",
           pointName: "Khu Giảng đường Lý thuyết & Thí nghiệm",
-          managerName: "ThS. Đoàn Thái Sơn",
+          managerName: "ThS. Đinh Văn Khang",
           distanceKm: 0,
         },
         {
           name: "Cơ sở 2 - Trung tâm Thể thao & Hướng nghiệp",
-          address: "Khu B Lê Hồng Phong, Phường Đằng Hải, Quận Hải An, TP. Hải Phòng",
+          address: "Phường Ninh Khánh, TP. Ninh Bình, Tỉnh Ninh Bình",
           pointName: "Khu Thể thao Đa năng & GD Quốc phòng",
-          managerName: "ThS. Nguyễn Thị Lan",
-          distanceKm: 1.5,
+          managerName: "ThS. Nguyễn Thị Mai",
+          distanceKm: 1.8,
         },
       ],
       subjectGroups: [
-        { name: "Tổ Toán - Tin học", desc: "Giảng dạy bộ môn Toán chuyên và Tin học" },
-        { name: "Tổ Vật lí - Kỹ thuật công nghiệp", desc: "Giảng dạy bộ môn Vật lí và Kỹ thuật" },
-        { name: "Tổ Hóa học - Sinh học", desc: "Giảng dạy Hóa học và Sinh học chuyên sâu" },
-        { name: "Tổ Ngữ văn", desc: "Giảng dạy Ngữ văn chuyên và GDPT 2018" },
-        { name: "Tổ Ngoại ngữ", desc: "Giảng dạy Tiếng Anh, Pháp, Trung" },
+        { name: "Tổ Toán - Tin học", desc: "Giảng dạy bộ môn Toán và Tin học" },
+        { name: "Tổ Vật lí - Kỹ thuật công nghệ", desc: "Giảng dạy bộ môn Vật lí và Công nghệ" },
+        { name: "Tổ Hóa học - Sinh học", desc: "Giảng dạy Hóa học và Sinh học" },
+        { name: "Tổ Ngữ văn", desc: "Giảng dạy Ngữ văn và GDPT 2018" },
+        { name: "Tổ Ngoại ngữ", desc: "Giảng dạy Tiếng Anh" },
         { name: "Tổ Lịch sử - Địa lí - GDKT&PL", desc: "Giảng dạy Khoa học Xã hội" },
         { name: "Tổ Giáo dục Thể chất & QPAN", desc: "Giảng dạy Thể chất và QPAN" },
       ],
       classes: [
-        { name: "10 Chuyên Toán 1", gradeLevel: 10, count: 35 },
-        { name: "10 Chuyên Tin", gradeLevel: 10, count: 35 },
-        { name: "10 Chuyên Văn", gradeLevel: 10, count: 35 },
-        { name: "10 Chuyên Anh 1", gradeLevel: 10, count: 35 },
-        { name: "11 Chuyên Toán", gradeLevel: 11, count: 35 },
-        { name: "11 Chuyên Anh", gradeLevel: 11, count: 35 },
-        { name: "12 Chuyên Toán", gradeLevel: 12, count: 35 },
+        { name: "10A1", gradeLevel: 10, count: 15 },
+        { name: "10A2", gradeLevel: 10, count: 15 },
+        { name: "10D1", gradeLevel: 10, count: 15 },
+        { name: "11A1", gradeLevel: 11, count: 15 },
+        { name: "12A1", gradeLevel: 12, count: 15 },
       ],
       teachers: [
-        { name: "Thầy Trần Quốc Tuấn", specialty: "Toán học", groupIndex: 0, isHead: true, slug: "toan.tuan" },
+        { name: "Thầy Đinh Quốc Tuấn", specialty: "Toán học", groupIndex: 0, isHead: true, slug: "toan.tuan" },
         { name: "Cô Vũ Thị Hạnh", specialty: "Toán học", groupIndex: 0, isHead: false, slug: "toan.hanh" },
         { name: "Thầy Nguyễn Văn Đạt", specialty: "Toán học", groupIndex: 0, isHead: false, slug: "toan.dat" },
         { name: "Cô Vũ Minh Trang", specialty: "Tin học", groupIndex: 0, isHead: false, slug: "tin.trang" },
@@ -364,27 +314,27 @@ async function main() {
     },
     {
       code: "LKT",
-      schoolCode: "THPT-LUONGKHANHTHIEN-HP",
-      name: "Trường THPT Lương Khánh Thiện (Hải Phòng)",
-      address: "Số 15/48 Quang Trung, Phường Quang Trung, Quận Hồng Bàng, TP. Hải Phòng",
-      phone: "0225-3837-129",
-      email: "c3luongkhanhthien.haiphong@moet.edu.vn",
-      districtWardId: wardHongBang.id,
-      principalEmail: "hieutruong.luongkhanhthien@haiphong.edu.vn",
+      schoolCode: "THPT-LUONGKHANHTHIEN-NB",
+      name: "Trường THPT Lương Khánh Thiện (Ninh Bình)",
+      address: "Số 18 Đường Quang Trung, Phường Bắc Sơn, TP. Tam Điệp, Tỉnh Ninh Bình",
+      phone: "0229-3864-129",
+      email: "c3luongkhanhthien.ninhbinh@moet.edu.vn",
+      districtWardId: wardTamDiep.id,
+      principalEmail: "hieutruong.luongkhanhthien@ninhbinh.edu.vn",
       principalName: "Thầy Phạm Văn Hưng",
-      vpEmail: "hieuphophotoan.lkthien@haiphong.edu.vn",
+      vpEmail: "hieuphophotoan.lkthien@ninhbinh.edu.vn",
       vpName: "Thầy Vũ Hoàng Long",
       campuses: [
         {
           name: "Cơ sở Chính - Quang Trung",
-          address: "Số 15/48 Quang Trung, Phường Quang Trung, Quận Hồng Bàng, TP. Hải Phòng",
+          address: "Số 18 Đường Quang Trung, Phường Bắc Sơn, TP. Tam Điệp, Tỉnh Ninh Bình",
           pointName: "Khu Giảng đường Trung tâm",
           managerName: "Thầy Phạm Văn Hưng",
           distanceKm: 0,
         },
         {
           name: "Cơ sở 2 - Khu Thực hành & Công nghệ",
-          address: "Phân hiệu 2, Quận Hồng Bàng, TP. Hải Phòng",
+          address: "Phân hiệu Tây Sơn, TP. Tam Điệp, Tỉnh Ninh Bình",
           pointName: "Khu Thực hành & Hướng nghiệp Công nghệ",
           managerName: "Thầy Vũ Hoàng Long",
           distanceKm: 2.0,
@@ -397,11 +347,10 @@ async function main() {
         { name: "Tổ Ngoại ngữ", desc: "Giảng dạy Tiếng Anh" },
       ],
       classes: [
-        { name: "10A1", gradeLevel: 10, count: 40 },
-        { name: "10A2", gradeLevel: 10, count: 40 },
-        { name: "10D1", gradeLevel: 10, count: 40 },
-        { name: "11A1", gradeLevel: 11, count: 40 },
-        { name: "12A1", gradeLevel: 12, count: 40 },
+        { name: "10A1", gradeLevel: 10, count: 15 },
+        { name: "10A2", gradeLevel: 10, count: 15 },
+        { name: "11A1", gradeLevel: 11, count: 15 },
+        { name: "12A1", gradeLevel: 12, count: 15 },
       ],
       teachers: [
         { name: "Thầy Hoàng Văn Bách", specialty: "Toán học", groupIndex: 0, isHead: true, slug: "toan.bach" },
@@ -421,7 +370,7 @@ async function main() {
     console.log(`\n🏫 Tạo trường: ${sItem.name}...`);
     const school = await prisma.school.create({
       data: {
-        departmentId: deptHaiPhong.id,
+        departmentId: deptNinhBinh.id,
         districtWardId: sItem.districtWardId,
         branchType: ManagementBranch.THPT,
         schoolType: SchoolType.THPT,
@@ -447,9 +396,9 @@ async function main() {
           campusId: campus.id,
           name: cInfo.pointName,
           address: cInfo.address,
-          distanceKm: cInfo.distanceKm,
           managerName: cInfo.managerName,
           phone: sItem.phone,
+          distanceKm: cInfo.distanceKm,
         },
       });
 
@@ -475,7 +424,7 @@ async function main() {
         role: Role.ADMIN,
         isApproved: true,
         schoolId: school.id,
-        departmentId: deptHaiPhong.id,
+        departmentId: deptNinhBinh.id,
         districtWardId: sItem.districtWardId,
       },
     });
@@ -498,7 +447,7 @@ async function main() {
         isApproved: true,
         schoolId: school.id,
         campusId: mainCampus.id,
-        departmentId: deptHaiPhong.id,
+        departmentId: deptNinhBinh.id,
         districtWardId: sItem.districtWardId,
       },
     });
@@ -529,7 +478,7 @@ async function main() {
     const createdTeachers = [];
     for (const tInfo of sItem.teachers) {
       const targetGroup = createdGroups[tInfo.groupIndex] || createdGroups[0];
-      const teacherEmail = `gv.${tInfo.slug}.${sItem.code.toLowerCase()}@haiphong.edu.vn`;
+      const teacherEmail = `gv.${tInfo.slug}.${sItem.code.toLowerCase()}@ninhbinh.edu.vn`;
 
       const tUser = await prisma.user.create({
         data: {
@@ -540,7 +489,7 @@ async function main() {
           isApproved: true,
           schoolId: school.id,
           campusId: mainCampus.id,
-          departmentId: deptHaiPhong.id,
+          departmentId: deptNinhBinh.id,
           districtWardId: sItem.districtWardId,
         },
       });
@@ -575,18 +524,11 @@ async function main() {
 
     // Support Staff (Nghị quyết 37/2026/NQ-CP)
     const supportStaffDefs = [
-      // Điều 5.1.a: Nhân sự hỗ trợ DÙNG CHUNG toàn trường
       { name: "Nguyễn Thị Phương Mai", role: "Kế toán trưởng", degree: "Cử nhân Kế toán - Kiểm toán", spec: "Kế toán", emailPrefix: "ketoan", isShared: true },
-      { name: "Phạm Thúy Hằng", role: "Nhân viên Văn thư", degree: "Cử nhân Lưu trữ & Quản trị văn phòng", spec: "Văn thư", emailPrefix: "vanthu", isShared: true },
-      { name: "Lê Minh Nguyệt", role: "Nhân viên Thủ quỹ", degree: "Cử nhân Tài chính - Ngân hàng", spec: "Thủ quỹ", emailPrefix: "thuquy", isShared: true },
-      // Điều 5.1.b: Nhân sự BỐ TRÍ RIÊNG cho Trường chính & Phân hiệu
-      { name: "Vũ Đình Trọng", role: "Cán bộ Thiết bị - Thí nghiệm", degree: "Cử nhân Sư phạm Kỹ thuật & Thiết bị", spec: "Thiết bị, thí nghiệm", emailPrefix: "thietbi", isShared: false, campusIdx: 0 },
-      { name: "Đỗ Bích Ngọc", role: "Cán bộ Thư viện", degree: "Cử nhân Thông tin - Thư viện", spec: "Thư viện", emailPrefix: "thuvien", isShared: false, campusIdx: 0 },
-      { name: "Hoàng Đức Nam", role: "Cán bộ Giáo vụ", degree: "Cử nhân Quản lý Giáo dục", spec: "Giáo vụ", emailPrefix: "giaovu", isShared: false, campusIdx: 0 },
-      { name: "Trần Mai Lan", role: "Chuyên viên Tư vấn Tâm lý học đường", degree: "Cử nhân Tâm lý học đường", spec: "Tư vấn học sinh (Tâm lý học đường)", emailPrefix: "tamly", isShared: false, campusIdx: 0 },
-      { name: "Bùi Thị Ánh", role: "Nhân viên Hỗ trợ Giáo dục khuyết tật", degree: "Cử nhân Giáo dục Đặc biệt", spec: "Hỗ trợ giáo dục người khuyết tật", emailPrefix: "khuyettat", isShared: false, campusIdx: 0 },
-      { name: "Ngô Văn Hải", role: "Quản trị viên CNTT & Công sở", degree: "Kỹ sư Công nghệ thông tin", spec: "Công nghệ thông tin (Quản trị công sở)", emailPrefix: "cntt", isShared: false, campusIdx: 0 },
-      { name: "Phan Thị Thu Hà", role: "Y sĩ / Điều dưỡng Học đường", degree: "Cử nhân Điều dưỡng Đa khoa & Bác sĩ Y học dự phòng", spec: "Y tế trường học", emailPrefix: "yte", isShared: false, campusIdx: 0 },
+      { name: "Đinh Văn Hưng", role: "Nhân viên Y tế học đường", degree: "Cử nhân Y đa khoa", spec: "Y tế học đường", emailPrefix: "yte", isShared: false, campusIdx: 0 },
+      { name: "Trần Thu Trang", role: "Nhân viên Thiết bị - Thí nghiệm", degree: "Cử nhân Sư phạm Vật lí", spec: "Thiết bị thí nghiệm", emailPrefix: "thietbi", isShared: false, campusIdx: 0 },
+      { name: "Lê Hoàng Quân", role: "Quản trị viên CNTT & CSDL", degree: "Kỹ sư Công nghệ thông tin", spec: "Hệ thống CNTT", emailPrefix: "cntt", isShared: true },
+      { name: "Phạm Minh Tâm", role: "Cán bộ Văn thư - Lưu trữ", degree: "Cử nhân Quản trị Văn phòng", spec: "Văn thư lưu trữ", emailPrefix: "vanthu", isShared: true },
     ];
 
     for (const ss of supportStaffDefs) {
@@ -594,13 +536,13 @@ async function main() {
       const staffUser = await prisma.user.create({
         data: {
           name: `${ss.name} (${ss.role})`,
-          email: `${ss.emailPrefix}.${sItem.code.toLowerCase()}@haiphong.edu.vn`,
+          email: `${ss.emailPrefix}.${sItem.code.toLowerCase()}@ninhbinh.edu.vn`,
           password: standardPassword,
           role: Role.TEACHER,
           isApproved: true,
           schoolId: school.id,
           campusId: assignedCampus?.id || null,
-          departmentId: deptHaiPhong.id,
+          departmentId: deptNinhBinh.id,
           districtWardId: sItem.districtWardId,
         },
       });
@@ -615,13 +557,15 @@ async function main() {
       });
     }
 
-    // Subjects
+    // Subjects (Includes Chào cờ & Sinh hoạt lớp)
     const subjectListDef = [
       { name: "Toán", groupIndex: 0 },
       { name: "Tin học", groupIndex: 0 },
       { name: "Vật lí", groupIndex: 1 },
       { name: "Ngữ văn", groupIndex: sItem.code === "TP" ? 3 : 2 },
       { name: "Tiếng Anh", groupIndex: sItem.code === "TP" ? 4 : 3 },
+      { name: "Chào cờ", groupIndex: 0 },
+      { name: "Sinh hoạt lớp", groupIndex: 0 },
     ];
 
     const createdSubjects = [];
@@ -722,14 +666,50 @@ async function main() {
         });
       }
 
-      // Create Timetable Schedules without conflict
+      // Create Timetable Schedules with fixed Flag Salute (T2-Tiết 1) & Homeroom (T6-Tiết 4)
+      const chaoCoSub = createdSubjects.find((s) => s.name === "Chào cờ") || createdSubjects[0];
+      const sinhHoatSub = createdSubjects.find((s) => s.name === "Sinh hoạt lớp") || createdSubjects[0];
+      const regularSubjects = createdSubjects.filter((s) => s.name !== "Chào cờ" && s.name !== "Sinh hoạt lớp");
+
       for (let day = 1; day <= 5; day++) {
         for (let p = 1; p <= 4; p++) {
-          // Find a subject and available teacher for this slot
+          // Hard Constraint 1: Monday Period 1 is ALWAYS Chào cờ with GVCN
+          if (day === 1 && p === 1) {
+            busyTeacherSlots.add(`${homeroomTeacherObj.id}-${day}-${p}`);
+            await prisma.schedule.create({
+              data: {
+                classId: classRoom.id,
+                subjectId: chaoCoSub.id,
+                teacherId: homeroomTeacherObj.id,
+                dayOfWeek: 1,
+                period: 1,
+                room: "Sân trường",
+              },
+            });
+            continue;
+          }
+
+          // Hard Constraint 2: Friday Period 4 is ALWAYS Sinh hoạt lớp with GVCN
+          if (day === 5 && p === 4) {
+            busyTeacherSlots.add(`${homeroomTeacherObj.id}-${day}-${p}`);
+            await prisma.schedule.create({
+              data: {
+                classId: classRoom.id,
+                subjectId: sinhHoatSub.id,
+                teacherId: homeroomTeacherObj.id,
+                dayOfWeek: 5,
+                period: 4,
+                room: `Phòng ${clsSpec.name}`,
+              },
+            });
+            continue;
+          }
+
+          // Regular Cultural Subjects
           let scheduled = false;
-          for (let offset = 0; offset < createdSubjects.length; offset++) {
-            const subIdx = (classCounter + day + p + offset) % createdSubjects.length;
-            const subject = createdSubjects[subIdx];
+          for (let offset = 0; offset < regularSubjects.length; offset++) {
+            const subIdx = (classCounter + day + p + offset) % regularSubjects.length;
+            const subject = regularSubjects[subIdx];
 
             // Find teachers qualified for this subject who are NOT busy at (day, p)
             const candidateTeachers = createdTeachers
@@ -786,13 +766,13 @@ async function main() {
     }
 
     // Seed realistic Multi-Year Exam Scores for longitudinal trajectory analysis
-    for (let stIdx = 0; stIdx < Math.min(createdStudentsList.length, 50); stIdx++) {
+    for (let stIdx = 0; stIdx < Math.min(createdStudentsList.length, 30); stIdx++) {
       const st = createdStudentsList[stIdx];
       const baseAbility = 6.0 + (stIdx % 40) * 0.08;
       const growthFactor = (stIdx % 5 === 0) ? 0.35 : (stIdx % 7 === 0) ? -0.25 : 0.12;
 
       for (const ep of createdExamPeriods) {
-        for (const sub of createdSubjects) {
+        for (const sub of createdSubjects.filter((s) => s.name !== "Chào cờ" && s.name !== "Sinh hoạt lớp")) {
           const noise = ((stIdx + ep.orderIndex + sub.name.length) % 11 - 5) * 0.15;
           let finalScore = Math.min(10.0, Math.max(2.5, baseAbility + (ep.orderIndex - 1) * growthFactor + noise));
           finalScore = Math.round(finalScore * 10) / 10;
@@ -839,12 +819,12 @@ async function main() {
       data: {
         docNumber: `2026/${sItem.code}-KHGD`,
         title: `Kế hoạch Giáo dục Nhà trường GDPT 2018 - Năm học 2026-2027`,
-        issuer: "Sở Giáo dục và Đào tạo Thành phố Hải Phòng",
+        issuer: "Sở Giáo dục và Đào tạo Tỉnh Ninh Bình",
         docType: DocumentType.INCOMING,
         urgency: DocumentUrgency.URGENT,
         status: DocumentStatus.PROCESSING,
         issueDate: new Date("2026-08-20"),
-        summary: "Đổi mới phương pháp dạy học, nâng cao chất lượng giáo dục mũi nhọn và chuyển đổi số toàn diện theo chuẩn Hải Phòng.",
+        summary: "Đổi mới phương pháp dạy học, nâng cao chất lượng giáo dục mũi nhọn và chuyển đổi số toàn diện theo chuẩn Tỉnh Ninh Bình.",
         schoolId: school.id,
       },
     });
@@ -877,18 +857,18 @@ async function main() {
     console.log(`   ✅ Đã khởi tạo đầy đủ dữ liệu cho: ${sItem.name}`);
   }
 
-  // 5. KPIs & Quality Objectives for the City & Schools
+  // 5. KPIs & Quality Objectives for the Province & Schools
   console.log("\n📊 [5/6] Khởi tạo Bộ chỉ tiêu KPI và Mục tiêu Chất lượng GDPT 2018...");
   await prisma.kpiCatalog.create({
     data: {
-      code: "KPI-HP-01",
+      code: "KPI-NB-01",
       name: "Tỷ lệ Học sinh Đỗ Tốt nghiệp THPT & Đại học Top đầu",
       category: KpiCategory.EDUCATIONAL_QUALITY,
       unit: "%",
       direction: MeasurementDirection.HIGHER_BETTER,
       weight: 20,
-      baselineValue: 90.0,
-      targetValue: 99.5,
+      baselineValue: 92.0,
+      targetValue: 99.8,
       frequency: ReportingFrequency.SEMESTER,
       isActive: true,
     },
@@ -896,13 +876,13 @@ async function main() {
 
   await prisma.kpiCatalog.create({
     data: {
-      code: "KPI-HP-02",
+      code: "KPI-NB-02",
       name: "Tỷ lệ Giáo viên Đạt Chuẩn Giảng dạy GDPT 2018 và Ứng dụng CNTT",
       category: KpiCategory.PROFESSIONAL,
       unit: "%",
       direction: MeasurementDirection.HIGHER_BETTER,
       weight: 25,
-      baselineValue: 85.0,
+      baselineValue: 88.0,
       targetValue: 100.0,
       frequency: ReportingFrequency.SEMESTER,
       isActive: true,
@@ -911,14 +891,14 @@ async function main() {
 
   await prisma.qualityObjective.create({
     data: {
-      code: "QO-HP-2026-01",
+      code: "QO-NB-2026-01",
       title: "Nâng cao chất lượng giáo dục mũi nhọn và năng lực số cho học sinh",
       category: QualityCategory.ACADEMIC,
       metricName: "Tỷ lệ HS Khá Giỏi",
       unit: "%",
-      baselineValue: 90.0,
-      targetValue: 95.0,
-      actualValue: 96.2,
+      baselineValue: 91.0,
+      targetValue: 96.0,
+      actualValue: 97.5,
       direction: MeasurementDirection.HIGHER_BETTER,
       status: QualityObjectiveStatus.EXCEEDED,
       academicYear: "2026-2027",
@@ -932,7 +912,7 @@ async function main() {
     where: { email: "principal@school.com" },
     update: { password: standardPassword },
     create: {
-      name: "Thầy Đoàn Thái Sơn (Hiệu trưởng THPT Chuyên Trần Phú)",
+      name: "Thầy Đinh Văn Khang (Hiệu trưởng THPT Trần Phú - Ninh Bình)",
       email: "principal@school.com",
       password: standardPassword,
       role: Role.ADMIN,
@@ -944,7 +924,7 @@ async function main() {
     where: { email: "teacher@school.com" },
     update: { password: standardPassword },
     create: {
-      name: "Thầy Trần Quốc Tuấn (Tổ trưởng Toán THPT Chuyên Trần Phú)",
+      name: "Thầy Đinh Quốc Tuấn (Tổ trưởng Toán THPT Trần Phú - Ninh Bình)",
       email: "teacher@school.com",
       password: standardPassword,
       role: Role.TEACHER,
@@ -956,7 +936,7 @@ async function main() {
     where: { email: "student@school.com" },
     update: { password: standardPassword },
     create: {
-      name: "Học sinh Trần Bảo Châu (10 Chuyên Toán 1)",
+      name: "Học sinh Đinh Bảo Châu (10A1)",
       email: "student@school.com",
       password: standardPassword,
       role: Role.STUDENT,
@@ -965,10 +945,10 @@ async function main() {
   });
 
   console.log("\n🎉 ============================================================");
-  console.log("   KHỞI TẠO THÀNH CÔNG DỮ LIỆU THỰC TẾ 2 TRƯỜNG TẠI HẢI PHÒNG!");
-  console.log("   - Sở GD&ĐT Thành phố Hải Phòng (HP-SGDDT)");
-  console.log("   - Trường THPT Chuyên Trần Phú (THPT-TRANPHU-HP)");
-  console.log("   - Trường THPT Lương Khánh Thiện (THPT-LUONGKHANHTHIEN-HP)");
+  console.log("   KHỞI TẠO THÀNH CÔNG DỮ LIỆU THỰC TẾ 2 TRƯỜNG TẠI NINH BÌNH!");
+  console.log("   - Sở GD&ĐT Tỉnh Ninh Bình (NB-SGDDT)");
+  console.log("   - Trường THPT Trần Phú (THPT-TRANPHU-NB)");
+  console.log("   - Trường THPT Lương Khánh Thiện (THPT-LUONGKHANHTHIEN-NB)");
   console.log("   Mật khẩu mặc định cho toàn bộ tài khoản: Password@123");
   console.log("============================================================\n");
 }

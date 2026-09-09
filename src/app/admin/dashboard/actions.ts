@@ -3,7 +3,7 @@
  * 1. Importers/Callers: `src/app/admin/dashboard/page.tsx`.
  * 2. Affected APIs: `src/app/admin/dashboard/actions.ts` (`getNQ37DashboardSummary`, `getAdminDashboardData`).
  * 3. Schemas: Prisma models `School`, `Campus`, `User`, `ClassRoom`, `Teacher`, `Attendance`, `Student`, `Report`.
- * 4. Verbatim User Instruction: "sửa lại cấu trúc Bảng Điều Khiển Ban Giám Hiệu cho logic và phù hợp với những gì tôi mô tả về dự án"
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
  */
 
 "use server";
@@ -566,7 +566,7 @@ export async function getNQ37DashboardSummary(schoolId?: string) {
     return {
       deadlines: calculateDeadlines(new Date("2026-09-02")),
       scorecard: null,
-      schoolName: "THPT Chuyên Trần Phú (Hải Phòng)",
+      schoolName: "THPT Trần Phú (Ninh Bình)",
       hasCriticalViolations: false,
     };
   }

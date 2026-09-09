@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Student Portal Navigation (`src/app/student/schedule/page.tsx`).
+ * 2. Affected APIs: `getStudentSchedule` (`src/app/student/actions.ts`).
+ * 3. Schema: `Schedule`, `Subject`, `ClassRoom`, `Teacher`, `Student`.
+ * 4. Verbatim User Instruction: "tại sao sáng thứ 2 là môn tin học phải cố định là chào cờ chứ"
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -34,6 +42,8 @@ const PERIOD_TIMES: Record<number, { label: string; time: string }> = {
 };
 
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  "Chào cờ": { bg: "bg-red-500/10", text: "text-red-700", border: "border-red-200" },
+  "Sinh hoạt": { bg: "bg-violet-500/10", text: "text-violet-700", border: "border-violet-200" },
   Toán: { bg: "bg-indigo-500/10", text: "text-indigo-700", border: "border-indigo-200" },
   "Ngữ Văn": { bg: "bg-emerald-500/10", text: "text-emerald-700", border: "border-emerald-200" },
   "Tiếng Anh": { bg: "bg-amber-500/10", text: "text-amber-700", border: "border-amber-200" },

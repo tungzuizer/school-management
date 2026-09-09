@@ -131,7 +131,7 @@ export default function AiAssistantPrincipalDashboardPage() {
     const res = await getSubstituteRecommendationAction(
       selectedAbsentTeacherId,
       selectedPeriod,
-      "class-mock"
+      selectedPointId || "main-point"
     );
     if (res.success && res.data) {
       setSubstituteResult(res.data);

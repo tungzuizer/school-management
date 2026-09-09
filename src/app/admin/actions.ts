@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin navigation bars, layout headers, and profile components (`src/app/admin/layout.tsx`).
+ * 2. Affected APIs: `getCurrentAdminProfile`.
+ * 3. Schemas: `User`, `School`, `DistrictWard`, `EducationDepartment`.
+ * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
@@ -36,14 +44,14 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
       user.email === "superadmin@school.com" ||
       (user.role as string) === "SUPER_ADMIN";
 
-    let schoolName = user.school?.name || "Trường THPT Chuyên Trần Phú (Hải Phòng)";
-    let districtWardName = user.districtWard?.name || "Quận Hải An - TP. Hải Phòng";
-    let departmentName = user.department?.name || "Sở GD&ĐT TP. Hải Phòng";
+    let schoolName = user.school?.name || "Trường THPT Trần Phú (Ninh Bình)";
+    let districtWardName = user.districtWard?.name || "TP. Ninh Bình - Tỉnh Ninh Bình";
+    let departmentName = user.department?.name || "Sở GD&ĐT Tỉnh Ninh Bình";
 
     if (isSuperAdmin) {
-      schoolName = "Toàn bộ các Trường (Hệ thống TP. Hải Phòng)";
-      districtWardName = "Tất cả các Quận/Huyện";
-      departmentName = "Bộ GD&ĐT & Sở GD&ĐT TP. Hải Phòng";
+      schoolName = "Toàn bộ các Trường (Hệ thống Tỉnh Ninh Bình)";
+      districtWardName = "Tất cả các Thành phố/Huyện";
+      departmentName = "Bộ GD&ĐT & Sở GD&ĐT Tỉnh Ninh Bình";
     }
 
     return {
