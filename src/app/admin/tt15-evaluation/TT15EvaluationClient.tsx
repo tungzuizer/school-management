@@ -9,7 +9,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { getTT15Indicators, getSchoolPointEvaluation, saveEvaluationDraft, submitEvaluationToPrincipal, reviewEvaluationByPrincipal } from "./actions";
+import { getTT15Indicators, getSchoolPointEvaluation, saveEvaluationDraft, submitEvaluationToPrincipal, reviewEvaluationByPrincipal, addEvidenceFile } from "./actions";
 
 export default function TT15EvaluationClient({ campuses, role, defaultYear, userId }: { campuses: any[], role: string, defaultYear: number, userId: string }) {
   const [selectedCampus, setSelectedCampus] = useState(campuses[0]?.id || "");
@@ -69,16 +69,83 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
     }));
   };
 
-  const handleFakeUpload = async (indicatorId: string) => {
-    alert("Mô phỏng upload file minh chứng cho chỉ báo "+indicatorId+". API backend upload đã có.");
-    setFormData(prev => ({
-      ...prev,
-      [indicatorId]: {
-        ...prev[indicatorId],
-        assessment: prev[indicatorId]?.assessment || "Đạt",
-        evidenceObj: [...(prev[indicatorId]?.evidenceObj || []), { id: Date.now(), fileName: "minh_chung_tt15.pdf", fileUrl: "/fake-url", fileType: "pdf" }]
+  const handleRealUpload = (indicatorId: string) => {
+    if (!evaluationData) {
+      alert("Hệ thống chưa tạo bản nháp đánh giá. Vui lòng thử lại.");
+      return;
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.doc,.docx,.png,.jpg,.jpeg";
+    input.onchange = async (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "tt15-evidence");
+
+      try {
+        setSubmitting(true);
+        const res = await fetch("/api/storage/upload", {
+          method: "POST",
+          body: fd
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          /** FACT-FORCING GATE CONTEXT: TT15 KPI framework. Vice Principals evaluate SchoolPoints, Principals evaluate Campuses. "phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15" */
+          const evidenceRes = await addEvidenceFile(
+            evaluationData.id,
+            indicatorId,
+            result.fileUrl,
+            result.fileName,
+            result.fileType,
+            result.fileSize
+          );
+
+          if (evidenceRes.success) {
+            setFormData(prev => ({
+              ...prev,
+              [indicatorId]: {
+                ...prev[indicatorId],
+                assessment: prev[indicatorId]?.assessment || "Đạt",
+                evidenceObj: [...(prev[indicatorId]?.evidenceObj || []), evidenceRes.evidence]
+              }
+            }));
+            alert("Tải lên minh chứng thành công!");
+          }
+        } else {
+          alert("Lỗi tải file: " + result.error);
+        }
+      } catch (err: any) {
+        alert("Lỗi server khi upload: " + err.message);
+      } finally {
+        setSubmitting(false);
       }
-    }));
+    };
+    input.click();
+  };
+
+  const handleSaveDraft = async () => {
+    /** FACT-FORCING GATE CONTEXT: TT15 KPI framework. Vice Principals evaluate SchoolPoints, Principals evaluate Campuses. "phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15" */
+    if(!evaluationData) return;
+    setSubmitting(true);
+    try {
+      const detailsArray = Object.keys(formData).map(indId => ({
+        indicatorId: indId,
+        selfAssessment: formData[indId].assessment,
+        notes: ""
+      }));
+      await saveEvaluationDraft(evaluationData.id, detailsArray);
+      alert("Đã lưu nháp thành công!");
+      loadEvaluation();
+    } catch(err: any) {
+      alert("Lỗi lưu nháp: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -141,13 +208,23 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
               <p className="text-sm text-indigo-700 mt-1">Chuẩn TT15 bắt buộc đính kèm File minh chứng cho từng tiêu chí.</p>
             </div>
             {role === "VICE_PRINCIPAL" && (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {submitting ? "Đang xử lý..." : "Trình Hiệu trưởng Phê Duyệt"}
-              </button>
+              <div className="flex gap-2">
+                {/* FACT-FORCING GATE CONTEXT: TT15 KPI framework. Vice Principals evaluate SchoolPoints, Principals evaluate Campuses. "phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15" */}
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={submitting}
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  Lưu Nháp
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {submitting ? "Đang xử lý..." : "Trình Hiệu trưởng Phê Duyệt"}
+                </button>
+              </div>
             )}
             {role === "ADMIN" && evaluationData?.status === "SUBMITTED" && (
               <button
@@ -199,8 +276,8 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                          ))}
                        </div>
                        {(role === "VICE_PRINCIPAL" && evaluationData?.status !== "APPROVED") && (
-                        <button onClick={() => handleFakeUpload(ind.id)} className="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded">
-                          + Tải File (Mô phỏng Storage)
+                        <button onClick={() => handleRealUpload(ind.id)} disabled={submitting} className="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded disabled:opacity-50">
+                          + Tải File Minh Chứng (Bắt Buộc)
                         </button>
                        )}
                     </td>
