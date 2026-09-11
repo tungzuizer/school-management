@@ -10,6 +10,8 @@ import {
   validateKpiPeriodWeights,
   submitKpiPeriod,
   requestUnlockKpiPeriod,
+  getCampuses,
+  autoCalculateActualKpiValues,
 } from "../actions";
 import { calculateKpiScore } from "../utils";
 import { CATEGORY_LABELS, DIRECTION_LABELS, FREQUENCY_LABELS, STATUS_LABELS } from "../kpi-labels";
@@ -28,11 +30,15 @@ import {
   TrendingUp,
   BarChart2,
   Info,
+  Sparkles,
+  Building2,
 } from "lucide-react";
 
 
 export default function KpiEntryPage() {
   const [periods, setPeriods] = useState<any[]>([]);
+  const [campuses, setCampuses] = useState<any[]>([]);
+  const [selectedCampusFilter, setSelectedCampusFilter] = useState<string>("ALL");
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [periodDetails, setPeriodDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +55,7 @@ export default function KpiEntryPage() {
     title: `Kỳ đánh giá KPI Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
     year: new Date().getFullYear(),
     periodType: "MONTHLY" as ReportingFrequency,
+    campusId: "",
   });
 
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
@@ -60,21 +67,40 @@ export default function KpiEntryPage() {
   const [unlockReason, setUnlockReason] = useState("");
   const [requestedByName, setRequestedByName] = useState("Cán bộ nhập liệu KPI");
 
-  const loadPeriods = async () => {
+  const loadCampusesData = async () => {
+    const res = await getCampuses();
+    if (res.success && res.data) {
+      setCampuses(res.data);
+    }
+  };
+
+  const loadPeriods = async (campusFilter?: string) => {
     setLoading(true);
-    const res = await getKpiPeriods();
+    const filter = campusFilter !== undefined ? campusFilter : selectedCampusFilter;
+    const res = await getKpiPeriods(undefined, filter);
     if (res.success && res.data) {
       setPeriods(res.data);
-      if (res.data.length > 0 && !selectedPeriodId) {
-        setSelectedPeriodId(res.data[0].id);
+      if (res.data.length > 0) {
+        if (!selectedPeriodId || !res.data.some((p: any) => p.id === selectedPeriodId)) {
+          setSelectedPeriodId(res.data[0].id);
+        }
+      } else {
+        setSelectedPeriodId("");
+        setPeriodDetails(null);
       }
     }
     setLoading(false);
   };
 
   useEffect(() => {
+    loadCampusesData();
     loadPeriods();
   }, []);
+
+  const handleCampusFilterChange = (campusId: string) => {
+    setSelectedCampusFilter(campusId);
+    loadPeriods(campusId);
+  };
 
   const loadPeriodDetails = async (id: string) => {
     if (!id) return;
@@ -116,7 +142,12 @@ export default function KpiEntryPage() {
     if (!newPeriodData.title) return;
 
     setSaving(true);
-    const res = await createKpiPeriod(newPeriodData.title, newPeriodData.year, newPeriodData.periodType);
+    const res = await createKpiPeriod(
+      newPeriodData.title,
+      newPeriodData.year,
+      newPeriodData.periodType,
+      newPeriodData.campusId || undefined
+    );
     if (res.success && res.data) {
       setMessage({ type: "success", text: "Tạo kỳ đánh giá KPI thành công!" });
       setShowCreatePeriodModal(false);
@@ -124,6 +155,19 @@ export default function KpiEntryPage() {
       setSelectedPeriodId(res.data.id);
     } else {
       setMessage({ type: "error", text: res.error || "Lỗi tạo kỳ đánh giá." });
+    }
+    setSaving(false);
+  };
+
+  const handleAutoCalculate = async () => {
+    if (!selectedPeriodId) return;
+    setSaving(true);
+    const res = await autoCalculateActualKpiValues(selectedPeriodId);
+    if (res.success) {
+      setMessage({ type: "success", text: res.message || "Đã tự động tính toán KPI từ dữ liệu thực tế thành công!" });
+      await loadPeriodDetails(selectedPeriodId);
+    } else {
+      setMessage({ type: "error", text: res.error || "Lỗi tự động tính toán KPI." });
     }
     setSaving(false);
   };
@@ -294,20 +338,39 @@ export default function KpiEntryPage() {
       {/* Period Selection & Summary Header */}
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <Calendar className="w-5 h-5 text-indigo-600" />
-            <span className="text-sm font-semibold text-slate-700">Chọn Kỳ Đánh Giá:</span>
-            <select
-              value={selectedPeriodId}
-              onChange={(e) => setSelectedPeriodId(e.target.value)}
-              className="p-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white min-w-[280px]"
-            >
-              {periods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title} ({p.year}) - {STATUS_LABELS[p.status as KpiPeriodStatus]?.label}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-indigo-600" />
+              <span className="text-sm font-semibold text-slate-700">Phân hiệu:</span>
+              <select
+                value={selectedCampusFilter}
+                onChange={(e) => handleCampusFilterChange(e.target.value)}
+                className="p-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white min-w-[200px]"
+              >
+                <option value="ALL">Tất cả Phân hiệu</option>
+                {campuses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-indigo-600" />
+              <span className="text-sm font-semibold text-slate-700">Kỳ Đánh Giá:</span>
+              <select
+                value={selectedPeriodId}
+                onChange={(e) => setSelectedPeriodId(e.target.value)}
+                className="p-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white min-w-[280px]"
+              >
+                {periods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title} ({p.year}) - {STATUS_LABELS[p.status as KpiPeriodStatus]?.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {periodDetails && (
@@ -320,6 +383,13 @@ export default function KpiEntryPage() {
                 {STATUS_LABELS[periodDetails.status as KpiPeriodStatus]?.label}
               </span>
 
+              {periodDetails.campusId && (
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-200 flex items-center gap-1">
+                  <Building2 className="w-3 h-3" />
+                  {campuses.find((c) => c.id === periodDetails.campusId)?.name || "Cơ sở phân hiệu"}
+                </span>
+              )}
+
               {isLocked ? (
                 <button
                   onClick={() => setShowUnlockModal(true)}
@@ -329,7 +399,16 @@ export default function KpiEntryPage() {
                   Yêu cầu Mở Khóa
                 </button>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleAutoCalculate}
+                    disabled={saving || isReadOnly}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm"
+                    title="Tự động truy xuất và tổng hợp số liệu thực tế từ điểm danh, sổ đầu bài, sự cố, điểm số của phân hiệu"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Tự động tính từ CSDL thực tế
+                  </button>
                   <button
                     onClick={handleSaveDraft}
                     disabled={saving || isReadOnly}
@@ -569,6 +648,29 @@ export default function KpiEntryPage() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Áp dụng cho Phân hiệu / Cơ sở
+                </label>
+                <select
+                  value={newPeriodData.campusId}
+                  onChange={(e) =>
+                    setNewPeriodData({ ...newPeriodData, campusId: e.target.value })
+                  }
+                  className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                >
+                  <option value="">Toàn trường (Tổng hợp chung)</option>
+                  {campuses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Phân rã kỳ đánh giá theo phân hiệu giúp hệ thống tự động tổng hợp số liệu chính xác theo cơ sở.
+                </p>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">

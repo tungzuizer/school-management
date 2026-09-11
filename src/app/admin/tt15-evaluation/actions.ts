@@ -2,10 +2,10 @@
 
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Architecture: TT15 Strict Key Performance Indicator (KPI) framework.
- * 2. Hierarchy: Vice Principals evaluate SchoolPoints, Principals evaluate Campuses.
- * 3. Evidence: Submission fails server validation without evidence files.
- * 4. User Instructed: "phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15".
+ * 1. Importers/Callers: src/app/admin/tt15-evaluation/TT15EvaluationClient.tsx, src/app/vice-principal/tt15-evaluation/page.tsx.
+ * 2. Public functions affected: submitEvaluationToPrincipal, reviewEvaluationByPrincipal, saveEvaluationDraft, addEvidenceFile, getCampusEvaluationSummary.
+ * 3. Data structures: SchoolPointEvaluation, SchoolPointEvaluationDetail, TT15EvidenceFile, TT15Indicator.
+ * 4. Verbatim User Instruction: "không thay đổi gì cả ?? bạn đang làm gì vậy bạn không làm gì cả ?? tôi cần bạn làm thật kỹ" - "theo khuyến nghị".
  */
 
 import prisma from "@/lib/prisma";
@@ -209,39 +209,65 @@ export async function submitEvaluationToPrincipal(evaluationId: string) {
     where: { id: evaluationId },
     include: {
       details: {
-        include: { evidenceFiles: true }
-      }
-    }
+        include: {
+          indicator: true,
+          evidenceFiles: true,
+        },
+      },
+    },
   });
 
   if (!evalData || evalData.details.length === 0) {
-    return { success: false, error: "Không tìm thấy dữ liệu đánh giá nội bộ." };
+    return { success: false, error: "Không tìm thấy dữ liệu đánh giá nội bộ của điểm trường." };
   }
 
-  // Strict check: Evidence enforcement
-  const indicatorsEvaluated = evalData.details.filter(d => d.selfAssessment);
+  const allIndicators = await prisma.tT15Indicator.findMany();
+  const totalRequired = allIndicators.length || 17;
 
-  if (indicatorsEvaluated.length === 0) {
+  // 1. Check all 17 criteria are evaluated
+  const evaluatedCount = evalData.details.filter(
+    (d) => d.selfAssessment && ["Tốt", "Khá", "Đạt", "Không Đạt"].includes(d.selfAssessment)
+  ).length;
+
+  if (evaluatedCount < totalRequired) {
     return {
       success: false,
-      error: "BẮT BUỘC: Bạn chưa đánh giá bất kỳ tiêu chí nào."
+      error: `BẮT BUỘC (TT15): Phải đánh giá đủ tất cả ${totalRequired} tiêu chí. Hiện mới đánh giá ${evaluatedCount}/${totalRequired} tiêu chí.`,
     };
   }
 
-  const missingEvidenceDetails = indicatorsEvaluated.filter(d => d.evidenceFiles.length === 0);
-  if (missingEvidenceDetails.length > 0) {
+  // 2. Check substantive notes (>= 30 chars) for each criterion
+  const shortNotes = evalData.details.filter(
+    (d) => !d.notes || d.notes.trim().length < 30
+  );
+  if (shortNotes.length > 0) {
+    const codes = shortNotes.map((d) => d.indicator.code).slice(0, 5).join(", ");
     return {
       success: false,
-      error: "BẮT BUỘC: Mỗi tiêu chí được đánh giá đều phải có ít nhất 1 file minh chứng đính kèm để tuân thủ Thông tư 15. Bạn còn " + missingEvidenceDetails.length + " tiêu chí chưa có file."
+      error: `CHỐNG LÀM CHO CÓ: Mỗi tiêu chí phải có nội dung giải trình thực tế tối thiểu 30 ký tự. Các tiêu chí chưa đạt: ${codes}${
+        shortNotes.length > 5 ? ` và ${shortNotes.length - 5} tiêu chí khác` : ""
+      }.`,
+    };
+  }
+
+  // 3. Strict check: Evidence enforcement (at least 1 file per criterion)
+  const missingEvidenceDetails = evalData.details.filter((d) => d.evidenceFiles.length === 0);
+  if (missingEvidenceDetails.length > 0) {
+    const codes = missingEvidenceDetails.map((d) => d.indicator.code).slice(0, 5).join(", ");
+    return {
+      success: false,
+      error: `BẮT BUỘC MINH CHỨNG SỐ: Mỗi tiêu chí phải đính kèm ít nhất 1 tệp minh chứng thực tế (quyết định, biên bản, hình ảnh...). Chưa có file tại: ${codes}${
+        missingEvidenceDetails.length > 5 ? ` và ${missingEvidenceDetails.length - 5} tiêu chí khác` : ""
+      }.`,
     };
   }
 
   await prisma.schoolPointEvaluation.update({
     where: { id: evaluationId },
-    data: { status: "SUBMITTED" }
+    data: { status: "SUBMITTED" },
   });
 
-  return { success: true, message: "Đã nộp đánh giá lên Hiệu trưởng thành công." };
+  return { success: true, message: "Đã nộp toàn bộ hồ sơ đánh giá và minh chứng số lên Hiệu trưởng phê duyệt thành công!" };
 }
 
 /**
@@ -260,7 +286,7 @@ export async function savePrincipalReviewDetails(
       data: {
         principalComment: r.principalComment,
         score: r.score,
-      }
+      },
     });
   }
 
@@ -281,14 +307,14 @@ export async function getCampusEvaluationSummary(campusId: string, year: number,
             include: {
               indicator: true,
               evidenceFiles: true,
-            }
-          }
-        }
-      }
-    }
+            },
+          },
+        },
+      },
+    },
   });
 
-  const summary = points.map(p => {
+  const summary = points.map((p) => {
     const evalItem = p.evaluations[0] || null;
     const ranking = evalItem ? calculateTT15Ranking(evalItem.details) : null;
     return {
@@ -310,13 +336,16 @@ export async function getCampusEvaluationSummary(campusId: string, year: number,
  * Called by Principal to approve or reject an evaluation.
  */
 export async function reviewEvaluationByPrincipal(evaluationId: string, action: "APPROVE" | "REJECT", comments: string) {
-  if (action === "REJECT" && (!comments || comments.trim().length === 0)) {
-    return { success: false, error: "Nếu yêu cầu làm lại, phải nhập ý kiến chỉ đạo." };
+  if (!comments || comments.trim().length < 20) {
+    return {
+      success: false,
+      error: "BẮT BUỘC: Hiệu trưởng phải nhập nhận xét/ý kiến chỉ đạo thẩm định tối thiểu 20 ký tự.",
+    };
   }
 
   const evalData = await prisma.schoolPointEvaluation.findUnique({
     where: { id: evaluationId },
-    include: { details: true }
+    include: { details: true },
   });
 
   const rankInfo = evalData ? calculateTT15Ranking(evalData.details) : null;
@@ -326,8 +355,8 @@ export async function reviewEvaluationByPrincipal(evaluationId: string, action: 
     data: {
       status: action === "APPROVE" ? "APPROVED" : "REJECTED",
       notes: comments,
-      totalScore: rankInfo?.totalScore || null
-    }
+      totalScore: rankInfo?.totalScore || null,
+    },
   });
 
   return { success: true };

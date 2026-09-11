@@ -1,7 +1,16 @@
 "use client";
 
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin / Vice Principal / Principal KPI approval navigation.
+ * 2. Public functions affected: KpiApprovalPage component, multi-tier status transitions.
+ * 3. Data structures: Campus, KpiPeriod, KpiPeriodStatus, KpiReviewerLog, KpiUnlockLog.
+ * 4. Verbatim User Instruction: "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT".
+ */
+
 import { useEffect, useState } from "react";
 import {
+  getCampuses,
   getKpiPeriods,
   getKpiPeriodDetails,
   validateKpiPeriodWeights,
@@ -28,9 +37,12 @@ import {
   Clock,
   ChevronRight,
   Info,
+  Building2,
 } from "lucide-react";
 
 export default function KpiApprovalPage() {
+  const [campuses, setCampuses] = useState<any[]>([]);
+  const [selectedCampusId, setSelectedCampusId] = useState<string>("");
   const [periods, setPeriods] = useState<any[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [periodDetails, setPeriodDetails] = useState<any>(null);
@@ -45,20 +57,33 @@ export default function KpiApprovalPage() {
   const [reviewerName, setReviewerName] = useState("");
   const [reviewerComments, setReviewerComments] = useState("");
 
-  const loadPeriods = async () => {
+  const loadPeriods = async (campusId?: string) => {
     setLoading(true);
-    const res = await getKpiPeriods();
+    const targetCampus = campusId !== undefined ? campusId : selectedCampusId;
+    const res = await getKpiPeriods(targetCampus || undefined);
     if (res.success && res.data) {
       setPeriods(res.data);
-      if (res.data.length > 0 && !selectedPeriodId) {
-        setSelectedPeriodId(res.data[0].id);
+      if (res.data.length > 0) {
+        if (!res.data.some((p: any) => p.id === selectedPeriodId)) {
+          setSelectedPeriodId(res.data[0].id);
+        }
+      } else {
+        setSelectedPeriodId("");
+        setPeriodDetails(null);
       }
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    loadPeriods();
+    const init = async () => {
+      const cRes = await getCampuses();
+      if (cRes.success && cRes.data) {
+        setCampuses(cRes.data);
+      }
+      await loadPeriods();
+    };
+    init();
   }, []);
 
   const loadPeriodDetails = async (id: string) => {
@@ -141,6 +166,11 @@ export default function KpiApprovalPage() {
     setProcessing(false);
   };
 
+  const handleCampusChange = async (campusId: string) => {
+    setSelectedCampusId(campusId);
+    await loadPeriods(campusId);
+  };
+
   const currentStatus = periodDetails?.status as KpiPeriodStatus;
 
   return (
@@ -179,43 +209,70 @@ export default function KpiApprovalPage() {
         </div>
       )}
 
-      {/* Period Selection */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <FileCheck className="w-5 h-5 text-indigo-600" />
-          <span className="text-sm font-semibold text-slate-700">Chọn Kỳ Cần Phê Duyệt:</span>
-          <select
-            value={selectedPeriodId}
-            onChange={(e) => setSelectedPeriodId(e.target.value)}
-            className="p-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white min-w-[300px]"
-          >
-            {periods.length === 0 ? (
-              <option value="">-- Chưa có kỳ KPI nào --</option>
-            ) : (
-              periods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title} ({p.year}) - {STATUS_LABELS[p.status as KpiPeriodStatus]?.label}
+      {/* Period Selection & Filter */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+          {/* Campus Selector */}
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-indigo-600" />
+            <span className="text-sm font-semibold text-slate-700">Phân hiệu:</span>
+            <select
+              value={selectedCampusId}
+              onChange={(e) => handleCampusChange(e.target.value)}
+              className="p-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white min-w-[200px]"
+            >
+              <option value="">-- Tất cả Phân hiệu --</option>
+              {campuses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
-              ))
-            )}
-          </select>
+              ))}
+            </select>
+          </div>
+
+          {/* Period Selector */}
+          <div className="flex items-center gap-2">
+            <FileCheck className="w-5 h-5 text-indigo-600" />
+            <span className="text-sm font-semibold text-slate-700">Kỳ Đánh Giá:</span>
+            <select
+              value={selectedPeriodId}
+              onChange={(e) => setSelectedPeriodId(e.target.value)}
+              className="p-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white min-w-[280px]"
+            >
+              {periods.length === 0 ? (
+                <option value="">-- Không có kỳ KPI phù hợp --</option>
+              ) : (
+                periods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title} ({p.year}){p.campus ? ` - [${p.campus.name}]` : " - [Toàn trường]"} - {STATUS_LABELS[p.status as KpiPeriodStatus]?.label}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
         </div>
 
         {periodDetails && (
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-xs text-slate-400 font-semibold uppercase">Điểm KPI tổng thể</div>
-              <div className="text-2xl font-extrabold text-indigo-600">
+              <div className="text-2xl font-extrabold text-slate-900">
                 {periodDetails.overallScore ?? 0} / 100
               </div>
             </div>
-            <span
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${
-                STATUS_LABELS[currentStatus]?.class
-              }`}
-            >
-              {STATUS_LABELS[currentStatus]?.label}
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${
+                  STATUS_LABELS[currentStatus]?.class
+                }`}
+              >
+                {STATUS_LABELS[currentStatus]?.label}
+              </span>
+              <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                <Building2 className="w-3 h-3 text-slate-400" />
+                {periodDetails.campus?.name || "Toàn trường"}
+              </span>
+            </div>
           </div>
         )}
       </div>

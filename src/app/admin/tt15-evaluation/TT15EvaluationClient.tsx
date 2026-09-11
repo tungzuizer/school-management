@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: src/app/admin/tt15-evaluation/page.tsx.
- * 2. Affected APIs: getTT15Indicators, getSchoolPointEvaluation, submitEvaluationToPrincipal, reviewEvaluationByPrincipal
- * 3. Schema: TT15Indicator, SchoolPointEvaluation, TT15EvidenceFile
- * 4. Verbatim User Instruction: "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT"
+ * 1. Importers/Callers: src/app/admin/tt15-evaluation/page.tsx, src/app/vice-principal/tt15-evaluation/page.tsx.
+ * 2. Affected APIs: getTT15Indicators, getSchoolPointEvaluation, submitEvaluationToPrincipal, reviewEvaluationByPrincipal, saveEvaluationDraft, addEvidenceFile, getCampusEvaluationSummary.
+ * 3. Schema: TT15Indicator, SchoolPointEvaluation, TT15EvidenceFile, SchoolPointEvaluationDetail.
+ * 4. Verbatim User Instruction: "không thay đổi gì cả ?? bạn đang làm gì vậy bạn không làm gì cả ?? tôi cần bạn làm thật kỹ" - "theo khuyến nghị".
  */
 
 "use client";
@@ -92,25 +92,36 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
   }, [selectedPoint, defaultYear, loadEvaluation]);
 
   const handleAssessmentChange = (indicatorId: string, val: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [indicatorId]: {
         ...prev[indicatorId],
         assessment: val,
-        evidenceObj: prev[indicatorId]?.evidenceObj || []
-      }
+        evidenceObj: prev[indicatorId]?.evidenceObj || [],
+      },
+    }));
+  };
+
+  const handleNotesChange = (indicatorId: string, val: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [indicatorId]: {
+        ...prev[indicatorId],
+        notes: val,
+        evidenceObj: prev[indicatorId]?.evidenceObj || [],
+      },
     }));
   };
 
   const handlePrincipalReviewChange = (indicatorId: string, field: "principalComment" | "score", val: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [indicatorId]: {
         ...prev[indicatorId],
         assessment: prev[indicatorId]?.assessment || "",
         evidenceObj: prev[indicatorId]?.evidenceObj || [],
-        [field]: val
-      }
+        [field]: val,
+      },
     }));
   };
 
@@ -513,9 +524,9 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                         <button
                           className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-xs font-bold"
                           onClick={async () => {
-                            const reason = window.prompt("Nhập lý do từ chối/yêu cầu làm lại (bắt buộc):");
-                            if (!reason || reason.trim() === "") {
-                              alert("Bắt buộc phải nhập lý do khi từ chối!");
+                            const reason = window.prompt("Nhập lý do từ chối/yêu cầu phúc tra (bắt buộc tối thiểu 20 ký tự):");
+                            if (!reason || reason.trim().length < 20) {
+                              alert("Bắt buộc phải nhập ý kiến chỉ đạo tối thiểu 20 ký tự khi yêu cầu làm lại!");
                               return;
                             }
                             const res = await reviewEvaluationByPrincipal(evaluationData.id, "REJECT", reason);
@@ -532,14 +543,17 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                         <button
                           className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-xs font-black shadow-sm"
                           onClick={async () => {
-                            if (window.confirm("Bấm OK để chính thức Phê Duyệt kết quả đánh giá Điểm trường này theo TT15.")) {
-                              const res = await reviewEvaluationByPrincipal(evaluationData.id, "APPROVE", "Đồng ý xếp loại.");
-                              if (res.success) {
-                                alert("Đã phê duyệt thành công!");
-                                loadEvaluation();
-                              } else {
-                                alert("Lỗi: " + res.error);
-                              }
+                            const note = window.prompt("Nhập ý kiến kết luận phê duyệt (tối thiểu 20 ký tự):", "Đã thẩm định đầy đủ hồ sơ minh chứng và chấp thuận xếp loại của điểm trường.");
+                            if (!note || note.trim().length < 20) {
+                              alert("Bắt buộc phải nhập ý kiến kết luận phê duyệt tối thiểu 20 ký tự!");
+                              return;
+                            }
+                            const res = await reviewEvaluationByPrincipal(evaluationData.id, "APPROVE", note);
+                            if (res.success) {
+                              alert("Đã phê duyệt thành công!");
+                              loadEvaluation();
+                            } else {
+                              alert("Lỗi: " + res.error);
                             }
                           }}
                         >
@@ -587,7 +601,7 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                                 </td>
 
                                 {/* Vice Principal Column */}
-                                <td className="p-3 border-r align-top">
+                                <td className="p-3 border-r align-top space-y-2">
                                   <select
                                     value={rowData.assessment || ""}
                                     onChange={(e) => handleAssessmentChange(ind.id, e.target.value)}
@@ -606,6 +620,29 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                                     <option value="Đạt">Đạt (Mức 1)</option>
                                     <option value="Không Đạt">Không Đạt</option>
                                   </select>
+
+                                  <div className="space-y-1">
+                                    <textarea
+                                      value={rowData.notes || ""}
+                                      placeholder={role === "VICE_PRINCIPAL" ? "Giải trình thực trạng điểm trường (Tối thiểu 30 ký tự)..." : "Chưa có giải trình."}
+                                      onChange={(e) => handleNotesChange(ind.id, e.target.value)}
+                                      disabled={role !== "VICE_PRINCIPAL" || evaluationData?.status === "APPROVED"}
+                                      rows={2}
+                                      className={`w-full text-xs border rounded-lg p-2 ${
+                                        (rowData.notes || "").trim().length >= 30
+                                          ? "border-emerald-300 bg-emerald-50/20"
+                                          : "border-slate-300 bg-white"
+                                      } disabled:bg-slate-50`}
+                                    />
+                                    <div className="flex justify-between items-center text-[10px]">
+                                      <span className={(rowData.notes || "").trim().length >= 30 ? "text-emerald-700 font-bold" : "text-slate-400"}>
+                                        {(rowData.notes || "").trim().length}/30 ký tự
+                                      </span>
+                                      {(rowData.notes || "").trim().length < 30 && (
+                                        <span className="text-amber-600 font-medium">Cần ≥ 30 ký tự</span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </td>
 
                                 {/* Evidence Files Column */}
