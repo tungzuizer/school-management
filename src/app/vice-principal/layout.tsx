@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Next.js root layout for `/vice-principal/*` (`src/app/vice-principal/dashboard/page.tsx`, `src/app/admin/tt15-evaluation/page.tsx`, etc.).
+ * 1. Importers/Callers: Next.js root layout for `/vice-principal/*` (`src/app/vice-principal/dashboard/page.tsx`, `src/app/vice-principal/tt15-evaluation/page.tsx`, etc.).
  * 2. Affected APIs: `VicePrincipalLayout` default export in `src/app/vice-principal/layout.tsx`.
  * 3. Schema: `MenuItem`, `MenuGroup`.
- * 4. Verbatim User Instruction: "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT".
+ * 4. Verbatim User Instruction: "đánh giá TT15 lỗi 404 This page could not be found." - "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT".
  */
 
 "use client";
@@ -77,7 +77,7 @@ const menuGroups: MenuGroup[] = [
       { label: "Lớp học phụ trách", href: "/vice-principal/classes", icon: School, description: "Danh sách lớp học cơ sở" },
       { label: "Hồ sơ học sinh", href: "/vice-principal/students", icon: Users, description: "Danh sách & hồ sơ học sinh" },
       { label: "Quản lý điểm danh", href: "/vice-principal/attendance", icon: ClipboardCheck, description: "Báo cáo chuyên cần cơ sở" },
-      { label: "Đánh giá chuẩn TT15", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15", description: "Đánh giá điểm trường & minh chứng" },
+      { label: "Đánh giá chuẩn TT15", href: "/vice-principal/tt15-evaluation", icon: Target, badge: "TT 15", description: "Đánh giá điểm trường & minh chứng" },
     ],
   },
   {

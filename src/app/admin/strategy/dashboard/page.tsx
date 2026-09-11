@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js App Router for `/admin/strategy/dashboard`, linked from `src/app/admin/layout.tsx`.
+ * 2. Affected APIs: `getStrategyDashboardData` in `src/app/admin/strategy/dashboard/actions.ts`.
+ * 3. Data Schemas: `StrategyDashboardFilters`, `Campus`, `QualityObjective`, `KpiPeriod`, `KpiValue`, `EarlyWarning`, `SchoolPointEvaluation`.
+ * 4. Verbatim User Instruction: "bộ lọc ko thể dùng logic nát bét ko khác gì cũ" - "bạn thật sự đã đọc các nghị quyết chưa bạn đã sửa theo chưa bạn đã đọc nghị định mới hiệu trưởng quản lý nhiều trường chưa và nghiêm cấm fake dữ liệu sao ở phần phân hiệu kpi lại có 4 phân hiệu và sao khi tôi chỉnh phân hiệu thông số lại không thay đổi bạn fake dữ liệu hả logic fake dữ liệu hả ??".
+ */
+
 "use client";
 
 import React, { useState, useEffect, useTransition } from "react";
@@ -29,6 +37,7 @@ import {
   PieChart as PieIcon,
   Printer,
   ChevronLeft,
+  RotateCcw,
 } from "lucide-react";
 import { getStrategyDashboardData, StrategyDashboardFilters } from "./actions";
 
@@ -93,6 +102,25 @@ export default function StrategyDashboardPage() {
   const charts = dashboardData?.charts || {};
   const governanceWarnings = dashboardData?.governanceWarnings || [];
   const campusProgressList = dashboardData?.campusProgressList || [];
+
+  const isFiltered =
+    filters.academicYear !== "2026-2027" ||
+    filters.period !== "ALL" ||
+    filters.campusId !== "ALL" ||
+    filters.kpiCategory !== "ALL" ||
+    filters.responsiblePerson !== "ALL" ||
+    filters.status !== "ALL";
+
+  const handleResetFilters = () => {
+    setFilters({
+      academicYear: "2026-2027",
+      period: "ALL",
+      campusId: "ALL",
+      kpiCategory: "ALL",
+      responsiblePerson: "ALL",
+      status: "ALL",
+    });
+  };
 
   return (
     <div className={`p-6 space-y-6 min-h-screen ${isPresentationMode ? "bg-slate-900 text-white fixed inset-0 z-50 overflow-y-auto p-8" : "bg-slate-50 text-slate-900"}`}>
@@ -159,7 +187,7 @@ export default function StrategyDashboardPage() {
             onClick={() => setIsPresentationMode(!isPresentationMode)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm shadow-md transition ${
               isPresentationMode
-                ? "bg-amber-500 hover:bg-amber-600 text-slate-950"
+                ? "bg-amber-500 hover:bg-amber-600 text-amber-950 font-black"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
           >
@@ -182,17 +210,27 @@ export default function StrategyDashboardPage() {
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600">
             <Filter className="w-4 h-4" /> Bộ Lọc Điều Hành Chiến Lược Chung:
           </div>
-          {isPresentationMode && (
-            <div className="flex items-center gap-2 text-xs text-slate-300">
-              <span>Tự động chuyển slide:</span>
+          <div className="flex items-center gap-3">
+            {isFiltered && (
               <button
-                onClick={() => setAutoRotate(!autoRotate)}
-                className={`px-3 py-1 rounded-md font-bold text-xs ${autoRotate ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-400"}`}
+                onClick={handleResetFilters}
+                className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
               >
-                {autoRotate ? "BẬT" : "TẮT"}
+                <RotateCcw className="w-3.5 h-3.5" /> Xóa bộ lọc
               </button>
-            </div>
-          )}
+            )}
+            {isPresentationMode && (
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <span>Tự động chuyển slide:</span>
+                <button
+                  onClick={() => setAutoRotate(!autoRotate)}
+                  className={`px-3 py-1 rounded-md font-bold text-xs transition ${autoRotate ? "bg-emerald-600 text-white" : "bg-slate-700 text-white hover:bg-slate-600"}`}
+                >
+                  {autoRotate ? "BẬT" : "TẮT"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -260,11 +298,21 @@ export default function StrategyDashboardPage() {
               }`}
             >
               <option value="ALL">Tất cả nhóm KPI</option>
-              <option value="ACADEMIC">Chất lượng học tập</option>
-              <option value="TEACHER_QUALITY">Chất lượng đội ngũ</option>
-              <option value="DIGITAL_TRANSFORMATION">Chuyển đổi số</option>
-              <option value="SCHOOL_SAFETY">An toàn trường học</option>
-              <option value="FACILITIES">Cơ sở vật chất</option>
+              {dashboardData?.availableCategories && dashboardData.availableCategories.length > 0 ? (
+                dashboardData.availableCategories.map((cat: any) => (
+                  <option key={cat.key} value={cat.key}>
+                    {cat.label}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="EDUCATIONAL_QUALITY">Chất lượng học tập</option>
+                  <option value="STAFF_PERSONNEL">Chất lượng đội ngũ</option>
+                  <option value="DIGITAL_TRANSFORMATION">Chuyển đổi số</option>
+                  <option value="SCHOOL_SAFETY">An toàn trường học</option>
+                  <option value="FACILITIES">Cơ sở vật chất</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -279,8 +327,18 @@ export default function StrategyDashboardPage() {
               }`}
             >
               <option value="ALL">Tất cả nhân sự</option>
-              <option value="BGH">Ban Giám Hiệu</option>
-              <option value="Tổ trưởng">Tổ trưởng Chuyên môn</option>
+              {dashboardData?.responsiblePersons && dashboardData.responsiblePersons.length > 0 ? (
+                dashboardData.responsiblePersons.map((rp: string) => (
+                  <option key={rp} value={rp}>
+                    {rp}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="BGH">Ban Giám Hiệu</option>
+                  <option value="Tổ trưởng">Tổ trưởng Chuyên môn</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -296,8 +354,9 @@ export default function StrategyDashboardPage() {
             >
               <option value="ALL">Tất cả trạng thái</option>
               <option value="ACHIEVED">Đạt / Vượt</option>
-              <option value="AT_RISK">Có nguy cơ / Cảnh báo</option>
-              <option value="FAILED">Không đạt</option>
+              <option value="NEAR_TARGET">Gần đạt (80-99%)</option>
+              <option value="AT_RISK">Có nguy cơ (60-79%)</option>
+              <option value="FAILED">Không đạt (&lt;60%)</option>
             </select>
           </div>
         </div>
@@ -383,14 +442,14 @@ export default function StrategyDashboardPage() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-600">
+            <span className="text-xs font-bold uppercase tracking-wider text-sky-600">
               Điểm KPI Toàn Trường
             </span>
-            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+            <div className="p-2 bg-sky-50 text-sky-600 rounded-lg">
               <Sparkles className="w-5 h-5" />
             </div>
           </div>
-          <div className={`text-4xl font-black mt-2 ${isPresentationMode ? "text-purple-400 text-5xl" : "text-purple-700"}`}>
+          <div className={`text-4xl font-black mt-2 ${isPresentationMode ? "text-sky-400 text-5xl" : "text-sky-700"}`}>
             {summaryCards.schoolKpiScore ?? 0}
             <span className="text-sm font-semibold text-slate-400">/100</span>
           </div>
@@ -604,14 +663,14 @@ export default function StrategyDashboardPage() {
         {/* Chart 3: KPI Score by Group */}
         <div className={`p-6 rounded-2xl border shadow-sm ${isPresentationMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`}>
           <h3 className={`font-bold text-base mb-4 flex items-center gap-2 ${isPresentationMode ? "text-white text-xl" : "text-slate-800"}`}>
-            <Sparkles className="w-5 h-5 text-purple-600" />
+            <Sparkles className="w-5 h-5 text-sky-600" />
             3. Điểm KPI Theo Nhóm Quản Lý
           </h3>
           <div className="grid grid-cols-2 gap-3">
             {charts.kpiScoreByGroup?.map((g: any, idx: number) => (
-              <div key={idx} className={`p-3 rounded-xl border ${isPresentationMode ? "bg-slate-900 border-slate-700" : "bg-purple-50/50 border-purple-100"}`}>
+              <div key={idx} className={`p-3 rounded-xl border ${isPresentationMode ? "bg-slate-900 border-slate-700" : "bg-sky-50/50 border-sky-100"}`}>
                 <div className="text-xs text-slate-500 font-medium">{g.group}</div>
-                <div className="text-2xl font-black text-purple-700 mt-1">{g.score} <span className="text-xs text-slate-400">đ</span></div>
+                <div className="text-2xl font-black text-sky-800 mt-1">{g.score} <span className="text-xs text-slate-400">đ</span></div>
               </div>
             ))}
           </div>
@@ -731,12 +790,12 @@ export default function StrategyDashboardPage() {
                     <span
                       className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                         warn.level === "KHAN_CAP"
-                          ? "bg-red-100 text-red-800 border-red-300 animate-pulse"
+                          ? "bg-red-100 text-red-900 border-red-300 animate-pulse"
                           : warn.level === "QUAN_TRONG"
-                          ? "bg-orange-100 text-orange-800 border-orange-300"
+                          ? "bg-orange-100 text-orange-900 border-orange-300"
                           : warn.level === "CAN_CHU_Y"
-                          ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                          : "bg-blue-100 text-blue-800 border-blue-300"
+                          ? "bg-amber-100 text-amber-900 border-amber-300"
+                          : "bg-blue-100 text-blue-900 border-blue-300"
                       }`}
                     >
                       {warn.levelLabel}
@@ -746,8 +805,8 @@ export default function StrategyDashboardPage() {
                   <td className="py-3.5 px-3 text-slate-500 font-medium whitespace-nowrap">{warn.dueDate}</td>
                   <td className="py-3.5 px-3 whitespace-nowrap">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        warn.status === "DA_XU_LY" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"
+                      className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                        warn.status === "DA_XU_LY" ? "bg-emerald-600 text-white" : "bg-slate-600 text-white"
                       }`}
                     >
                       {warn.status === "DA_XU_LY" ? "Đã xử lý" : "Chưa xử lý"}
@@ -822,10 +881,10 @@ export default function StrategyDashboardPage() {
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-[10px] font-extrabold border ${
                         cp.overallStatus === "XUAT_SAC"
-                          ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                          ? "bg-emerald-100 text-emerald-900 border-emerald-300"
                           : cp.overallStatus === "CAN_CHU_Y"
-                          ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                          : "bg-red-100 text-red-800 border-red-300"
+                          ? "bg-amber-100 text-amber-900 border-amber-300"
+                          : "bg-red-100 text-red-900 border-red-300"
                       }`}
                     >
                       {cp.overallStatusLabel}

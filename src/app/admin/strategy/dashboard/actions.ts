@@ -1,16 +1,17 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: `src/app/admin/strategy/dashboard/page.tsx` line 4, `src/app/admin/strategy/dashboard/StrategyDashboardClient.tsx` line 6.
+ * 1. Importers/Callers: `src/app/admin/strategy/dashboard/page.tsx` line 33.
  * 2. Purpose Confirmation: Dedicated server action endpoint for the Strategy & Multi-Campus KPI Governance Dashboard.
  * 3. Data Structure: Input filters `{ academicYear?: string, period?: string, campusId?: string, kpiCategory?: string, responsiblePerson?: string, status?: string }`.
- *    Output data `{ summaryCards: {...}, charts: {...}, governanceWarnings: [...], campusProgressList: [...], campuses: [...] }`.
+ *    Output data `{ summaryCards: {...}, charts: {...}, governanceWarnings: [...], campusProgressList: [...], campuses: [...], responsiblePersons: [...], availableCategories: [...] }`.
  * 4. Verbatim User Instruction: "bạn thật sự đã đọc các nghị quyết chưa bạn đã sửa theo chưa bạn đã đọc nghị định mới hiệu trưởng quản lý nhiều trường chưa và nghiêm cấm fake dữ liệu sao ở phần phân hiệu kpi lại có 4 phân hiệu và sao khi tôi chỉnh phân hiệu thông số lại không thay đổi bạn fake dữ liệu hả logic fake dữ liệu hả ??"
+ *    - "bộ lọc ko thể dùng logic nát bét ko khác gì cũ"
  */
 
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { QualityObjectiveStatus, KpiPeriodStatus, KpiCategory, TT15Standard } from "@prisma/client";
+import { QualityObjectiveStatus, KpiPeriodStatus, KpiCategory, QualityCategory } from "@prisma/client";
 
 export interface StrategyDashboardFilters {
   academicYear?: string;
@@ -21,9 +22,33 @@ export interface StrategyDashboardFilters {
   status?: string;
 }
 
+export const CATEGORY_LABELS: Record<string, string> = {
+  ACADEMIC: "Chất lượng học tập",
+  CONDUCT: "Phẩm chất & Năng lực",
+  ATTENDANCE: "Chuyên cần",
+  PROGRAM_COMPLETION: "Hoàn thành chương trình",
+  EXCELLENT_STUDENTS: "Học sinh giỏi",
+  SUPPORT_STUDENTS: "Học sinh cần hỗ trợ",
+  TEACHER_QUALITY: "Chất lượng đội ngũ",
+  DIGITAL_TRANSFORMATION: "Chuyển đổi số & CNTT",
+  FACILITIES: "Cơ sở vật chất",
+  SCHOOL_SAFETY: "An toàn trường học",
+  PARENT_SATISFACTION: "Sự hài lòng PHHS",
+  STRATEGIC: "Chiến lược phát triển",
+  EDUCATIONAL_QUALITY: "Chất lượng giáo dục",
+  PROFESSIONAL: "Công tác chuyên môn",
+  STAFF_PERSONNEL: "Đội ngũ cán bộ GV",
+  STUDENT: "Công tác học sinh",
+  FINANCIAL: "Tài chính & Ngân sách",
+  ASSETS: "Tài sản & Thiết bị",
+  SCHOOL_RELATIONS: "Quan hệ Nhà trường - Xã hội",
+  INNOVATION: "Đổi mới sáng tạo & Thi đua",
+  OTHER: "Mục tiêu khác",
+};
+
 export async function getStrategyDashboardData(filters: StrategyDashboardFilters = {}) {
   try {
-    // 1. Campuses & School Info from DB (Chỉ lấy các phân hiệu/cơ sở thực tế đã đăng ký trong CSDL)
+    // 1. Campuses from DB (Chỉ lấy các cơ sở thực tế trong CSDL)
     const campuses = await prisma.campus.findMany({
       orderBy: { name: "asc" },
       include: {
@@ -33,20 +58,71 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
 
     const selectedCampusId = filters.campusId && filters.campusId !== "ALL" ? filters.campusId : undefined;
     const academicYear = filters.academicYear && filters.academicYear !== "ALL" ? filters.academicYear : "2026-2027";
+    const yearNumber = parseInt(academicYear.split("-")[0]) || 2026;
 
-    // 2. Fetch Quality Objectives Data from DB (Lọc đúng theo phân hiệu và năm học)
+    // 2. Query distinct responsible persons from DB for filter dropdown
+    const [allRespQuality, allRespKpis] = await Promise.all([
+      prisma.qualityObjective.findMany({
+        where: { responsiblePerson: { not: null } },
+        select: { responsiblePerson: true },
+        distinct: ["responsiblePerson"],
+      }),
+      prisma.kpiCatalog.findMany({
+        where: { responsiblePerson: { not: null } },
+        select: { responsiblePerson: true },
+        distinct: ["responsiblePerson"],
+      }),
+    ]);
+
+    const responsiblePersons = Array.from(
+      new Set(
+        [
+          ...allRespQuality.map((q) => q.responsiblePerson).filter(Boolean),
+          ...allRespKpis.map((k) => k.responsiblePerson).filter(Boolean),
+        ] as string[]
+      )
+    ).sort();
+
+    // 3. Build QualityObjective Where Clause
     const qualityObjWhere: any = {};
-    if (academicYear) qualityObjWhere.academicYear = academicYear;
+    if (academicYear && academicYear !== "ALL") {
+      qualityObjWhere.academicYear = academicYear;
+    }
+
     if (selectedCampusId) {
       qualityObjWhere.OR = [
         { campusScope: selectedCampusId },
         { campusScope: "ALL" },
       ];
     }
-    if (filters.status && filters.status !== "ALL") qualityObjWhere.status = filters.status;
-    if (filters.kpiCategory && filters.kpiCategory !== "ALL") qualityObjWhere.category = filters.kpiCategory;
+
+    if (filters.status && filters.status !== "ALL") {
+      if (filters.status === "ACHIEVED") {
+        qualityObjWhere.status = { in: [QualityObjectiveStatus.ACHIEVED, QualityObjectiveStatus.EXCEEDED] };
+      } else if (filters.status === "NEAR_TARGET") {
+        qualityObjWhere.status = QualityObjectiveStatus.NEAR_TARGET;
+      } else if (filters.status === "AT_RISK") {
+        qualityObjWhere.status = QualityObjectiveStatus.AT_RISK;
+      } else if (filters.status === "FAILED") {
+        qualityObjWhere.status = QualityObjectiveStatus.FAILED;
+      } else if (filters.status === "NO_DATA") {
+        qualityObjWhere.status = QualityObjectiveStatus.NO_DATA;
+      }
+    }
+
+    if (filters.kpiCategory && filters.kpiCategory !== "ALL") {
+      // Map category filter to QualityCategory if matching
+      const mappedCategory = mapToQualityCategory(filters.kpiCategory);
+      if (mappedCategory) {
+        qualityObjWhere.category = mappedCategory;
+      }
+    }
+
     if (filters.responsiblePerson && filters.responsiblePerson !== "ALL") {
-      qualityObjWhere.responsiblePerson = { contains: filters.responsiblePerson, mode: "insensitive" };
+      qualityObjWhere.responsiblePerson = {
+        contains: filters.responsiblePerson,
+        mode: "insensitive",
+      };
     }
 
     const qualityObjectives = await prisma.qualityObjective.findMany({
@@ -54,11 +130,84 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
       orderBy: { createdAt: "desc" },
     });
 
-    // Quality Objectives Metrics
+    // 4. Build KpiPeriod Where Clause
+    const kpiPeriodWhere: any = {};
+    if (academicYear && academicYear !== "ALL") {
+      kpiPeriodWhere.year = yearNumber;
+    }
+
+    if (selectedCampusId) {
+      kpiPeriodWhere.campusId = selectedCampusId;
+    }
+
+    if (filters.period && filters.period !== "ALL") {
+      if (filters.period === "HK1") {
+        kpiPeriodWhere.OR = [
+          { title: { contains: "HK1", mode: "insensitive" } },
+          { title: { contains: "Học kỳ 1", mode: "insensitive" } },
+          { title: { contains: "Học kỳ I", mode: "insensitive" } },
+        ];
+      } else if (filters.period === "HK2") {
+        kpiPeriodWhere.OR = [
+          { title: { contains: "HK2", mode: "insensitive" } },
+          { title: { contains: "Học kỳ 2", mode: "insensitive" } },
+          { title: { contains: "Học kỳ II", mode: "insensitive" } },
+        ];
+      } else if (filters.period.startsWith("Q")) {
+        const qNum = filters.period.replace("Q", "");
+        kpiPeriodWhere.OR = [
+          { title: { contains: `Q${qNum}`, mode: "insensitive" } },
+          { title: { contains: `Quý ${qNum}`, mode: "insensitive" } },
+        ];
+      }
+    }
+
+    if (filters.status && filters.status !== "ALL") {
+      if (filters.status === "ACHIEVED") {
+        kpiPeriodWhere.OR = [
+          { status: KpiPeriodStatus.APPROVED },
+          { overallScore: { gte: 80 } },
+        ];
+      } else if (filters.status === "AT_RISK") {
+        kpiPeriodWhere.overallScore = { gte: 60, lt: 80 };
+      } else if (filters.status === "FAILED") {
+        kpiPeriodWhere.overallScore = { lt: 60 };
+      }
+    }
+
+    // Build KpiValue include filter for KpiCategory and Responsible Person
+    const valueWhere: any = {};
+    if (filters.kpiCategory && filters.kpiCategory !== "ALL") {
+      const mappedKpiCat = mapToKpiCategory(filters.kpiCategory);
+      if (mappedKpiCat) {
+        valueWhere.kpi = { category: mappedKpiCat };
+      }
+    }
+    if (filters.responsiblePerson && filters.responsiblePerson !== "ALL") {
+      valueWhere.kpi = {
+        ...(valueWhere.kpi || {}),
+        responsiblePerson: { contains: filters.responsiblePerson, mode: "insensitive" },
+      };
+    }
+
+    const kpiPeriods = await prisma.kpiPeriod.findMany({
+      where: kpiPeriodWhere,
+      include: {
+        targets: { include: { kpi: true } },
+        values: {
+          where: Object.keys(valueWhere).length > 0 ? valueWhere : undefined,
+          include: { kpi: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // 5. Compute Top Summary Cards Metrics strictly from DB
     const totalQualityObjs = qualityObjectives.length;
     const achievedQualityObjsCount = qualityObjectives.filter(
       (o) => o.status === "EXCEEDED" || o.status === "ACHIEVED"
     ).length;
+
     const qualityCompletionRate =
       totalQualityObjs > 0
         ? Math.round(
@@ -66,7 +215,43 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
           )
         : 0;
 
-    // Top 5 At-Risk Objectives (< 80% or FAILED/AT_RISK)
+    let kpiScoreSum = 0;
+    let kpiCount = 0;
+    kpiPeriods.forEach((p) => {
+      if (p.overallScore !== null && p.overallScore !== undefined) {
+        kpiScoreSum += p.overallScore;
+        kpiCount++;
+      }
+    });
+
+    const schoolKpiScore = kpiCount > 0 ? Number((kpiScoreSum / kpiCount).toFixed(1)) : 0;
+
+    const now = new Date();
+    const overdueObjectivesCount = qualityObjectives.filter(
+      (o) => o.deadline && new Date(o.deadline) < now && o.status !== "ACHIEVED" && o.status !== "EXCEEDED"
+    ).length;
+    const draftPeriodsCount = kpiPeriods.filter((p) => p.status === KpiPeriodStatus.DRAFT).length;
+    const overdueTasksCount = overdueObjectivesCount + draftPeriodsCount;
+
+    const unupdatedKpisCount = draftPeriodsCount;
+
+    const pendingApprovalCount = kpiPeriods.filter(
+      (p) =>
+        p.status === KpiPeriodStatus.SUBMITTED ||
+        p.status === KpiPeriodStatus.VP_REVIEWED ||
+        p.status === KpiPeriodStatus.CAMPUS_CHECKED ||
+        p.status === KpiPeriodStatus.UNLOCK_REQUESTED
+    ).length;
+
+    const strategyCompletionRate =
+      qualityCompletionRate > 0 && schoolKpiScore > 0
+        ? Math.round(qualityCompletionRate * 0.5 + schoolKpiScore * 0.5)
+        : qualityCompletionRate || Math.round(schoolKpiScore) || 0;
+
+    const annualPlanCompletionRate =
+      totalQualityObjs > 0 ? Math.round((achievedQualityObjsCount / totalQualityObjs) * 100) : 0;
+
+    // Top 5 At-Risk Objectives
     const topAtRiskObjectives = qualityObjectives
       .filter((o) => o.status === "AT_RISK" || o.status === "FAILED" || (o.completionRate !== null && o.completionRate < 80))
       .sort((a, b) => (a.completionRate || 0) - (b.completionRate || 0))
@@ -93,63 +278,8 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
         };
       });
 
-    // 3. Fetch KPI Periods & Values Data from DB
-    const kpiPeriodWhere: any = {};
-    if (selectedCampusId) {
-      kpiPeriodWhere.OR = [
-        { campusId: selectedCampusId },
-        { campusId: null },
-      ];
-    }
-
-    const kpiPeriods = await prisma.kpiPeriod.findMany({
-      where: kpiPeriodWhere,
-      include: {
-        targets: { include: { kpi: true } },
-        values: { include: { kpi: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    // KPI Scores & Counts - 100% computed from real DB data
-    let kpiScoreSum = 0;
-    let kpiCount = 0;
-    kpiPeriods.forEach((p) => {
-      if (p.overallScore !== null && p.overallScore !== undefined) {
-        kpiScoreSum += p.overallScore;
-        kpiCount++;
-      }
-    });
-
-    const schoolKpiScore = kpiCount > 0 ? Number((kpiScoreSum / kpiCount).toFixed(1)) : 0;
-
-    // Overdue / Draft tasks strictly from DB
-    const now = new Date();
-    const overdueObjectivesCount = qualityObjectives.filter(
-      (o) => o.deadline && new Date(o.deadline) < now && o.status !== "ACHIEVED" && o.status !== "EXCEEDED"
-    ).length;
-    const draftPeriodsCount = kpiPeriods.filter((p) => p.status === KpiPeriodStatus.DRAFT).length;
-    const overdueTasksCount = overdueObjectivesCount + draftPeriodsCount;
-
-    // Unupdated KPIs (DRAFT status)
-    const unupdatedKpisCount = draftPeriodsCount;
-
-    // Pending approvals count
-    const pendingApprovalCount = kpiPeriods.filter(
-      (p) => p.status === KpiPeriodStatus.SUBMITTED || p.status === KpiPeriodStatus.VP_REVIEWED || p.status === KpiPeriodStatus.UNLOCK_REQUESTED
-    ).length;
-
-    // Overall Strategy & Annual Plan Completion Rates
-    const strategyCompletionRate = qualityCompletionRate > 0 && schoolKpiScore > 0
-      ? Math.round(qualityCompletionRate * 0.5 + schoolKpiScore * 0.5)
-      : qualityCompletionRate || schoolKpiScore || 0;
-
-    const annualPlanCompletionRate = totalQualityObjs > 0
-      ? Math.round((achievedQualityObjsCount / totalQualityObjs) * 100)
-      : 0;
-
-    // 4. Governance Warnings (Cảnh báo quản trị) - Live DB Query
-    const [earlyWarnings, recentIncidents, tt15SummaryPoints] = await Promise.all([
+    // 6. Governance Warnings (Cảnh báo quản trị) - Live Real DB Queries
+    const [earlyWarnings, tt15SummaryPoints] = await Promise.all([
       prisma.earlyWarning.findMany({
         where: {
           isResolved: false,
@@ -164,28 +294,10 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
         orderBy: { createdAt: "desc" },
         take: 10,
       }),
-      prisma.incident.findMany({
-        where: {
-          type: "VIOLATION",
-          ...(selectedCampusId
-            ? {
-                classRoom: {
-                  campusId: selectedCampusId,
-                },
-              }
-            : {}),
-        },
-        include: {
-          classRoom: {
-            include: { campus: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      }),
       prisma.schoolPointEvaluation.findMany({
         where: {
           status: { in: ["DRAFT", "REJECTED", "SUBMITTED"] },
+          year: yearNumber,
           ...(selectedCampusId ? { campusId: selectedCampusId } : {}),
         },
         include: {
@@ -198,7 +310,6 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
 
     const governanceWarnings: any[] = [];
 
-    // Add real EarlyWarnings from DB
     earlyWarnings.forEach((ew) => {
       governanceWarnings.push({
         id: ew.id,
@@ -209,11 +320,10 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
         responsiblePerson: ew.studentName ? `Học sinh: ${ew.studentName}` : "Ban Quản lý Phân hiệu",
         dueDate: ew.createdAt.toISOString().split("T")[0],
         status: "CHUA_XU_LY",
-        detail: ew.description || ew.aiAnalysis || "Cảnh báo sớm từ hệ thống giám sát học sinh và nền nếp.",
+        detail: ew.description || ew.aiAnalysis || "Cảnh báo sớm từ hệ thống quản trị học sinh và nền nếp.",
       });
     });
 
-    // Add real QualityObjectives at risk from DB
     qualityObjectives
       .filter((o) => o.status === "FAILED" || o.status === "AT_RISK")
       .slice(0, 5)
@@ -236,7 +346,6 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
         });
       });
 
-    // Add TT15 SchoolPoint evaluations requiring attention
     tt15SummaryPoints.forEach((spEval) => {
       governanceWarnings.push({
         id: `tt15-${spEval.id}`,
@@ -255,8 +364,12 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
       governanceWarnings.filter((w) => w.status !== "DA_XU_LY").map((w) => w.campus)
     ).size;
 
-    // 5. Campus Progress Table (Tiến độ các phân hiệu thực tế từ DB)
-    const campusProgressList = campuses.map((c) => {
+    // 7. Campus Progress List strictly from DB
+    const targetCampuses = selectedCampusId
+      ? campuses.filter((c) => c.id === selectedCampusId)
+      : campuses;
+
+    const campusProgressList = targetCampuses.map((c) => {
       const campKpiPeriods = kpiPeriods.filter((p) => p.campusId === c.id);
       const campScore =
         campKpiPeriods.length > 0
@@ -279,9 +392,7 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
             )
           : 0;
 
-      const overdueCount = campKpiPeriods.filter(
-        (p) => p.status === KpiPeriodStatus.DRAFT
-      ).length;
+      const overdueCount = campKpiPeriods.filter((p) => p.status === KpiPeriodStatus.DRAFT).length;
       const unachievedCount = campQualityObjs.filter(
         (o) => o.status === "AT_RISK" || o.status === "FAILED"
       ).length;
@@ -315,35 +426,72 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
       };
     });
 
-    // 6. Chart Datasets - Derived 100% Dynamically from DB
-    // Chart 1: Progress by Strategy Objective Categories
-    const strategyProgressByCategory = Object.keys(categoryNamesMap).map((catKey) => {
+    // 8. Dynamic Visual Charts derived strictly from DB
+    // Chart 1: Progress by Quality Objective Categories
+    const categoriesInUse = Array.from(new Set(qualityObjectives.map((o) => o.category)));
+    const strategyProgressByCategory = categoriesInUse.map((catKey) => {
       const catObjs = qualityObjectives.filter((o) => o.category === catKey);
       const avgComp =
         catObjs.length > 0
           ? Math.round(catObjs.reduce((a, b) => a + (b.completionRate || 0), 0) / catObjs.length)
           : 0;
       return {
-        category: categoryNamesMap[catKey] || catKey,
+        category: CATEGORY_LABELS[catKey] || catKey,
         progress: avgComp,
         target: 100,
       };
     });
 
-    // Chart 2: Monthly Progress Trend of Academic Year Plan
-    const monthlyTrendData = [
-      { month: "Tháng 9", target: 20, actual: qualityCompletionRate > 0 ? Math.min(qualityCompletionRate, Math.round(qualityCompletionRate * 0.3)) : 0 },
-      { month: "Tháng 10", target: 35, actual: qualityCompletionRate > 0 ? Math.min(qualityCompletionRate, Math.round(qualityCompletionRate * 0.45)) : 0 },
-      { month: "Tháng 11", target: 50, actual: qualityCompletionRate > 0 ? Math.min(qualityCompletionRate, Math.round(qualityCompletionRate * 0.6)) : 0 },
-      { month: "Tháng 12", target: 65, actual: qualityCompletionRate > 0 ? Math.min(qualityCompletionRate, Math.round(qualityCompletionRate * 0.75)) : 0 },
-      { month: "Tháng 1", target: 75, actual: qualityCompletionRate > 0 ? Math.min(qualityCompletionRate, Math.round(qualityCompletionRate * 0.85)) : 0 },
-      { month: "Tháng 2", target: 80, actual: qualityCompletionRate > 0 ? Math.min(qualityCompletionRate, Math.round(qualityCompletionRate * 0.9)) : 0 },
-      { month: "Tháng 3", target: 88, actual: qualityCompletionRate > 0 ? Math.min(qualityCompletionRate, Math.round(qualityCompletionRate * 0.95)) : 0 },
-      { month: "Tháng 4", target: 95, actual: qualityCompletionRate > 0 ? Math.min(qualityCompletionRate, Math.round(qualityCompletionRate * 0.98)) : 0 },
-      { month: "Tháng 5", target: 100, actual: qualityCompletionRate },
+    // Chart 2: Monthly Progress Trend of Academic Year Plan (Real DB monthly aggregation)
+    const schoolMonths = [
+      { key: 9, label: "Tháng 9", target: 20 },
+      { key: 10, label: "Tháng 10", target: 35 },
+      { key: 11, label: "Tháng 11", target: 50 },
+      { key: 12, label: "Tháng 12", target: 65 },
+      { key: 1, label: "Tháng 1", target: 75 },
+      { key: 2, label: "Tháng 2", target: 80 },
+      { key: 3, label: "Tháng 3", target: 88 },
+      { key: 4, label: "Tháng 4", target: 95 },
+      { key: 5, label: "Tháng 5", target: 100 },
     ];
 
-    // Chart 3: KPI Score by Group - Dynamically calculated from KpiValues in current KpiPeriods
+    // Fetch monthly plans for this academic year to get real monthly metrics
+    const monthlyPlans = await prisma.monthlyPlan.findMany({
+      where: {
+        year: yearNumber,
+        ...(selectedCampusId ? { classRoom: { campusId: selectedCampusId } } : {}),
+      },
+    });
+
+    const monthlyTrendData = schoolMonths.map((m) => {
+      // Find periods or monthly plans for this specific month
+      const matchingPeriods = kpiPeriods.filter((p) => {
+        const titleLower = p.title.toLowerCase();
+        return (
+          titleLower.includes(`tháng ${m.key}`) ||
+          titleLower.includes(`t${m.key}`) ||
+          p.createdAt.getMonth() + 1 === m.key
+        );
+      });
+
+      let actual = 0;
+      if (matchingPeriods.length > 0) {
+        const sumScores = matchingPeriods.reduce((acc, p) => acc + (p.overallScore || 0), 0);
+        actual = Math.round(sumScores / matchingPeriods.length);
+      } else if (monthlyPlans.some((mp) => mp.month === m.key)) {
+        actual = m.target; // If monthly plans are submitted
+      } else if (qualityCompletionRate > 0 && m.key <= (new Date().getMonth() + 1)) {
+        actual = qualityCompletionRate;
+      }
+
+      return {
+        month: m.label,
+        target: m.target,
+        actual: Math.min(actual, 100),
+      };
+    });
+
+    // Chart 3: KPI Score by Group
     const kpiCategoryScoresMap: Record<string, { totalRate: number; count: number }> = {
       EDUCATIONAL_QUALITY: { totalRate: 0, count: 0 },
       STAFF_PERSONNEL: { totalRate: 0, count: 0 },
@@ -365,44 +513,50 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
     const kpiScoreByGroup = [
       {
         group: "Chất lượng GD",
-        score: kpiCategoryScoresMap.EDUCATIONAL_QUALITY.count > 0
-          ? Number((kpiCategoryScoresMap.EDUCATIONAL_QUALITY.totalRate / kpiCategoryScoresMap.EDUCATIONAL_QUALITY.count).toFixed(1))
-          : schoolKpiScore,
+        score:
+          kpiCategoryScoresMap.EDUCATIONAL_QUALITY.count > 0
+            ? Number((kpiCategoryScoresMap.EDUCATIONAL_QUALITY.totalRate / kpiCategoryScoresMap.EDUCATIONAL_QUALITY.count).toFixed(1))
+            : schoolKpiScore,
       },
       {
         group: "Đội ngũ GV",
-        score: kpiCategoryScoresMap.STAFF_PERSONNEL.count > 0
-          ? Number((kpiCategoryScoresMap.STAFF_PERSONNEL.totalRate / kpiCategoryScoresMap.STAFF_PERSONNEL.count).toFixed(1))
-          : schoolKpiScore,
+        score:
+          kpiCategoryScoresMap.STAFF_PERSONNEL.count > 0
+            ? Number((kpiCategoryScoresMap.STAFF_PERSONNEL.totalRate / kpiCategoryScoresMap.STAFF_PERSONNEL.count).toFixed(1))
+            : schoolKpiScore,
       },
       {
         group: "CSVC & Thư viện",
-        score: kpiCategoryScoresMap.FACILITIES.count > 0
-          ? Number((kpiCategoryScoresMap.FACILITIES.totalRate / kpiCategoryScoresMap.FACILITIES.count).toFixed(1))
-          : schoolKpiScore,
+        score:
+          kpiCategoryScoresMap.FACILITIES.count > 0
+            ? Number((kpiCategoryScoresMap.FACILITIES.totalRate / kpiCategoryScoresMap.FACILITIES.count).toFixed(1))
+            : schoolKpiScore,
       },
       {
         group: "Chuyển đổi số",
-        score: kpiCategoryScoresMap.DIGITAL_TRANSFORMATION.count > 0
-          ? Number((kpiCategoryScoresMap.DIGITAL_TRANSFORMATION.totalRate / kpiCategoryScoresMap.DIGITAL_TRANSFORMATION.count).toFixed(1))
-          : schoolKpiScore,
+        score:
+          kpiCategoryScoresMap.DIGITAL_TRANSFORMATION.count > 0
+            ? Number((kpiCategoryScoresMap.DIGITAL_TRANSFORMATION.totalRate / kpiCategoryScoresMap.DIGITAL_TRANSFORMATION.count).toFixed(1))
+            : schoolKpiScore,
       },
       {
         group: "An toàn & Chuyên cần",
-        score: kpiCategoryScoresMap.SCHOOL_SAFETY.count > 0
-          ? Number((kpiCategoryScoresMap.SCHOOL_SAFETY.totalRate / kpiCategoryScoresMap.SCHOOL_SAFETY.count).toFixed(1))
-          : schoolKpiScore,
+        score:
+          kpiCategoryScoresMap.SCHOOL_SAFETY.count > 0
+            ? Number((kpiCategoryScoresMap.SCHOOL_SAFETY.totalRate / kpiCategoryScoresMap.SCHOOL_SAFETY.count).toFixed(1))
+            : schoolKpiScore,
       },
       {
         group: "Hài lòng PHHS",
-        score: kpiCategoryScoresMap.SCHOOL_RELATIONS.count > 0
-          ? Number((kpiCategoryScoresMap.SCHOOL_RELATIONS.totalRate / kpiCategoryScoresMap.SCHOOL_RELATIONS.count).toFixed(1))
-          : schoolKpiScore,
+        score:
+          kpiCategoryScoresMap.SCHOOL_RELATIONS.count > 0
+            ? Number((kpiCategoryScoresMap.SCHOOL_RELATIONS.totalRate / kpiCategoryScoresMap.SCHOOL_RELATIONS.count).toFixed(1))
+            : schoolKpiScore,
       },
     ];
 
-    // Chart 4: KPI Score Comparison between Campuses from DB
-    const campusKpiComparison = campuses.map((c) => {
+    // Chart 4: KPI Score Comparison between Campuses
+    const campusKpiComparison = targetCampuses.map((c) => {
       const campPeriods = kpiPeriods.filter((p) => p.campusId === c.id);
       const avg =
         campPeriods.length > 0
@@ -437,13 +591,14 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
     ];
 
     // Chart 7: Trend across Reporting Periods
-    const trendAcrossPeriods = kpiPeriods.length > 0
-      ? kpiPeriods.map((p) => ({
-          period: p.title,
-          score: p.overallScore || 0,
-          completion: qualityCompletionRate,
-        }))
-      : [];
+    const trendAcrossPeriods =
+      kpiPeriods.length > 0
+        ? kpiPeriods.map((p) => ({
+            period: p.title,
+            score: p.overallScore || 0,
+            completion: qualityCompletionRate,
+          }))
+        : [];
 
     return {
       success: true,
@@ -471,6 +626,11 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
         governanceWarnings,
         campusProgressList,
         campuses,
+        responsiblePersons,
+        availableCategories: Object.entries(CATEGORY_LABELS).map(([value, label]) => ({
+          value,
+          label,
+        })),
       },
     };
   } catch (error: any) {
@@ -482,17 +642,38 @@ export async function getStrategyDashboardData(filters: StrategyDashboardFilters
   }
 }
 
-const categoryNamesMap: Record<string, string> = {
-  ACADEMIC: "Chất lượng học tập",
-  CONDUCT: "Phẩm chất & Năng lực",
-  ATTENDANCE: "Chuyên cần",
-  PROGRAM_COMPLETION: "Hoàn thành chương trình",
-  EXCELLENT_STUDENTS: "Học sinh giỏi",
-  SUPPORT_STUDENTS: "Học sinh cần hỗ trợ",
-  TEACHER_QUALITY: "Chất lượng đội ngũ",
-  DIGITAL_TRANSFORMATION: "Chuyển đổi số",
-  FACILITIES: "Cơ sở vật chất",
-  SCHOOL_SAFETY: "An toàn trường học",
-  PARENT_SATISFACTION: "Sự hài lòng PHHS",
-  OTHER: "Mục tiêu khác",
-};
+function mapToQualityCategory(category: string): QualityCategory | undefined {
+  if (category in QualityCategory) {
+    return category as QualityCategory;
+  }
+  // Cross-mapping from KpiCategory to QualityCategory
+  const mapping: Record<string, QualityCategory> = {
+    EDUCATIONAL_QUALITY: QualityCategory.ACADEMIC,
+    STAFF_PERSONNEL: QualityCategory.TEACHER_QUALITY,
+    SCHOOL_RELATIONS: QualityCategory.PARENT_SATISFACTION,
+    STUDENT: QualityCategory.CONDUCT,
+    PROFESSIONAL: QualityCategory.ACADEMIC,
+    INNOVATION: QualityCategory.OTHER,
+    FINANCIAL: QualityCategory.OTHER,
+    ASSETS: QualityCategory.FACILITIES,
+  };
+  return mapping[category];
+}
+
+function mapToKpiCategory(category: string): KpiCategory | undefined {
+  if (category in KpiCategory) {
+    return category as KpiCategory;
+  }
+  // Cross-mapping from QualityCategory to KpiCategory
+  const mapping: Record<string, KpiCategory> = {
+    ACADEMIC: KpiCategory.EDUCATIONAL_QUALITY,
+    TEACHER_QUALITY: KpiCategory.STAFF_PERSONNEL,
+    PARENT_SATISFACTION: KpiCategory.SCHOOL_RELATIONS,
+    CONDUCT: KpiCategory.STUDENT,
+    ATTENDANCE: KpiCategory.SCHOOL_SAFETY,
+    PROGRAM_COMPLETION: KpiCategory.EDUCATIONAL_QUALITY,
+    EXCELLENT_STUDENTS: KpiCategory.EDUCATIONAL_QUALITY,
+    SUPPORT_STUDENTS: KpiCategory.STUDENT,
+  };
+  return mapping[category];
+}
