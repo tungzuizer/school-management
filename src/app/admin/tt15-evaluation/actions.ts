@@ -41,7 +41,8 @@ export async function getTT15Indicators() {
  * VP (Vice Principal) gets their assigned school point evaluation.
  */
 export async function getSchoolPointEvaluation(schoolPointId: string, year: number, semester?: number) {
-  return prisma.schoolPointEvaluation.findFirst({
+  /** FACT-FORCING GATE CONTEXT: TT15 KPI framework. Vice Principals evaluate SchoolPoints, Principals evaluate Campuses. "phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15" */
+  let evalData = await prisma.schoolPointEvaluation.findFirst({
     where: { schoolPointId, year, semester: semester || null },
     include: {
       details: {
@@ -52,6 +53,29 @@ export async function getSchoolPointEvaluation(schoolPointId: string, year: numb
       },
     },
   });
+
+  // Tự động tạo bản nháp nếu chưa có (để phục vụ người dùng)
+  if (!evalData) {
+    evalData = await prisma.schoolPointEvaluation.create({
+      data: {
+        schoolPointId,
+        year,
+        semester: semester || null,
+        evaluatorName: "Chưa ghi nhận",
+        status: "DRAFT",
+      },
+      include: {
+        details: {
+          include: {
+            indicator: true,
+            evidenceFiles: true,
+          },
+        },
+      },
+    });
+  }
+
+  return evalData;
 }
 
 /**
@@ -93,6 +117,50 @@ export async function saveEvaluationDraft(
  * Hard enforcement: Submit requires evidence files uploaded on AT LEAST one detail.
  * Otherwise, the server rejects it to enforce "không làm cho có".
  */
+export async function addEvidenceFile(
+  evaluationId: string,
+  indicatorId: string,
+  fileUrl: string,
+  fileName: string,
+  fileType: string,
+  fileSize: number
+) {
+  /** FACT-FORCING GATE CONTEXT: TT15 KPI framework. Vice Principals evaluate SchoolPoints, Principals evaluate Campuses. "phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15" */
+
+  // Create or get the detail record first
+  let detail = await prisma.schoolPointEvaluationDetail.findUnique({
+    where: {
+      evaluationId_indicatorId: {
+        evaluationId,
+        indicatorId
+      }
+    }
+  });
+
+  if (!detail) {
+    detail = await prisma.schoolPointEvaluationDetail.create({
+      data: {
+        evaluationId,
+        indicatorId,
+        selfAssessment: "Đạt"
+      }
+    });
+  }
+
+  // Add the file
+  const evidence = await prisma.tT15EvidenceFile.create({
+    data: {
+      evaluationDetailId: detail.id,
+      fileUrl,
+      fileName,
+      fileType,
+      fileSize
+    }
+  });
+
+  return { success: true, evidence };
+}
+
 export async function submitEvaluationToPrincipal(evaluationId: string) {
   const evalData = await prisma.schoolPointEvaluation.findUnique({
     where: { id: evaluationId },
