@@ -56,14 +56,23 @@ export async function getSchoolPointEvaluation(schoolPointId: string, year: numb
 
   // Tự động tạo bản nháp nếu chưa có (để phục vụ người dùng)
   if (!evalData) {
-    evalData = await prisma.schoolPointEvaluation.create({
+    const point = await prisma.schoolPoint.findUnique({
+      where: { id: schoolPointId }
+    });
+    if (!point) throw new Error("SchoolPoint not found");
+
+    const newEval = await prisma.schoolPointEvaluation.create({
       data: {
         schoolPointId,
+        campusId: point.campusId,
         year,
         semester: semester || null,
-        evaluatorName: "Chưa ghi nhận",
         status: "DRAFT",
-      },
+      }
+    });
+
+    evalData = await prisma.schoolPointEvaluation.findUnique({
+      where: { id: newEval.id },
       include: {
         details: {
           include: {
