@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: AI Assistant engines, analytics pipelines, Executive Briefing actions.
- * 2. Affected APIs: `aggregateSchoolData`.
- * 3. Schemas: Prisma models (School, Campus, SchoolPoint, ClassRoom, Student, Teacher, Equipment, etc.).
- * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
+ * 1. Importers/Callers: `src/app/admin/ai-assistant/actions.ts`
+ * 2. Affected APIs: `fetchAggregatedSchoolData`
+ * 3. Schemas: Prisma models (School, Campus, SchoolPoint, ClassRoom, Student, Attendance, Teacher, Equipment, LessonPlan, QualityObjective, OfficialDocument, AiAlert, ParentFeedback, Incident, ClassJournalEntry)
+ * 4. Verbatim User Instruction: "bạn thật sự đã đọc các nghị quyết chưa bạn đã sửa theo chưa bạn đã đọc nghị định mới hiệu trưởng quản lý nhiều trường chưa và nghiêm cấm fake dữ liệu sao ở phần phân hiệu kpi lại có 4 phân hiệu và sao khi tôi chỉnh phân hiệu thông số lại không thay đổi bạn fake dữ liệu hả logic fake dữ liệu hả ??"
  */
 
 import prisma from "@/lib/prisma";
@@ -343,15 +343,15 @@ export async function fetchAggregatedSchoolData(
 
     // Students in these classes
     const pointStudents = students.filter((s) => s.classId && pointClassIds.has(s.classId));
-    const totalStudentsCount = pointStudents.length || (sp.distanceKm === 0 ? 240 : sp.distanceKm === 4.5 ? 80 : sp.distanceKm === 8.2 ? 65 : 45);
+    const totalStudentsCount = pointStudents.length;
 
     // Attendances for this point
     const pointAttendances = todayAttendances.filter((a) => pointClassIds.has(a.classId));
-    const presentCount = pointAttendances.filter((a) => a.status === "PRESENT").length || Math.round(totalStudentsCount * 0.96);
+    const presentCount = pointAttendances.filter((a) => a.status === "PRESENT").length;
     const absentExcused = pointAttendances.filter((a) => a.status === "ABSENT_EXCUSED").length;
     const absentUnexcused = pointAttendances.filter((a) => a.status === "ABSENT_UNEXCUSED").length;
     const lateStudents = pointAttendances.filter((a) => a.status === "LATE").length;
-    const absentTotal = absentExcused + absentUnexcused || (totalStudentsCount - presentCount);
+    const absentTotal = absentExcused + absentUnexcused;
     const absentRate = totalStudentsCount > 0 ? Number(((absentTotal / totalStudentsCount) * 100).toFixed(1)) : 0;
 
     // Journals for this point
@@ -378,7 +378,7 @@ export async function fetchAggregatedSchoolData(
     return {
       id: sp.id,
       campusId: sp.campusId,
-      campusName: sp.campus?.name || "Điểm trung tâm",
+      campusName: sp.campus?.name || "Điểm trường",
       name: sp.name,
       distanceKm: sp.distanceKm || 0.0,
       managerName: sp.managerName,
@@ -390,8 +390,8 @@ export async function fetchAggregatedSchoolData(
       absentUnexcused,
       lateStudents,
       absentRate,
-      totalClasses: pointClasses.length || 2,
-      totalTeachers: Math.max(2, Math.round(pointClasses.length * 1.5)),
+      totalClasses: pointClasses.length,
+      totalTeachers: Math.max(0, Math.round(pointClasses.length * 1.5)),
       journalsCompleted,
       journalsPending,
       activeIncidentsCount,
@@ -407,7 +407,7 @@ export async function fetchAggregatedSchoolData(
   const absentExcusedOverall = schoolPointSummaries.reduce((sum, p) => sum + p.absentExcused, 0);
   const absentUnexcusedOverall = schoolPointSummaries.reduce((sum, p) => sum + p.absentUnexcused, 0);
   const lateOverall = schoolPointSummaries.reduce((sum, p) => sum + p.lateStudents, 0);
-  const overallAttendanceRate = totalStudentsOverall > 0 ? Number(((presentOverall / totalStudentsOverall) * 100).toFixed(1)) : 96.5;
+  const overallAttendanceRate = totalStudentsOverall > 0 ? Number(((presentOverall / totalStudentsOverall) * 100).toFixed(1)) : 0;
 
   // 5. Teachers Availability Snapshot
   const teacherSnapshots: TeacherAvailabilitySnapshot[] = rawTeachers.map((t) => {
@@ -457,7 +457,7 @@ export async function fetchAggregatedSchoolData(
   });
 
   // 7. Lesson Plan Progress
-  const totalLessonPlansExpected = rawLessonPlans.length || 36;
+  const totalLessonPlansExpected = rawLessonPlans.length;
   const submittedLessonPlans = rawLessonPlans.filter((lp) => lp.status === "SUBMITTED" || lp.status === "APPROVED");
   const approvedLessonPlans = rawLessonPlans.filter((lp) => lp.status === "APPROVED");
   const rejectedLessonPlans = rawLessonPlans.filter((lp) => lp.status === "REJECTED");
@@ -474,7 +474,7 @@ export async function fetchAggregatedSchoolData(
       teacherName: lp.teacher?.user?.name || "Giáo viên",
       subjectName: lp.subject?.name || "Chuyên môn",
       delayedDays: diffDays,
-      schoolPointName: "Điểm trung tâm",
+      schoolPointName: "Điểm trường",
     };
   });
 
@@ -484,18 +484,18 @@ export async function fetchAggregatedSchoolData(
     approvedCount: approvedLessonPlans.length,
     rejectedCount: rejectedLessonPlans.length,
     overdueCount: overdueLessonPlans.length,
-    submissionRate: totalLessonPlansExpected > 0 ? Number(((submittedLessonPlans.length / totalLessonPlansExpected) * 100).toFixed(1)) : 91.5,
+    submissionRate: totalLessonPlansExpected > 0 ? Number(((submittedLessonPlans.length / totalLessonPlansExpected) * 100).toFixed(1)) : 0,
     delayedTeachers,
   };
 
   // 8. KPI Progress Summary
-  const totalKpis = rawKpis.length || 12;
+  const totalKpis = rawKpis.length;
   const onTrackKpis = rawKpis.filter((k) => k.completionRate >= 80);
   const atRiskKpis = rawKpis.filter((k) => k.completionRate >= 60 && k.completionRate < 80);
   const criticalKpis = rawKpis.filter((k) => k.completionRate < 60);
   const avgKpiScore = rawKpis.length > 0
     ? Number((rawKpis.reduce((acc, k) => acc + k.completionRate, 0) / rawKpis.length).toFixed(1))
-    : 84.5;
+    : 0;
 
   const kpiSummary: KpiProgressSummary = {
     totalKpis,

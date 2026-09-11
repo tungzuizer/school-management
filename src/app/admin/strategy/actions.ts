@@ -24,16 +24,26 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
     const campuses = await prisma.campus.findMany({
       orderBy: { name: "asc" },
     });
-    const totalCampuses = campuses.length > 0 ? campuses.length : 3;
+    const totalCampuses = campuses.length;
 
     // Filter campus selection if provided
     const filteredCampusId = filters.campusId && filters.campusId !== "ALL" ? filters.campusId : undefined;
 
-    // 2. Fetch KPI Catalogs & Periods
-    const kpiCatalogs = await prisma.kpiCatalog.findMany({
-      where: { isActive: true },
-    });
+    // 2. Fetch Quality Objectives & KPI Catalogs & Periods
+    const [qualityObjectives, kpiCatalogs] = await Promise.all([
+      prisma.qualityObjective.findMany({
+        where: {
+          academicYear: filters.academicYear && filters.academicYear !== "ALL" ? filters.academicYear : "2026-2027",
+          ...(filteredCampusId ? { OR: [{ campusScope: filteredCampusId }, { campusScope: "ALL" }] } : {}),
+        },
+      }),
+      prisma.kpiCatalog.findMany({
+        where: { isActive: true },
+      }),
+    ]);
+
     const totalKpis = kpiCatalogs.length;
+    const totalStrategicGoals = qualityObjectives.length;
 
     const periodsWhere: any = {};
     if (filteredCampusId) {
@@ -65,7 +75,7 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
       }
     });
 
-    const planCompletionRate = periodCount > 0 ? Number((totalScoreSum / periodCount).toFixed(1)) : 87.5;
+    const planCompletionRate = periodCount > 0 ? Number((totalScoreSum / periodCount).toFixed(1)) : 0;
 
     // Approvals pending Principal action (VP_REVIEWED or UNLOCK_REQUESTED)
     const pendingPrincipalApprovals = await prisma.kpiPeriod.count({
@@ -76,25 +86,33 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
     });
 
     // Overdue tasks count
-    const overdueTasksCount = await prisma.kpiPeriod.count({
-      where: {
-        status: KpiPeriodStatus.DRAFT,
-        ...(filteredCampusId ? { campusId: filteredCampusId } : {}),
-      },
-    });
+    const now = new Date();
+    const overdueQualityObjectives = qualityObjectives.filter(
+      (o) => o.deadline && new Date(o.deadline) < now && o.status !== "ACHIEVED" && o.status !== "EXCEEDED"
+    ).length;
+    const draftPeriodsCount = kpiPeriods.filter((p) => p.status === KpiPeriodStatus.DRAFT).length;
+    const overdueTasksCount = overdueQualityObjectives + draftPeriodsCount;
 
-    const totalStrategicGoals = totalKpis > 0 ? totalKpis * 2 : 24;
+    // 4. Feature Cards Calculation from real DB records
+    const qualityTotal = qualityObjectives.length;
+    const qualityAchieved = qualityObjectives.filter((o) => o.status === "ACHIEVED" || o.status === "EXCEEDED").length;
+    const qualityAtRisk = qualityObjectives.filter((o) => o.status === "AT_RISK" || o.status === "FAILED").length;
+    const qualityAvgRate = qualityTotal > 0
+      ? Math.round(qualityObjectives.reduce((sum, o) => sum + (o.completionRate || 0), 0) / qualityTotal)
+      : 0;
 
-    // 4. Feature Cards Calculation
+    const campusesWithKpiCount = new Set(kpiPeriods.filter((p) => p.campusId).map((p) => p.campusId)).size;
+    const campusAllocationRate = totalCampuses > 0 ? Math.round((campusesWithKpiCount / totalCampuses) * 100) : 0;
+
     const featureCards = [
       {
         id: "5-year-plan",
         title: "Chiến lược phát triển trường 5 năm",
         description: "Xác định tầm nhìn, sứ mệnh, 5 trụ cột chiến lược và lộ trình phát triển giai đoạn 2026-2031.",
         href: "/admin/strategy/quality-goals",
-        completionRate: 92,
-        uncompletedCount: 2,
-        status: "Đã phê duyệt",
+        completionRate: qualityAvgRate,
+        uncompletedCount: qualityAtRisk,
+        status: qualityAvgRate >= 80 ? "Đã phê duyệt" : "Đang thực hiện",
         category: "STRATEGIC",
       },
       {
@@ -102,9 +120,9 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
         title: "Kế hoạch năm học",
         description: "Cụ thể hóa chiến lược thành các nhiệm vụ trọng tâm, chỉ tiêu thi đua và mốc thời gian năm học.",
         href: "/admin/strategy/reports",
-        completionRate: 85,
-        uncompletedCount: 4,
-        status: "Đang thực hiện",
+        completionRate: qualityTotal > 0 ? Math.round((qualityAchieved / qualityTotal) * 100) : 0,
+        uncompletedCount: qualityTotal - qualityAchieved,
+        status: qualityAchieved === qualityTotal && qualityTotal > 0 ? "Đã phê duyệt" : "Đang thực hiện",
         category: "YEARLY",
       },
       {
@@ -112,9 +130,9 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
         title: "Mục tiêu chất lượng",
         description: "Thiết lập các tiêu chuẩn chất lượng giáo dục, tỷ lệ học lực, hạnh kiểm và phổ cập giáo dục.",
         href: "/admin/strategy/quality-goals",
-        completionRate: 78,
-        uncompletedCount: 5,
-        status: "Đang thực hiện",
+        completionRate: qualityAvgRate,
+        uncompletedCount: qualityAtRisk,
+        status: qualityAtRisk === 0 && qualityTotal > 0 ? "Đã phê duyệt" : "Đang thực hiện",
         category: "QUALITY",
       },
       {
@@ -122,7 +140,7 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
         title: "Bộ chỉ số KPI toàn trường",
         description: "Quản lý hệ thống 12 nhóm chỉ số đánh giá hiệu quả hoạt động toàn trường và từng phân hiệu.",
         href: "/admin/kpi/catalog",
-        completionRate: planCompletionRate > 0 ? Math.min(100, planCompletionRate) : 88,
+        completionRate: planCompletionRate,
         uncompletedCount: overdueTasksCount,
         status: pendingPrincipalApprovals > 0 ? "Chờ phê duyệt" : "Đang thực hiện",
         category: "KPI",
@@ -132,9 +150,9 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
         title: "Phân bổ chỉ tiêu cho các phân hiệu",
         description: "Giao chỉ tiêu KPI và ngân sách hoạt động phù hợp với đặc thù quy mô từng điểm trường/phân hiệu.",
         href: "/admin/strategy/approvals",
-        completionRate: 90,
-        uncompletedCount: 1,
-        status: "Đã phê duyệt",
+        completionRate: campusAllocationRate,
+        uncompletedCount: Math.max(0, totalCampuses - campusesWithKpiCount),
+        status: campusAllocationRate === 100 ? "Đã phê duyệt" : "Đang thực hiện",
         category: "ALLOCATION",
       },
       {
@@ -142,9 +160,9 @@ export async function getStrategyOverviewData(filters: StrategyOverviewFilters =
         title: "Dashboard chiến lược & Cảnh báo AI",
         description: "Trực quan hóa tiến độ, biểu đồ xu hướng, dự báo rủi ro và các chỉ số cảnh báo sớm AI.",
         href: "/admin/strategy/dashboard",
-        completionRate: 95,
-        uncompletedCount: 0,
-        status: "Đã phê duyệt",
+        completionRate: Math.round((qualityAvgRate + planCompletionRate) / 2) || 0,
+        uncompletedCount: overdueTasksCount,
+        status: overdueTasksCount === 0 ? "Đã phê duyệt" : "Đang thực hiện",
         category: "DASHBOARD",
       },
     ];
