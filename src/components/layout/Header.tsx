@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Root Layouts across Next.js app (`src/app/admin/layout.tsx`, `src/app/teacher/layout.tsx`, `src/app/vice-principal/layout.tsx`, `src/app/ward/layout.tsx`, `src/app/department/layout.tsx`, `src/app/student/layout.tsx`).
- * 2. Uniqueness: Global unified header with desktop sidebar collapse toggle (PanelLeftClose/PanelLeft) and Ctrl+B shortcut.
+ * 2. Affected APIs: `Header` default export in `src/components/layout/Header.tsx`.
  * 3. Schema: `HeaderProps` (`notificationCount`?: number, `onMobileMenuToggle`?: () => void, `isCollapsed`?: boolean, `onToggleCollapse`?: () => void).
- * 4. Verbatim User Instruction: "tôi muố menu có thể thu gọn và tách menu và giao diện chính độc lập giao diện khác nhau".
+ * 4. Verbatim User Instruction: "chữ trên điện thoại vẫn đang hơi to" -> "theo khuyến nghị của bạn".
  */
 
 "use client";
@@ -114,7 +114,7 @@ export default function Header({
             <button
               onClick={onMobileMenuToggle}
               aria-label="Mở mục lục điều hướng"
-              className="lg:hidden px-2.5 py-1.5 min-h-[36px] sm:min-h-[44px] min-w-[36px] sm:min-w-[44px] rounded-xl bg-indigo-50/90 border border-indigo-200 text-indigo-900 hover:bg-indigo-100 transition-all active-press cursor-pointer flex items-center gap-1 shadow-2xs font-extrabold text-[11px] sm:text-xs"
+              className="lg:hidden px-2.5 py-1.5 min-h-[34px] sm:min-h-[40px] min-w-[34px] sm:min-w-[40px] rounded-xl bg-indigo-50/90 border border-indigo-200 text-indigo-900 hover:bg-indigo-100 transition-all active-press cursor-pointer flex items-center gap-1 shadow-2xs font-extrabold text-[10.5px] sm:text-xs"
             >
               <Menu className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-700" aria-hidden="true" />
               <span className="hidden xs:inline">Mục lục</span>
@@ -141,7 +141,7 @@ export default function Header({
           <button
             onClick={() => setCommandPaletteOpen(true)}
             aria-label="Tìm kiếm nhanh (Ctrl K)"
-            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 min-h-[36px] sm:min-h-[44px] rounded-xl border border-slate-200/80 bg-slate-50/90 text-slate-900 text-[11px] sm:text-xs hover:bg-white hover:border-indigo-300 hover:text-indigo-900 hover:shadow-xs transition-all active-press cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 min-h-[34px] sm:min-h-[40px] rounded-xl border border-slate-200/80 bg-slate-50/90 text-slate-900 text-[10.5px] sm:text-xs hover:bg-white hover:border-indigo-300 hover:text-indigo-900 hover:shadow-xs transition-all active-press cursor-pointer"
           >
             <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600" aria-hidden="true" />
             <span className="hidden md:inline font-bold">Tìm nhanh...</span>
@@ -153,12 +153,12 @@ export default function Header({
           {/* Notification Bell */}
           <button
             aria-label={`Thông báo ${notificationCount > 0 ? `(${notificationCount} mới)` : ""}`}
-            className="relative p-2 sm:p-2.5 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] rounded-xl text-slate-800 hover:bg-slate-100 hover:text-indigo-900 transition-all bell-swing active-press flex items-center justify-center"
+            className="relative p-2 sm:p-2.5 min-h-[34px] min-w-[34px] sm:min-h-[40px] sm:min-w-[40px] rounded-xl text-slate-800 hover:bg-slate-100 hover:text-indigo-900 transition-all bell-swing active-press flex items-center justify-center"
             title="Thông báo"
           >
             <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
             {notificationCount > 0 && (
-              <span className="absolute top-1 right-1 bg-rose-600 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
+              <span className="absolute top-1 right-1 bg-rose-600 text-white text-[8.5px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center ring-2 ring-white">
                 {notificationCount > 9 ? "9+" : notificationCount}
               </span>
             )}
@@ -170,16 +170,16 @@ export default function Header({
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
               aria-label={`Tài khoản: ${userName}`}
               aria-expanded={userDropdownOpen}
-              className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 min-h-[36px] sm:min-h-[44px] rounded-xl hover:bg-slate-100/80 transition-all active-press cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 min-h-[34px] sm:min-h-[40px] rounded-xl hover:bg-slate-100/80 transition-all active-press cursor-pointer"
             >
               {session?.user?.image ? (
                 <img
                   src={session.user.image}
                   alt={userName}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl object-cover ring-2 ring-indigo-100 shadow-xs"
+                  className="w-6.5 h-6.5 sm:w-8 sm:h-8 rounded-xl object-cover ring-2 ring-indigo-100 shadow-xs"
                 />
               ) : (
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-[11px] sm:text-xs shadow-xs ring-2 ring-indigo-100">
+                <div className="w-6.5 h-6.5 sm:w-8 sm:h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-[10.5px] sm:text-xs shadow-xs ring-2 ring-indigo-100">
                   {userName.charAt(0).toUpperCase()}
                 </div>
               )}
