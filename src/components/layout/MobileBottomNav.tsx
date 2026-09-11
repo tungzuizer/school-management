@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Root Role Layouts (`src/app/admin/layout.tsx`, `src/app/teacher/layout.tsx`, `src/app/student/layout.tsx`, `src/app/vice-principal/layout.tsx`, `src/app/department/layout.tsx`, `src/app/ward/layout.tsx`).
  * 2. Affected APIs: `MobileBottomNav` component in `src/components/layout/MobileBottomNav.tsx`.
  * 3. Schema: `MobileBottomNavProps` (`role`: string, `onOpenMenu`: () => void, `isMenuOpen`?: boolean).
- * 4. Verbatim User Instruction: "đẩy thành tab vụ đó cao hơn nữa" -> "theo khuyến nghị của bạn".
+ * 4. Verbatim User Instruction: "chữ trên điện thoại vẫn đang hơi to" -> "theo khuyến nghị của bạn".
  */
 
 "use client";
@@ -170,14 +170,14 @@ export default function MobileBottomNav({
               }`}
             >
               <Icon
-                className={`w-5 h-5 transition-all duration-300 ${
+                className={`w-4.5 h-4.5 sm:w-5 sm:h-5 transition-all duration-300 ${
                   isActive
                     ? theme.activeIcon
                     : "text-slate-500 group-hover:text-slate-800"
                 }`}
               />
               <span
-                className={`text-[10px] mt-0.5 tracking-tight truncate max-w-[68px] leading-tight transition-colors duration-200 ${
+                className={`text-[9px] sm:text-[10px] mt-0.5 tracking-tight truncate max-w-[64px] sm:max-w-[68px] leading-tight transition-colors duration-200 ${
                   isActive ? theme.activeText : "text-slate-500 group-hover:text-slate-800 font-medium"
                 }`}
               >
@@ -213,7 +213,7 @@ export default function MobileBottomNav({
             />
           </div>
           <span
-            className={`text-[10px] mt-0.5 font-extrabold tracking-tight transition-colors duration-200 ${
+            className={`text-[9px] sm:text-[10px] mt-0.5 font-extrabold tracking-tight transition-colors duration-200 ${
               isMenuOpen ? theme.menuOpenText : "text-slate-700"
             }`}
           >
@@ -246,14 +246,14 @@ export default function MobileBottomNav({
               }`}
             >
               <Icon
-                className={`w-5 h-5 transition-all duration-300 ${
+                className={`w-4.5 h-4.5 sm:w-5 sm:h-5 transition-all duration-300 ${
                   isActive
                     ? theme.activeIcon
                     : "text-slate-500 group-hover:text-slate-800"
                 }`}
               />
               <span
-                className={`text-[10px] mt-0.5 tracking-tight truncate max-w-[68px] leading-tight transition-colors duration-200 ${
+                className={`text-[9px] sm:text-[10px] mt-0.5 tracking-tight truncate max-w-[64px] sm:max-w-[68px] leading-tight transition-colors duration-200 ${
                   isActive ? theme.activeText : "text-slate-500 group-hover:text-slate-800 font-medium"
                 }`}
               >

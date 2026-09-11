@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Root Role Layouts (`src/app/admin/layout.tsx`, `src/app/teacher/layout.tsx`, `src/app/student/layout.tsx`, `src/app/vice-principal/layout.tsx`, `src/app/department/layout.tsx`, `src/app/ward/layout.tsx`).
- * 2. Uniqueness: Modern Luminous Crystal Glass Mobile Drawer with instant search filter, single-active collapsible accordion, touch swipe dismiss, and role-based optical themes (Sky, Emerald, Indigo).
+ * 2. Affected APIs: `MobileDrawer` default export in `src/components/layout/MobileDrawer.tsx`.
  * 3. Schema: `MobileDrawerProps` (`isOpen`: boolean, `onClose`: () => void, `menuGroups`: MobileMenuGroup[], `role`?: string, `userName`?: string, `userEmail`?: string).
- * 4. Verbatim User Instruction: "cải thiện giao diện của điện thoại cả adroi và iphone vần giao diện menu phải hiện đại mượt mà" and "tôi muốn màu nó như phần đăng nhập và mỗi tài khoản sẽ 1 sắc thái khác nhua hiệu trưởng giáo viên học sinh".
+ * 4. Verbatim User Instruction: "chữ trên điện thoại vẫn đang hơi to" -> "theo khuyến nghị của bạn".
  */
 
 "use client";
@@ -266,12 +266,12 @@ export default function MobileDrawer({
                   {userName.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11.5px] font-extrabold truncate leading-tight">{userName}</p>
+                  <p className="text-[11px] font-extrabold truncate leading-tight">{userName}</p>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border truncate ${theme.roleBadge}`}>
+                    <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded border truncate ${theme.roleBadge}`}>
                       {displayRole}
                     </span>
-                    <span className="text-[9px] opacity-80 flex items-center gap-0.5 shrink-0 font-medium">
+                    <span className="text-[8.5px] opacity-80 flex items-center gap-0.5 shrink-0 font-medium">
                       <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
                       <span>Online</span>
                     </span>
@@ -298,7 +298,7 @@ export default function MobileDrawer({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm nhanh tính năng..."
-                  className={`w-full pl-8 pr-7 py-1.5 ${theme.searchInputBg} rounded-xl text-[11px] focus:outline-hidden focus:ring-1 transition-all shadow-2xs ${theme.searchFocus}`}
+                  className={`w-full pl-8 pr-7 py-1.5 ${theme.searchInputBg} rounded-xl text-[10.5px] sm:text-[11px] placeholder:text-[10px] focus:outline-hidden focus:ring-1 transition-all shadow-2xs ${theme.searchFocus}`}
                 />
                 {searchQuery && (
                   <button
@@ -385,7 +385,7 @@ export default function MobileDrawer({
                       >
                         <div className="flex items-center gap-1.5 min-w-0">
                           {group.code ? (
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] tracking-tight ${
+                            <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-black tracking-tight ${
                               hasActiveChild
                                 ? theme.activeCodeBadge
                                 : theme.inactiveCodeBadge
@@ -395,14 +395,14 @@ export default function MobileDrawer({
                           ) : (
                             <span className={`w-1 h-1 rounded-full ${hasActiveChild ? theme.activeDot : "bg-black/30"}`} />
                           )}
-                          <span className="text-[11px] font-bold truncate uppercase tracking-wider">
+                          <span className="text-[10.5px] sm:text-[11px] font-bold truncate uppercase tracking-wider">
                             {group.title}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
                           {group.tag && (
-                            <span className={`hidden sm:inline-block text-[8.5px] font-bold px-1 py-0.5 rounded border ${theme.roleBadge}`}>
+                            <span className={`hidden sm:inline-block text-[8px] font-bold px-1 py-0.5 rounded border ${theme.roleBadge}`}>
                               {group.tag}
                             </span>
                           )}
@@ -427,7 +427,7 @@ export default function MobileDrawer({
                                 href={item.href}
                                 onClick={onClose}
                                 prefetch={true}
-                                className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] transition-all ${
+                                className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-[10.5px] sm:text-[11px] transition-all ${
                                   isActive
                                     ? theme.activeLink
                                     : theme.inactiveLink
@@ -438,7 +438,7 @@ export default function MobileDrawer({
                                   <span className="truncate">{item.label}</span>
                                 </div>
                                 {item.badge && (
-                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${
+                                  <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold shrink-0 ${
                                     isActive
                                       ? "bg-white/20 text-white"
                                       : theme.activeSearchBadge
@@ -466,7 +466,7 @@ export default function MobileDrawer({
                     onClose();
                     setSystemAccountsModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-1.5 px-2 py-1.5 min-h-[34px] rounded-xl bg-white/80 hover:bg-white border border-black/10 text-[10.5px] font-bold transition-all cursor-pointer shadow-2xs"
+                  className="flex items-center justify-center gap-1.5 px-2 py-1.5 min-h-[34px] rounded-xl bg-white/80 hover:bg-white border border-black/10 text-[10px] sm:text-[10.5px] font-bold transition-all cursor-pointer shadow-2xs"
                 >
                   <KeyRound className="w-3.5 h-3.5 opacity-70" />
                   <span>Danh sách TK</span>
@@ -478,7 +478,7 @@ export default function MobileDrawer({
                     onClose();
                     setChangePasswordModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-1.5 px-2 py-1.5 min-h-[34px] rounded-xl bg-white/80 hover:bg-white border border-black/10 text-[10.5px] font-bold transition-all cursor-pointer shadow-2xs"
+                  className="flex items-center justify-center gap-1.5 px-2 py-1.5 min-h-[34px] rounded-xl bg-white/80 hover:bg-white border border-black/10 text-[10px] sm:text-[10.5px] font-bold transition-all cursor-pointer shadow-2xs"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 opacity-70" />
                   <span>Đổi MK</span>
@@ -488,7 +488,7 @@ export default function MobileDrawer({
               <button
                 type="button"
                 onClick={() => handleClientSignOut("/login")}
-                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 min-h-[34px] rounded-xl bg-rose-500/10 border border-rose-400/40 text-rose-700 hover:bg-rose-500/20 text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
+                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 min-h-[34px] rounded-xl bg-rose-500/10 border border-rose-400/40 text-rose-700 hover:bg-rose-500/20 text-[10.5px] sm:text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Đăng xuất tài khoản</span>

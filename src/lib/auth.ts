@@ -273,13 +273,11 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Always sanitize existing token.image & token.picture to clean up large cookies from prior sessions
-      if (typeof token.image === "string" && (token.image.startsWith("data:") || token.image.length > 200)) {
+      // Always sanitize existing token.image & token.picture to keep token ultra-compact (< 500 bytes) and prevent chunking
+      if (typeof token.image === "string" && (token.image.startsWith("data:") || token.image.length > 150)) {
         token.image = undefined;
       }
-      if (typeof token.picture === "string" && (token.picture.startsWith("data:") || token.picture.length > 200)) {
-        token.picture = undefined;
-      }
+      token.picture = undefined;
 
       return token;
     },

@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Student Portal Navigation (`src/app/student/schedule/page.tsx`), `src/app/student/layout.tsx:80`, `src/components/layout/MobileBottomNav.tsx:98`.
  * 2. Affected APIs: `getStudentSchedule` (`src/app/student/actions.ts`).
  * 3. Schema: `StudentScheduleData`, `StudentScheduleSlot`, `Schedule`, `Subject`, `ClassRoom`.
- * 4. Verbatim User Instruction: "bạn hãy xem 2 ảnh ở file C:\\Users\\tungh\\Desktop\\school-management\\anh   thứ 1 tab vụ không trong suốt như Liquid Glass và thứ 2 khi tôi bấm vô lịch khóa biểu nó bị hiên lên những cái kia ở trên web tôi đang thêm web vào màn hình chính trên iphone".
+ * 4. Verbatim User Instruction: "chữ trên điện thoại vẫn đang hơi to" -> "theo khuyến nghị của bạn".
  */
 
 "use client";
@@ -157,20 +157,20 @@ export default function StudentSchedulePage() {
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 bg-white/20 border border-white/30 rounded-full text-white text-[11px] font-extrabold flex items-center gap-1 backdrop-blur-md">
+              <span className="px-2.5 py-0.5 bg-white/20 border border-white/30 rounded-full text-white text-[10px] sm:text-[11px] font-extrabold flex items-center gap-1 backdrop-blur-md">
                 <Calendar className="w-3 h-3 text-sky-200" />
                 Thời Khóa Biểu Học Sinh
               </span>
               {data?.className && (
-                <span className="px-2.5 py-0.5 bg-emerald-400/30 border border-emerald-300/40 rounded-full text-emerald-100 text-[11px] font-black">
+                <span className="px-2.5 py-0.5 bg-emerald-400/30 border border-emerald-300/40 rounded-full text-emerald-100 text-[10px] sm:text-[11px] font-black">
                   Lớp {data.className}
                 </span>
               )}
             </div>
-            <h1 className="text-lg sm:text-2xl font-black tracking-tight truncate">
+            <h1 className="text-base sm:text-2xl font-black tracking-tight truncate">
               {data?.studentName || "Học sinh"} — Lịch Học Tuần
             </h1>
-            <p className="text-[11px] sm:text-xs text-blue-100/90 truncate">
+            <p className="text-[10.5px] sm:text-xs text-blue-100/90 truncate">
               {data?.schoolName || "Trường học"} • Cập nhật lịch học, giáo viên & điểm danh
             </p>
           </div>
@@ -283,7 +283,7 @@ export default function StudentSchedulePage() {
           <button
             type="button"
             onClick={() => setViewMode("DAY")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
               viewMode === "DAY"
                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
                 : "text-slate-600 hover:bg-slate-100"
@@ -295,7 +295,7 @@ export default function StudentSchedulePage() {
           <button
             type="button"
             onClick={() => setViewMode("WEEK")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
               viewMode === "WEEK"
                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
                 : "text-slate-600 hover:bg-slate-100"
@@ -346,10 +346,10 @@ export default function StudentSchedulePage() {
                       : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                   }`}
                 >
-                  <span className={`text-[11px] sm:text-xs font-black uppercase ${isSelected ? "text-white" : ""}`}>
+                  <span className={`text-[10px] sm:text-xs font-black uppercase ${isSelected ? "text-white" : ""}`}>
                     {d.label}
                   </span>
-                  <span className={`text-[10px] font-bold mt-0.5 ${isSelected ? "text-blue-100" : "text-slate-500"}`}>
+                  <span className={`text-[9px] sm:text-[10px] font-bold mt-0.5 ${isSelected ? "text-blue-100" : "text-slate-500"}`}>
                     {d.formattedDate}
                   </span>
                   {d.isToday && !isSelected && (
@@ -361,18 +361,18 @@ export default function StudentSchedulePage() {
           </div>
 
           {/* Selected Day Info Badge */}
-          <div className="px-3 py-2 bg-gradient-to-r from-blue-50 via-indigo-50/50 to-sky-50 border border-blue-200/80 rounded-xl flex items-center justify-between text-xs">
+          <div className="px-3 py-1.5 sm:py-2 bg-gradient-to-r from-blue-50 via-indigo-50/50 to-sky-50 border border-blue-200/80 rounded-xl flex items-center justify-between text-[11px] sm:text-xs">
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-blue-950">
                 {currentDayHeader?.label} ({currentDayHeader?.formattedDate})
               </span>
               {currentDayHeader?.isToday && (
-                <span className="px-2 py-0.5 bg-blue-600 text-white rounded-md text-[10px] font-black">
+                <span className="px-1.5 sm:px-2 py-0.5 bg-blue-600 text-white rounded-md text-[9px] sm:text-[10px] font-black">
                   HÔM NAY
                 </span>
               )}
             </div>
-            <span className="text-[11px] font-bold text-slate-500">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-500">
               {currentDaySlots.filter((s) => s.slot).length} tiết học
             </span>
           </div>
@@ -386,15 +386,15 @@ export default function StudentSchedulePage() {
                 return (
                   <div
                     key={period}
-                    className="p-3 bg-slate-50/70 border border-dashed border-slate-200 rounded-xl flex items-center justify-between text-slate-400"
+                    className="p-2.5 sm:p-3 bg-slate-50/70 border border-dashed border-slate-200 rounded-xl flex items-center justify-between text-slate-400"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="w-14 text-center px-1.5 py-0.5 bg-slate-200/60 rounded text-[11px] font-bold text-slate-500">
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                      <span className="w-12 sm:w-14 text-center px-1.5 py-0.5 bg-slate-200/60 rounded text-[10px] sm:text-[11px] font-bold text-slate-500">
                         {timeInfo.label}
                       </span>
-                      <span className="text-xs italic">— Tiết trống (Không có lịch) —</span>
+                      <span className="text-[10.5px] sm:text-xs italic">— Tiết trống (Không có lịch) —</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-medium">{timeInfo.time}</span>
+                    <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-medium">{timeInfo.time}</span>
                   </div>
                 );
               }
@@ -402,19 +402,19 @@ export default function StudentSchedulePage() {
               return (
                 <div
                   key={period}
-                  className={`p-3.5 rounded-2xl border transition-all duration-200 bg-white shadow-2xs hover:shadow-sm ${style?.border}`}
+                  className={`p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 bg-white shadow-2xs hover:shadow-sm ${style?.border}`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-2 h-10 rounded-full ${style?.accent}`} />
+                    <div className="flex items-center gap-2 sm:gap-2.5">
+                      <div className={`w-1.5 sm:w-2 h-9 sm:h-10 rounded-full ${style?.accent}`} />
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-black text-slate-900">{slot.subjectName}</span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${style?.bg} ${style?.text}`}>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span className="text-xs sm:text-sm font-black text-slate-900">{slot.subjectName}</span>
+                          <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[9.5px] sm:text-[10px] font-extrabold ${style?.bg} ${style?.text}`}>
                             {timeInfo.label}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-600 font-medium">
+                        <div className="flex items-center gap-2.5 sm:gap-3 mt-1 text-[10px] sm:text-[11px] text-slate-600 font-medium">
                           <span className="flex items-center gap-1">
                             <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
                             {slot.teacherName}
@@ -430,21 +430,21 @@ export default function StudentSchedulePage() {
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      <span className="text-[10px] text-slate-500 font-bold">{timeInfo.time}</span>
+                      <span className="text-[9.5px] sm:text-[10px] text-slate-500 font-bold">{timeInfo.time}</span>
                       {slot.attendanceStatus === "PRESENT" ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+                        <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-300">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Có mặt
                         </span>
                       ) : slot.attendanceStatus === "LATE" ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
+                        <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-amber-700 bg-amber-100 px-1.5 sm:px-2 py-0.5 rounded-md border border-amber-300">
                           <Clock3 className="w-3 h-3 text-amber-600" /> Đi muộn
                         </span>
                       ) : slot.attendanceStatus?.includes("ABSENT") ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md border border-rose-300">
+                        <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-rose-700 bg-rose-100 px-1.5 sm:px-2 py-0.5 rounded-md border border-rose-300">
                           <XCircle className="w-3 h-3 text-rose-600" /> Vắng mặt
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                        <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
                           Chưa học
                         </span>
                       )}

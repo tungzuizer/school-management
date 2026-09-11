@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js App Router entry point `/register` (`src/app/register/page.tsx`).
+ * 2. Affected API: `default function RegisterTeacherPage()` and role selection UI.
+ * 3. Schema: `selectedRoleType: "TEACHER" | "INDEPENDENT_TEACHER" | "ADMIN" | "VICE_PRINCIPAL"`.
+ * 4. Verbatim User Instruction: "cập nhập chế độ lướt chọn trên máy tính của phần đăng ký tài khoản ở mục loại tài khoản" & "theo khuyến nghị của bạn".
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -20,6 +28,7 @@ import {
   UserPlus,
   Briefcase,
   Sparkles,
+  Check,
 } from "lucide-react";
 import { getRegistrationFormData, registerTeacher } from "./actions";
 
@@ -59,37 +68,45 @@ const ROLES = [
     value: "TEACHER" as const,
     label: "Giáo viên Trường",
     sub: "Thuộc Trường",
+    desc: "Giảng dạy tại trường, xét duyệt bởi Hiệu trưởng",
     Icon: User,
     activeColor: "#0d9488",
     activeBg: "#f0fdfa",
     activeBorder: "#0d9488",
+    badgeBg: "rgba(13, 148, 136, 0.12)",
   },
   {
     value: "INDEPENDENT_TEACHER" as const,
     label: "Giáo viên Tự do",
     sub: "Dạy độc lập",
+    desc: "Tự mở lớp, thêm học sinh & quản lý điểm riêng",
     Icon: Sparkles,
     activeColor: "#ea580c",
     activeBg: "#fff7ed",
     activeBorder: "#ea580c",
+    badgeBg: "rgba(234, 88, 12, 0.12)",
   },
   {
     value: "ADMIN" as const,
     label: "Hiệu trưởng",
     sub: "ADMIN",
+    desc: "Quản trị toàn diện hoạt động của nhà trường",
     Icon: Building2,
     activeColor: "#4f46e5",
     activeBg: "#eef2ff",
     activeBorder: "#4f46e5",
+    badgeBg: "rgba(79, 70, 229, 0.12)",
   },
   {
     value: "VICE_PRINCIPAL" as const,
-    label: "Phó HT",
-    sub: "VP",
+    label: "Phó Hiệu trưởng",
+    sub: "BGH",
+    desc: "Quản lý chuyên môn & kiểm duyệt kế hoạch dạy",
     Icon: Briefcase,
     activeColor: "#7c3aed",
     activeBg: "#f5f3ff",
     activeBorder: "#7c3aed",
+    badgeBg: "rgba(124, 58, 237, 0.12)",
   },
 ];
 
@@ -173,6 +190,21 @@ export default function RegisterTeacherPage() {
     if (sch) {
       if (sch.districtWardId) setSelectedDistrictWardId(sch.districtWardId);
       if (sch.departmentId) setSelectedDeptId(sch.departmentId);
+    }
+  };
+
+  const handleRoleKeyDown = (
+    e: React.KeyboardEvent,
+    currentIndex: number
+  ) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const nextIndex = (currentIndex + 1) % ROLES.length;
+      setSelectedRoleType(ROLES[nextIndex].value);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex = (currentIndex - 1 + ROLES.length) % ROLES.length;
+      setSelectedRoleType(ROLES[prevIndex].value);
     }
   };
 
@@ -304,40 +336,103 @@ export default function RegisterTeacherPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* ── ROLE SELECTOR: horizontal pill tabs ─────────────────── */}
+                {/* ── ROLE SELECTOR: Responsive Grid & Desktop Optimized Bento Cards ─────────────────── */}
                 <div>
-                  <p className="text-sm font-bold text-gray-800 mb-3">
-                    Loại tài khoản <span className="text-red-500">*</span>
-                  </p>
-                  <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-                    {ROLES.map(({ value, label, sub, Icon, activeColor, activeBg, activeBorder }) => {
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                      <span>Loại tài khoản</span>
+                      <span className="text-red-500">*</span>
+                    </p>
+                    <span className="text-[11px] font-medium text-gray-400 hidden sm:inline-flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                      <span>Dùng chuột hoặc phím</span>
+                      <kbd className="px-1 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-mono text-gray-600">←</kbd>
+                      <kbd className="px-1 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-mono text-gray-600">→</kbd>
+                    </span>
+                  </div>
+
+                  <div
+                    role="radiogroup"
+                    aria-label="Chọn loại tài khoản"
+                    className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3"
+                  >
+                    {ROLES.map(({ value, label, sub, desc, Icon, activeColor, activeBg, activeBorder, badgeBg }, idx) => {
                       const active = selectedRoleType === value;
                       return (
                         <button
                           key={value}
                           type="button"
+                          role="radio"
+                          aria-checked={active}
+                          tabIndex={active ? 0 : -1}
                           onClick={() => setSelectedRoleType(value)}
-                          className="flex items-center gap-2 flex-shrink-0 rounded-2xl px-4 font-semibold text-sm transition-all"
+                          onKeyDown={(e) => handleRoleKeyDown(e, idx)}
+                          className={`group relative text-left rounded-2xl p-3 sm:p-3.5 transition-all duration-200 cursor-pointer select-none flex flex-col justify-between ${
+                            active
+                              ? "ring-2 shadow-md -translate-y-0.5"
+                              : "hover:-translate-y-0.5 hover:shadow-xs hover:border-gray-300"
+                          }`}
                           style={{
-                            minHeight: "48px",
-                            paddingTop: "10px",
-                            paddingBottom: "10px",
-                            background: active ? activeBg : "#f8fafc",
+                            minHeight: "108px",
+                            background: active ? activeBg : "#ffffff",
                             border: `1.5px solid ${active ? activeBorder : "#e2e8f0"}`,
-                            color: active ? activeColor : "#64748b",
-                            boxShadow: active ? `0 2px 8px ${activeColor}22` : "none",
+                            borderColor: active ? activeBorder : undefined,
+                            boxShadow: active ? `0 4px 14px ${activeColor}24` : undefined,
                           }}
                         >
-                          <Icon className="w-4 h-4 flex-shrink-0" />
-                          <span>
-                            {label}
-                            <span className="hidden sm:inline" style={{ opacity: 0.65 }}>{" "}({sub})</span>
-                          </span>
+                          {/* Top row: Icon + Badge + Checkmark */}
+                          <div className="flex items-start justify-between w-full mb-2">
+                            <div
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
+                              style={{
+                                background: active ? activeColor : "#f1f5f9",
+                                color: active ? "#ffffff" : "#64748b",
+                              }}
+                            >
+                              <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                                style={{
+                                  background: active ? badgeBg : "#f1f5f9",
+                                  color: active ? activeColor : "#64748b",
+                                }}
+                              >
+                                {sub}
+                              </span>
+                              <div
+                                className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${
+                                  active ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                                }`}
+                                style={{ background: activeColor, color: "#ffffff" }}
+                              >
+                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bottom content: Title & Description */}
+                          <div>
+                            <div
+                              className="text-xs sm:text-sm font-bold leading-tight"
+                              style={{ color: active ? activeColor : "#1e293b" }}
+                            >
+                              {label}
+                            </div>
+                            <div
+                              className="text-[11px] leading-snug mt-1 line-clamp-2"
+                              style={{ color: active ? "#475569" : "#94a3b8" }}
+                            >
+                              {desc}
+                            </div>
+                          </div>
                         </button>
                       );
                     })}
                   </div>
-                  <p className="text-[11px] text-gray-400 italic mt-2 leading-snug">
+
+                  <p className="text-[11px] text-gray-400 italic mt-2.5 leading-snug">
                     {selectedRoleType === "INDEPENDENT_TEACHER"
                       ? "* Giáo viên tự do: Có không gian dạy học riêng, tự thêm học sinh & quản lý lớp học độc lập."
                       : "* Giáo viên trường: Hiệu trưởng phê duyệt. Tài khoản HT/PHT: Admin hệ thống phê duyệt."}
