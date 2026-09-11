@@ -27,11 +27,17 @@ export default async function TT15EvaluationPage(props: { searchParams?: Promise
   }
 
   // Fetch contextual user scope Data
+  /** FACT-FORCING GATE CONTEXT: TT15 KPI framework. Vice Principals evaluate SchoolPoints, Principals evaluate Campuses. "phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15" */
   const schoolId = session.user.schoolId;
+  const campusId = session.user.campusId;
 
   // Let's list the campuses & school points the user can manage
+  const filter: any = {};
+  if (schoolId) filter.schoolId = schoolId;
+  if (campusId) filter.id = campusId; // Restrict VP and HT to their branch if set
+
   const campuses = await prisma.campus.findMany({
-    where: schoolId ? { schoolId } : {},
+    where: filter,
     include: {
       schoolPoints: true,
     }

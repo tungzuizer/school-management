@@ -185,11 +185,20 @@ export async function submitEvaluationToPrincipal(evaluationId: string) {
   }
 
   // Strict check: Evidence enforcement
-  const totalEvidence = evalData.details.reduce((sum, d) => sum + d.evidenceFiles.length, 0);
-  if (totalEvidence === 0) {
-    return { 
-      success: false, 
-      error: "BẮT BUỘC: Bạn phải cung cấp ít nhất 1 file minh chứng (ảnh/PDF) theo Thông tư 15 trước khi nộp. Không chấp nhận đánh giá chay." 
+  const indicatorsEvaluated = evalData.details.filter(d => d.selfAssessment);
+
+  if (indicatorsEvaluated.length === 0) {
+    return {
+      success: false,
+      error: "BẮT BUỘC: Bạn chưa đánh giá bất kỳ tiêu chí nào."
+    };
+  }
+
+  const missingEvidenceDetails = indicatorsEvaluated.filter(d => d.evidenceFiles.length === 0);
+  if (missingEvidenceDetails.length > 0) {
+    return {
+      success: false,
+      error: "BẮT BUỘC: Mỗi tiêu chí được đánh giá đều phải có ít nhất 1 file minh chứng đính kèm để tuân thủ Thông tư 15. Bạn còn " + missingEvidenceDetails.length + " tiêu chí chưa có file."
     };
   }
 

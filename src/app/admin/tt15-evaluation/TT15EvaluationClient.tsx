@@ -206,8 +206,14 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
             <div>
               <p className="font-semibold text-indigo-900">Trạng thái: {evaluationData?.status || "Chưa có bản nháp"}</p>
               <p className="text-sm text-indigo-700 mt-1">Chuẩn TT15 bắt buộc đính kèm File minh chứng cho từng tiêu chí.</p>
+              {evaluationData?.notes && (
+                <div className="mt-2 p-3 bg-white border border-rose-200 rounded-md text-sm text-rose-800">
+                  <span className="font-semibold">Phản hồi từ Hiệu trưởng: </span>
+                  {evaluationData.notes}
+                </div>
+              )}
             </div>
-            {role === "VICE_PRINCIPAL" && (
+            {role === "VICE_PRINCIPAL" && (!evaluationData || evaluationData.status === "DRAFT" || evaluationData.status === "REJECTED") && (
               <div className="flex gap-2">
                 {/* FACT-FORCING GATE CONTEXT: TT15 KPI framework. Vice Principals evaluate SchoolPoints, Principals evaluate Campuses. "phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15" */}
                 <button
@@ -227,15 +233,43 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
               </div>
             )}
             {role === "ADMIN" && evaluationData?.status === "SUBMITTED" && (
-              <button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                onClick={async () => {
-                  await reviewEvaluationByPrincipal(evaluationData.id, "APPROVE", "Đồng ý xếp loại.");
-                  loadEvaluation();
-                }}
-              >
-                Phê Duyệt
-              </button>
+              <div className="flex gap-2">
+                <button
+                  className="bg-rose-100 hover:bg-rose-200 text-rose-800 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  onClick={async () => {
+                    const reason = window.prompt("Nhập lý do từ chối/yêu cầu làm lại:");
+                    if (!reason || reason.trim() === "") {
+                      alert("Bắt buộc phải nhập lý do khi từ chối!");
+                      return;
+                    }
+                    const res = await reviewEvaluationByPrincipal(evaluationData.id, "REJECT", reason);
+                    if (res.success) {
+                      alert("Đã trả lại Yêu cầu làm lại cho Phó Hiệu trưởng.");
+                      loadEvaluation();
+                    } else {
+                      alert("Lỗi: " + res.error);
+                    }
+                  }}
+                >
+                  Yêu Cầu Làm Lại
+                </button>
+                <button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  onClick={async () => {
+                    if (window.confirm("Bấm OK để chính thức Phê Duyệt kết quả đánh giá Điểm trường này theo TT15.")) {
+                      const res = await reviewEvaluationByPrincipal(evaluationData.id, "APPROVE", "Đồng ý xếp loại.");
+                      if (res.success) {
+                        alert("Đã phê duyệt thành công!");
+                        loadEvaluation();
+                      } else {
+                        alert("Lỗi: " + res.error);
+                      }
+                    }
+                  }}
+                >
+                  Phê Duyệt
+                </button>
+              </div>
             )}
           </div>
 
