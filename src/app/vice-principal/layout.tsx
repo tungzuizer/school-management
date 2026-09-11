@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Next.js root layout for `/vice-principal/*` (`src/app/vice-principal/dashboard/page.tsx`, `src/app/vice-principal/classes/page.tsx`, `src/app/vice-principal/students/page.tsx`, `src/app/vice-principal/attendance/page.tsx`, `src/app/vice-principal/journals/page.tsx`, `src/app/vice-principal/lesson-plans/page.tsx`, `src/app/vice-principal/warnings/page.tsx`).
+ * 1. Importers/Callers: Next.js root layout for `/vice-principal/*` (`src/app/vice-principal/dashboard/page.tsx`, `src/app/admin/tt15-evaluation/page.tsx`, etc.).
  * 2. Affected APIs: `VicePrincipalLayout` default export in `src/app/vice-principal/layout.tsx`.
- * 3. Schema: `MenuItem` (`label`: string, `href`: string, `icon`: LucideIcon, `badge`?: string, `description`?: string), `MenuGroup` (`id`: string, `code`: string, `title`: string, `tag`: string, `accent`: "blue" | "emerald" | "sky", `icon`: LucideIcon, `items`: MenuItem[]).
- * 4. Verbatim User Instruction: "cho cao lên nữa".
+ * 3. Schema: `MenuItem`, `MenuGroup`.
+ * 4. Verbatim User Instruction: "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT".
  */
 
 "use client";
@@ -26,6 +26,7 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
+  Target,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -76,6 +77,7 @@ const menuGroups: MenuGroup[] = [
       { label: "Lớp học phụ trách", href: "/vice-principal/classes", icon: School, description: "Danh sách lớp học cơ sở" },
       { label: "Hồ sơ học sinh", href: "/vice-principal/students", icon: Users, description: "Danh sách & hồ sơ học sinh" },
       { label: "Quản lý điểm danh", href: "/vice-principal/attendance", icon: ClipboardCheck, description: "Báo cáo chuyên cần cơ sở" },
+      { label: "Đánh giá chuẩn TT15", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15", description: "Đánh giá điểm trường & minh chứng" },
     ],
   },
   {

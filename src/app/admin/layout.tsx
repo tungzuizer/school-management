@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Next.js Root Admin Layout for `/admin/*` (`src/app/admin/dashboard/page.tsx`, `src/app/admin/exam-analytics/page.tsx`, etc.).
+ * 1. Importers/Callers: Next.js Root Admin Layout for `/admin/*` (`src/app/admin/dashboard/page.tsx`, `src/app/admin/tt15-evaluation/page.tsx`, etc.).
  * 2. Uniqueness: Dual-Scroll independent workspace canvas with collapsible sidebar (w-72 <-> w-20), single active accordion auto-collapsing secondary items, and floating tooltips.
  * 3. Schema: `AdminProfile` (`id`, `name`, `email`, `isSuperAdmin`, `schoolName`, `departmentName`), `MenuGroup`, `MenuItem`.
- * 4. Verbatim User Instruction: "cho cao lên nữa".
+ * 4. Verbatim User Instruction: "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT".
  */
 
 "use client";
@@ -82,6 +82,7 @@ const superAdminMenuGroups: MenuGroup[] = [
       { label: "Radar cảnh báo", href: "/admin/early-warnings", icon: AlertCircle },
       { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileText },
       { label: "Chiến lược & KPI", href: "/admin/strategy", icon: Target },
+      { label: "Đánh giá TT 15", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15" },
     ],
   },
   {
@@ -145,6 +146,7 @@ const principalMenuGroups: MenuGroup[] = [
       { label: "Điểm thi OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "Mới" },
       { label: "Radar cảnh báo", href: "/admin/early-warnings", icon: AlertCircle },
       { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileText },
+      { label: "Đánh giá TT 15", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15" },
       { label: "Trợ lý BGH AI", href: "/admin/principal-ai", icon: Bot },
     ],
   },
