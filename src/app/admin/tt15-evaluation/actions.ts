@@ -10,6 +10,7 @@
 
 import prisma from "@/lib/prisma";
 import { EvaluationStatus, TT15Standard } from "@prisma/client";
+import { calculateTT15Ranking } from "@/lib/tt15-utils";
 
 /**
  * Fetches or seeds the TT15 standardized indicators.
@@ -19,17 +20,50 @@ export async function getTT15Indicators() {
     orderBy: { code: 'asc' },
   });
 
-  if (indicators.length === 0) {
-    await prisma.tT15Indicator.createMany({
-      data: [
-        { standard: "STANDARD_1", code: "TC1.1", name: "Phương hướng, chiến lược xây dựng" },
-        { standard: "STANDARD_1", code: "TC1.2", name: "Hội đồng trường và các hội đồng khác" },
-        { standard: "STANDARD_2", code: "TC2.1", name: "Hiệu trưởng, phó hiệu trưởng, tổ trưởng" },
-        { standard: "STANDARD_3", code: "TC3.1", name: "Khuôn viên, sân chơi, bãi tập" },
-        { standard: "STANDARD_4", code: "TC4.1", name: "Ban đại diện cha mẹ học sinh" },
-        { standard: "STANDARD_5", code: "TC5.1", name: "Kế hoạch giáo dục của nhà trường" },
-      ]
-    });
+  const fullIndicators = [
+    // Tiêu chuẩn 1: Tổ chức và quản lý nhà trường
+    { standard: "STANDARD_1", code: "TC1.1", name: "Phương hướng, chiến lược xây dựng và phát triển nhà trường" },
+    { standard: "STANDARD_1", code: "TC1.2", name: "Hội đồng trường và các hội đồng khác trong nhà trường" },
+    { standard: "STANDARD_1", code: "TC1.3", name: "Tổ chức bộ máy, tổ chuyên môn và tổ văn phòng" },
+    { standard: "STANDARD_1", code: "TC1.4", name: "Khối lớp, tổ chức lớp học và điểm trường" },
+    { standard: "STANDARD_1", code: "TC1.5", name: "Quản lý hành chính, tài chính và tài sản theo quy định" },
+
+    // Tiêu chuẩn 2: Cán bộ quản lý, giáo viên, nhân viên và học sinh
+    { standard: "STANDARD_2", code: "TC2.1", name: "Hiệu trưởng, phó hiệu trưởng đạt chuẩn và năng lực quản trị" },
+    { standard: "STANDARD_2", code: "TC2.2", name: "Giáo viên đạt chuẩn trình độ đào tạo và chuẩn nghề nghiệp" },
+    { standard: "STANDARD_2", code: "TC2.3", name: "Nhân viên và người lao động đáp ứng yêu cầu vị trí việc làm" },
+    { standard: "STANDARD_2", code: "TC2.4", name: "Học sinh thực hiện đầy đủ nhiệm vụ và quyền theo điều lệ" },
+
+    // Tiêu chuẩn 3: Cơ sở vật chất và thiết bị dạy học
+    { standard: "STANDARD_3", code: "TC3.1", name: "Khuôn viên, sân chơi, bãi tập, công trình vệ sinh và nước sạch" },
+    { standard: "STANDARD_3", code: "TC3.2", name: "Phòng học, phòng học bộ môn và khối phục vụ học tập" },
+    { standard: "STANDARD_3", code: "TC3.3", name: "Thư viện trường học và thiết bị giáo dục, chuyển đổi số" },
+
+    // Tiêu chuẩn 4: Quan hệ giữa nhà trường, gia đình và xã hội
+    { standard: "STANDARD_4", code: "TC4.1", name: "Ban đại diện cha mẹ học sinh và các tổ chức xã hội" },
+    { standard: "STANDARD_4", code: "TC4.2", name: "Công tác phối hợp giáo dục giữa nhà trường và cộng đồng" },
+
+    // Tiêu chuẩn 5: Hoạt động giáo dục và kết quả giáo dục
+    { standard: "STANDARD_5", code: "TC5.1", name: "Kế hoạch giáo dục của nhà trường và đổi mới phương pháp dạy học" },
+    { standard: "STANDARD_5", code: "TC5.2", name: "Thực hiện chương trình giáo dục phổ thông và hoạt động trải nghiệm" },
+    { standard: "STANDARD_5", code: "TC5.3", name: "Kết quả giáo dục, tỷ lệ hoàn thành chương trình và khen thưởng" },
+  ];
+
+  if (indicators.length < fullIndicators.length) {
+    for (const ind of fullIndicators) {
+      await prisma.tT15Indicator.upsert({
+        where: { code: ind.code },
+        update: {
+          name: ind.name,
+          standard: ind.standard as TT15Standard,
+        },
+        create: {
+          standard: ind.standard as TT15Standard,
+          code: ind.code,
+          name: ind.name,
+        }
+      });
+    }
     indicators = await prisma.tT15Indicator.findMany({
       orderBy: { code: 'asc' },
     });
@@ -211,6 +245,68 @@ export async function submitEvaluationToPrincipal(evaluationId: string) {
 }
 
 /**
+ * Hiệu trưởng lưu kết quả thẩm định song song từng tiêu chí
+ */
+export async function savePrincipalReviewDetails(
+  evaluationId: string,
+  reviews: { indicatorId: string; principalComment?: string; score?: number }[]
+) {
+  for (const r of reviews) {
+    await prisma.schoolPointEvaluationDetail.updateMany({
+      where: {
+        evaluationId,
+        indicatorId: r.indicatorId,
+      },
+      data: {
+        principalComment: r.principalComment,
+        score: r.score,
+      }
+    });
+  }
+
+  return { success: true };
+}
+
+/**
+ * Lấy danh sách tổng hợp đánh giá các Điểm trường thuộc Phân hiệu để Hiệu trưởng so sánh
+ */
+export async function getCampusEvaluationSummary(campusId: string, year: number, semester?: number) {
+  const points = await prisma.schoolPoint.findMany({
+    where: { campusId },
+    include: {
+      evaluations: {
+        where: { year, semester: semester || null },
+        include: {
+          details: {
+            include: {
+              indicator: true,
+              evidenceFiles: true,
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const summary = points.map(p => {
+    const evalItem = p.evaluations[0] || null;
+    const ranking = evalItem ? calculateTT15Ranking(evalItem.details) : null;
+    return {
+      schoolPointId: p.id,
+      schoolPointName: p.name,
+      evaluationId: evalItem?.id || null,
+      status: evalItem?.status || "NOT_STARTED",
+      notes: evalItem?.notes || null,
+      ranking,
+      detailsCount: evalItem?.details?.length || 0,
+      evidenceCount: evalItem?.details?.reduce((acc, d) => acc + d.evidenceFiles.length, 0) || 0,
+    };
+  });
+
+  return summary;
+}
+
+/**
  * Called by Principal to approve or reject an evaluation.
  */
 export async function reviewEvaluationByPrincipal(evaluationId: string, action: "APPROVE" | "REJECT", comments: string) {
@@ -218,11 +314,19 @@ export async function reviewEvaluationByPrincipal(evaluationId: string, action: 
     return { success: false, error: "Nếu yêu cầu làm lại, phải nhập ý kiến chỉ đạo." };
   }
 
+  const evalData = await prisma.schoolPointEvaluation.findUnique({
+    where: { id: evaluationId },
+    include: { details: true }
+  });
+
+  const rankInfo = evalData ? calculateTT15Ranking(evalData.details) : null;
+
   await prisma.schoolPointEvaluation.update({
     where: { id: evaluationId },
-    data: { 
+    data: {
       status: action === "APPROVE" ? "APPROVED" : "REJECTED",
-      notes: comments
+      notes: comments,
+      totalScore: rankInfo?.totalScore || null
     }
   });
 
