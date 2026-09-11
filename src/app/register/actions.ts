@@ -11,6 +11,9 @@ export interface RegisterTeacherInput {
   role?: "TEACHER" | "ADMIN" | "VICE_PRINCIPAL";
   isIndependentTeacher?: boolean;
   schoolId?: string;
+  newSchoolName?: string;
+  provinceName?: string;
+  districtName?: string;
   districtWardId?: string;
   departmentId?: string;
   specialty?: string;
@@ -74,6 +77,9 @@ export async function registerTeacher(input: RegisterTeacherInput) {
       role = "TEACHER",
       isIndependentTeacher = false,
       schoolId,
+      newSchoolName,
+      provinceName,
+      districtName,
       districtWardId,
       departmentId,
       specialty,
@@ -97,8 +103,8 @@ export async function registerTeacher(input: RegisterTeacherInput) {
       return { success: false, error: "Mật khẩu phải có ít nhất 6 ký tự." };
     }
 
-    if (!isIndependentTeacher && !schoolId) {
-      return { success: false, error: "Vui lòng chọn Trường học." };
+    if (!isIndependentTeacher && !schoolId && !newSchoolName) {
+      return { success: false, error: "Vui lòng chọn hoặc nhập tên Trường học." };
     }
 
     // Check if user already exists
@@ -183,8 +189,59 @@ export async function registerTeacher(input: RegisterTeacherInput) {
     }
 
     // Normal School Teacher Registration
+    let finalSchoolId = schoolId;
+    let finalDepartmentId = departmentId;
+    let finalDistrictWardId = districtWardId;
+
+    // Handle "Tạo trường mới" for Principal roles
+    if (newSchoolName && (role === "ADMIN" || role === "VICE_PRINCIPAL")) {
+      const cleanSchoolName = newSchoolName.trim();
+
+      // Auto-create a virtual DistrictWard / Department if not perfectly matched from dataset
+      // In production, you might search them using fuzzy matching here, but we default to using the literal names if standard doesn't exist
+      const newSchool = await prisma.$transaction(async (tx) => {
+        let deptId = departmentId;
+        if (!deptId && provinceName) {
+          const dept = await tx.educationDepartment.create({
+            data: {
+              name: `Sở GD&ĐT ${provinceName}`,
+              code: `SO-${Date.now()}`,
+            }
+          });
+          deptId = dept.id;
+        }
+
+        let wardId = districtWardId;
+        if (!wardId && districtName && deptId) {
+          const ward = await tx.districtWard.create({
+            data: {
+              name: `${districtName} - ${provinceName}`,
+              departmentId: deptId,
+              code: `PHONG-${Date.now()}`
+            }
+          });
+          wardId = ward.id;
+        }
+
+        return tx.school.create({
+          data: {
+            name: cleanSchoolName,
+            schoolType: "THPT",
+            departmentId: deptId || null,
+            districtWardId: wardId || null,
+          }
+        });
+      });
+
+      finalSchoolId = newSchool.id;
+      finalDepartmentId = newSchool.departmentId || undefined;
+      finalDistrictWardId = newSchool.districtWardId || undefined;
+    } else if (!finalSchoolId) {
+      return { success: false, error: "Vui lòng chọn Trường học." };
+    }
+
     const targetSchool = await prisma.school.findUnique({
-      where: { id: schoolId! },
+      where: { id: finalSchoolId! },
       select: { id: true, name: true, departmentId: true, districtWardId: true },
     });
 
@@ -192,18 +249,20 @@ export async function registerTeacher(input: RegisterTeacherInput) {
       return { success: false, error: "Trường học được chọn không tồn tại." };
     }
 
-    const finalDepartmentId = departmentId || targetSchool.departmentId || undefined;
-    const finalDistrictWardId = districtWardId || targetSchool.districtWardId || undefined;
+    finalDepartmentId = finalDepartmentId || targetSchool.departmentId || undefined;
+    finalDistrictWardId = finalDistrictWardId || targetSchool.districtWardId || undefined;
 
     // Create user and teacher record if TEACHER
     const newUser = await prisma.$transaction(async (tx) => {
+      const isApprovedStatus = (role === "ADMIN"); // Principal is auto-activated for quick setup per User Instruction
+
       const user = await tx.user.create({
         data: {
           name: name.trim(),
           email: cleanEmail,
           password: hashedPassword,
           role,
-          isApproved: false,
+          isApproved: isApprovedStatus,
           schoolId: targetSchool.id,
           departmentId: finalDepartmentId,
           districtWardId: finalDistrictWardId,
@@ -220,14 +279,26 @@ export async function registerTeacher(input: RegisterTeacherInput) {
         });
       }
 
+      if (role === "ADMIN" || role === "VICE_PRINCIPAL") {
+        await tx.userRoleScope.create({
+          data: {
+            userId: user.id,
+            role: role as any,
+            scopeType: "GLOBAL", // BGH & ADMIN có quyền toàn trường
+          }
+        });
+      }
+
       return user;
     });
 
     const isPrincipalRole = role === "ADMIN" || role === "VICE_PRINCIPAL";
     const roleTitle = role === "ADMIN" ? "Hiệu trưởng" : role === "VICE_PRINCIPAL" ? "Phó Hiệu trưởng" : "Giáo viên";
-    const approvalNotice = isPrincipalRole
-      ? `Đăng ký tài khoản ${roleTitle} thành công! Tài khoản của bạn đang chờ Sở GD&ĐT / Admin Hệ thống phê duyệt và cấp quyền quản lý.`
-      : `Đăng ký tài khoản Giáo viên thành công! Tài khoản của bạn đang chờ Hiệu trưởng trường phê duyệt trước khi được cấp quyền truy cập dữ liệu.`;
+    const approvalNotice = role === "ADMIN"
+      ? `Đăng ký tài khoản Hiệu trưởng thành công! Không gian làm việc của trường đã được tạo. Bạn có thể đăng nhập ngay để thiết lập trường học.`
+      : role === "VICE_PRINCIPAL"
+      ? `Đăng ký tài khoản Phó Hiệu trưởng thành công! Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt và cấp quyền quản lý.`
+      : `Đăng ký tài khoản Giáo viên thành công! Tài khoản của bạn đang chờ Ban giám hiệu phê duyệt trước khi được cấp quyền truy cập dữ liệu.`;
 
     return {
       success: true,

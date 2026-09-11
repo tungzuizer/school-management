@@ -1,0 +1,1 @@
+- [tt15-kpi-architecture](tt15-kpi-architecture.md) — TT15 Strict KPI architecture mapping Vice Principals to SchoolPoints and Principals to Campuses, enforcing tangible evidence files

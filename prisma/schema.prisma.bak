@@ -14,22 +14,22 @@ datasource db {
 // ==================== ENUMS ====================
 
 enum Role {
-  SUPER_ADMIN // System Admin — infra only, no academic data
-  DEPARTMENT_ADMIN // Sở GD&ĐT — aggregate read for all schools under department
-  DISTRICT_ADMIN // Phòng GD&ĐT — aggregate read for schools in district
-  WARD_ADMIN // UBND Xã (commune) — read-only statistics for campuses in ward
-  ADMIN // Hiệu trưởng — full access across all campuses of the school
-  VICE_PRINCIPAL // Phó Hiệu trưởng — full access within assigned campus only
-  SUBJECT_HEAD // Tổ trưởng chuyên môn — cross-campus access scoped to subject group
+  SUPER_ADMIN       // System Admin — infra only, no academic data
+  DEPARTMENT_ADMIN  // Sở GD&ĐT — aggregate read for all schools under department
+  DISTRICT_ADMIN    // Phòng GD&ĐT — aggregate read for schools in district
+  WARD_ADMIN        // UBND Xã (commune) — read-only statistics for campuses in ward
+  ADMIN             // Hiệu trưởng — full access across all campuses of the school
+  VICE_PRINCIPAL    // Phó Hiệu trưởng — full access within assigned campus only
+  SUBJECT_HEAD      // Tổ trưởng chuyên môn — cross-campus access scoped to subject group
   TEACHER
   STUDENT
 }
 
 enum ScopeType {
-  GLOBAL // Unrestricted (SUPER_ADMIN, DEPARTMENT_ADMIN)
-  CAMPUS // Scoped to a single campus (VICE_PRINCIPAL)
+  GLOBAL        // Unrestricted (SUPER_ADMIN, DEPARTMENT_ADMIN)
+  CAMPUS        // Scoped to a single campus (VICE_PRINCIPAL)
   SUBJECT_GROUP // Scoped to a subject group across all campuses (SUBJECT_HEAD)
-  WARD // Scoped to a geographic ward (WARD_ADMIN)
+  WARD          // Scoped to a geographic ward (WARD_ADMIN)
 }
 
 enum ManagementBranch {
@@ -174,20 +174,20 @@ model DistrictWard {
 }
 
 model User {
-  id                 String   @id @default(cuid())
-  name               String
-  email              String   @unique
-  password           String
-  role               Role     @default(STUDENT)
-  isApproved         Boolean  @default(true)
-  image              String?
-  departmentId       String?
-  districtWardId     String?
-  schoolId           String?
-  campusId           String?
-  mustChangePassword Boolean  @default(false)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  password       String
+  role           Role     @default(STUDENT)
+  isApproved     Boolean  @default(true)
+  image          String?
+  departmentId   String?
+  districtWardId String?
+  schoolId       String?
+  campusId            String?
+  mustChangePassword  Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   department            EducationDepartment? @relation(fields: [departmentId], references: [id])
@@ -213,8 +213,8 @@ model UserRoleScope {
   userId         String
   role           Role
   scopeType      ScopeType
-  scopeId        String? // campusId OR wardId depending on scopeType
-  subjectGroupId String? // for SUBJECT_HEAD: the subject group they manage
+  scopeId        String?   // campusId OR wardId depending on scopeType
+  subjectGroupId String?   // for SUBJECT_HEAD: the subject group they manage
   createdAt      DateTime  @default(now())
 
   // Relations
@@ -254,21 +254,21 @@ model School {
   updatedAt      DateTime         @updatedAt
 
   // Relations
-  department              EducationDepartment?     @relation(fields: [departmentId], references: [id])
-  districtWard            DistrictWard?            @relation(fields: [districtWardId], references: [id])
-  users                   User[]
-  campuses                Campus[]
-  classRooms              ClassRoom[]
-  academicCalendars       AcademicCalendar[]
-  subjectGroups           SubjectGroup[]
-  lessonPlanPeriods       LessonPlanPeriod[]
-  aiConfigThresholds      AiConfigThreshold[]
-  aiAlerts                AiAlert[]
-  aiRecommendations       AiRecommendation[]
-  aiReportSummaries       AiReportSummary[]
-  aiAnalysisLogs          AiAnalysisLog[]
-  officialDocuments       OfficialDocument[]
-  equipmentItems          Equipment[]
+  department          EducationDepartment? @relation(fields: [departmentId], references: [id])
+  districtWard        DistrictWard?        @relation(fields: [districtWardId], references: [id])
+  users               User[]
+  campuses            Campus[]
+  classRooms          ClassRoom[]
+  academicCalendars   AcademicCalendar[]
+  subjectGroups       SubjectGroup[]
+  lessonPlanPeriods   LessonPlanPeriod[]
+  aiConfigThresholds  AiConfigThreshold[]
+  aiAlerts            AiAlert[]
+  aiRecommendations   AiRecommendation[]
+  aiReportSummaries   AiReportSummary[]
+  aiAnalysisLogs      AiAnalysisLog[]
+  officialDocuments   OfficialDocument[]
+  equipmentItems      Equipment[]
   journeySnapshots        StudentJourneySnapshot[]
   journeyThresholdConfigs JourneyThresholdConfig[]
   examPeriods             ExamPeriod[]
@@ -290,21 +290,20 @@ model Campus {
   updatedAt DateTime @updatedAt
 
   // Relations
-  school                  School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  users                   User[]
-  schoolPoints            SchoolPoint[]
-  classRooms              ClassRoom[]
-  wardMaps                CampusWardMap[]
-  aiAlerts                AiAlert[]
-  aiRecommendations       AiRecommendation[]
-  aiReportSummaries       AiReportSummary[]
-  officialDocuments       OfficialDocument[]
-  equipmentItems          Equipment[]
+  school            School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  users             User[]
+  schoolPoints      SchoolPoint[]
+  classRooms        ClassRoom[]
+  wardMaps          CampusWardMap[]
+  aiAlerts          AiAlert[]
+  aiRecommendations AiRecommendation[]
+  aiReportSummaries AiReportSummary[]
+  officialDocuments OfficialDocument[]
+  equipmentItems    Equipment[]
   journeySnapshots        StudentJourneySnapshot[]
   journeyThresholdConfigs JourneyThresholdConfig[]
   examPeriods             ExamPeriod[]
   studentScores           StudentScore[]
-  schoolPointEvaluations  SchoolPointEvaluation[]
 
   @@index([schoolId])
   @@index([name])
@@ -313,23 +312,22 @@ model Campus {
 model SchoolPoint {
   id          String   @id @default(cuid())
   campusId    String
-  name        String // VD: "Điểm trung tâm", "Điểm Bản Mó", "Điểm Bản Pún", "Điểm Phia Xam"
-  address     String? // Địa chỉ / vị trí
+  name        String   // VD: "Điểm trung tâm", "Điểm Bản Mó", "Điểm Bản Pún", "Điểm Phia Xam"
+  address     String?  // Địa chỉ / vị trí
   distanceKm  Float?   @default(0.0) // Khoảng cách tới điểm trung tâm (km)
-  managerName String? // Cán bộ / Giáo viên phụ trách điểm trường
+  managerName String?  // Cán bộ / Giáo viên phụ trách điểm trường
   phone       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  campus            Campus                  @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  campus            Campus              @relation(fields: [campusId], references: [id], onDelete: Cascade)
   classRooms        ClassRoom[]
   aiAlerts          AiAlert[]
   aiRecommendations AiRecommendation[]
   equipmentItems    Equipment[]
-  transfersFrom     EquipmentTransfer[]     @relation("TransferSourcePoint")
-  transfersTo       EquipmentTransfer[]     @relation("TransferTargetPoint")
-  evaluations       SchoolPointEvaluation[]
+  transfersFrom     EquipmentTransfer[] @relation("TransferSourcePoint")
+  transfersTo       EquipmentTransfer[] @relation("TransferTargetPoint")
 
   @@index([campusId])
   @@index([name])
@@ -338,7 +336,7 @@ model SchoolPoint {
 model ClassRoom {
   id                String   @id @default(cuid())
   name              String
-  gradeLevel        Int // Khối lớp: 1-12
+  gradeLevel        Int      // Khối lớp: 1-12
   schoolId          String
   campusId          String?
   schoolPointId     String?
@@ -347,24 +345,24 @@ model ClassRoom {
   updatedAt         DateTime @updatedAt
 
   // Relations
-  school                School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus                Campus?                @relation(fields: [campusId], references: [id])
-  schoolPoint           SchoolPoint?           @relation(fields: [schoolPointId], references: [id])
-  homeroomTeacher       Teacher?               @relation("HomeroomTeacher", fields: [homeroomTeacherId], references: [id])
-  students              Student[]
-  groups                Group[]
-  teachingAssignments   TeachingAssignment[]
-  attendances           Attendance[]
-  schedules             Schedule[]
-  incidents             Incident[]
-  seatingCharts         SeatingChart[]
-  dailyReports          DailyReport[]
-  lessonPlans           LessonPlan[]
-  journalEntries        ClassJournalEntry[]
-  monthlyPlans          MonthlyPlan[]
-  academicTranscripts   AcademicTranscript[]
+  school              School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus              Campus?             @relation(fields: [campusId], references: [id])
+  schoolPoint         SchoolPoint?        @relation(fields: [schoolPointId], references: [id])
+  homeroomTeacher     Teacher?            @relation("HomeroomTeacher", fields: [homeroomTeacherId], references: [id])
+  students            Student[]
+  groups              Group[]
+  teachingAssignments TeachingAssignment[]
+  attendances         Attendance[]
+  schedules           Schedule[]
+  incidents           Incident[]
+  seatingCharts       SeatingChart[]
+  dailyReports        DailyReport[]
+  lessonPlans         LessonPlan[]
+  journalEntries      ClassJournalEntry[]
+  monthlyPlans        MonthlyPlan[]
+  academicTranscripts AcademicTranscript[]
   teacherChangeRequests TeacherChangeRequest[]
-  participations        ParticipationRecord[]
+  participations      ParticipationRecord[]
 
   @@index([schoolId])
   @@index([campusId])
@@ -376,7 +374,7 @@ model ClassRoom {
 model Group {
   id        String   @id @default(cuid())
   classId   String
-  name      String // Tổ 1, Tổ 2...
+  name      String   // Tổ 1, Tổ 2...
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -388,44 +386,44 @@ model Group {
 }
 
 model Student {
-  id             String        @id @default(cuid())
-  userId         String        @unique
-  studentCode    String?       @unique // Mã học sinh theo CSDL ngành
-  classId        String?
-  groupId        String?
-  status         StudentStatus @default(STUDYING)
-  isClassMonitor Boolean       @default(false) // Lớp trưởng
-  classRole      String? // "LOP_TRUONG", "LOP_PHO", "TO_TRUONG", "THANH_VIEN"
-  bonusPoints    Int           @default(0) // Tổng điểm tích cực/thưởng
+  id          String        @id @default(cuid())
+  userId      String        @unique
+  studentCode String?       @unique // Mã học sinh theo CSDL ngành
+  classId     String?
+  groupId     String?
+  status      StudentStatus @default(STUDYING)
+  isClassMonitor Boolean    @default(false) // Lớp trưởng
+  classRole   String?       // "LOP_TRUONG", "LOP_PHO", "TO_TRUONG", "THANH_VIEN"
+  bonusPoints Int           @default(0) // Tổng điểm tích cực/thưởng
 
   // Thông tin cá nhân
-  dob         DateTime?
-  gender      Gender?
-  ethnicity   String? // Dân tộc
-  nationality String? // Quốc tịch
-  religion    String? // Tôn giáo
-  phone       String?
+  dob               DateTime?
+  gender            Gender?
+  ethnicity         String?     // Dân tộc
+  nationality       String?     // Quốc tịch
+  religion          String?     // Tôn giáo
+  phone             String?
 
   // Địa chỉ
-  addressPermanent String? // Thường trú
-  addressHometown  String? // Quê quán
-  addressCurrent   String? // Nơi ở hiện tại
+  addressPermanent  String?     // Thường trú
+  addressHometown   String?     // Quê quán
+  addressCurrent    String?     // Nơi ở hiện tại
 
   // Đối tượng chính sách
-  policyObject   String? // Đối tượng chính sách
-  disabilityType String? // Loại khuyết tật
-  tuitionExempt  Boolean @default(false) // Miễn học phí
-  tuitionReduced Boolean @default(false) // Giảm học phí
+  policyObject      String?     // Đối tượng chính sách
+  disabilityType    String?     // Loại khuyết tật
+  tuitionExempt     Boolean     @default(false) // Miễn học phí
+  tuitionReduced    Boolean     @default(false) // Giảm học phí
 
   // Thông tin cha
-  fatherName      String?
-  fatherJob       String?
-  fatherBirthYear Int?
+  fatherName        String?
+  fatherJob         String?
+  fatherBirthYear   Int?
 
   // Thông tin mẹ
-  motherName      String?
-  motherJob       String?
-  motherBirthYear Int?
+  motherName        String?
+  motherJob         String?
+  motherBirthYear   Int?
 
   // Thông tin người giám hộ
   guardianName      String?
@@ -446,19 +444,19 @@ model Student {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  classRoom           ClassRoom?               @relation(fields: [classId], references: [id])
-  group               Group?                   @relation(fields: [groupId], references: [id])
-  attendances         Attendance[]
-  grades              Grade[]
-  conductRecords      ConductRecord[]
-  incidents           Incident[]
-  parentFeedbacks     ParentFeedback[]
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classRoom       ClassRoom?        @relation(fields: [classId], references: [id])
+  group           Group?            @relation(fields: [groupId], references: [id])
+  attendances     Attendance[]
+  grades          Grade[]
+  conductRecords  ConductRecord[]
+  incidents       Incident[]
+  parentFeedbacks ParentFeedback[]
   academicTranscripts AcademicTranscript[]
-  participations      ParticipationRecord[]
-  journeySnapshots    StudentJourneySnapshot[]
-  interventions       InterventionRecord[]
-  studentScores       StudentScore[]
+  participations  ParticipationRecord[]
+  journeySnapshots StudentJourneySnapshot[]
+  interventions    InterventionRecord[]
+  studentScores    StudentScore[]
 
   @@index([userId])
   @@index([classId])
@@ -470,25 +468,25 @@ model Student {
 model Teacher {
   id        String   @id @default(cuid())
   userId    String   @unique
-  specialty String? // Chuyên môn
+  specialty String?  // Chuyên môn
   phone     String?
-  degree    String? // Bằng cấp
+  degree    String?  // Bằng cấp
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  homeroomClasses       ClassRoom[]            @relation("HomeroomTeacher")
-  headSubjects          Subject[]              @relation("SubjectHead")
-  headSubjectGroups     SubjectGroup[]         @relation("SubjectGroupHead")
-  teachingAssignments   TeachingAssignment[]
-  schedules             Schedule[]
-  lessonPlans           LessonPlan[]
-  journalEntries        ClassJournalEntry[]
-  requestedChanges      TeacherChangeRequest[] @relation("RequestedByTeacher")
-  currentTeacherChanges TeacherChangeRequest[] @relation("CurrentTeacherRel")
-  assignedChanges       TeacherChangeRequest[] @relation("NewTeacherTarget")
-  approvedChanges       TeacherChangeRequest[] @relation("HeadApprovedBy")
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  homeroomClasses        ClassRoom[]            @relation("HomeroomTeacher")
+  headSubjects           Subject[]              @relation("SubjectHead")
+  headSubjectGroups      SubjectGroup[]         @relation("SubjectGroupHead")
+  teachingAssignments    TeachingAssignment[]
+  schedules              Schedule[]
+  lessonPlans            LessonPlan[]
+  journalEntries         ClassJournalEntry[]
+  requestedChanges       TeacherChangeRequest[] @relation("RequestedByTeacher")
+  currentTeacherChanges  TeacherChangeRequest[] @relation("CurrentTeacherRel")
+  assignedChanges        TeacherChangeRequest[] @relation("NewTeacherTarget")
+  approvedChanges        TeacherChangeRequest[] @relation("HeadApprovedBy")
 
   @@index([userId])
 }
@@ -496,25 +494,25 @@ model Teacher {
 model Subject {
   id             String   @id @default(cuid())
   name           String
-  gradeLevel     Int? // Khối lớp áp dụng (null = tất cả)
+  gradeLevel     Int?     // Khối lớp áp dụng (null = tất cả)
   headTeacherId  String?
-  subjectGroupId String? // Thuộc tổ chuyên môn nào
+  subjectGroupId String?  // Thuộc tổ chuyên môn nào
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relations
-  headTeacher             Teacher?                 @relation("SubjectHead", fields: [headTeacherId], references: [id], onDelete: SetNull)
-  subjectGroup            SubjectGroup?            @relation(fields: [subjectGroupId], references: [id], onDelete: SetNull)
-  curricula               Curriculum[]
-  teachingAssignments     TeachingAssignment[]
-  grades                  Grade[]
-  schedules               Schedule[]
-  lessonPlans             LessonPlan[]
-  journalEntries          ClassJournalEntry[]
-  changeRequests          TeacherChangeRequest[]
+  headTeacher         Teacher?               @relation("SubjectHead", fields: [headTeacherId], references: [id], onDelete: SetNull)
+  subjectGroup        SubjectGroup?          @relation(fields: [subjectGroupId], references: [id], onDelete: SetNull)
+  curricula           Curriculum[]
+  teachingAssignments TeachingAssignment[]
+  grades              Grade[]
+  schedules           Schedule[]
+  lessonPlans         LessonPlan[]
+  journalEntries      ClassJournalEntry[]
+  changeRequests      TeacherChangeRequest[]
   transcriptSubjectGrades TranscriptSubjectGrade[]
-  journeySnapshots        StudentJourneySnapshot[]
-  studentScores           StudentScore[]
+  journeySnapshots    StudentJourneySnapshot[]
+  studentScores       StudentScore[]
 
   @@index([name])
   @@index([gradeLevel])
@@ -526,17 +524,17 @@ model Subject {
 model SubjectGroup {
   id            String   @id @default(cuid())
   schoolId      String
-  name          String // "Tổ Tự nhiên", "Tổ Xã hội"...
-  headTeacherId String? // Tổ trưởng chuyên môn
+  name          String       // "Tổ Tự nhiên", "Tổ Xã hội"...
+  headTeacherId String?      // Tổ trưởng chuyên môn
   description   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relations
-  school         School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  headTeacher    Teacher?        @relation("SubjectGroupHead", fields: [headTeacherId], references: [id], onDelete: SetNull)
-  subjects       Subject[]
-  userRoleScopes UserRoleScope[]
+  school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  headTeacher Teacher?  @relation("SubjectGroupHead", fields: [headTeacherId], references: [id], onDelete: SetNull)
+  subjects        Subject[]
+  userRoleScopes  UserRoleScope[]
 
   @@index([schoolId])
   @@index([headTeacherId])
@@ -546,9 +544,9 @@ model SubjectGroup {
 model LessonPlanPeriod {
   id        String   @id @default(cuid())
   schoolId  String
-  label     String // "Tháng 9/2025", "HK1 2025-2026"
+  label     String       // "Tháng 9/2025", "HK1 2025-2026"
   startDate DateTime
-  deadline  DateTime // Hạn cuối nộp giáo án
+  deadline  DateTime     // Hạn cuối nộp giáo án
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -627,7 +625,7 @@ model Attendance {
   studentId String
   classId   String
   date      DateTime
-  period    Int? // Tiết học (1-10)
+  period    Int?             // Tiết học (1-10)
   status    AttendanceStatus @default(PRESENT)
   note      String?
   createdAt DateTime         @default(now())
@@ -648,7 +646,7 @@ model Grade {
   id        String    @id @default(cuid())
   studentId String
   subjectId String
-  term      Int // Học kỳ: 1 hoặc 2
+  term      Int       // Học kỳ: 1 hoặc 2
   type      GradeType
   score     Float
   createdAt DateTime  @default(now())
@@ -665,14 +663,14 @@ model Grade {
 }
 
 model ConductRecord {
-  id             String          @id @default(cuid())
-  studentId      String
-  period         AcademicPeriod
-  conductRating  ConductRating?
-  academicRating AcademicRating?
-  note           String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id              String         @id @default(cuid())
+  studentId       String
+  period          AcademicPeriod
+  conductRating   ConductRating?
+  academicRating  AcademicRating?
+  note            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   // Relations
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -707,7 +705,7 @@ model ParentFeedback {
   id        String   @id @default(cuid())
   studentId String
   date      DateTime
-  channel   String? // Kênh liên hệ: phone, email, meeting...
+  channel   String?  // Kênh liên hệ: phone, email, meeting...
   content   String   @db.Text
   handledBy String?
   response  String?  @db.Text
@@ -724,8 +722,8 @@ model ParentFeedback {
 model SeatingChart {
   id         String   @id @default(cuid())
   classId    String
-  month      Int // Tháng (1-12)
-  year       Int // Năm
+  month      Int      // Tháng (1-12)
+  year       Int      // Năm
   layoutJson String   @db.Text // JSON layout sơ đồ chỗ ngồi
   version    Int      @default(1)
   createdAt  DateTime @default(now())
@@ -767,8 +765,8 @@ model Schedule {
   classId   String
   subjectId String
   teacherId String
-  dayOfWeek Int // 1=Thứ 2, 2=Thứ 3, ..., 7=Chủ nhật
-  period    Int // Tiết: 1-10
+  dayOfWeek Int      // 1=Thứ 2, 2=Thứ 3, ..., 7=Chủ nhật
+  period    Int      // Tiết: 1-10
   room      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -788,7 +786,7 @@ model Schedule {
 model Notification {
   id         String   @id @default(cuid())
   senderId   String
-  receiverId String? // null = gửi tất cả
+  receiverId String?  // null = gửi tất cả
   title      String
   content    String   @db.Text
   isRead     Boolean  @default(false)
@@ -808,40 +806,40 @@ model Notification {
 enum LessonPlanStatus {
   DRAFT
   SUBMITTED
-  HEAD_APPROVED // Tổ trưởng chuyên môn đã duyệt
-  HEAD_REJECTED // Tổ trưởng chuyên môn từ chối
-  VP_APPROVED // Phó Hiệu trưởng đã duyệt
-  VP_REJECTED // Phó Hiệu trưởng từ chối
-  APPROVED // Hiệu trưởng phê duyệt cuối cùng
-  REJECTED // Hiệu trưởng từ chối
+  HEAD_APPROVED    // Tổ trưởng chuyên môn đã duyệt
+  HEAD_REJECTED    // Tổ trưởng chuyên môn từ chối
+  VP_APPROVED      // Phó Hiệu trưởng đã duyệt
+  VP_REJECTED      // Phó Hiệu trưởng từ chối
+  APPROVED         // Hiệu trưởng phê duyệt cuối cùng
+  REJECTED         // Hiệu trưởng từ chối
 }
 
 model LessonPlan {
-  id          String           @id @default(cuid())
-  teacherId   String
-  subjectId   String
-  classId     String
-  periodId    String? // Kỳ nộp giáo án
-  weekNumber  Int // Tuần thứ mấy trong năm học
-  periodStart Int // Tiết bắt đầu
-  periodEnd   Int // Tiết kết thúc
-  title       String // Tên bài / chủ đề
-  objectives  String?          @db.Text // Mục tiêu bài học
-  content     String?          @db.Text // Nội dung chính
-  activities  String?          @db.Text // Hoạt động dạy-học
-  materials   String?          @db.Text // Đồ dùng / thiết bị
-  assessment  String?          @db.Text // Đánh giá
-  notes       String?          @db.Text // Ghi chú / rút kinh nghiệm
-  fileUrl     String?          @db.Text // Link file giáo án (PDF, Word, ...)
-  fileName    String? // Tên file gốc
-  fileSize    Int? // Dung lượng (bytes)
-  fileType    String? // MIME type
-  status      LessonPlanStatus @default(DRAFT)
-  reviewNote  String?          @db.Text // Nhận xét của ban giám hiệu
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id           String           @id @default(cuid())
+  teacherId    String
+  subjectId    String
+  classId      String
+  periodId     String?          // Kỳ nộp giáo án
+  weekNumber   Int              // Tuần thứ mấy trong năm học
+  periodStart  Int              // Tiết bắt đầu
+  periodEnd    Int              // Tiết kết thúc
+  title        String           // Tên bài / chủ đề
+  objectives   String?          @db.Text // Mục tiêu bài học
+  content      String?          @db.Text // Nội dung chính
+  activities   String?          @db.Text // Hoạt động dạy-học
+  materials    String?          @db.Text // Đồ dùng / thiết bị
+  assessment   String?          @db.Text // Đánh giá
+  notes        String?          @db.Text // Ghi chú / rút kinh nghiệm
+  fileUrl      String?          @db.Text // Link file giáo án (PDF, Word, ...)
+  fileName     String?          // Tên file gốc
+  fileSize     Int?             // Dung lượng (bytes)
+  fileType     String?          // MIME type
+  status       LessonPlanStatus @default(DRAFT)
+  reviewNote   String?          @db.Text // Nhận xét của ban giám hiệu
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   // Relations
   teacher   Teacher            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -862,8 +860,8 @@ model LessonPlan {
 model LessonPlanReview {
   id           String           @id @default(cuid())
   lessonPlanId String
-  reviewerName String // Họ tên người duyệt
-  reviewerRole String // "SUBJECT_HEAD", "VICE_PRINCIPAL", "ADMIN"
+  reviewerName String           // Họ tên người duyệt
+  reviewerRole String           // "SUBJECT_HEAD", "VICE_PRINCIPAL", "ADMIN"
   action       LessonPlanStatus // Trạng thái sau khi duyệt
   comment      String?          @db.Text // Nhận xét
   createdAt    DateTime         @default(now())
@@ -878,21 +876,21 @@ model LessonPlanReview {
 // ==================== SỔ ĐẦU BÀI ====================
 
 model ClassJournalEntry {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   classId     String
   subjectId   String
   teacherId   String
   date        DateTime
-  dayOfWeek   Int // 1=Thứ 2 ... 7=CN
-  period      Int // Tiết (1-10)
-  lessonTitle String? // Tên bài dạy
-  content     String?   @db.Text // Nội dung đã dạy
-  absentees   String?   @db.Text // Danh sách HS vắng (JSON hoặc text)
-  notes       String?   @db.Text // Nhận xét của GV
-  isConfirmed Boolean   @default(false) // GVCN xác nhận
+  dayOfWeek   Int      // 1=Thứ 2 ... 7=CN
+  period      Int      // Tiết (1-10)
+  lessonTitle String?  // Tên bài dạy
+  content     String?  @db.Text // Nội dung đã dạy
+  absentees   String?  @db.Text // Danh sách HS vắng (JSON hoặc text)
+  notes       String?  @db.Text // Nhận xét của GV
+  isConfirmed Boolean  @default(false) // GVCN xác nhận
   confirmedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   classRoom ClassRoom @relation(fields: [classId], references: [id], onDelete: Cascade)
@@ -909,21 +907,21 @@ model ClassJournalEntry {
 // ==================== PHÂN CÔNG DẠY THAY & CẢNH BÁO AI ====================
 
 model SubstituteAssignment {
-  id                String           @id @default(cuid())
-  originalTeacher   String // Tên hoặc ID GV xin nghỉ
-  substituteTeacher String // Tên hoặc ID GV được phân công dạy thay
-  campusName        String? // Điểm trường / Phân hiệu
-  schoolPointName   String? // Điểm trường lẻ (nếu có)
-  distanceKm        Float?           @default(0.0) // Khoảng cách di chuyển giữa 2 điểm
-  className         String // Lớp học
-  subjectName       String // Môn học
-  date              DateTime // Ngày dạy thay
-  period            Int // Tiết
-  reason            String?          @db.Text // Lý do nghỉ / điều chuyển
-  aiRecommendation  String?          @db.Text // Đánh giá & lý do chọn của AI (tối ưu khoảng cách + chuyên môn)
-  status            SubstituteStatus @default(PENDING)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  originalTeacher  String           // Tên hoặc ID GV xin nghỉ
+  substituteTeacher String          // Tên hoặc ID GV được phân công dạy thay
+  campusName       String?          // Điểm trường / Phân hiệu
+  schoolPointName  String?          // Điểm trường lẻ (nếu có)
+  distanceKm       Float?           @default(0.0) // Khoảng cách di chuyển giữa 2 điểm
+  className        String           // Lớp học
+  subjectName      String           // Môn học
+  date             DateTime         // Ngày dạy thay
+  period           Int              // Tiết
+  reason           String?          @db.Text // Lý do nghỉ / điều chuyển
+  aiRecommendation String?          @db.Text // Đánh giá & lý do chọn của AI (tối ưu khoảng cách + chuyên môn)
+  status           SubstituteStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@index([date])
   @@index([status])
@@ -934,10 +932,10 @@ model EarlyWarning {
   title           String
   category        WarningCategory
   level           WarningLevel
-  campusName      String? // Phân hiệu
-  schoolPointName String? // Điểm trường lẻ (Bản Mó, Bản Pún, Phia Xam...)
-  className       String? // Lớp
-  studentName     String? // Học sinh (nếu có)
+  campusName      String?         // Phân hiệu
+  schoolPointName String?         // Điểm trường lẻ (Bản Mó, Bản Pún, Phia Xam...)
+  className       String?         // Lớp
+  studentName     String?         // Học sinh (nếu có)
   description     String          @db.Text
   aiAnalysis      String?         @db.Text // Phân tích AI & Đề xuất hành động (cho BGH & Điểm trường)
   isResolved      Boolean         @default(false)
@@ -953,7 +951,7 @@ model EarlyWarning {
 
 model DecisionLog {
   id               String   @id @default(cuid())
-  principalId      String? // ID hoặc tên Hiệu trưởng
+  principalId      String?  // ID hoặc tên Hiệu trưởng
   query            String   @db.Text // Câu hỏi / Vấn đề cần tư vấn
   aiRecommendation String   @db.Text // Gợi ý phương án & ưu/nhược điểm từ AI
   decisionTaken    String?  @db.Text // Quyết định thực tế của Hiệu trưởng
@@ -967,10 +965,10 @@ model DecisionLog {
 model AcademicCalendar {
   id         String   @id @default(cuid())
   schoolId   String
-  schoolYear String // VD: "2026-2027"
+  schoolYear String   // VD: "2026-2027"
   title      String
-  content    String   @db.Text // Nội dung lịch năm học (text/markdown)
-  fileUrl    String? // Link file nếu upload
+  content    String   @db.Text  // Nội dung lịch năm học (text/markdown)
+  fileUrl    String?            // Link file nếu upload
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -986,7 +984,7 @@ model AcademicCalendar {
 model MonthlyPlan {
   id          String   @id @default(cuid())
   classId     String
-  month       Int // 1-12
+  month       Int      // 1-12
   year        Int
   planContent String?  @db.Text // Kế hoạch tháng
   createdAt   DateTime @default(now())
@@ -1003,7 +1001,7 @@ model MonthlyPlan {
 model WeeklyActivity {
   id            String   @id @default(cuid())
   monthlyPlanId String
-  weekNumber    Int // Tuần 1, 2, 3, 4, 5
+  weekNumber    Int      // Tuần 1, 2, 3, 4, 5
   content       String?  @db.Text // Nội dung sinh hoạt tuần
   notes         String?  @db.Text // Ghi chú
   createdAt     DateTime @default(now())
@@ -1019,18 +1017,18 @@ model WeeklyActivity {
 // ==================== BỘ CHỈ SỐ KPI TOÀN TRƯỜNG ====================
 
 enum KpiCategory {
-  STRATEGIC // Chiến lược phát triển trường
-  EDUCATIONAL_QUALITY // Chất lượng giáo dục & Đào tạo
-  PROFESSIONAL // Công tác chuyên môn & Giảng dạy
-  STAFF_PERSONNEL // Đội ngũ cán bộ & Giáo viên
-  STUDENT // Công tác học sinh & Rèn luyện
+  STRATEGIC             // Chiến lược phát triển trường
+  EDUCATIONAL_QUALITY   // Chất lượng giáo dục & Đào tạo
+  PROFESSIONAL          // Công tác chuyên môn & Giảng dạy
+  STAFF_PERSONNEL       // Đội ngũ cán bộ & Giáo viên
+  STUDENT               // Công tác học sinh & Rèn luyện
   DIGITAL_TRANSFORMATION // Chuyển đổi số & CNTT
-  FINANCIAL // Tài chính & Ngân sách
-  ASSETS // Quản lý tài sản & Thiết bị
-  FACILITIES // Cơ sở vật chất & Hạ tầng
-  SCHOOL_SAFETY // An toàn & An ninh trường học
-  SCHOOL_RELATIONS // Quan hệ gia đình - Nhà trường - Xã hội
-  INNOVATION // Đổi mới sáng tạo & Thi đua
+  FINANCIAL             // Tài chính & Ngân sách
+  ASSETS                // Quản lý tài sản & Thiết bị
+  FACILITIES            // Cơ sở vật chất & Hạ tầng
+  SCHOOL_SAFETY         // An toàn & An ninh trường học
+  SCHOOL_RELATIONS      // Quan hệ gia đình - Nhà trường - Xã hội
+  INNOVATION            // Đổi mới sáng tạo & Thi đua
 }
 
 enum MeasurementDirection {
@@ -1111,14 +1109,14 @@ model KpiPeriod {
 }
 
 model KpiAssignment {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   kpiId       String
   assigneeId  String?
   campusId    String?
-  weight      Float    @default(0.0)
-  targetValue Float    @default(100.0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  weight      Float      @default(0.0)
+  targetValue Float      @default(100.0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   // Relations
   kpi KpiCatalog @relation(fields: [kpiId], references: [id], onDelete: Cascade)
@@ -1127,13 +1125,13 @@ model KpiAssignment {
 }
 
 model KpiTarget {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   periodId    String
   kpiId       String
-  targetValue Float    @default(100.0)
-  weight      Float    @default(0.0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  targetValue Float      @default(100.0)
+  weight      Float      @default(0.0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   // Relations
   period KpiPeriod  @relation(fields: [periodId], references: [id], onDelete: Cascade)
@@ -1145,16 +1143,16 @@ model KpiTarget {
 }
 
 model KpiValue {
-  id             String   @id @default(cuid())
+  id             String     @id @default(cuid())
   periodId       String
   kpiId          String
-  actualValue    Float    @default(0.0)
-  completionRate Float    @default(0.0)
-  weightedScore  Float    @default(0.0)
-  notes          String?  @db.Text
+  actualValue    Float      @default(0.0)
+  completionRate Float      @default(0.0)
+  weightedScore  Float      @default(0.0)
+  notes          String?    @db.Text
   createdById    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   // Relations
   period   KpiPeriod     @relation(fields: [periodId], references: [id], onDelete: Cascade)
@@ -1199,16 +1197,16 @@ model KpiApprovalLog {
 }
 
 model KpiUnlockLog {
-  id              String   @id @default(cuid())
-  periodId        String
-  requestedById   String?
+  id             String   @id @default(cuid())
+  periodId       String
+  requestedById  String?
   requestedByName String?
-  reason          String   @db.Text
-  approvedById    String?
-  approvedByName  String?
-  status          String   @default("PENDING")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  reason         String   @db.Text
+  approvedById   String?
+  approvedByName String?
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   period KpiPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
@@ -1220,27 +1218,27 @@ model KpiUnlockLog {
 // ==================== MỤC TIÊU CHẤT LƯỢNG (QUALITY OBJECTIVES) ====================
 
 enum QualityCategory {
-  ACADEMIC // 1. Chất lượng học tập
-  CONDUCT // 2. Phẩm chất và năng lực học sinh
-  ATTENDANCE // 3. Chuyên cần
-  PROGRAM_COMPLETION // 4. Tỷ lệ hoàn thành chương trình
-  EXCELLENT_STUDENTS // 5. Học sinh giỏi
-  SUPPORT_STUDENTS // 6. Học sinh cần hỗ trợ
-  TEACHER_QUALITY // 7. Chất lượng đội ngũ
-  DIGITAL_TRANSFORMATION // 8. Chuyển đổi số
-  FACILITIES // 9. Cơ sở vật chất
-  SCHOOL_SAFETY // 10. An toàn trường học
-  PARENT_SATISFACTION // 11. Sự hài lòng của cha mẹ học sinh
-  OTHER // 12. Mục tiêu khác
+  ACADEMIC                  // 1. Chất lượng học tập
+  CONDUCT                   // 2. Phẩm chất và năng lực học sinh
+  ATTENDANCE                // 3. Chuyên cần
+  PROGRAM_COMPLETION        // 4. Tỷ lệ hoàn thành chương trình
+  EXCELLENT_STUDENTS        // 5. Học sinh giỏi
+  SUPPORT_STUDENTS          // 6. Học sinh cần hỗ trợ
+  TEACHER_QUALITY           // 7. Chất lượng đội ngũ
+  DIGITAL_TRANSFORMATION    // 8. Chuyển đổi số
+  FACILITIES                // 9. Cơ sở vật chất
+  SCHOOL_SAFETY             // 10. An toàn trường học
+  PARENT_SATISFACTION       // 11. Sự hài lòng của cha mẹ học sinh
+  OTHER                     // 12. Mục tiêu khác
 }
 
 enum QualityObjectiveStatus {
-  EXCEEDED // Vượt mục tiêu
-  ACHIEVED // Đạt
-  NEAR_TARGET // Gần đạt (80% - <100%)
-  AT_RISK // Có nguy cơ không đạt (60% - <80%)
-  FAILED // Không đạt (<60%)
-  NO_DATA // Chưa có dữ liệu
+  EXCEEDED          // Vượt mục tiêu
+  ACHIEVED          // Đạt
+  NEAR_TARGET       // Gần đạt (80% - <100%)
+  AT_RISK           // Có nguy cơ không đạt (60% - <80%)
+  FAILED            // Không đạt (<60%)
+  NO_DATA           // Chưa có dữ liệu
 }
 
 model QualityObjective {
@@ -1248,7 +1246,7 @@ model QualityObjective {
   code                String                 @unique
   title               String
   category            QualityCategory        @default(ACADEMIC)
-  metricName          String // Chỉ số đo lường
+  metricName          String                 // Chỉ số đo lường
   unit                String                 @default("%")
   baselineValue       Float?                 @default(0.0)
   targetValue         Float                  @default(100.0)
@@ -1259,7 +1257,7 @@ model QualityObjective {
   deadline            DateTime?
   period              ReportingFrequency     @default(SEMESTER)
   responsiblePerson   String?
-  dataSource          String? // Nguồn dữ liệu kiểm chứng
+  dataSource          String?                // Nguồn dữ liệu kiểm chứng
   reportingFrequency  ReportingFrequency     @default(MONTHLY)
   campusScope         String                 @default("ALL") // ALL hoặc campusId
   academicYear        String                 @default("2026-2027")
@@ -1286,14 +1284,14 @@ model QualityObjective {
 // ==================== QUY TRÌNH PHÊ DUYỆT & KHÓA DỮ LIỆU ====================
 
 model ApprovalWorkflow {
-  id              String    @id @default(cuid())
+  id              String            @id @default(cuid())
   schoolId        String?
-  moduleName      String // VD: "STRATEGY_KPI", "QUALITY_OBJECTIVE", "LESSON_PLAN", "MONTHLY_PLAN"
-  recordId        String // ID của record trong module tương ứng
-  title           String // Tên hồ sơ / mục tiêu / kế hoạch
+  moduleName      String            // VD: "STRATEGY_KPI", "QUALITY_OBJECTIVE", "LESSON_PLAN", "MONTHLY_PLAN"
+  recordId        String            // ID của record trong module tương ứng
+  title           String            // Tên hồ sơ / mục tiêu / kế hoạch
   campusId        String?
-  currentStep     Int       @default(1) // 1: Draft, 2: Submitted, 3: Campus Confirmed, 4: VP Reviewed, 5: Principal Approved, 6: Locked
-  currentStatus   String    @default("DRAFT") // DRAFT, SUBMITTED, CAMPUS_CONFIRMED, VP_REVIEWED, PRINCIPAL_APPROVED, LOCKED, REJECTED, EDIT_REQUESTED, UNLOCK_REQUESTED
+  currentStep     Int               @default(1) // 1: Draft, 2: Submitted, 3: Campus Confirmed, 4: VP Reviewed, 5: Principal Approved, 6: Locked
+  currentStatus   String            @default("DRAFT") // DRAFT, SUBMITTED, CAMPUS_CONFIRMED, VP_REVIEWED, PRINCIPAL_APPROVED, LOCKED, REJECTED, EDIT_REQUESTED, UNLOCK_REQUESTED
   submittedBy     String?
   submittedByName String?
   submittedAt     DateTime?
@@ -1303,13 +1301,13 @@ model ApprovalWorkflow {
   approvedBy      String?
   approvedByName  String?
   approvedAt      DateTime?
-  rejectionReason String?   @db.Text
-  isLocked        Boolean   @default(false)
+  rejectionReason String?           @db.Text
+  isLocked        Boolean           @default(false)
   lockedAt        DateTime?
-  version         Int       @default(1)
+  version         Int               @default(1)
   dueDate         DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   comments ApprovalComment[]
 
@@ -1320,15 +1318,15 @@ model ApprovalWorkflow {
 }
 
 model ApprovalComment {
-  id             String   @id @default(cuid())
+  id             String           @id @default(cuid())
   workflowId     String
   userId         String?
   userName       String?
   userRole       String?
-  commentType    String   @default("COMMENT") // COMMENT, REJECT, REQUEST_EDIT, APPROVE, UNLOCK_REQUEST
-  commentContent String   @db.Text
+  commentType    String           @default("COMMENT") // COMMENT, REJECT, REQUEST_EDIT, APPROVE, UNLOCK_REQUEST
+  commentContent String           @db.Text
   attachmentUrl  String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime         @default(now())
 
   workflow ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
@@ -1339,23 +1337,23 @@ model ApprovalComment {
 // ==================== TỆP MINH CHỨNG & NHẬT KÝ FILE ====================
 
 model SystemEvidenceFile {
-  id              String   @id @default(cuid())
-  fileName        String
-  fileType        String // pdf, docx, xlsx, png, jpg, jpeg
-  fileSize        Int // Kích thước (bytes)
-  fileUrl         String   @db.Text
-  uploadedById    String?
-  uploadedByName  String   @default("Cán bộ quản lý")
-  relatedModule   String // VD: "QUALITY_OBJECTIVE", "STRATEGY_KPI", "FIVE_YEAR_PLAN"
-  relatedRecordId String? // ID mục tiêu hoặc KPI liên quan
-  relatedContent  String?  @db.Text // Tên mục tiêu / nội dung liên quan
-  campusId        String?
-  description     String?  @db.Text
-  version         Int      @default(1)
-  status          String   @default("ACTIVE") // ACTIVE, REPLACED, DELETED
-  isDeleted       Boolean  @default(false) // Xóa mềm
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String          @id @default(cuid())
+  fileName       String
+  fileType       String          // pdf, docx, xlsx, png, jpg, jpeg
+  fileSize       Int             // Kích thước (bytes)
+  fileUrl        String          @db.Text
+  uploadedById   String?
+  uploadedByName String          @default("Cán bộ quản lý")
+  relatedModule  String          // VD: "QUALITY_OBJECTIVE", "STRATEGY_KPI", "FIVE_YEAR_PLAN"
+  relatedRecordId String?        // ID mục tiêu hoặc KPI liên quan
+  relatedContent String?         @db.Text // Tên mục tiêu / nội dung liên quan
+  campusId       String?
+  description    String?         @db.Text
+  version        Int             @default(1)
+  status         String          @default("ACTIVE") // ACTIVE, REPLACED, DELETED
+  isDeleted      Boolean         @default(false) // Xóa mềm
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   auditLogs FileAuditLog[]
 
@@ -1366,13 +1364,13 @@ model SystemEvidenceFile {
 }
 
 model FileAuditLog {
-  id              String   @id @default(cuid())
-  fileId          String
-  action          String // UPLOAD, REPLACE, SOFT_DELETE, RESTORE, DOWNLOAD
-  performedById   String?
-  performedByName String   @default("Hệ thống")
-  detail          String?  @db.Text
-  createdAt       DateTime @default(now())
+  id         String             @id @default(cuid())
+  fileId     String
+  action     String             // UPLOAD, REPLACE, SOFT_DELETE, RESTORE, DOWNLOAD
+  performedById String?
+  performedByName String        @default("Hệ thống")
+  detail     String?            @db.Text
+  createdAt  DateTime           @default(now())
 
   file SystemEvidenceFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
@@ -1431,20 +1429,20 @@ enum AuditAction {
 }
 
 model AuditLog {
-  id          String      @id @default(cuid())
-  userId      String? // ID người thao tác
-  userName    String? // Họ tên người thao tác
-  userRole    String? // Vai trò (ADMIN, TEACHER, STUDENT...)
-  schoolId    String? // Trường học liên quan
-  campusId    String? // Phân hiệu liên quan
-  action      AuditAction // Loại hành động
-  entityName  String // Tên bảng dữ liệu (e.g. "Student", "Grade", "LessonPlan")
-  entityId    String? // ID bản ghi bị tác động
-  description String?     @db.Text // Mô tả ngắn hành động
-  changesJson String?     @db.Text // JSON dữ liệu trước/sau khi thay đổi
-  ipAddress   String? // Địa chỉ IP người dùng
-  userAgent   String?     @db.Text // Trình duyệt / thiết bị
-  createdAt   DateTime    @default(now())
+  id            String      @id @default(cuid())
+  userId        String?     // ID người thao tác
+  userName      String?     // Họ tên người thao tác
+  userRole      String?     // Vai trò (ADMIN, TEACHER, STUDENT...)
+  schoolId      String?     // Trường học liên quan
+  campusId      String?     // Phân hiệu liên quan
+  action        AuditAction // Loại hành động
+  entityName    String      // Tên bảng dữ liệu (e.g. "Student", "Grade", "LessonPlan")
+  entityId      String?     // ID bản ghi bị tác động
+  description   String?     @db.Text // Mô tả ngắn hành động
+  changesJson   String?     @db.Text // JSON dữ liệu trước/sau khi thay đổi
+  ipAddress     String?     // Địa chỉ IP người dùng
+  userAgent     String?     @db.Text // Trình duyệt / thiết bị
+  createdAt     DateTime    @default(now())
 
   @@index([userId])
   @@index([schoolId])
@@ -1458,7 +1456,7 @@ model ParticipationRecord {
   studentId   String
   classId     String
   date        DateTime @default(now())
-  title       String // VD: "Phát biểu tích cực", "Giúp đỡ bạn học", "Bài tập hoàn thành xuất sắc"
+  title       String   // VD: "Phát biểu tích cực", "Giúp đỡ bạn học", "Bài tập hoàn thành xuất sắc"
   category    String   @default("PHAT_BIEU") // PHAT_BIEU, HO_TRO_BAN, VAN_THE, BAI_TAP, PHONG_TRAO
   points      Int      @default(1) // Số điểm thưởng cộng (+1, +2, +5...)
   note        String?  @db.Text
@@ -1477,21 +1475,21 @@ model ParticipationRecord {
 // ==================== KHÓA SỔ DỮ LIỆU (DATA LOCK) ====================
 
 model DataLock {
-  id             String    @id @default(cuid())
-  schoolId       String
-  campusId       String?
-  lockType       String // "GRADE_HK1", "GRADE_HK2", "ATTENDANCE_MONTH_9", "JOURNAL_HK1", etc.
-  periodLabel    String // "Học kỳ 1 - 2026-2027", "Tháng 9/2026", etc.
-  isLocked       Boolean   @default(false)
-  lockedById     String?
-  lockedByName   String?
-  lockedAt       DateTime?
-  unlockedById   String?
+  id          String   @id @default(cuid())
+  schoolId    String
+  campusId    String?
+  lockType    String   // "GRADE_HK1", "GRADE_HK2", "ATTENDANCE_MONTH_9", "JOURNAL_HK1", etc.
+  periodLabel String   // "Học kỳ 1 - 2026-2027", "Tháng 9/2026", etc.
+  isLocked    Boolean  @default(false)
+  lockedById  String?
+  lockedByName String?
+  lockedAt    DateTime?
+  unlockedById  String?
   unlockedByName String?
-  unlockedAt     DateTime?
-  reason         String?   @db.Text
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  unlockedAt  DateTime?
+  reason      String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([schoolId, lockType, periodLabel])
   @@index([schoolId])
@@ -1506,7 +1504,7 @@ model LoginAttempt {
   email     String
   ipAddress String?
   success   Boolean  @default(false)
-  reason    String? // "invalid_password", "user_not_found", "locked_account", etc.
+  reason    String?  // "invalid_password", "user_not_found", "locked_account", etc.
   createdAt DateTime @default(now())
 
   @@index([email])
@@ -1524,6 +1522,7 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 }
 
+
 // ==================== HỌC BẠ ĐIỆN TỬ (ACADEMIC TRANSCRIPT) ====================
 
 enum TranscriptStatus {
@@ -1540,41 +1539,41 @@ enum UnlockStatus {
 }
 
 model AcademicTranscript {
-  id         String           @id @default(cuid())
-  studentId  String
-  classId    String
-  schoolYear String // "2025-2026"
-  gradeLevel Int // Khối lớp (6-12)
-  status     TranscriptStatus @default(DRAFT)
+  id                     String                  @id @default(cuid())
+  studentId              String
+  classId                String
+  schoolYear             String                  // "2025-2026"
+  gradeLevel             Int                     // Khối lớp (6-12)
+  status                 TranscriptStatus        @default(DRAFT)
 
-  term1GPA    Float?
-  term2GPA    Float?
-  fullYearGPA Float?
+  term1GPA               Float?
+  term2GPA               Float?
+  fullYearGPA            Float?
 
-  term1Conduct    ConductRating?
-  term2Conduct    ConductRating?
-  fullYearConduct ConductRating?
+  term1Conduct           ConductRating?
+  term2Conduct           ConductRating?
+  fullYearConduct        ConductRating?
 
-  term1Academic    AcademicRating?
-  term2Academic    AcademicRating?
-  fullYearAcademic AcademicRating?
+  term1Academic          AcademicRating?
+  term2Academic          AcademicRating?
+  fullYearAcademic       AcademicRating?
 
-  homeroomTeacherComment String? @db.Text
-  promotionStatus        String? // "Lên lớp", "Thi lại", "Ở lại lớp", "Hoàn thành CT"
-  rewardsAwarded         String? // Khen thưởng
+  homeroomTeacherComment String?                 @db.Text
+  promotionStatus        String?                 // "Lên lớp", "Thi lại", "Ở lại lớp", "Hoàn thành CT"
+  rewardsAwarded         String?                 // Khen thưởng
 
-  submittedAt   DateTime?
-  submittedById String?
-  approvedAt    DateTime?
-  approvedById  String?
+  submittedAt            DateTime?
+  submittedById          String?
+  approvedAt             DateTime?
+  approvedById           String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 
-  student        Student                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  classRoom      ClassRoom                 @relation(fields: [classId], references: [id], onDelete: Cascade)
-  subjectGrades  TranscriptSubjectGrade[]
-  unlockRequests TranscriptUnlockRequest[]
+  student                Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classRoom              ClassRoom               @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectGrades          TranscriptSubjectGrade[]
+  unlockRequests         TranscriptUnlockRequest[]
 
   @@unique([studentId, schoolYear])
   @@index([studentId])
@@ -1583,46 +1582,46 @@ model AcademicTranscript {
 }
 
 model TranscriptSubjectGrade {
-  id                String  @id @default(cuid())
+  id                String             @id @default(cuid())
   transcriptId      String
   subjectId         String
-  subjectName       String // Lưu cố định tên môn
+  subjectName       String             // Lưu cố định tên môn
   term1AvgScore     Float?
   term2AvgScore     Float?
   fullYearAvgScore  Float?
-  evaluationComment String? // Nhận xét môn học
+  evaluationComment String?            // Nhận xét môn học
 
-  transcript AcademicTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
-  subject    Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  transcript        AcademicTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  subject           Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@unique([transcriptId, subjectId])
 }
 
 model TranscriptUnlockRequest {
-  id            String       @id @default(cuid())
+  id            String             @id @default(cuid())
   transcriptId  String
-  requestedById String // Mã ID GVCN
-  reason        String       @db.Text
-  status        UnlockStatus @default(PENDING)
-  reviewedById  String? // Mã ID Hiệu trưởng/Admin
+  requestedById String             // Mã ID GVCN
+  reason        String             @db.Text
+  status        UnlockStatus       @default(PENDING)
+  reviewedById  String?            // Mã ID Hiệu trưởng/Admin
   reviewedAt    DateTime?
-  reviewNote    String?      @db.Text
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  reviewNote    String?            @db.Text
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
-  transcript AcademicTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  transcript    AcademicTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
 }
 
 // ==================== AI ASSISTANT & MULTI-CAMPUS MANAGEMENT ====================
 
 enum AiTaskGroup {
-  REALTIME_MONITORING // 1. Giám sát thời gian thực
-  COORDINATION_DISPATCH // 2. Điều phối hoạt động & dạy thay
-  DECISION_SUPPORT // 3. Hỗ trợ ra quyết định
-  PLAN_PROGRESS // 4. Quản lý kế hoạch & chỉ tiêu
-  DOCS_PERIODIC_REPORTS // 5. Quản lý văn bản & báo cáo định kỳ
-  EARLY_WARNING // 6. Cảnh báo sớm
-  COMMUNICATION_FEEDBACK // 7. Giao tiếp & phản hồi phụ huynh
+  REALTIME_MONITORING       // 1. Giám sát thời gian thực
+  COORDINATION_DISPATCH     // 2. Điều phối hoạt động & dạy thay
+  DECISION_SUPPORT          // 3. Hỗ trợ ra quyết định
+  PLAN_PROGRESS             // 4. Quản lý kế hoạch & chỉ tiêu
+  DOCS_PERIODIC_REPORTS     // 5. Quản lý văn bản & báo cáo định kỳ
+  EARLY_WARNING             // 6. Cảnh báo sớm
+  COMMUNICATION_FEEDBACK    // 7. Giao tiếp & phản hồi phụ huynh
 }
 
 enum AiAlertSeverity {
@@ -1641,15 +1640,15 @@ enum AiAlertStatus {
 }
 
 enum DocumentType {
-  INCOMING // Công văn đến từ Sở/Phòng/UBND
-  OUTGOING // Công văn đi
+  INCOMING           // Công văn đến từ Sở/Phòng/UBND
+  OUTGOING           // Công văn đi
   INTERNAL_DIRECTIVE // Chỉ đạo nội bộ nhà trường
 }
 
 enum DocumentUrgency {
   NORMAL
-  URGENT // Khẩn
-  EXPRESS // Thượng khẩn / Hỏa tốc
+  URGENT             // Khẩn
+  EXPRESS            // Thượng khẩn / Hỏa tốc
 }
 
 enum DocumentStatus {
@@ -1660,14 +1659,14 @@ enum DocumentStatus {
 }
 
 enum EquipmentCategory {
-  IT_COMPUTER // Máy vi tính / Phòng tin học
-  PROJECTOR_SCREEN // Máy chiếu / Màn hình tương tác
-  LAB_PHYSICS // Thiết bị thí nghiệm Vật lý
-  LAB_CHEMISTRY // Thiết bị thí nghiệm Hóa học
-  LAB_BIOLOGY // Thiết bị thí nghiệm Sinh học
-  SPORTS // Thiết bị thể dục thể thao
-  MUSIC_ARTS // Nhạc cụ, Mỹ thuật
-  GENERAL // Thiết bị dùng chung
+  IT_COMPUTER        // Máy vi tính / Phòng tin học
+  PROJECTOR_SCREEN   // Máy chiếu / Màn hình tương tác
+  LAB_PHYSICS        // Thiết bị thí nghiệm Vật lý
+  LAB_CHEMISTRY      // Thiết bị thí nghiệm Hóa học
+  LAB_BIOLOGY        // Thiết bị thí nghiệm Sinh học
+  SPORTS             // Thiết bị thể dục thể thao
+  MUSIC_ARTS         // Nhạc cụ, Mỹ thuật
+  GENERAL            // Thiết bị dùng chung
 }
 
 enum EquipmentCondition {
@@ -1688,20 +1687,20 @@ enum TransferStatus {
 
 // 1. Bảng Cấu hình Ngưỡng cảnh báo thông minh (Configurable Thresholds)
 model AiConfigThreshold {
-  id             String          @id @default(cuid())
-  schoolId       String
-  taskGroup      AiTaskGroup
-  metricKey      String // VD: "MAX_ABSENT_DAYS_MONTH", "TEACHER_SHORTAGE_THRESHOLD", "SYLLABUS_DELAY_DAYS"
-  metricName     String // Tên hiển thị tiếng Việt
-  thresholdValue Float // Giá trị ngưỡng (VD: 3 buổi, 1 giáo viên, 7 ngày)
-  comparisonOp   String          @default("GTE") // GTE, LTE, EQ, NEQ
-  severity       AiAlertSeverity @default(MEDIUM)
-  description    String?         @db.Text
-  isEditable     Boolean         @default(true)
-  updatedAt      DateTime        @updatedAt
-  createdAt      DateTime        @default(now())
+  id               String          @id @default(cuid())
+  schoolId         String
+  taskGroup        AiTaskGroup
+  metricKey        String          // VD: "MAX_ABSENT_DAYS_MONTH", "TEACHER_SHORTAGE_THRESHOLD", "SYLLABUS_DELAY_DAYS"
+  metricName       String          // Tên hiển thị tiếng Việt
+  thresholdValue   Float           // Giá trị ngưỡng (VD: 3 buổi, 1 giáo viên, 7 ngày)
+  comparisonOp     String          @default("GTE") // GTE, LTE, EQ, NEQ
+  severity         AiAlertSeverity @default(MEDIUM)
+  description      String?         @db.Text
+  isEditable       Boolean         @default(true)
+  updatedAt        DateTime        @updatedAt
+  createdAt        DateTime        @default(now())
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school           School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@unique([schoolId, metricKey])
   @@index([schoolId])
@@ -1719,11 +1718,11 @@ model AiAlert {
   status           AiAlertStatus   @default(ACTIVE)
   title            String
   description      String          @db.Text
-  triggerMetric    String? // Số liệu thực tế kích hoạt cảnh báo (VD: "Vắng 4 buổi trong tháng 8/2026")
+  triggerMetric    String?         // Số liệu thực tế kích hoạt cảnh báo (VD: "Vắng 4 buổi trong tháng 8/2026")
   suggestedAction  String?         @db.Text
   impactAnalysis   String?         @db.Text
-  targetEntity     String? // "Student:cuid", "Teacher:cuid", "ClassRoom:cuid"
-  targetName       String? // Tên đối tượng liên quan để hiển thị trực tiếp
+  targetEntity     String?         // "Student:cuid", "Teacher:cuid", "ClassRoom:cuid"
+  targetName       String?         // Tên đối tượng liên quan để hiển thị trực tiếp
   acknowledgedById String?
   acknowledgedAt   DateTime?
   resolvedById     String?
@@ -1732,9 +1731,9 @@ model AiAlert {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
-  school      School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus      Campus?      @relation(fields: [campusId], references: [id], onDelete: SetNull)
-  schoolPoint SchoolPoint? @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
+  school           School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus           Campus?         @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  schoolPoint      SchoolPoint?    @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
 
   @@index([schoolId])
   @@index([campusId])
@@ -1746,26 +1745,26 @@ model AiAlert {
 
 // 3. Bảng Lưu trữ Đề xuất & Phương án Tư vấn của AI
 model AiRecommendation {
-  id                String      @id @default(cuid())
+  id                String          @id @default(cuid())
   schoolId          String
   campusId          String?
   schoolPointId     String?
   taskGroup         AiTaskGroup
   title             String
-  contextSummary    String      @db.Text
-  optionsJson       String      @db.Text // JSON: Array<{ title, pros: [], cons: [], score: number, feasibility: string }>
+  contextSummary    String          @db.Text
+  optionsJson       String          @db.Text // JSON: Array<{ title, pros: [], cons: [], score: number, feasibility: string }>
   recommendedOption String?
-  legalGrounds      String?     @db.Text // Căn cứ pháp lý: Thông tư, Điều lệ trường học
-  actionStepsJson   String?     @db.Text // JSON: string[]
-  isApplied         Boolean     @default(false)
+  legalGrounds      String?         @db.Text // Căn cứ pháp lý: Thông tư, Điều lệ trường học
+  actionStepsJson   String?         @db.Text // JSON: string[]
+  isApplied         Boolean         @default(false)
   appliedAt         DateTime?
   appliedById       String?
-  appliedNotes      String?     @db.Text
-  createdAt         DateTime    @default(now())
+  appliedNotes      String?         @db.Text
+  createdAt         DateTime        @default(now())
 
-  school      School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus      Campus?      @relation(fields: [campusId], references: [id], onDelete: SetNull)
-  schoolPoint SchoolPoint? @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
+  school            School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus            Campus?         @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  schoolPoint       SchoolPoint?    @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
 
   @@index([schoolId])
   @@index([campusId])
@@ -1774,17 +1773,17 @@ model AiRecommendation {
 
 // 4. Bảng Lưu trữ Báo cáo Tổng hợp Định kỳ của AI
 model AiReportSummary {
-  id                 String   @id @default(cuid())
+  id                 String      @id @default(cuid())
   schoolId           String
-  campusId           String? // Null = Toàn trường, Có ID = Điểm trường cụ thể
-  reportType         String // "DAILY_EXECUTIVE", "WEEKLY_CAMPUS_AUDIT", "MONTHLY_STRATEGIC"
-  periodLabel        String // "Ngày 31/08/2026", "Tuần 35/2026", "Tháng 8/2026"
-  contentJson        String   @db.Text // JSON tổng hợp chi tiết theo 4 điểm trường
-  aiExecutiveSummary String   @db.Text // Tóm tắt điều hành 1 đoạn dành cho Hiệu trưởng
-  createdAt          DateTime @default(now())
+  campusId           String?     // Null = Toàn trường, Có ID = Điểm trường cụ thể
+  reportType         String      // "DAILY_EXECUTIVE", "WEEKLY_CAMPUS_AUDIT", "MONTHLY_STRATEGIC"
+  periodLabel        String      // "Ngày 31/08/2026", "Tuần 35/2026", "Tháng 8/2026"
+  contentJson        String      @db.Text // JSON tổng hợp chi tiết theo 4 điểm trường
+  aiExecutiveSummary String      @db.Text // Tóm tắt điều hành 1 đoạn dành cho Hiệu trưởng
+  createdAt          DateTime    @default(now())
 
-  school School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus Campus? @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  school             School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus             Campus?     @relation(fields: [campusId], references: [id], onDelete: SetNull)
 
   @@index([schoolId])
   @@index([campusId])
@@ -1796,15 +1795,15 @@ model AiAnalysisLog {
   id              String       @id @default(cuid())
   schoolId        String
   campusId        String?
-  triggeredBy     String // "MANUAL_PRINCIPAL", "SCHEDULED_CRON", "WEBHOOK"
+  triggeredBy     String       // "MANUAL_PRINCIPAL", "SCHEDULED_CRON", "WEBHOOK"
   taskGroup       AiTaskGroup?
-  status          String // "SUCCESS", "WARNING", "FAILED"
+  status          String       // "SUCCESS", "WARNING", "FAILED"
   alertsGenerated Int          @default(0)
   durationMs      Int          @default(0)
   detailsJson     String?      @db.Text
   createdAt       DateTime     @default(now())
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school          School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([schoolId])
   @@index([createdAt])
@@ -1812,29 +1811,29 @@ model AiAnalysisLog {
 
 // 6. Quản lý Công văn & Văn bản chỉ đạo
 model OfficialDocument {
-  id             String          @id @default(cuid())
-  schoolId       String
-  campusId       String?
-  docNumber      String // Số/Ký hiệu văn bản (e.g. "124/SGDĐT-GDTrH")
-  title          String // Trích yếu nội dung
-  issuer         String // Cơ quan ban hành (Sở GD&ĐT, Phòng GD&ĐT, UBND Xã...)
-  issueDate      DateTime
-  receivedDate   DateTime        @default(now())
-  deadline       DateTime? // Hạn xử lý / báo cáo
-  docType        DocumentType    @default(INCOMING)
-  urgency        DocumentUrgency @default(NORMAL)
-  status         DocumentStatus  @default(PENDING)
-  summary        String?         @db.Text
-  actionRequired String?         @db.Text // Nội dung yêu cầu thực hiện
-  assignedToId   String? // Người phụ trách xử lý
-  assignedToName String?
-  fileUrl        String?
-  completedAt    DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id              String          @id @default(cuid())
+  schoolId        String
+  campusId        String?
+  docNumber       String          // Số/Ký hiệu văn bản (e.g. "124/SGDĐT-GDTrH")
+  title           String          // Trích yếu nội dung
+  issuer          String          // Cơ quan ban hành (Sở GD&ĐT, Phòng GD&ĐT, UBND Xã...)
+  issueDate       DateTime
+  receivedDate    DateTime        @default(now())
+  deadline        DateTime?       // Hạn xử lý / báo cáo
+  docType         DocumentType    @default(INCOMING)
+  urgency         DocumentUrgency @default(NORMAL)
+  status          DocumentStatus  @default(PENDING)
+  summary         String?         @db.Text
+  actionRequired  String?         @db.Text // Nội dung yêu cầu thực hiện
+  assignedToId    String?         // Người phụ trách xử lý
+  assignedToName  String?
+  fileUrl         String?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  school School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus Campus? @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  school          School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus          Campus?         @relation(fields: [campusId], references: [id], onDelete: SetNull)
 
   @@index([schoolId])
   @@index([campusId])
@@ -1862,10 +1861,10 @@ model Equipment {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
-  school        School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus        Campus?             @relation(fields: [campusId], references: [id], onDelete: SetNull)
-  schoolPoint   SchoolPoint?        @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
-  transfersFrom EquipmentTransfer[] @relation("TransferEquipment")
+  school            School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus            Campus?             @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  schoolPoint       SchoolPoint?        @relation(fields: [schoolPointId], references: [id], onDelete: SetNull)
+  transfersFrom     EquipmentTransfer[] @relation("TransferEquipment")
 
   @@index([schoolId])
   @@index([campusId])
@@ -1891,9 +1890,9 @@ model EquipmentTransfer {
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
-  equipment       Equipment    @relation("TransferEquipment", fields: [equipmentId], references: [id], onDelete: Cascade)
-  fromSchoolPoint SchoolPoint? @relation("TransferSourcePoint", fields: [fromSchoolPointId], references: [id], onDelete: SetNull)
-  toSchoolPoint   SchoolPoint  @relation("TransferTargetPoint", fields: [toSchoolPointId], references: [id], onDelete: Cascade)
+  equipment          Equipment      @relation("TransferEquipment", fields: [equipmentId], references: [id], onDelete: Cascade)
+  fromSchoolPoint    SchoolPoint?   @relation("TransferSourcePoint", fields: [fromSchoolPointId], references: [id], onDelete: SetNull)
+  toSchoolPoint      SchoolPoint    @relation("TransferTargetPoint", fields: [toSchoolPointId], references: [id], onDelete: Cascade)
 
   @@index([schoolId])
   @@index([equipmentId])
@@ -1953,24 +1952,24 @@ enum InterventionStatus {
 }
 
 model ExamPeriod {
-  id         String       @id @default(cuid())
-  schoolId   String
-  campusId   String?
-  schoolYear String // VD: "2024-2025", "2025-2026"
-  semester   ExamSemester // HK1, HK2
-  examType   ExamType // MIDTERM, FINAL, PERIOD_SUMMARY...
-  name       String // "Giữa kỳ 1 2025-2026"
-  orderIndex Int // Thứ tự thời gian tuyệt đối (1, 2, 3, 4...) để hồi quy tuyến tính chạy chính xác
-  startDate  DateTime?
-  endDate    DateTime?
-  isLocked   Boolean      @default(false)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  id           String       @id @default(cuid())
+  schoolId     String
+  campusId     String?
+  schoolYear   String       // VD: "2024-2025", "2025-2026"
+  semester     ExamSemester // HK1, HK2
+  examType     ExamType     // MIDTERM, FINAL, PERIOD_SUMMARY...
+  name         String       // "Giữa kỳ 1 2025-2026"
+  orderIndex   Int          // Thứ tự thời gian tuyệt đối (1, 2, 3, 4...) để hồi quy tuyến tính chạy chính xác
+  startDate    DateTime?
+  endDate      DateTime?
+  isLocked     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  school    School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus    Campus?                  @relation(fields: [campusId], references: [id], onDelete: SetNull)
-  scores    StudentScore[]
-  snapshots StudentJourneySnapshot[]
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus       Campus?      @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  scores       StudentScore[]
+  snapshots    StudentJourneySnapshot[]
 
   @@unique([schoolId, schoolYear, semester, examType])
   @@index([schoolId])
@@ -1979,23 +1978,23 @@ model ExamPeriod {
 }
 
 model StudentScore {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   studentId     String
   subjectId     String
   examPeriodId  String
   schoolId      String
   campusId      String
-  score         Float // 0.0 - 10.0
+  score         Float       // 0.0 - 10.0
   importBatchId String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  student     Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  subject     Subject             @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  examPeriod  ExamPeriod          @relation(fields: [examPeriodId], references: [id], onDelete: Cascade)
-  school      School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus      Campus              @relation(fields: [campusId], references: [id], onDelete: Cascade)
-  importBatch StudentImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  examPeriod    ExamPeriod  @relation(fields: [examPeriodId], references: [id], onDelete: Cascade)
+  school        School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus        Campus      @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  importBatch   StudentImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 
   @@unique([studentId, subjectId, examPeriodId])
   @@index([studentId])
@@ -2020,10 +2019,10 @@ model StudentImportBatch {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  school   School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  stagings StudentImportStaging[]
-  mappings StudentImportMapping[]
-  scores   StudentScore[]
+  school         School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  stagings       StudentImportStaging[]
+  mappings       StudentImportMapping[]
+  scores         StudentScore[]
 
   @@index([schoolId])
   @@index([campusId])
@@ -2044,7 +2043,7 @@ model StudentImportStaging {
   errorMessage   String?  @db.Text
   createdAt      DateTime @default(now())
 
-  batch StudentImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch          StudentImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([batchId])
 }
@@ -2067,7 +2066,7 @@ model StudentImportMapping {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
-  batch StudentImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch            StudentImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([batchId])
   @@index([matchConfidence])
@@ -2084,8 +2083,8 @@ model JourneyThresholdConfig {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus Campus @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  school             School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus             Campus   @relation(fields: [campusId], references: [id], onDelete: Cascade)
 
   @@unique([schoolId, campusId])
   @@index([schoolId])
@@ -2093,12 +2092,12 @@ model JourneyThresholdConfig {
 }
 
 model StudentJourneySnapshot {
-  id           String  @id @default(cuid())
-  studentId    String
-  subjectId    String?
-  examPeriodId String
-  schoolId     String
-  campusId     String
+  id                 String     @id @default(cuid())
+  studentId          String
+  subjectId          String?
+  examPeriodId       String
+  schoolId           String
+  campusId           String
 
   avgScore           Float
   trendSlope         Float
@@ -2109,13 +2108,13 @@ model StudentJourneySnapshot {
   dataPointsCount    Int        @default(0)
   isInsufficientData Boolean    @default(false)
 
-  computedAt DateTime @default(now())
+  computedAt         DateTime   @default(now())
 
-  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  subject    Subject?   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  examPeriod ExamPeriod @relation(fields: [examPeriodId], references: [id], onDelete: Cascade)
-  school     School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  campus     Campus     @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  student            Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject            Subject?   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  examPeriod         ExamPeriod @relation(fields: [examPeriodId], references: [id], onDelete: Cascade)
+  school             School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  campus             Campus     @relation(fields: [campusId], references: [id], onDelete: Cascade)
 
   @@index([studentId, examPeriodId])
   @@index([schoolId, campusId, trendLabel])
@@ -2134,124 +2133,27 @@ model InterventionRecord {
   note                String?            @db.Text
   status              InterventionStatus @default(SUGGESTED)
 
-  suggestedAt     DateTime  @default(now())
-  approvedById    String?
-  approvedByName  String?
-  approvedAt      DateTime?
-  rejectionReason String?   @db.Text
-  rejectedAt      DateTime?
-  appliedById     String?
-  appliedByName   String?
-  appliedAt       DateTime?
+  suggestedAt         DateTime           @default(now())
+  approvedById        String?
+  approvedByName      String?
+  approvedAt          DateTime?
+  rejectionReason     String?            @db.Text
+  rejectedAt          DateTime?
+  appliedById         String?
+  appliedByName       String?
+  appliedAt           DateTime?
 
-  outcomeCheckedAt  DateTime?
-  outcomeScoreDelta Float?
-  outcomeNote       String?   @db.Text
+  outcomeCheckedAt    DateTime?
+  outcomeScoreDelta   Float?
+  outcomeNote         String?            @db.Text
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student             Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@index([schoolId, campusId])
   @@index([status])
   @@index([triggeredBy])
-}
-
-// ==================== ĐÁNH GIÁ CHUẨN THÔNG TƯ 15/2026 ====================
-
-enum TT15Standard {
-  STANDARD_1 // Tiêu chuẩn 1: Tổ chức và quản lý nhà trường
-  STANDARD_2 // Tiêu chuẩn 2: Cán bộ quản lý, giáo viên, nhân viên và học sinh
-  STANDARD_3 // Tiêu chuẩn 3: Cơ sở vật chất và thiết bị dạy học
-  STANDARD_4 // Tiêu chuẩn 4: Quan hệ giữa nhà trường, gia đình và xã hội
-  STANDARD_5 // Tiêu chuẩn 5: Hoạt động giáo dục và kết quả giáo dục
-}
-
-enum EvaluationStatus {
-  DRAFT
-  SUBMITTED // Phó Hiệu trưởng (Điểm trường) nộp lên
-  PRINCIPAL_REVIEWING // Hiệu trưởng (Phân hiệu) đang xét duyệt
-  APPROVED // Đã phê duyệt
-  REJECTED // Yêu cầu làm lại
-}
-
-// Danh mục Tiêu chí theo TT15
-model TT15Indicator {
-  id          String       @id @default(cuid())
-  standard    TT15Standard
-  code        String       @unique // VD: "TC1.1", "TC1.2"
-  name        String
-  description String?      @db.Text
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  evaluationDetails SchoolPointEvaluationDetail[]
-}
-
-// Bảng Đánh giá của Điểm Trường (Do Phó Hiệu trưởng phụ trách)
-model SchoolPointEvaluation {
-  id              String           @id @default(cuid())
-  schoolPointId   String
-  campusId        String // Thuộc phân hiệu nào để Principal lọc
-  year            Int
-  semester        Int?
-  status          EvaluationStatus @default(DRAFT)
-  vicePrincipalId String? // Người đánh giá (PHT)
-  principalId     String? // Người duyệt (HT)
-  totalScore      Float?
-  notes           String?          @db.Text
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  // Quan hệ
-  schoolPoint SchoolPoint                   @relation(fields: [schoolPointId], references: [id], onDelete: Cascade)
-  campus      Campus                        @relation(fields: [campusId], references: [id], onDelete: Cascade)
-  details     SchoolPointEvaluationDetail[]
-
-  @@unique([schoolPointId, year, semester])
-  @@index([campusId])
-  @@index([status])
-}
-
-// Chi tiết từng tiêu chí đánh giá tại Điểm trường
-model SchoolPointEvaluationDetail {
-  id               String    @id @default(cuid())
-  evaluationId     String
-  indicatorId      String
-  selfAssessment   String // Đạt / Không đạt / Khá / Tốt... 
-  score            Float?
-  notes            String?   @db.Text
-  vpEvaluatedAt    DateTime?
-  principalComment String?   @db.Text
-
-  // Minh chứng bắt buộc (bắt buộc phải có file thật)
-  evidenceFiles TT15EvidenceFile[]
-
-  // Quan hệ
-  evaluation SchoolPointEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
-  indicator  TT15Indicator         @relation(fields: [indicatorId], references: [id], onDelete: Restrict)
-
-  @@unique([evaluationId, indicatorId])
-  @@index([evaluationId])
-  @@index([indicatorId])
-}
-
-// File minh chứng bắt buộc upload Storage
-model TT15EvidenceFile {
-  id                 String   @id @default(cuid())
-  evaluationDetailId String
-  fileName           String
-  fileUrl            String   @db.Text // S3/MinIO URL
-  fileType           String // PDF, JPG, PNG...
-  fileSize           Int // bytes
-  uploadedById       String?
-  description        String?  @db.Text
-  createdAt          DateTime @default(now())
-
-  detail SchoolPointEvaluationDetail @relation(fields: [evaluationDetailId], references: [id], onDelete: Cascade)
-
-  @@index([evaluationDetailId])
 }

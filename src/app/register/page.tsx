@@ -2,8 +2,8 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Next.js App Router entry point `/register` (`src/app/register/page.tsx`).
  * 2. Affected API: `default function RegisterTeacherPage()` and role selection UI.
- * 3. Schema: `selectedRoleType: "TEACHER" | "INDEPENDENT_TEACHER" | "ADMIN" | "VICE_PRINCIPAL"`.
- * 4. Verbatim User Instruction: "cập nhập chế độ lướt chọn trên máy tính của phần đăng ký tài khoản ở mục loại tài khoản" & "theo khuyến nghị của bạn".
+ * 3. Schema: Linked Smart Comboboxes state mapping (`locationQuery`, `locationFilter`, `schoolQuery`, `newSchoolName`).
+ * 4. Verbatim User Instruction: "tôi cần bạn phần đăng ký ở phần khu vực hay lấy thông tin khu vực của quốc gia việt nam và khi gõ từng từ hay key word sẽ đề xuất khu vực và trường học hãy tìm kiếm kỹ về dữ liệu".
  */
 
 "use client";
@@ -29,8 +29,12 @@ import {
   Briefcase,
   Sparkles,
   Check,
+  ChevronDown,
+  PlusCircle,
 } from "lucide-react";
 import { getRegistrationFormData, registerTeacher } from "./actions";
+import { searchVietnamLocations } from "@/lib/vietnam-regions";
+import { searchSchools } from "@/lib/school-search";
 
 interface OptionItem {
   id: string;
@@ -152,13 +156,7 @@ export default function RegisterTeacherPage() {
         setSubjects(res.subjects || []);
 
         if (res.schools && res.schools.length > 0) {
-          setSelectedSchoolId(res.schools[0].id);
-          if (res.schools[0].districtWardId) {
-            setSelectedDistrictWardId(res.schools[0].districtWardId);
-          }
-          if (res.schools[0].departmentId) {
-            setSelectedDeptId(res.schools[0].departmentId);
-          }
+          // No auto select to prevent errors
         }
       } else {
         setErrorMsg(res.error || "Không thể tải dữ liệu hình thức trường học.");
@@ -167,6 +165,22 @@ export default function RegisterTeacherPage() {
     }
     loadData();
   }, []);
+
+  // State cho Linked Smart Comboboxes
+  const [locationQuery, setLocationQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
+  const locationSuggestions = selectedRoleType === "TEACHER" || selectedRoleType === "INDEPENDENT_TEACHER" || selectedRoleType === "ADMIN" || selectedRoleType === "VICE_PRINCIPAL"
+    ? searchVietnamLocations(locationQuery)
+    : [];
+
+  const [schoolQuery, setSchoolQuery] = useState("");
+  const [schoolDropdownOpen, setSchoolDropdownOpen] = useState(false);
+  const [newSchoolName, setNewSchoolName] = useState("");
+
+  const schoolSuggestions = selectedRoleType === "TEACHER" || selectedRoleType === "INDEPENDENT_TEACHER" || selectedRoleType === "ADMIN" || selectedRoleType === "VICE_PRINCIPAL"
+    ? searchSchools(schoolQuery, locationFilter, schools)
+    : [];
 
   const filteredDistrictWards = selectedDeptId
     ? districtWards.filter((dw) => dw.departmentId === selectedDeptId)
@@ -217,12 +231,25 @@ export default function RegisterTeacherPage() {
     if (!name.trim()) { setErrorMsg("Vui lòng nhập Họ và tên."); return; }
     if (!email.trim()) { setErrorMsg("Vui lòng nhập Địa chỉ Email."); return; }
     if (!phone.trim()) { setErrorMsg("Vui lòng nhập Số điện thoại liên hệ."); return; }
-    if (!isIndep && !selectedSchoolId) { setErrorMsg("Vui lòng chọn Trường học nơi bạn đang công tác."); return; }
+    if (!isIndep && !selectedSchoolId && !newSchoolName) { setErrorMsg("Vui lòng chọn hoặc nhập tên Trường học nơi bạn đang công tác."); return; }
     if (password.length < 6) { setErrorMsg("Mật khẩu phải có độ dài từ 6 ký tự trở lên."); return; }
     if (password !== confirmPassword) { setErrorMsg("Xác nhận mật khẩu không trùng khớp."); return; }
 
     const finalSpecialty = specialty === "OTHER" ? customSpecialty : specialty;
     const isTeacherRole = selectedRoleType === "TEACHER" || selectedRoleType === "INDEPENDENT_TEACHER";
+
+    // Phân tích tỉnh và huyện từ chuỗi filter nếu có nhập newSchoolName
+    let extractedProvince = "";
+    let extractedDistrict = "";
+    if (newSchoolName && locationFilter) {
+      const parts = locationFilter.split("-");
+      if (parts.length >= 2) {
+        extractedDistrict = parts[0].trim();
+        extractedProvince = parts[1].trim();
+      } else {
+        extractedProvince = parts[0].trim();
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -234,6 +261,9 @@ export default function RegisterTeacherPage() {
         role: isIndep ? "TEACHER" : (selectedRoleType as any),
         isIndependentTeacher: isIndep,
         schoolId: isIndep ? undefined : selectedSchoolId,
+        newSchoolName: isIndep ? undefined : newSchoolName,
+        provinceName: extractedProvince || undefined,
+        districtName: extractedDistrict || undefined,
         districtWardId: isIndep ? undefined : (selectedDistrictWardId || undefined),
         departmentId: isIndep ? undefined : (selectedDeptId || undefined),
         specialty: isTeacherRole ? finalSpecialty : undefined,
