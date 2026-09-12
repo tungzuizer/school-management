@@ -434,12 +434,12 @@ export default function KpiEntryPage() {
         {/* Status Indicators & Score Overview */}
         {periodDetails && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-            <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-              <div className="text-xs font-semibold text-indigo-600 uppercase">Tổng điểm KPI Dự kiến</div>
-              <div className="text-3xl font-extrabold text-indigo-700 mt-1">
+            <div className="bg-blue-50/60 p-4 rounded-xl border border-blue-100">
+              <div className="text-xs font-semibold text-blue-700 uppercase">Tổng điểm KPI Dự kiến</div>
+              <div className="text-3xl font-extrabold text-blue-800 mt-1">
                 {calculateLiveOverallScore()} / 100
               </div>
-              <div className="text-xs text-indigo-500 mt-1">Tính theo tỷ lệ trọng số 100%</div>
+              <div className="text-xs text-blue-600 mt-1">Tính theo tỷ lệ trọng số 100%</div>
             </div>
 
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">

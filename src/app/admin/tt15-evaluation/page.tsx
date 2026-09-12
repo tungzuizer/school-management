@@ -1,8 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Architecture: TT15 Strict KPI Framework UI.
- * 2. Feature: Evaluation entry, review, and evidence storage requirement.
- * 3. Instructed by: "phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15".
+ * 1. Importers/Callers: Next.js App Router for `/admin/tt15-evaluation`, linked from `src/app/admin/layout.tsx`.
+ * 2. Public functions/classes affected: `TT15EvaluationPage` default export.
+ * 3. Data structures: `Campus` (`id`, `name`, `schoolId`), `SchoolPoint` (`id`, `name`, `campusId`), `Session` (`user.role`, `user.schoolId`, `user.campusId`).
+ * 4. Verbatim User Instruction: "vẫn lỗi khôgn thể bấm vô mục thông tư 15 \"404 This page could not be found.\"" - "đánh giá TT15 lỗi 404 This page could not be found.".
  */
 
 import { getServerSession } from "next-auth";
@@ -17,13 +18,14 @@ export const metadata = {
 
 export default async function TT15EvaluationPage(props: { searchParams?: Promise<{ campusId?: string; schoolPointId?: string; year?: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) redirect("/auth/login");
+  if (!session?.user) redirect("/login");
 
   const searchParams = await props.searchParams;
 
   const role = session.user.role;
-  if (role !== "ADMIN" && role !== "VICE_PRINCIPAL") {
-    redirect("/dashboard");
+  const allowedRoles = ["SUPER_ADMIN", "ADMIN", "VICE_PRINCIPAL", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
+  if (!allowedRoles.includes(role)) {
+    redirect("/admin/dashboard");
   }
 
   // Fetch contextual user scope Data
@@ -40,7 +42,8 @@ export default async function TT15EvaluationPage(props: { searchParams?: Promise
     where: filter,
     include: {
       schoolPoints: true,
-    }
+    },
+    orderBy: { name: "asc" },
   });
 
   const currentYear = searchParams?.year ? parseInt(searchParams.year) : new Date().getFullYear();
@@ -54,7 +57,7 @@ export default async function TT15EvaluationPage(props: { searchParams?: Promise
         </div>
       </div>
 
-      <TT15EvaluationClient 
+      <TT15EvaluationClient
         campuses={campuses}
         role={role}
         defaultYear={currentYear}

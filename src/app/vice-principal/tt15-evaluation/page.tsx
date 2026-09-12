@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Next.js App Router for `/vice-principal/tt15-evaluation`, linked from `src/app/vice-principal/layout.tsx`.
- * 2. Affected APIs: `getTT15Indicators`, `getSchoolPointEvaluation`, `saveEvaluationDraft`, `addEvidenceFile`, `submitEvaluationToPrincipal` in `src/app/admin/tt15-evaluation/actions.ts`.
- * 3. Data Schemas: `Campus`, `SchoolPoint`, `SchoolPointEvaluation`, `SchoolPointEvaluationDetail`, `TT15Indicator`, `TT15EvidenceFile`.
- * 4. Verbatim User Instruction: "đánh giá TT15 lỗi 404 This page could not be found." - "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT".
+ * 2. Public functions/classes affected: `VicePrincipalTT15EvaluationPage` default export.
+ * 3. Data structures: `Campus` (`id`, `name`, `schoolId`), `SchoolPoint` (`id`, `name`, `campusId`), `Session` (`user.role`, `user.schoolId`, `user.campusId`).
+ * 4. Verbatim User Instruction: "vẫn lỗi khôgn thể bấm vô mục thông tư 15 \"404 This page could not be found.\"" - "đánh giá TT15 lỗi 404 This page could not be found.".
  */
 
 import { getServerSession } from "next-auth";
@@ -20,13 +20,14 @@ export default async function VicePrincipalTT15EvaluationPage(props: {
   searchParams?: Promise<{ campusId?: string; schoolPointId?: string; year?: string }>;
 }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) redirect("/auth/login");
+  if (!session?.user) redirect("/login");
 
   const searchParams = await props.searchParams;
 
   const role = session.user.role;
-  if (role !== "ADMIN" && role !== "VICE_PRINCIPAL") {
-    redirect("/dashboard");
+  const allowedRoles = ["SUPER_ADMIN", "ADMIN", "VICE_PRINCIPAL", "DEPARTMENT_ADMIN", "WARD_ADMIN"];
+  if (!allowedRoles.includes(role)) {
+    redirect("/vice-principal/dashboard");
   }
 
   const schoolId = session.user.schoolId;

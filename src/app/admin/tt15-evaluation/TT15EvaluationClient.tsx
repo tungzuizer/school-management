@@ -91,6 +91,9 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
     }
   }, [selectedPoint, defaultYear, loadEvaluation]);
 
+  const isVpRole = role === "VICE_PRINCIPAL" || role === "SUPER_ADMIN" || role === "ADMIN";
+  const isAdminRole = role === "ADMIN" || role === "SUPER_ADMIN" || role === "DEPARTMENT_ADMIN" || role === "WARD_ADMIN";
+
   const handleAssessmentChange = (indicatorId: string, val: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -484,7 +487,7 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                 </div>
 
                 {/* Actions for Vice Principal */}
-                {role === "VICE_PRINCIPAL" && (!evaluationData || evaluationData.status === "DRAFT" || evaluationData.status === "REJECTED") && (
+                {isVpRole && (!evaluationData || evaluationData.status === "DRAFT" || evaluationData.status === "REJECTED") && (
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveDraft}
@@ -504,7 +507,7 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                 )}
 
                 {/* Actions for Principal */}
-                {role === "ADMIN" && (
+                {isAdminRole && (
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={handleAgreeAllReviews}
@@ -612,7 +615,7 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                                       rowData.assessment === "Không Đạt" ? "border-rose-500 bg-rose-50 text-rose-800" :
                                       "border-slate-300"
                                     } disabled:bg-slate-100`}
-                                    disabled={role !== "VICE_PRINCIPAL" || evaluationData?.status === "APPROVED"}
+                                    disabled={!isVpRole || evaluationData?.status === "APPROVED"}
                                   >
                                     <option value="">- Chọn Mức -</option>
                                     <option value="Tốt">Tốt (Mức 3)</option>
@@ -624,9 +627,9 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                                   <div className="space-y-1">
                                     <textarea
                                       value={rowData.notes || ""}
-                                      placeholder={role === "VICE_PRINCIPAL" ? "Giải trình thực trạng điểm trường (Tối thiểu 30 ký tự)..." : "Chưa có giải trình."}
+                                      placeholder={isVpRole ? "Giải trình thực trạng điểm trường (Tối thiểu 30 ký tự)..." : "Chưa có giải trình."}
                                       onChange={(e) => handleNotesChange(ind.id, e.target.value)}
-                                      disabled={role !== "VICE_PRINCIPAL" || evaluationData?.status === "APPROVED"}
+                                      disabled={!isVpRole || evaluationData?.status === "APPROVED"}
                                       rows={2}
                                       className={`w-full text-xs border rounded-lg p-2 ${
                                         (rowData.notes || "").trim().length >= 30
@@ -665,7 +668,7 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                                     )}
                                   </div>
 
-                                  {role === "VICE_PRINCIPAL" && evaluationData?.status !== "APPROVED" && (
+                                  {isVpRole && evaluationData?.status !== "APPROVED" && (
                                     <button
                                       onClick={() => handleRealUpload(ind.id)}
                                       disabled={submitting}
@@ -680,9 +683,9 @@ export default function TT15EvaluationClient({ campuses, role, defaultYear, user
                                 <td className="p-3 bg-blue-50/30 align-top space-y-2">
                                   <textarea
                                     value={rowData.principalComment || ""}
-                                    placeholder={role === "ADMIN" ? "Nhập nhận xét / chỉ đạo của Hiệu trưởng..." : "Chưa có nhận xét của HT."}
+                                    placeholder={isAdminRole ? "Nhập nhận xét / chỉ đạo của Hiệu trưởng..." : "Chưa có nhận xét của HT."}
                                     onChange={(e) => handlePrincipalReviewChange(ind.id, "principalComment", e.target.value)}
-                                    disabled={role !== "ADMIN" || evaluationData?.status === "APPROVED"}
+                                    disabled={!isAdminRole || evaluationData?.status === "APPROVED"}
                                     rows={2}
                                     className="w-full text-xs border border-slate-300 rounded-lg p-2 disabled:bg-slate-50"
                                   />
