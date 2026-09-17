@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Admin navigation (`src/app/admin/classes/page.tsx`).
- * 2. Affected APIs: Server actions `getClasses`, `createBulkClasses`.
- * 3. Schema: Removed Google Drive import modal and dependencies.
- * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ * 1. Importers/Callers: Admin navigation (`src/app/admin/classes/page.tsx`), admin layout.
+ * 2. Affected APIs: Server actions `getClasses`, `createBulkClasses`, `createClass`, `updateClass`, `deleteClass`.
+ * 3. Schema: Prisma `ClassRoom`, `School`, `Teacher`, `User`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa giao diện quản lý Lớp học cho SuperAdmin quản trị toàn hệ thống.
  */
 
 "use client";
@@ -469,11 +469,11 @@ export default function ClassesPage() {
                           className={`p-2.5 rounded-xl text-xs font-bold text-left transition-all flex items-center justify-between border ${
                             isSelected
                               ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                              : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40"
+                              : "bg-white text-slate-800 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40"
                           }`}
                         >
-                          <span className="truncate">🏫 {s.name}</span>
-                          {isSelected && <span className="text-xs">✓</span>}
+                          <span className="truncate">{s.name}</span>
+                          {isSelected && <span className="text-xs font-bold text-white">✓</span>}
                         </button>
                       );
                     })}

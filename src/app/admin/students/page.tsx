@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Admin Students Management Page (`src/app/admin/students/page.tsx`).
+ * 1. Importers/Callers: Admin Students Management Page (`src/app/admin/students/page.tsx`), admin layout.
  * 2. Affected APIs: `getStudentCredentialsOverview`, `getStudentCredentialSlips`, `resetStudentPassword`, `StudentCredentialsModal`, `StudentCredentialSlipsModal`.
- * 3. Data Schemas: `StudentCredentialItem` (id, userId, studentCode, name, email, className, defaultPasswordHint), `StudentData`, `ClassOption`.
- * 4. Verbatim User Instruction: "tôi muốn mỗi giáo viên mỗi học sinh sẽ có tài khoản mà mật khẩu và có thể hiện thị chỉ cho hiệu trưởng hoặc admin nhìn thấy được".
+ * 3. Data Schemas: `StudentCredentialItem`, `StudentData`, `ClassOption`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa giao diện quản lý Học sinh cho SuperAdmin toàn hệ thống.
  */
 
 "use client";
@@ -26,7 +26,7 @@ import {
 } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { KeyRound, Lock, Loader2, Cloud, FileSpreadsheet, Plus, School, Building2, LayoutGrid, Table, GraduationCap, Users, ShieldCheck } from "lucide-react";
+import { KeyRound, Lock, Loader2, Cloud, FileSpreadsheet, Plus, School, Building2, LayoutGrid, Table, GraduationCap, Users, ShieldCheck, Download } from "lucide-react";
 import StudentCredentialsModal from "./components/StudentCredentialsModal";
 import StudentCredentialSlipsModal from "./components/StudentCredentialSlipsModal";
 import { generateStudentEmail } from "@/lib/student-email";
@@ -517,10 +517,10 @@ export default function StudentsPage() {
           <button
             onClick={() => openCredentialsHub(false)}
             className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all active-press"
-            title="Xem và quản lý tài khoản, mật khẩu học sinh (Độc quyền BGH)"
+            title="Xem và quản lý tài khoản, mật khẩu học sinh"
           >
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>🔐 Quản lý TK & Mật khẩu (BGH)</span>
+            <span>Quản lý TK & Mật khẩu</span>
           </button>
           <button
             onClick={() => {
@@ -753,7 +753,7 @@ export default function StudentsPage() {
                             </span>
                             {s.classRoom.school?.name && (
                               <span className="text-[10px] text-slate-500 font-medium">
-                                🏫 {s.classRoom.school.name}
+                                {s.classRoom.school.name}
                               </span>
                             )}
                           </div>
@@ -817,19 +817,19 @@ export default function StudentsPage() {
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           {!editing ? (
             /* Định Danh & Tài Khoản Cố Định (Chế độ Thêm mới) */
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100/80 space-y-3">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/90 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
                   <ShieldCheck className="w-4 h-4 text-indigo-600" />
                   <span>MÃ ĐỊNH DANH & TÀI KHOẢN TỰ ĐỘNG (CỐ ĐỊNH CHUẨN HÓA)</span>
                 </div>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-200/60 text-indigo-800">
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
                   Auto-Generated
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-white/80 backdrop-blur-xs p-3 rounded-xl border border-indigo-100 flex items-center gap-3">
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-black text-xs">
                     HS
                   </div>
@@ -841,13 +841,13 @@ export default function StudentsPage() {
                   </div>
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-xs p-3 rounded-xl border border-indigo-100 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center font-black text-xs">
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center font-black text-xs">
                     @
                   </div>
                   <div className="truncate">
                     <span className="text-[10px] font-bold text-slate-500 block">Email Đăng Nhập Chuẩn Hóa</span>
-                    <span className="font-mono font-bold text-xs text-purple-700 truncate block">
+                    <span className="font-mono font-bold text-xs text-slate-900 truncate block">
                       {codePreview?.email || form.email || "hs26100001@gmail.com"}
                     </span>
                   </div>
@@ -1135,21 +1135,24 @@ export default function StudentsPage() {
       <Modal
         isOpen={bulkModalOpen}
         onClose={() => setBulkModalOpen(false)}
-        title="Nhập danh sách học sinh hàng loạt"
+        title="Nhập danh sách học sinh hàng loạt (Excel / CSV)"
         size="xl"
       >
         <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
-          <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3.5 rounded-lg text-sm flex items-start justify-between gap-4">
-            <div>
-              <p className="font-semibold mb-1">💡 Hướng dẫn nhập dữ liệu:</p>
-              <p>1. Copy hàng loạt từ Excel / Google Sheets hoặc tải file CSV mẫu.</p>
+          <div className="bg-slate-50 border border-slate-200 text-slate-800 p-4 rounded-2xl text-xs sm:text-sm flex items-start justify-between gap-4">
+            <div className="space-y-1 text-slate-700">
+              <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
+                Hướng dẫn nhập dữ liệu học sinh:
+              </p>
+              <p>1. Sao chép trực tiếp từ bảng tính Excel / Google Sheets hoặc tải file CSV mẫu.</p>
               <p>
-                2. Mật khẩu mặc định của các học sinh sẽ là:{" "}
-                <code className="bg-blue-100 px-1 py-0.5 rounded font-mono font-bold">abc123</code>
+                2. Mật khẩu mặc định khởi tạo cho các tài khoản học sinh là:{" "}
+                <code className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded-md font-mono font-bold">abc123</code>
               </p>
               <p>
-                3. Thứ tự cột chuẩn:{" "}
-                <span className="font-medium">
+                3. Thứ tự các cột:{" "}
+                <span className="font-semibold text-slate-900">
                   Mã HS, Họ tên, Email, Ngày sinh (YYYY-MM-DD), Giới tính (Nam/Nữ), SĐT, Dân tộc, Địa chỉ
                 </span>
               </p>
@@ -1157,19 +1160,19 @@ export default function StudentsPage() {
             <button
               type="button"
               onClick={downloadSampleCSV}
-              className="bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 shadow-sm transition"
+              className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
             >
-              📄 Tải CSV Mẫu
+              <Download className="w-3.5 h-3.5 text-indigo-600" /> Tải CSV Mẫu
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gán mặc định vào Lớp</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Gán mặc định vào Lớp</label>
               <select
                 value={bulkClassId}
                 onChange={(e) => handleBulkClassChange(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs font-medium text-slate-800 outline-none cursor-pointer"
               >
                 <option value="">Chưa xếp lớp (Không chọn)</option>
                 {classes.map((c) => (
@@ -1180,37 +1183,37 @@ export default function StudentsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hoặc Chọn File CSV</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Hoặc Chọn File CSV</label>
               <input
                 type="file"
                 accept=".csv, .txt"
                 onChange={handleFileUpload}
-                className="w-full text-sm text-slate-700 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                className="w-full text-xs text-slate-900 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer border border-slate-200 rounded-xl p-1 bg-white"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dán dữ liệu từ Excel / CSV vào đây:</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Dán dữ liệu từ Excel / CSV vào đây:</label>
             <textarea
               rows={5}
               value={bulkInput}
               onChange={(e) => handleBulkTextChange(e.target.value)}
-              placeholder={`HS001\tNguyễn Văn A\tnguyenvana@school.edu.vn\t2008-05-15\tNam\t0912345678\tKinh\tHà Nội\nHS002\tTrần Thị B\ttranthib@school.edu.vn\t2008-08-20\tNữ\t0987654321\tKinh\tHồ Chí Minh`}
-              className="w-full px-3 py-2 border rounded-lg font-mono text-xs focus:ring-2 focus:ring-emerald-500"
+              placeholder={`HS001\tNguyễn Văn A\tnguyenvana@school.edu.vn\t2008-05-15\tNam\t0912345678\tKinh\tNinh Bình\nHS002\tTrần Thị B\ttranthib@school.edu.vn\t2008-08-20\tNữ\t0987654321\tKinh\tNinh Bình`}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-indigo-500 text-slate-800 outline-none"
             />
           </div>
 
           {bulkResult && (
             <div
-              className={`p-3 rounded-lg text-sm border ${
-                bulkResult.count > 0 ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
+              className={`p-3.5 rounded-xl text-xs sm:text-sm border ${
+                bulkResult.count > 0 ? "bg-emerald-50 border-emerald-200 text-emerald-900 font-medium" : "bg-rose-50 border-rose-200 text-rose-900 font-medium"
               }`}
             >
-              <p className="font-semibold">Kết quả: Đã thêm thành công {bulkResult.count} học sinh.</p>
+              <p className="font-bold">Kết quả: Đã thêm thành công {bulkResult.count} học sinh.</p>
               {bulkResult.errors.length > 0 && (
-                <div className="mt-2 text-xs text-red-700 max-h-28 overflow-y-auto space-y-1">
-                  <p className="font-semibold">Ghi chú / Cảnh báo:</p>
+                <div className="mt-2 text-xs text-rose-800 max-h-28 overflow-y-auto space-y-1 font-medium">
+                  <p className="font-bold uppercase">Ghi chú / Cảnh báo:</p>
                   {bulkResult.errors.map((err, idx) => (
                     <p key={idx}>• {err}</p>
                   ))}
@@ -1222,48 +1225,50 @@ export default function StudentsPage() {
           {/* Preview Table */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold text-gray-800 text-sm">Xem trước dữ liệu ({parsedStudents.length} học sinh)</h4>
+              <h4 className="font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wider">
+                Xem trước dữ liệu ({parsedStudents.length} học sinh)
+              </h4>
             </div>
-            <div className="border rounded-lg overflow-x-auto max-h-60">
+            <div className="border border-slate-200 rounded-2xl overflow-x-auto max-h-60 bg-white">
               <table className="w-full text-xs text-left">
-                <thead className="bg-gray-100 border-b sticky top-0">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold sticky top-0 uppercase text-[11px] tracking-wider">
                   <tr>
-                    <th className="p-2 border-r">STT</th>
-                    <th className="p-2 border-r">Mã HS</th>
-                    <th className="p-2 border-r">Họ tên *</th>
-                    <th className="p-2 border-r">Email (Tự tạo nếu trống)</th>
-                    <th className="p-2 border-r">Ngày sinh</th>
-                    <th className="p-2 border-r">Giới tính</th>
-                    <th className="p-2 border-r">SĐT</th>
-                    <th className="p-2 border-r">Địa chỉ</th>
+                    <th className="p-2.5 border-r border-slate-200 text-center w-12">STT</th>
+                    <th className="p-2.5 border-r border-slate-200">Mã HS</th>
+                    <th className="p-2.5 border-r border-slate-200">Họ tên *</th>
+                    <th className="p-2.5 border-r border-slate-200">Email</th>
+                    <th className="p-2.5 border-r border-slate-200">Ngày sinh</th>
+                    <th className="p-2.5 border-r border-slate-200">Giới tính</th>
+                    <th className="p-2.5 border-r border-slate-200">SĐT</th>
+                    <th className="p-2.5">Địa chỉ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-slate-100">
                   {parsedStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-4 text-center text-gray-400">
+                      <td colSpan={8} className="p-6 text-center text-slate-400 font-medium">
                         Chưa có dữ liệu. Hãy dán nội dung hoặc chọn file CSV ở trên.
                       </td>
                     </tr>
                   ) : (
                     parsedStudents.map((s, idx) => (
-                      <tr key={idx} className={!s.name ? "bg-red-50" : "hover:bg-gray-50"}>
-                        <td className="p-2 border-r text-gray-500 text-center">{idx + 1}</td>
-                        <td className="p-2 border-r font-mono text-gray-700">
-                          {s.studentCode || <span className="text-gray-300">Tự sinh</span>}
+                      <tr key={idx} className={!s.name ? "bg-rose-50/60" : "hover:bg-slate-50/80 transition"}>
+                        <td className="p-2.5 border-r border-slate-100 text-slate-500 text-center font-medium">{idx + 1}</td>
+                        <td className="p-2.5 border-r border-slate-100 font-mono text-slate-700">
+                          {s.studentCode || <span className="text-slate-400">Tự sinh</span>}
                         </td>
-                        <td className="p-2 border-r font-medium text-gray-900">
-                          {s.name || <span className="text-red-500 font-bold">Thiếu tên!</span>}
+                        <td className="p-2.5 border-r border-slate-100 font-bold text-slate-900">
+                          {s.name || <span className="text-rose-600 font-bold">Thiếu tên!</span>}
                         </td>
-                        <td className="p-2 border-r font-mono text-gray-600">
-                          {s.email || <span className="text-gray-400 italic">Tự sinh email</span>}
+                        <td className="p-2.5 border-r border-slate-100 font-mono text-slate-600">
+                          {s.email || <span className="text-slate-400 italic">Tự sinh email</span>}
                         </td>
-                        <td className="p-2 border-r text-gray-600">{s.dob || "—"}</td>
-                        <td className="p-2 border-r text-gray-600">
+                        <td className="p-2.5 border-r border-slate-100 text-slate-600">{s.dob || "—"}</td>
+                        <td className="p-2.5 border-r border-slate-100 text-slate-600">
                           {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
                         </td>
-                        <td className="p-2 border-r text-gray-600">{s.phone || "—"}</td>
-                        <td className="p-2 border-r text-gray-600 max-w-xs truncate">{s.addressCurrent || "—"}</td>
+                        <td className="p-2.5 border-r border-slate-100 text-slate-600">{s.phone || "—"}</td>
+                        <td className="p-2.5 text-slate-600 max-w-xs truncate">{s.addressCurrent || "—"}</td>
                       </tr>
                     ))
                   )}
@@ -1272,11 +1277,11 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setBulkModalOpen(false)}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm"
+              className="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 transition cursor-pointer"
             >
               Đóng
             </button>
@@ -1284,7 +1289,7 @@ export default function StudentsPage() {
               type="button"
               onClick={handleBulkSubmit}
               disabled={bulkSubmitting || parsedStudents.length === 0}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-xs sm:text-sm font-bold disabled:opacity-50 flex items-center gap-2 shadow-2xs transition cursor-pointer"
             >
               {bulkSubmitting ? "Đang tiến hành nhập..." : `Lưu tất cả ${parsedStudents.length} học sinh`}
             </button>

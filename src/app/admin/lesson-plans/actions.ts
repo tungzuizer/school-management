@@ -2,8 +2,8 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: `src/app/admin/lesson-plans/page.tsx`.
  * 2. Affected APIs: Server actions `getLessonPlansForAdmin`, `reviewLessonPlan`.
- * 3. Schema: Returns `fileUrl`, `fileName`, `fileSize`, `fileType` instead of `driveFileUrl`.
- * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ * 3. Schema: Prisma `LessonPlan`, `LessonPlanReview`, `Role`, `LessonPlanStatus`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa phân quyền phê duyệt giáo án cho SuperAdmin toàn hệ thống.
  */
 
 "use server";
@@ -15,31 +15,53 @@ import { LessonPlanStatus, Role } from "@prisma/client";
 
 import { recordAuditLog } from "@/lib/audit-logger";
 
-// Get all lesson plans for the admin (Hiệu trưởng) approval portal
-export async function getLessonPlansForAdmin() {
+// Get all lesson plans for admin / superadmin approval portal
+export async function getLessonPlansForAdmin(schoolId?: string) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return [];
 
+    const isSuperAdmin =
+      session.user.email === "superadmin.ninhbinh@gmail.com" ||
+      session.user.email === "superadmin.demo@gmail.com" ||
+      session.user.email === "superadmin@school.com" ||
+      (session.user as any).role === "SUPER_ADMIN";
+
     const isAllowed =
-      session.user.role === Role.ADMIN || session.user.role === "VICE_PRINCIPAL";
+      isSuperAdmin ||
+      session.user.role === Role.ADMIN ||
+      session.user.role === "VICE_PRINCIPAL" ||
+      session.user.role === Role.DEPARTMENT_ADMIN ||
+      session.user.role === Role.WARD_ADMIN;
 
     if (!isAllowed) return [];
 
-    const plans = await prisma.lessonPlan.findMany({
-      where: {
-        status: {
-          in: [
-            LessonPlanStatus.SUBMITTED,
-            LessonPlanStatus.HEAD_APPROVED,
-            LessonPlanStatus.VP_APPROVED,
-            LessonPlanStatus.APPROVED,
-            LessonPlanStatus.REJECTED,
-          ],
-        },
+    const where: any = {
+      status: {
+        in: [
+          LessonPlanStatus.SUBMITTED,
+          LessonPlanStatus.HEAD_APPROVED,
+          LessonPlanStatus.VP_APPROVED,
+          LessonPlanStatus.APPROVED,
+          LessonPlanStatus.REJECTED,
+        ],
       },
+    };
+
+    if (schoolId && schoolId !== "ALL") {
+      where.teacher = {
+        user: { schoolId },
+      };
+    }
+
+    const plans = await prisma.lessonPlan.findMany({
+      where,
       include: {
-        teacher: { include: { user: { select: { name: true } } } },
+        teacher: {
+          include: {
+            user: { select: { name: true, school: { select: { id: true, name: true } } } },
+          },
+        },
         subject: { select: { name: true } },
         classRoom: { select: { name: true } },
         reviews: { orderBy: { createdAt: "asc" } },
@@ -50,6 +72,7 @@ export async function getLessonPlansForAdmin() {
     return plans.map((p) => ({
       id: p.id,
       teacherName: p.teacher?.user?.name || "Giáo viên",
+      schoolName: (p.teacher?.user as any)?.school?.name || "Toàn trường",
       subjectName: p.subject?.name || "Môn học",
       className: p.classRoom?.name || "Lớp học",
       weekNumber: p.weekNumber,
@@ -85,7 +108,7 @@ export async function getLessonPlansForAdmin() {
   }
 }
 
-// Hiệu trưởng phê duyệt cuối cùng (Cho phép duyệt từ VP_APPROVED, HEAD_APPROVED hoặc SUBMITTED)
+// Phê duyệt giáo án (SuperAdmin / Hiệu trưởng / Phó hiệu trưởng)
 export async function reviewLessonPlan(data: {
   planId: string;
   status: "APPROVED" | "REJECTED";
@@ -96,8 +119,18 @@ export async function reviewLessonPlan(data: {
     return { success: false, error: "Chưa đăng nhập" };
   }
 
+  const isSuperAdmin =
+    session.user.email === "superadmin.ninhbinh@gmail.com" ||
+    session.user.email === "superadmin.demo@gmail.com" ||
+    session.user.email === "superadmin@school.com" ||
+    (session.user as any).role === "SUPER_ADMIN";
+
   const isAllowed =
-    session.user.role === Role.ADMIN || session.user.role === "VICE_PRINCIPAL";
+    isSuperAdmin ||
+    session.user.role === Role.ADMIN ||
+    session.user.role === "VICE_PRINCIPAL" ||
+    session.user.role === Role.DEPARTMENT_ADMIN ||
+    session.user.role === Role.WARD_ADMIN;
 
   if (!isAllowed) {
     return { success: false, error: "Không có quyền thực hiện chức năng này" };
@@ -158,3 +191,17 @@ export async function reviewLessonPlan(data: {
     return { success: false, error: "Lỗi hệ thống: " + error.message };
   }
 }
+
+// Lấy danh sách các trường học cho bộ lọc SuperAdmin
+export async function getAdminSchools() {
+  try {
+    return await prisma.school.findMany({
+      select: { id: true, name: true, schoolType: true, branchType: true },
+      orderBy: { name: "asc" },
+    });
+  } catch (error) {
+    console.error("Error fetching schools for lesson plans:", error);
+    return [];
+  }
+}
+

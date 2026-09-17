@@ -1,15 +1,15 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Admin lesson plans portal (`src/app/admin/lesson-plans/page.tsx`).
- * 2. Affected APIs: Server actions `getLessonPlansForAdmin`, `reviewLessonPlan`, component `FileViewerModal`.
- * 3. Schema: Replaces `driveFileUrl` with `fileUrl`, `fileName`, `fileSize`, `fileType`, providing instant in-app PDF preview.
- * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ * 1. Importers/Callers: Admin router at `/admin/lesson-plans`, navigation bar in admin layout.
+ * 2. Affected APIs: Server actions `getLessonPlansForAdmin`, `reviewLessonPlan`, `getAdminSchools`, component `FileViewerModal`.
+ * 3. Schema: LessonPlan, Teacher, Subject, ClassRoom, School, LessonPlanReview.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa toàn bộ giao diện các trang Quản trị cho SuperAdmin.
  */
 
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getLessonPlansForAdmin, reviewLessonPlan } from "./actions";
+import { getLessonPlansForAdmin, reviewLessonPlan, getAdminSchools } from "./actions";
 import { useToast } from "@/components/ui/Toast";
 import { useEasyMode } from "@/lib/useEasyMode";
 import FileViewerModal from "@/components/storage/FileViewerModal";
@@ -32,6 +32,8 @@ import {
   FileText,
   Eye,
   Download,
+  Building2,
+  CheckCircle2,
 } from "lucide-react";
 
 interface LessonPlanReview {
@@ -46,6 +48,7 @@ interface LessonPlanReview {
 interface LessonPlanItem {
   id: string;
   teacherName: string;
+  schoolName?: string;
   subjectName: string;
   className: string;
   weekNumber: number;
@@ -72,6 +75,8 @@ interface LessonPlanItem {
 export default function AdminLessonPlansPage() {
   const [plans, setPlans] = useState<LessonPlanItem[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<LessonPlanItem[]>([]);
+  const [schools, setSchools] = useState<{ id: string; name: string; schoolType?: string; branchType?: string }[]>([]);
+  const [selectedSchool, setSelectedSchool] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { isEasyMode } = useEasyMode();
@@ -105,15 +110,19 @@ export default function AdminLessonPlansPage() {
     if (!silent) setLoading(true);
     setIsRefreshing(true);
     try {
-      const items = await getLessonPlansForAdmin();
+      const [items, schoolList] = await Promise.all([
+        getLessonPlansForAdmin(selectedSchool),
+        getAdminSchools(),
+      ]);
       setPlans(items as any);
+      setSchools(schoolList);
     } catch (e: any) {
       showToast("Lỗi khi tải thông tin giáo án: " + (e.message || ""), "error");
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [showToast]);
+  }, [selectedSchool, showToast]);
 
   useEffect(() => {
     fetchPlans();
@@ -150,7 +159,8 @@ export default function AdminLessonPlansPage() {
           p.teacherName.toLowerCase().includes(searchLower) ||
           p.title.toLowerCase().includes(searchLower) ||
           p.subjectName.toLowerCase().includes(searchLower) ||
-          p.className.toLowerCase().includes(searchLower)
+          p.className.toLowerCase().includes(searchLower) ||
+          (p.schoolName && p.schoolName.toLowerCase().includes(searchLower))
       );
     }
 
@@ -263,41 +273,60 @@ export default function AdminLessonPlansPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-            Ban Giám Hiệu Phê Duyệt Giáo Án
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+            Quản Lý & Phê Duyệt Giáo Án
             {isRefreshing && !loading && <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin" />}
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
-            Phê duyệt chính thức giáo án của toàn bộ giáo viên nhà trường
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
+            Hệ thống kiểm duyệt, phân tích và thông qua kế hoạch bài dạy trên toàn trường & hệ thống
           </p>
         </div>
-        <button
-          onClick={() => fetchPlans(false)}
-          className="self-start sm:self-auto flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition duration-150 shadow-2xs"
-          title="Tải lại danh sách"
-        >
-          <RefreshCw className="w-4 h-4" /> Tải lại
-        </button>
+        <div className="flex items-center gap-2">
+          {schools.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+              <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+              <select
+                value={selectedSchool}
+                onChange={(e) => setSelectedSchool(e.target.value)}
+                className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer"
+              >
+                <option value="ALL">Tất cả các trường</option>
+                {schools.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <button
+            onClick={() => fetchPlans(false)}
+            className="self-start sm:self-auto flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition duration-150 shadow-2xs cursor-pointer"
+            title="Tải lại danh sách"
+          >
+            <RefreshCw className="w-4 h-4" /> Tải lại
+          </button>
+        </div>
       </div>
 
       {/* Statistics board */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
+        <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
           <p className="text-[11px] sm:text-xs text-slate-500 font-semibold">Tổng giáo án nhận được</p>
           <p className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">{plans.length}</p>
         </div>
-        <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
-          <p className="text-[11px] sm:text-xs font-semibold text-amber-700">Chờ Hiệu trưởng duyệt</p>
+        <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
+          <p className="text-[11px] sm:text-xs font-semibold text-amber-700">Chờ duyệt các cấp</p>
           <p className="text-xl sm:text-2xl font-extrabold text-amber-800 mt-1">{pendingCount}</p>
         </div>
-        <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
+        <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
           <p className="text-[11px] sm:text-xs font-semibold text-emerald-700">Đã phê duyệt hoàn tất</p>
           <p className="text-xl sm:text-2xl font-extrabold text-emerald-800 mt-1">
             {plans.filter((p) => p.status === "APPROVED").length}
           </p>
         </div>
-        <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
-          <p className="text-[11px] sm:text-xs font-semibold text-rose-700">Đã từ chối</p>
+        <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs">
+          <p className="text-[11px] sm:text-xs font-semibold text-rose-700">Đã từ chối / Trả lại</p>
           <p className="text-xl sm:text-2xl font-extrabold text-rose-800 mt-1">
             {plans.filter((p) => p.status === "REJECTED").length}
           </p>
@@ -305,7 +334,7 @@ export default function AdminLessonPlansPage() {
       </div>
 
       {/* Tabs and Filters Row */}
-      <div className="bg-white border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-3 sm:space-y-4 shadow-2xs">
+      <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-3 sm:space-y-4 shadow-2xs">
         {/* Status Tabs with Horizontal Scroll for Mobile */}
         <div className="flex overflow-x-auto whitespace-nowrap border-b border-slate-100 pb-0.5 no-scrollbar">
           {(["PENDING", "APPROVED", "REJECTED", "ALL"] as const).map((tab) => {
@@ -360,7 +389,7 @@ export default function AdminLessonPlansPage() {
             </span>
             <input
               type="text"
-              placeholder="Tìm theo tên giáo viên, chủ đề..."
+              placeholder="Tìm theo tên giáo viên, chủ đề, trường..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
@@ -402,12 +431,12 @@ export default function AdminLessonPlansPage() {
       {/* Main List */}
       <div className="space-y-3 sm:space-y-4">
         {loading ? (
-          <div className="text-center py-12 bg-white rounded-2xl border">
+          <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
             <div className="animate-spin rounded-full h-8 w-8 border border-slate-200 border-indigo-600 mx-auto"></div>
             <p className="text-xs text-slate-400 mt-2 font-semibold">Đang tải danh sách giáo án...</p>
           </div>
         ) : filteredPlans.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border p-6">
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-6">
             <BookOpen className="w-12 h-12 mx-auto text-slate-300 mb-2" />
             <p className="text-sm font-semibold text-slate-600">Không có giáo án nào thuộc mục này</p>
           </div>
@@ -432,6 +461,12 @@ export default function AdminLessonPlansPage() {
                       <span className="text-[11px] font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md">
                         Tuần {p.weekNumber}
                       </span>
+                      {p.schoolName && (
+                        <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-slate-400" />
+                          {p.schoolName}
+                        </span>
+                      )}
                       <span className="text-xs text-slate-600 font-semibold">
                         Lớp {p.className} • Tiết {p.periodStart === p.periodEnd ? p.periodStart : `${p.periodStart}-${p.periodEnd}`}
                       </span>
@@ -581,8 +616,9 @@ export default function AdminLessonPlansPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 font-semibold">
-                        ✅ Giáo án này đã được hoàn tất phê duyệt ({p.reviewedBy || "Ban Giám Hiệu"}).
+                      <div className="bg-emerald-50 border border-emerald-200/90 rounded-xl p-3 text-xs text-emerald-900 font-semibold flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Giáo án này đã được hoàn tất phê duyệt ({p.reviewedBy || "Ban Giám Hiệu"}).</span>
                       </div>
                     )}
                   </div>

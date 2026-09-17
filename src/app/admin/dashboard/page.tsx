@@ -154,17 +154,19 @@ export default function AdminDashboardPage() {
   });
 
   const isSuperAdmin =
+    session?.user?.email === "superadmin.ninhbinh@gmail.com" ||
+    session?.user?.email === "superadmin.demo@gmail.com" ||
     session?.user?.email === "superadmin@school.com" ||
     (session?.user as { role?: string })?.role === "SUPER_ADMIN";
 
   const activeSchoolName = selectedSchoolId
     ? schools.find((s) => s.id === selectedSchoolId)?.name || "Trường đã chọn"
     : isSuperAdmin
-    ? "Toàn bộ các Trường (Hệ thống Quốc Gia)"
+    ? "Toàn bộ Nền Tảng (Tất cả Tỉnh/Thành & Mạng lưới Trường)"
     : "Tất cả các cơ sở trực thuộc";
 
   const categories = [
-    { id: "ALL" as DashboardCategory, label: "Toàn Cảnh", count: "Tổng quan" },
+    { id: "ALL" as DashboardCategory, label: "Toàn Cảnh Nền Tảng", count: "Tổng quan" },
     { id: "ACADEMICS" as DashboardCategory, label: "Chuyên Môn & Điểm Thi", count: "OLS & Kế hoạch" },
     { id: "COMPLIANCE" as DashboardCategory, label: "Tuân Thủ NQ 37", count: "Định mức & 36T" },
     { id: "DISCIPLINE" as DashboardCategory, label: "Nề Nếp & Cảnh Báo", count: `${earlyWarnings.length} cảnh báo` },
@@ -187,22 +189,22 @@ export default function AdminDashboardPage() {
           <div className="space-y-2.5">
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="px-3 py-1 bg-blue-950/90 border border-blue-800 text-blue-300 text-xs font-bold uppercase tracking-wider rounded-lg shadow-xs">
-                {isSuperAdmin ? "Hệ Thống Quốc Gia" : "Ban Giám Hiệu"}
+                {isSuperAdmin ? "Quản Trị Toàn Nền Tảng" : "Ban Giám Hiệu"}
               </span>
               <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-950/90 border border-emerald-800/80 rounded-lg text-emerald-300 text-xs font-semibold">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                <span>Thời Gian Thực</span>
+                <span>Hệ Thống Trực Tuyến</span>
               </div>
               <span className="px-3 py-1 bg-slate-900 border border-slate-700 text-slate-300 text-xs font-medium rounded-lg">
-                NQ 37/2026/NQ-CP
+                Giám Sát Toàn Website
               </span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
-              {isSuperAdmin ? "Trung Tâm Điều Hành Giáo Dục Toàn Quốc" : "Bảng Điều Hành Ban Giám Hiệu Nhà Trường"}
+              {isSuperAdmin ? "Trung Tâm Tổng Chỉ Huy & Quản Trị Toàn Nền Tảng" : "Bảng Điều Hành Ban Giám Hiệu Nhà Trường"}
             </h1>
 
             <p className="text-xs sm:text-sm text-slate-300 flex items-center gap-2 flex-wrap">
@@ -234,8 +236,15 @@ export default function AdminDashboardPage() {
         {/* Quick Hub Links */}
         <div className="relative z-10 mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <Link
+            href="/admin/users-manager"
+            className="p-2.5 bg-blue-900/80 hover:bg-blue-800 border border-blue-700 rounded-xl transition text-white text-xs font-bold text-center flex items-center justify-center gap-2 group shadow-sm"
+          >
+            <span>Tổng Kho Tài Khoản</span>
+            <span className="text-[10px] font-mono opacity-80 group-hover:opacity-100">[VIP]</span>
+          </Link>
+          <Link
             href="/admin/exam-analytics"
-            className="p-2.5 bg-blue-950/60 hover:bg-blue-900/80 border border-blue-800/70 rounded-xl transition text-blue-200 text-xs font-bold text-center flex items-center justify-center gap-2 group"
+            className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-slate-200 text-xs font-bold text-center flex items-center justify-center gap-2 group"
           >
             <span>Phân Tích Điểm OLS</span>
             <span className="text-[10px] font-mono opacity-60 group-hover:opacity-100">[→]</span>
@@ -254,15 +263,37 @@ export default function AdminDashboardPage() {
             <span>AI Radar Cảnh Báo</span>
             <span className="text-[10px] font-mono opacity-60 group-hover:opacity-100">[→]</span>
           </Link>
-          <Link
-            href="/admin/approvals"
-            className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-slate-200 text-xs font-bold text-center flex items-center justify-center gap-2 group"
-          >
-            <span>Duyệt Yêu Cầu ({today?.incidentsToday ?? 0})</span>
-            <span className="text-[10px] font-mono opacity-60 group-hover:opacity-100">[→]</span>
-          </Link>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 2. CENTRALIZED USER DIRECTORY & IMPERSONATION HUB CARD                     */}
+      {/* ========================================================================= */}
+      {isSuperAdmin && (
+        <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                QUẢN TRỊ DANH TÍNH TOÀN NỀN TẢNG
+              </span>
+              <span className="text-xs text-slate-400 font-medium">100% Tài Khoản @gmail.com</span>
+            </div>
+            <h2 className="text-base font-bold text-white">
+              Cổng Quản Trị Toàn Bộ Tài Khoản & Chuyển Đổi Phiên Làm Việc (Impersonation)
+            </h2>
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Truy cập, tạo mới, đặt lại mật khẩu và chuyển đổi phiên làm việc trực tiếp sang bất kỳ Hiệu Trưởng, Phó Hiệu Trưởng, Tổ Trưởng hoặc Giáo Viên nào trên toàn bộ hệ thống website.
+            </p>
+          </div>
+          <Link
+            href="/admin/users-manager"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition shrink-0 flex items-center gap-2"
+          >
+            <span>Mở Tổng Kho Tài Khoản</span>
+            <span>→</span>
+          </Link>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 2. INTERACTIVE DOMAIN CLASSIFICATION TABS & CAMPUS SELECTOR               */}

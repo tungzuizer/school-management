@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Next.js Root Admin Layout for `/admin/*` (`src/app/admin/dashboard/page.tsx`, `src/app/admin/tt15-evaluation/page.tsx`, etc.).
  * 2. Uniqueness: Dual-Scroll independent workspace canvas with collapsible sidebar (w-72 <-> w-20), single active accordion auto-collapsing secondary items, and floating tooltips.
  * 3. Schema: `AdminProfile` (`id`, `name`, `email`, `isSuperAdmin`, `schoolName`, `departmentName`), `MenuGroup`, `MenuItem`.
- * 4. Verbatim User Instruction: "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT".
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn nhưng superadmin là quản lý toàn bộ web chứ không phải mỗi ninh bình bạn hiểu không là là tất cả mọi thứ ý".
  */
 
 "use client";
@@ -40,6 +40,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Activity,
+  Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getCurrentAdminProfile, AdminProfile } from "./actions";
@@ -67,67 +68,72 @@ type MenuGroup = {
   items: MenuItem[];
 };
 
-// Menu Group for Super Admin - 4 Distinct Domain Hubs with Codes & Icons
+// Menu Group for Super Admin - Global Platform Root (Toàn Bộ Nền Tảng Website)
 const superAdminMenuGroups: MenuGroup[] = [
   {
     id: "executive",
     code: "01",
-    title: "ĐIỀU HÀNH QUỐC GIA",
-    tag: "Thời gian thực",
+    title: "ĐIỀU HÀNH NỀN TẢNG",
+    tag: "Toàn Nền Tảng",
     accent: "blue",
     icon: Activity,
     items: [
-      { label: "Bảng điều khiển", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Điểm thi OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "OLS" },
-      { label: "Radar cảnh báo", href: "/admin/early-warnings", icon: AlertCircle },
-      { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileText },
-      { label: "Chiến lược & KPI", href: "/admin/strategy", icon: Target },
-      { label: "Đánh giá TT 15", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15" },
+      { label: "Bảng chỉ huy Toàn nền tảng", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Radar cảnh báo rủi ro AI", href: "/admin/early-warnings", icon: AlertCircle, badge: "AI" },
+      { label: "Phân tích học thuật & OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "OLS" },
+      { label: "Báo cáo điều hành tổng hợp", href: "/admin/daily-reports", icon: FileText },
+      { label: "Chiến lược & Mục tiêu KPI", href: "/admin/strategy", icon: Target },
+      { label: "Đánh giá chuẩn TT 15/2026", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15" },
     ],
   },
   {
-    id: "academics",
+    id: "regional_schools",
     code: "02",
-    title: "TRƯỜNG & CHUYÊN MÔN",
-    tag: "Học tập",
+    title: "MẠNG LƯỚI & ĐA ĐƠN VỊ",
+    tag: "Toàn Mạng Lưới",
     accent: "emerald",
-    icon: BookOpen,
+    icon: School,
     items: [
-      { label: "Danh mục trường", href: "/admin/schools", icon: School },
-      { label: "Lớp học", href: "/admin/classes", icon: Building2 },
-      { label: "Hồ sơ học sinh", href: "/admin/students", icon: GraduationCap },
-      { label: "Thời khóa biểu", href: "/admin/schedule", icon: Calendar, badge: "AI" },
-      { label: "Kế hoạch bài dạy", href: "/admin/lesson-plans", icon: BookOpen },
-      { label: "Sổ đầu bài", href: "/admin/journals", icon: ClipboardList },
+      { label: "Quản lý Tỉnh & Khu vực", href: "/admin/wards", icon: Building2 },
+      { label: "Mạng lưới Tất cả Trường", href: "/admin/schools", icon: School },
+      { label: "Cơ sở & Phân hiệu trực thuộc", href: "/admin/campuses", icon: Building2 },
+      { label: "Cơ cấu Lớp học toàn hệ thống", href: "/admin/classes", icon: Layers },
+      { label: "Hồ sơ Học sinh toàn nền tảng", href: "/admin/students", icon: GraduationCap },
+      { label: "Thời khóa biểu & Lịch dạy", href: "/admin/schedule", icon: Calendar, badge: "AI" },
+      { label: "Kế hoạch bài dạy (Giáo án)", href: "/admin/lesson-plans", icon: BookOpen },
+      { label: "Sổ đầu bài & Tiến độ dạy", href: "/admin/journals", icon: ClipboardList },
     ],
   },
   {
-    id: "personnel",
+    id: "users_matrix",
     code: "03",
-    title: "NHÂN SỰ & NQ 37",
-    tag: "NQ 37",
+    title: "TÀI KHOẢN & MA TRẬN QUYỀN",
+    tag: "Identity & RBAC",
     accent: "indigo",
     icon: Users,
     items: [
-      { label: "Định mức NQ 37", href: "/admin/nq37-compliance", icon: Scale, badge: "NQ 37" },
-      { label: "Nhân sự 36T", href: "/admin/support-staff", icon: UserCheck },
-      { label: "Cán bộ BGH", href: "/admin/principals", icon: ShieldCheck },
-      { label: "Đội ngũ giáo viên", href: "/admin/teachers", icon: Users },
+      { label: "Tổng kho Tài khoản (@gmail.com)", href: "/admin/users-manager", icon: ShieldCheck, badge: "VIP" },
+      { label: "Ma trận Phân quyền & Scope", href: "/admin/role-scopes", icon: ShieldAlert },
+      { label: "Ban Giám Hiệu các Trường", href: "/admin/principals", icon: UserCheck },
+      { label: "Đội ngũ Giáo viên toàn hệ thống", href: "/admin/teachers", icon: Users },
+      { label: "Định mức & Biên chế NQ 37", href: "/admin/nq37-compliance", icon: Scale, badge: "NQ 37" },
+      { label: "Nhân sự hỗ trợ 36T", href: "/admin/support-staff", icon: UserCheck },
     ],
   },
   {
     id: "governance",
     code: "04",
-    title: "QUẢN TRỊ & PHÊ DUYỆT",
-    tag: "Vận hành",
+    title: "LÕI HỆ THỐNG & BẢO MẬT",
+    tag: "Hạ Tầng Lõi",
     accent: "sky",
     icon: ShieldCheck,
     items: [
-      { label: "Phê duyệt yêu cầu", href: "/admin/approvals", icon: CheckSquare },
-      { label: "Khóa sổ dữ liệu", href: "/admin/data-lock", icon: ShieldCheck },
-      { label: "Quản lý học bạ", href: "/admin/transcripts", icon: FileSpreadsheet },
-      { label: "Nhật ký kiểm toán", href: "/admin/audit-log", icon: ShieldAlert },
-      { label: "Thông báo hệ thống", href: "/admin/notifications", icon: Bell },
+      { label: "Trung tâm Phê duyệt Cấp cao", href: "/admin/approvals", icon: CheckSquare },
+      { label: "Khóa sổ dữ liệu & Cổng thi", href: "/admin/data-lock", icon: ShieldCheck },
+      { label: "Học bạ số & CSDL Quốc gia", href: "/admin/transcripts", icon: FileSpreadsheet },
+      { label: "Thiết bị số & Cơ sở vật chất", href: "/admin/equipment", icon: Building2 },
+      { label: "Nhật ký kiểm toán & Bảo mật", href: "/admin/audit-log", icon: ShieldAlert },
+      { label: "Thông báo & Chỉ đạo toàn website", href: "/admin/notifications", icon: Bell },
     ],
   },
 ];
@@ -245,6 +251,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   const isSuperAdmin =
     profile?.isSuperAdmin ||
+    session?.user?.email === "superadmin.ninhbinh@gmail.com" ||
+    session?.user?.email === "superadmin.demo@gmail.com" ||
     session?.user?.email === "superadmin@school.com" ||
     (session?.user as { role?: string })?.role === "SUPER_ADMIN";
 
@@ -314,7 +322,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[10px] font-extrabold text-sky-900 bg-sky-200/80 px-1.5 py-0.5 rounded border border-sky-300/80 truncate">
-                    {isSuperAdmin ? "Quản trị viên" : "Ban Giám Hiệu"}
+                    {isSuperAdmin ? "Quản Trị Toàn Nền Tảng" : "Ban Giám Hiệu"}
                   </span>
                   <span className="text-[10px] text-sky-800 font-bold truncate">
                     {schoolDisplay}

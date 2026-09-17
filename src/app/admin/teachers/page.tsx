@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Admin navigation (`src/app/admin/teachers/page.tsx`).
+ * 1. Importers/Callers: Admin navigation (`src/app/admin/teachers/page.tsx`), admin layout.
  * 2. Affected APIs: Server actions `getTeachers`, `createBulkTeachers`, `getTeacherCredentialsOverview`, `resetTeacherPasswordSecure`, `getTeacherCredentialSlips`.
  * 3. Schema: Prisma `Teacher`, `User`, `School`.
- * 4. Verbatim User Instruction: "tôi muốn mỗi giáo viên mỗi học sinh sẽ có tài khoản mà mật khẩu và có thể hiện thị chỉ cho hiệu trưởng hoặc admin nhìn thấy được".
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa giao diện quản lý Giáo viên cho SuperAdmin quản trị toàn hệ thống.
  */
 
 "use client";
@@ -413,10 +413,10 @@ export default function TeachersPage() {
           <button
             onClick={() => openCredentialsHub(false)}
             className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all active-press"
-            title="Xem và quản lý tài khoản, mật khẩu giáo viên (Độc quyền BGH)"
+            title="Xem và quản lý tài khoản, mật khẩu giáo viên"
           >
             <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>🔐 Quản lý TK & Mật khẩu (BGH)</span>
+            <span>Quản lý TK & Mật khẩu</span>
           </button>
           <button
             onClick={() => {
@@ -555,31 +555,31 @@ export default function TeachersPage() {
                       </span>
                       {t.user?.school?.name && (
                         <span className="text-[10px] text-indigo-700 font-semibold block">
-                          🏫 {t.user.school.name}
+                          {t.user.school.name}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-1">
                       {t.user?.role === "ADMIN" ? (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800">
-                          👑 Hiệu trưởng
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-200">
+                          Hiệu trưởng
                         </span>
                       ) : t.user?.role === "VICE_PRINCIPAL" ? (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
-                          🏛️ Phó Hiệu trưởng
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-200">
+                          Phó Hiệu trưởng
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200">
                           {t.specialty || "Giáo viên"}
                         </span>
                       )}
                       {t.user?.isApproved === false ? (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
-                          ⏳ Chờ duyệt
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                          Chờ duyệt
                         </span>
                       ) : (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-                          🟢 Đang hoạt động
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Hoạt động
                         </span>
                       )}
                     </div>
@@ -667,7 +667,7 @@ export default function TeachersPage() {
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{t.user?.name || "Giáo viên"}</div>
                       {t.user?.school?.name && (
-                        <div className="text-[11px] text-indigo-600 font-medium">🏫 {t.user.school.name}</div>
+                        <div className="text-[11px] text-indigo-600 font-medium">{t.user.school.name}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 text-gray-600 text-sm">{t.user?.email || "—"}</td>
