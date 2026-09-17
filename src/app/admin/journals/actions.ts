@@ -1,40 +1,73 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/admin/journals/page.tsx`.
+ * 2. Affected APIs: Server actions `getAdminJournalMetadata`, `getAdminJournalEntries`, `deleteAdminJournalEntry`, `confirmAdminJournalEntry`.
+ * 3. Schema: Prisma `ClassRoom`, `ClassJournalEntry`, `User`, `Role`, `School`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Mở rộng phân quyền và quản trị sổ đầu bài cho SuperAdmin.
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { Role } from "@prisma/client";
 
-// Check if user is admin
-async function isAdmin() {
+// Check if user is authorized admin (SuperAdmin, School Admin, Vice Principal, Dept Admin)
+async function isAuthorizedAdmin() {
   const session = await getServerSession(authOptions);
-  return session?.user?.role === "ADMIN";
+  if (!session?.user?.id) return false;
+
+  const isSuperAdmin =
+    session.user.email === "superadmin.ninhbinh@gmail.com" ||
+    session.user.email === "superadmin.demo@gmail.com" ||
+    session.user.email === "superadmin@school.com" ||
+    (session.user as any).role === "SUPER_ADMIN";
+
+  return (
+    isSuperAdmin ||
+    session.user.role === Role.ADMIN ||
+    session.user.role === "VICE_PRINCIPAL" ||
+    session.user.role === Role.DEPARTMENT_ADMIN ||
+    session.user.role === Role.WARD_ADMIN
+  );
 }
 
 export async function getAdminJournalMetadata() {
-  if (!(await isAdmin())) return { classes: [] };
+  if (!(await isAuthorizedAdmin())) return { classes: [], schools: [] };
 
-  const classes = await prisma.classRoom.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      homeroomTeacher: {
-        include: {
-          user: { select: { name: true } },
+  const [classes, schools] = await Promise.all([
+    prisma.classRoom.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        school: { select: { id: true, name: true } },
+        homeroomTeacher: {
+          include: {
+            user: { select: { name: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.school.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return {
+    schools,
     classes: classes.map((c) => ({
       id: c.id,
       name: c.name,
+      schoolId: c.schoolId || null,
+      schoolName: c.school?.name || "Toàn trường",
       homeroomTeacherName: c.homeroomTeacher?.user?.name || "Chưa phân công",
     })),
   };
 }
 
 export async function getAdminJournalEntries(classId: string, dateStr: string) {
-  if (!(await isAdmin()) || !classId || !dateStr) return [];
+  if (!(await isAuthorizedAdmin()) || !classId || !dateStr) return [];
 
   const date = new Date(dateStr);
   date.setHours(0, 0, 0, 0);
@@ -73,7 +106,7 @@ export async function getAdminJournalEntries(classId: string, dateStr: string) {
 }
 
 export async function deleteAdminJournalEntry(entryId: string) {
-  if (!(await isAdmin())) return { success: false, error: "Không có quyền quản lý" };
+  if (!(await isAuthorizedAdmin())) return { success: false, error: "Không có quyền quản lý" };
 
   try {
     await prisma.classJournalEntry.delete({
@@ -86,7 +119,7 @@ export async function deleteAdminJournalEntry(entryId: string) {
 }
 
 export async function confirmAdminJournalEntry(entryId: string) {
-  if (!(await isAdmin())) return { success: false, error: "Không có quyền quản lý" };
+  if (!(await isAuthorizedAdmin())) return { success: false, error: "Không có quyền quản lý" };
 
   try {
     await prisma.classJournalEntry.update({

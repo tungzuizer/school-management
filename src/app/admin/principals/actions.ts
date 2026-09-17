@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/admin/principals/page.tsx`.
+ * 2. Affected APIs: `getPrincipalsAndAdmins`, `togglePrincipalApproval`, `updatePrincipalAssignment`, `createPrincipalAccount`, `deletePrincipalAccount`.
+ * 3. Schemas: `PrincipalUserItem`, `Role`, `User`, `School`, `DistrictWard`, `EducationDepartment`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn".
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
@@ -39,10 +47,17 @@ export async function getPrincipalsAndAdmins(filters?: {
 
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true },
+      select: { role: true, email: true },
     });
 
+    const isSuperAdmin =
+      currentUser?.email === "superadmin.ninhbinh@gmail.com" ||
+      currentUser?.email === "superadmin.demo@gmail.com" ||
+      currentUser?.email === "superadmin@school.com" ||
+      currentUser?.role === Role.SUPER_ADMIN;
+
     if (
+      !isSuperAdmin &&
       currentUser?.role !== Role.ADMIN &&
       currentUser?.role !== Role.DEPARTMENT_ADMIN &&
       currentUser?.role !== Role.WARD_ADMIN
@@ -340,8 +355,10 @@ export async function resetUserPassword(userId: string, newPassword?: string) {
 
     const userRole = session.user.role;
     const isSuperAdmin =
+      session.user.email === "superadmin.ninhbinh@gmail.com" ||
+      session.user.email === "superadmin.demo@gmail.com" ||
       session.user.email === "superadmin@school.com" ||
-      userRole === "SUPER_ADMIN" ||
+      (session.user as any).role === "SUPER_ADMIN" ||
       userRole === "ADMIN";
 
     if (!isSuperAdmin) {
@@ -351,7 +368,7 @@ export async function resetUserPassword(userId: string, newPassword?: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return { success: false, error: "Không tìm thấy tài khoản" };
 
-    const passwordToSet = newPassword && newPassword.trim() ? newPassword.trim() : "123456";
+    const passwordToSet = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
     if (passwordToSet.length < 6) {
       return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
     }

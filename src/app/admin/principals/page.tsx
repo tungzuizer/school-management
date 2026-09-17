@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin Principals Management Page (`src/app/admin/principals/page.tsx`), admin layout.
+ * 2. Affected APIs: `getPrincipalsAndAdmins`, `togglePrincipalApproval`, `updatePrincipalAssignment`, `createPrincipalAccount`, `deletePrincipalAccount`, `resetUserPassword`.
+ * 3. Data Schemas: `PrincipalUserItem`, `OptionItem`, `Role`, `User`, `School`, `DistrictWard`, `EducationDepartment`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa giao diện quản lý Ban Giám Hiệu cho SuperAdmin toàn hệ thống.
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -156,7 +164,7 @@ export default function AdminPrincipalsPage() {
 
   const openPasswordModal = (u: PrincipalUserItem) => {
     setResetUser(u);
-    setCustomPasswordInput("123456");
+    setCustomPasswordInput("abc123");
     setShowPasswordText(true);
     setResetSuccessInfo("");
     setShowPasswordModal(true);
@@ -166,7 +174,7 @@ export default function AdminPrincipalsPage() {
     e.preventDefault();
     if (!resetUser) return;
     setIsSubmitting(true);
-    const pwdToSet = customPasswordInput.trim() || "123456";
+    const pwdToSet = customPasswordInput.trim() || "abc123";
     const res = await resetUserPassword(resetUser.id, pwdToSet);
     setIsSubmitting(false);
 
@@ -251,12 +259,8 @@ export default function AdminPrincipalsPage() {
   };
 
   const getKnownPassword = (email: string) => {
-    if (email === "superadmin@school.com") return "SuperAdmin@2026!";
-    if (email.includes("admin")) return "123456";
-    if (email.includes("vp")) return "123456";
-    if (email.includes("teacher")) return "123456";
-    if (email.includes("student")) return "123456";
-    return "123456 (hoặc mật khẩu khởi tạo)";
+    if (email.startsWith("superadmin")) return "SuperAdmin@2026! hoặc abc123";
+    return "abc123";
   };
 
   const filteredWards = selectedDeptId
@@ -693,17 +697,17 @@ export default function AdminPrincipalsPage() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setCustomPasswordInput("123456")}
+                  onClick={() => setCustomPasswordInput("abc123")}
                   className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
                 >
-                  Đặt 123456
+                  Đặt abc123
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCustomPasswordInput("SuperAdmin@2026!")}
+                  onClick={() => setCustomPasswordInput("123456")}
                   className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold rounded-lg"
                 >
-                  Đặt SuperAdmin@2026!
+                  Đặt 123456
                 </button>
               </div>
 
@@ -877,7 +881,7 @@ export default function AdminPrincipalsPage() {
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="hieutruong@school.edu.vn"
+                  placeholder="hieutruong.nb@gmail.com"
                   required
                   className="w-full text-sm p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 />

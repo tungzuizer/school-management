@@ -1,8 +1,27 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: App router route `/admin/audit-log` accessed via SuperAdmin sidebar navigation (`src/components/layout/AdminSidebar.tsx`).
+ * 2. Affected APIs: `getAuditLogs` from `src/app/admin/audit-log/actions.ts`.
+ * 3. Schema: Prisma `AuditLog` (`id`, `userId`, `userName`, `userRole`, `action`, `entityName`, `entityId`, `description`, `createdAt`).
+ * 4. Verbatim User Instruction: "bạn đã sửa toàn bộ giao diện cho phù hợp với admin chưa" - Chuẩn hóa toàn bộ giao diện các trang Quản trị cho SuperAdmin.
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { getAuditLogs } from "./actions";
-import { FileText, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  ShieldAlert,
+  Clock,
+  User,
+  Activity,
+  Filter,
+  RefreshCw,
+} from "lucide-react";
 
 const ACTION_LABELS: Record<string, string> = {
   CREATE: "Tạo mới",
@@ -20,18 +39,18 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
-  CREATE: "bg-emerald-100 text-emerald-800",
-  UPDATE: "bg-blue-100 text-blue-800",
-  DELETE: "bg-red-100 text-red-800",
-  LOGIN: "bg-indigo-100 text-indigo-800",
-  LOGOUT: "bg-gray-100 text-gray-800",
-  EXPORT: "bg-purple-100 text-purple-800",
-  IMPORT: "bg-cyan-100 text-cyan-800",
-  APPROVE: "bg-green-100 text-green-800",
-  REJECT: "bg-orange-100 text-orange-800",
-  LOCK: "bg-red-100 text-red-700",
-  UNLOCK: "bg-yellow-100 text-yellow-800",
-  PASSWORD_CHANGE: "bg-amber-100 text-amber-800",
+  CREATE: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  UPDATE: "bg-blue-50 text-blue-800 border-blue-200",
+  DELETE: "bg-rose-50 text-rose-800 border-rose-200",
+  LOGIN: "bg-indigo-50 text-indigo-800 border-indigo-200",
+  LOGOUT: "bg-slate-100 text-slate-700 border-slate-200",
+  EXPORT: "bg-purple-50 text-purple-800 border-purple-200",
+  IMPORT: "bg-cyan-50 text-cyan-800 border-cyan-200",
+  APPROVE: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  REJECT: "bg-amber-50 text-amber-800 border-amber-200",
+  LOCK: "bg-rose-100 text-rose-900 border-rose-300",
+  UNLOCK: "bg-amber-100 text-amber-900 border-amber-300",
+  PASSWORD_CHANGE: "bg-violet-50 text-violet-800 border-violet-200",
 };
 
 interface AuditLogRow {
@@ -68,10 +87,15 @@ export default function AuditLogPage() {
     if (filterDateFrom) filters.dateFrom = filterDateFrom;
     if (filterDateTo) filters.dateTo = filterDateTo;
 
-    const res = await getAuditLogs(filters, page, pageSize);
-    setLogs(res.logs as unknown as AuditLogRow[]);
-    setTotal(res.total);
-    setLoading(false);
+    try {
+      const res = await getAuditLogs(filters, page, pageSize);
+      setLogs(res.logs as unknown as AuditLogRow[]);
+      setTotal(res.total);
+    } catch (err) {
+      console.error("Failed to load audit logs:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [page, filterAction, filterEntity, filterUser, filterDateFrom, filterDateTo]);
 
   useEffect(() => {
@@ -82,8 +106,12 @@ export default function AuditLogPage() {
 
   const formatDate = (d: string) => {
     return new Date(d).toLocaleString("vi-VN", {
-      day: "2-digit", month: "2-digit", year: "numeric",
-      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
   };
 
@@ -92,103 +120,216 @@ export default function AuditLogPage() {
     loadData(true);
   };
 
-  return (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
-        <FileText className="w-7 h-7 text-indigo-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Nhật ký Kiểm toán Hệ thống</h1>
-      </div>
+  const handleResetFilters = () => {
+    setFilterAction("");
+    setFilterEntity("");
+    setFilterUser("");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+    setPage(1);
+  };
 
-      {/* Filters */}
-      <div className="mb-4 p-4 bg-white rounded-xl shadow-sm border space-y-3">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Hành động</label>
-            <select value={filterAction} onChange={(e) => setFilterAction(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-              <option value="">Tất cả</option>
-              {Object.entries(ACTION_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Đối tượng</label>
-            <input type="text" value={filterEntity} onChange={(e) => setFilterEntity(e.target.value)}
-              placeholder="VD: Student, Grade..."
-              className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 w-40" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Người thao tác</label>
-            <input type="text" value={filterUser} onChange={(e) => setFilterUser(e.target.value)}
-              placeholder="Tên người dùng..."
-              className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 w-44" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Từ ngày</label>
-            <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Đến ngày</label>
-            <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" />
-          </div>
-          <button onClick={handleSearch}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2">
-            <Search className="w-4 h-4" /> Lọc
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShieldAlert className="w-6 h-6 text-indigo-600" />
+            Nhật Ký Kiểm Toán Hệ Thống
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Ghi nhận toàn bộ thao tác bảo mật, thay đổi dữ liệu, đăng nhập và phê duyệt trong toàn hệ thống
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => loadData(false)}
+            className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            Làm mới
           </button>
         </div>
       </div>
 
+      {/* Filters Toolbar */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <Filter className="w-3.5 h-3.5 text-indigo-600" /> Bộ lọc kiểm toán
+          </span>
+          {(filterAction || filterEntity || filterUser || filterDateFrom || filterDateTo) && (
+            <button
+              onClick={handleResetFilters}
+              className="text-xs text-indigo-600 font-semibold hover:underline cursor-pointer"
+            >
+              Đặt lại bộ lọc
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Hành động</label>
+            <select
+              value={filterAction}
+              onChange={(e) => setFilterAction(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="">Tất cả hành động</option>
+              {Object.entries(ACTION_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v} ({k})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Đối tượng</label>
+            <input
+              type="text"
+              value={filterEntity}
+              onChange={(e) => setFilterEntity(e.target.value)}
+              placeholder="VD: LessonPlan, User..."
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Người thao tác</label>
+            <input
+              type="text"
+              value={filterUser}
+              onChange={(e) => setFilterUser(e.target.value)}
+              placeholder="Tên người dùng..."
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Từ ngày</label>
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Đến ngày</label>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <button
+              onClick={handleSearch}
+              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer"
+            >
+              <Search className="w-3.5 h-3.5" /> Tìm kiếm
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Thời gian</th>
-              <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Người thao tác</th>
-              <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Vai trò</th>
-              <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Hành động</th>
-              <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Đối tượng</th>
-              <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Mô tả</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {loading ? (
-              <tr><td colSpan={6} className="px-5 py-8 text-center text-gray-500">Đang tải...</td></tr>
-            ) : logs.length === 0 ? (
-              <tr><td colSpan={6} className="px-5 py-8 text-center text-gray-500">Chưa có bản ghi nhật ký nào</td></tr>
-            ) : (
-              logs.map((l) => (
-                <tr key={l.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.createdAt)}</td>
-                  <td className="px-5 py-3 text-sm font-medium text-gray-900">{l.userName || "—"}</td>
-                  <td className="px-5 py-3 text-xs text-gray-600">{l.userRole || "—"}</td>
-                  <td className="px-5 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${ACTION_COLORS[l.action] || "bg-gray-100 text-gray-800"}`}>
-                      {ACTION_LABELS[l.action] || l.action}
-                    </span>
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[760px]">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 text-[11px] font-bold uppercase tracking-wider">
+              <tr>
+                <th className="px-5 py-3.5">Thời gian</th>
+                <th className="px-5 py-3.5">Người thao tác</th>
+                <th className="px-5 py-3.5">Vai trò</th>
+                <th className="px-5 py-3.5">Hành động</th>
+                <th className="px-5 py-3.5">Đối tượng</th>
+                <th className="px-5 py-3.5">Mô tả chi tiết</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400 font-medium">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
+                    Đang tải dữ liệu kiểm toán...
                   </td>
-                  <td className="px-5 py-3 text-xs text-gray-600">{l.entityName}{l.entityId ? ` #${l.entityId.substring(0, 8)}` : ""}</td>
-                  <td className="px-5 py-3 text-xs text-gray-500 max-w-xs truncate">{l.description || "—"}</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-500 font-medium">
+                    Không tìm thấy bản ghi nhật ký kiểm toán phù hợp
+                  </td>
+                </tr>
+              ) : (
+                logs.map((l) => (
+                  <tr key={l.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-5 py-3 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                      {formatDate(l.createdAt)}
+                    </td>
+                    <td className="px-5 py-3 text-slate-900 font-bold whitespace-nowrap">
+                      {l.userName || "Hệ thống"}
+                    </td>
+                    <td className="px-5 py-3 text-slate-600 font-medium whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px]">
+                        {l.userRole || "SYSTEM"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                          ACTION_COLORS[l.action] || "bg-slate-100 text-slate-800 border-slate-200"
+                        }`}
+                      >
+                        {ACTION_LABELS[l.action] || l.action}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-slate-700 font-semibold whitespace-nowrap">
+                      {l.entityName}
+                      {l.entityId ? (
+                        <span className="text-slate-400 text-[10px] font-normal ml-1">
+                          #{l.entityId.substring(0, 8)}
+                        </span>
+                      ) : (
+                        ""
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-slate-600 max-w-sm truncate" title={l.description || ""}>
+                      {l.description || "—"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination */}
         {total > 0 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t bg-gray-50 text-xs text-gray-600">
-            <span>Tổng: <strong>{total}</strong> bản ghi | Trang {page}/{totalPages}</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-200 bg-slate-50/75 text-xs text-slate-600">
+            <span>
+              Tổng số: <strong className="text-slate-900 font-bold">{total}</strong> bản ghi | Trang{" "}
+              <strong className="text-indigo-600">{page}</strong>/{totalPages}
+            </span>
             <div className="flex items-center gap-2">
-              <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}
-                className="px-3 py-1.5 border rounded-lg hover:bg-white disabled:opacity-40 flex items-center gap-1">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page <= 1}
+                className="px-3 py-1.5 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-bold cursor-pointer transition shadow-2xs"
+              >
                 <ChevronLeft className="w-3.5 h-3.5" /> Trước
               </button>
-              <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages}
-                className="px-3 py-1.5 border rounded-lg hover:bg-white disabled:opacity-40 flex items-center gap-1">
+              <button
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page >= totalPages}
+                className="px-3 py-1.5 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-bold cursor-pointer transition shadow-2xs"
+              >
                 Sau <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -198,4 +339,3 @@ export default function AuditLogPage() {
     </div>
   );
 }
-

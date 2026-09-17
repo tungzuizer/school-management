@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin Approvals Center (`src/app/admin/approvals/page.tsx`).
- * 2. Affected APIs: Server action `getApprovalItems`.
- * 3. Schema: Replaces `driveFileUrl` with `fileUrl`, `fileName`, `fileSize`, `fileType`.
- * 4. Verbatim User Instruction: "bỏ chức năng dùng link drive để lưu dữ liệu hay các giáo viên phải nộp lên đó mà hãy thay bằng lưu dữ liệu lên data base nhưng file pdf phải lưu ở dạng link và các thứ khác cũng vậy để để giảm thiểu bộ nhớ data base".
+ * 2. Affected APIs: Server actions `getApprovalItems`, `processApproval`.
+ * 3. Schema: Prisma models `LessonPlan`, `TeacherChangeRequest`, `User`, `School`, `Role`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Cập nhật phân quyền phê duyệt toàn trường cho SuperAdmin.
  */
 
 "use server";
@@ -21,8 +21,18 @@ export async function getApprovalItems() {
     if (!session?.user?.id)
       return { lessonPlans: [], changeRequests: [], teacherRegistrations: [], principalOrg: null };
 
+    const isSuperAdmin =
+      session.user.email === "superadmin.ninhbinh@gmail.com" ||
+      session.user.email === "superadmin.demo@gmail.com" ||
+      session.user.email === "superadmin@school.com" ||
+      (session.user as any).role === "SUPER_ADMIN";
+
     const isAllowed =
-      session.user.role === Role.ADMIN || session.user.role === "VICE_PRINCIPAL";
+      isSuperAdmin ||
+      session.user.role === Role.ADMIN ||
+      session.user.role === "VICE_PRINCIPAL" ||
+      session.user.role === Role.DEPARTMENT_ADMIN ||
+      session.user.role === Role.WARD_ADMIN;
 
     if (!isAllowed)
       return { lessonPlans: [], changeRequests: [], teacherRegistrations: [], principalOrg: null };
@@ -38,9 +48,9 @@ export async function getApprovalItems() {
     });
 
     const principalOrg = {
-      schoolName: currentAdmin?.school?.name || "Trường THPT Trần Phú (Ninh Bình)",
-      districtWardName: currentAdmin?.districtWard?.name || "TP. Ninh Bình - Tỉnh Ninh Bình",
-      departmentName: currentAdmin?.department?.name || "Sở GD&ĐT Tỉnh Ninh Bình",
+      schoolName: isSuperAdmin ? "Toàn bộ Hệ thống Giáo Dục" : currentAdmin?.school?.name || "Trường THPT Trần Phú (Ninh Bình)",
+      districtWardName: isSuperAdmin ? "Toàn quốc" : currentAdmin?.districtWard?.name || "TP. Ninh Bình - Tỉnh Ninh Bình",
+      departmentName: isSuperAdmin ? "Bộ Giáo Dục & Đào Tạo" : currentAdmin?.department?.name || "Sở GD&ĐT Tỉnh Ninh Bình",
     };
 
     const [allSchools, lessonPlans, changeRequests, pendingTeachers] = await Promise.all([
@@ -154,16 +164,35 @@ export async function processApproval(data: {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
 
+    const isSuperAdmin =
+      session.user.email === "superadmin.ninhbinh@gmail.com" ||
+      session.user.email === "superadmin.demo@gmail.com" ||
+      session.user.email === "superadmin@school.com" ||
+      (session.user as any).role === "SUPER_ADMIN";
+
     const isAllowed =
-      session.user.role === Role.ADMIN || session.user.role === "VICE_PRINCIPAL";
+      isSuperAdmin ||
+      session.user.role === Role.ADMIN ||
+      session.user.role === "VICE_PRINCIPAL" ||
+      session.user.role === Role.DEPARTMENT_ADMIN ||
+      session.user.role === Role.WARD_ADMIN;
 
     if (!isAllowed) {
       return { success: false, error: "Không có quyền thực hiện chức năng này" };
     }
 
     const reviewerName =
-      session.user.name || (session.user.role === Role.ADMIN ? "Hiệu trưởng" : "Phó Hiệu trưởng");
-    const reviewerRole = session.user.role === Role.ADMIN ? "ADMIN" : "VICE_PRINCIPAL";
+      session.user.name ||
+      (isSuperAdmin
+        ? "Tổng Quản Trị Hệ Thống"
+        : session.user.role === Role.ADMIN
+        ? "Hiệu trưởng"
+        : "Phó Hiệu trưởng");
+    const reviewerRole = isSuperAdmin
+      ? "SUPER_ADMIN"
+      : session.user.role === Role.ADMIN
+      ? "ADMIN"
+      : "VICE_PRINCIPAL";
 
     if (data.itemType === "TEACHER_REGISTRATION") {
       const targetUser = await prisma.user.findUnique({ where: { id: data.itemId } });

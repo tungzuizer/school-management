@@ -2,8 +2,8 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin navigation bars, layout headers, and profile components (`src/app/admin/layout.tsx`).
  * 2. Affected APIs: `getCurrentAdminProfile`.
- * 3. Schemas: `User`, `School`, `DistrictWard`, `EducationDepartment`.
- * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
+ * 3. Schemas: `User`, `School`, `DistrictWard`, `EducationDepartment`, `AdminProfile`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn nhưng superadmin là quản lý toàn bộ web chứ không phải mỗi ninh bình bạn hiểu không là là tất cả mọi thứ ý".
  */
 
 "use server";
@@ -41,6 +41,8 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
     if (!user) return null;
 
     const isSuperAdmin =
+      user.email === "superadmin.ninhbinh@gmail.com" ||
+      user.email === "superadmin.demo@gmail.com" ||
       user.email === "superadmin@school.com" ||
       (user.role as string) === "SUPER_ADMIN";
 
@@ -49,9 +51,9 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
     let departmentName = user.department?.name || "Sở GD&ĐT Tỉnh Ninh Bình";
 
     if (isSuperAdmin) {
-      schoolName = "Toàn bộ các Trường (Hệ thống Tỉnh Ninh Bình)";
-      districtWardName = "Tất cả các Thành phố/Huyện";
-      departmentName = "Bộ GD&ĐT & Sở GD&ĐT Tỉnh Ninh Bình";
+      schoolName = "Toàn bộ Nền Tảng (Global Platform Master)";
+      districtWardName = "Toàn bộ Tỉnh/Thành & Khu vực";
+      departmentName = "Toàn Bộ Nền Tảng Website Giáo Dục";
     }
 
     return {

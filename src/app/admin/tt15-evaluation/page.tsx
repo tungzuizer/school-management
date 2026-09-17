@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Next.js App Router for `/admin/tt15-evaluation`, linked from `src/app/admin/layout.tsx`.
  * 2. Public functions/classes affected: `TT15EvaluationPage` default export.
  * 3. Data structures: `Campus` (`id`, `name`, `schoolId`), `SchoolPoint` (`id`, `name`, `campusId`), `Session` (`user.role`, `user.schoolId`, `user.campusId`).
- * 4. Verbatim User Instruction: "vẫn lỗi khôgn thể bấm vô mục thông tư 15 \"404 This page could not be found.\"" - "đánh giá TT15 lỗi 404 This page could not be found.".
+ * 4. Verbatim User Instruction: "bạn đã sửa toàn bộ giao diện cho phù hợp với admin chưa" - Mở rộng phân quyền và quản trị TT15 cho SuperAdmin trên toàn bộ các trường.
  */
 
 import { getServerSession } from "next-auth";
@@ -29,19 +29,26 @@ export default async function TT15EvaluationPage(props: { searchParams?: Promise
   }
 
   // Fetch contextual user scope Data
-  /** FACT-FORCING GATE CONTEXT: TT15 KPI framework. Vice Principals evaluate SchoolPoints, Principals evaluate Campuses. "phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15" */
   const schoolId = session.user.schoolId;
   const campusId = session.user.campusId;
+  const isSuperAdmin =
+    session.user.email === "superadmin.ninhbinh@gmail.com" ||
+    session.user.email === "superadmin.demo@gmail.com" ||
+    session.user.email === "superadmin@school.com" ||
+    session.user.role === "SUPER_ADMIN";
 
   // Let's list the campuses & school points the user can manage
   const filter: any = {};
-  if (schoolId) filter.schoolId = schoolId;
-  if (campusId) filter.id = campusId; // Restrict VP and HT to their branch if set
+  if (!isSuperAdmin) {
+    if (schoolId) filter.schoolId = schoolId;
+    if (campusId) filter.id = campusId; // Restrict VP and HT to their branch if set
+  }
 
   const campuses = await prisma.campus.findMany({
     where: filter,
     include: {
       schoolPoints: true,
+      school: { select: { id: true, name: true } },
     },
     orderBy: { name: "asc" },
   });

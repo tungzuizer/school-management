@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Admin navigation (`/admin/schools`).
- * 2. Affected APIs: `src/app/admin/schools/page.tsx`.
- * 3. Schemas: `SchoolData`, `SelectItem`.
- * 4. Verbatim User Instruction: "trường trường trần phú và trường lương khách thiện ninh Bình bỏ dữ liệu của 2 trường hải phòng" - "bỏ hết dữ liệu của thanh hóa chưa".
+ * 1. Importers/Callers: Admin navigation (`/admin/schools`), admin layout.
+ * 2. Affected APIs: `src/app/admin/schools/page.tsx`, `getSchools`, `createSchool`, `updateSchool`, `deleteSchool`.
+ * 3. Schemas: `SchoolData`, `SelectItem`, `SchoolType`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa toàn bộ giao diện cho phù hợp với SuperAdmin quản trị toàn bộ nền tảng.
  */
 
 "use client";
@@ -146,31 +146,31 @@ export default function SchoolsPage() {
     switch (type) {
       case "TIEU_HOC":
         return (
-          <span className="bg-teal-100 text-teal-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-teal-200">
-            🏫 Tiểu học (Cấp 1)
+          <span className="bg-teal-50 text-teal-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-teal-200">
+            Tiểu học (Cấp 1)
           </span>
         );
       case "THCS":
         return (
-          <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-indigo-200">
-            🏛️ THCS (Cấp 2)
+          <span className="bg-sky-50 text-sky-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-sky-200">
+            THCS (Cấp 2)
           </span>
         );
       case "THPT":
         return (
-          <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-purple-200">
-            🎓 THPT (Cấp 3)
+          <span className="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-indigo-200">
+            THPT (Cấp 3)
           </span>
         );
       case "LIEN_CAP":
         return (
-          <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full border border-amber-200">
-            🌟 Liên cấp
+          <span className="bg-purple-50 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-purple-200">
+            Liên cấp (1-2-3)
           </span>
         );
       default:
         return (
-          <span className="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-1 rounded-full">
+          <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200">
             Trường học
           </span>
         );
@@ -208,20 +208,20 @@ export default function SchoolsPage() {
         </div>
 
         {/* Filter buttons */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold overflow-x-auto">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold overflow-x-auto">
           {[
             { id: "ALL", label: "Tất cả Cấp" },
-            { id: "TIEU_HOC", label: "🏫 Tiểu học" },
-            { id: "THCS", label: "🏛️ THCS" },
-            { id: "THPT", label: "🎓 THPT" },
-            { id: "LIEN_CAP", label: "🌟 Liên cấp" },
+            { id: "TIEU_HOC", label: "Tiểu học" },
+            { id: "THCS", label: "THCS" },
+            { id: "THPT", label: "THPT" },
+            { id: "LIEN_CAP", label: "Liên cấp" },
           ].map((t) => (
             <button
               key={t.id}
               onClick={() => setFilterType(t.id)}
               className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
                 filterType === t.id
-                  ? "bg-white text-indigo-700 shadow-xs"
+                  ? "bg-white text-indigo-700 shadow-xs font-bold"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -268,15 +268,15 @@ export default function SchoolsPage() {
                   <td className="px-6 py-4">{renderSchoolTypeBadge(school.schoolType)}</td>
                   <td className="px-6 py-4 text-slate-600 font-medium">
                     {school.districtWard?.name ? (
-                      <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-semibold">
-                        📍 {school.districtWard.name}
+                      <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-semibold border border-amber-200/60">
+                        {school.districtWard.name}
                       </span>
                     ) : school.department?.name ? (
-                      <span className="text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-semibold">
-                        🏛️ {school.department.name}
+                      <span className="text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-semibold border border-purple-200/60">
+                        {school.department.name}
                       </span>
                     ) : (
-                      "Trực thuộc"
+                      "Trực thuộc Sở"
                     )}
                   </td>
                   <td className="px-6 py-4 text-slate-600">{school.address || "—"}</td>
@@ -352,10 +352,10 @@ export default function SchoolsPage() {
                 }
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
               >
-                <option value="TIEU_HOC">🏫 Trường Tiểu học (Cấp 1)</option>
-                <option value="THCS">🏛️ Trường THCS (Cấp 2)</option>
-                <option value="THPT">🎓 Trường THPT (Cấp 3)</option>
-                <option value="LIEN_CAP">🌟 Trường Liên cấp (1-2-3)</option>
+                <option value="TIEU_HOC">Trường Tiểu học (Cấp 1)</option>
+                <option value="THCS">Trường THCS (Cấp 2)</option>
+                <option value="THPT">Trường THPT (Cấp 3)</option>
+                <option value="LIEN_CAP">Trường Liên cấp (1-2-3)</option>
               </select>
             </div>
 
