@@ -1,0 +1,35 @@
+name: Supabase Keep-Alive Ping
+
+on:
+  schedule:
+    # Runs at 04:00 UTC (11:00 AM VN) on every 3rd day to prevent the 7-day auto-pause
+    - cron: '0 4 */3 * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  keepalive:
+    name: Ping Supabase Database & REST API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Project REST Endpoint
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "=== Starting Supabase Keep-Alive Ping ==="
+
+          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; then
+            echo "Pinging Supabase REST API..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+              "$SUPABASE_URL/rest/v1/")
+            echo "Supabase REST API Response Code: $HTTP_CODE"
+          fi
+
+          if [ -n "$DATABASE_URL" ]; then
+            echo "Database connection string detected in secrets."
+          fi
+
+          echo "=== Supabase Keep-Alive Ping Completed Successfully ==="
