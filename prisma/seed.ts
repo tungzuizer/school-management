@@ -117,44 +117,46 @@ async function main() {
       console.log(`   ✅ Đã dọn dẹp sạch sẽ ${tablenames.length} bảng bằng TRUNCATE CASCADE.`);
     }
   } catch (error) {
-    console.warn("⚠️ TRUNCATE CASCADE gặp giới hạn quyền, xóa có thứ tự qua Prisma ORM...");
-    await prisma.studentScore.deleteMany().catch(() => {});
-    await prisma.examPeriod.deleteMany().catch(() => {});
-    await prisma.officialDocument.deleteMany().catch(() => {});
-    await prisma.equipmentTransfer.deleteMany().catch(() => {});
-    await prisma.equipment.deleteMany().catch(() => {});
-    await prisma.aiConfigThreshold.deleteMany().catch(() => {});
-    await prisma.qualityObjective.deleteMany().catch(() => {});
-    await prisma.kpiCatalog.deleteMany().catch(() => {});
-    await prisma.seatingChart.deleteMany().catch(() => {});
-    await prisma.parentFeedback.deleteMany().catch(() => {});
-    await prisma.incident.deleteMany().catch(() => {});
-    await prisma.conductRecord.deleteMany().catch(() => {});
-    await prisma.grade.deleteMany().catch(() => {});
-    await prisma.attendance.deleteMany().catch(() => {});
-    await prisma.schedule.deleteMany().catch(() => {});
-    await prisma.curriculum.deleteMany().catch(() => {});
-    await prisma.teachingAssignment.deleteMany().catch(() => {});
-    await prisma.teacherChangeRequest.deleteMany().catch(() => {});
-    await prisma.notification.deleteMany().catch(() => {});
-    await prisma.student.deleteMany().catch(() => {});
-    await prisma.group.deleteMany().catch(() => {});
-    await prisma.classRoom.deleteMany().catch(() => {});
-    await prisma.subject.deleteMany().catch(() => {});
-    await prisma.subjectGroup.deleteMany().catch(() => {});
-    await prisma.teacher.deleteMany().catch(() => {});
-    await prisma.userRoleScope.deleteMany().catch(() => {});
-    await prisma.user.deleteMany().catch(() => {});
-    await prisma.campusWardMap.deleteMany().catch(() => {});
-    await prisma.schoolPoint.deleteMany().catch(() => {});
-    await prisma.campus.deleteMany().catch(() => {});
-    await prisma.school.deleteMany().catch(() => {});
-    await prisma.districtWard.deleteMany().catch(() => {});
-    await prisma.educationDepartment.deleteMany().catch(() => {});
-    await prisma.auditLog.deleteMany().catch(() => {});
-    await prisma.dataLock.deleteMany().catch(() => {});
-    await prisma.loginAttempt.deleteMany().catch(() => {});
-    await prisma.systemSetting.deleteMany().catch(() => {});
+    console.warn("⚠️ TRUNCATE CASCADE gặp giới hạn quyền, dọn dẹp qua Prisma...");
+    await Promise.allSettled([
+      prisma.officialDocument.deleteMany(),
+      prisma.equipmentTransfer.deleteMany(),
+      prisma.equipment.deleteMany(),
+      prisma.aiConfigThreshold.deleteMany(),
+      prisma.qualityObjective.deleteMany(),
+      prisma.kpiCatalog.deleteMany(),
+      prisma.seatingChart.deleteMany(),
+      prisma.parentFeedback.deleteMany(),
+      prisma.incident.deleteMany(),
+      prisma.conductRecord.deleteMany(),
+      prisma.grade.deleteMany(),
+      prisma.attendance.deleteMany(),
+      prisma.schedule.deleteMany(),
+      prisma.curriculum.deleteMany(),
+      prisma.teachingAssignment.deleteMany(),
+      prisma.teacherChangeRequest.deleteMany(),
+      prisma.notification.deleteMany(),
+      prisma.studentScore.deleteMany(),
+      prisma.examPeriod.deleteMany(),
+      prisma.student.deleteMany(),
+      prisma.group.deleteMany(),
+      prisma.classRoom.deleteMany(),
+      prisma.subject.deleteMany(),
+      prisma.subjectGroup.deleteMany(),
+      prisma.teacher.deleteMany(),
+      prisma.userRoleScope.deleteMany(),
+      prisma.user.deleteMany(),
+      prisma.campusWardMap.deleteMany(),
+      prisma.schoolPoint.deleteMany(),
+      prisma.campus.deleteMany(),
+      prisma.school.deleteMany(),
+      prisma.districtWard.deleteMany(),
+      prisma.educationDepartment.deleteMany(),
+      prisma.auditLog.deleteMany(),
+      prisma.dataLock.deleteMany(),
+      prisma.loginAttempt.deleteMany(),
+      prisma.systemSetting.deleteMany(),
+    ]);
     console.log("   ✅ Đã xóa toàn bộ dữ liệu qua Prisma deleteMany.");
   }
 
@@ -1380,7 +1382,7 @@ async function main() {
         transferDate: new Date("2026-09-01"),
         returnExpectedDate: new Date("2026-10-15"),
         reason: "Phục vụ kỳ thi Học sinh Giỏi cấp Tỉnh đợt 1",
-        status: TransferStatus.COMPLETED,
+        status: TransferStatus?.COMPLETED || "COMPLETED",
         aiRecommendation: "Khuyến nghị điều chuyển: Cơ sở 2 đang thiếu 5 thiết bị cho phòng thi quốc gia.",
       },
     });
@@ -1397,7 +1399,7 @@ async function main() {
           transferDate: new Date("2026-09-10"),
           returnExpectedDate: new Date("2026-11-30"),
           reason: "Tăng cường trang thiết bị thực hành Công nghệ",
-          status: TransferStatus.IN_TRANSIT,
+          status: TransferStatus?.IN_TRANSIT || "IN_TRANSIT",
           aiRecommendation: "AI đề xuất phê duyệt: Lịch giảng dạy tại cơ sở 1 không bị trùng lịch.",
         },
       });

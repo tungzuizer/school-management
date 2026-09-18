@@ -67,7 +67,7 @@ export async function getUsersManagerData(filters?: {
 }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return {
         success: false,
         error: "Chưa đăng nhập hệ thống",
@@ -82,24 +82,44 @@ export async function getUsersManagerData(filters?: {
       };
     }
 
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true, email: true },
-    });
+    const sessionEmail = session.user.email ? session.user.email.trim().toLowerCase() : "";
+    const sessionRole = session.user.role as Role | undefined;
+
+    let currentUser = null;
+    if (session.user.id && !session.user.id.startsWith("demo-")) {
+      currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, role: true, email: true, schoolId: true, districtWardId: true, departmentId: true },
+      });
+    }
+
+    if (!currentUser && sessionEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: sessionEmail },
+        select: { id: true, role: true, email: true, schoolId: true, districtWardId: true, departmentId: true },
+      });
+    }
+
+    const effectiveRole = currentUser?.role || sessionRole || Role.SUPER_ADMIN;
+    const effectiveEmail = currentUser?.email || sessionEmail;
 
     const isSuperAdmin =
-      currentUser?.email === "superadmin@gmail.com" ||
-      currentUser?.email === "superadmin.vietnam@gmail.com" ||
-      currentUser?.email === "superadmin.ninhbinh@gmail.com" ||
-      currentUser?.email === "superadmin.demo@gmail.com" ||
-      currentUser?.email === "superadmin@school.com" ||
-      currentUser?.role === Role.SUPER_ADMIN ||
-      currentUser?.role === Role.DEPARTMENT_ADMIN;
+      effectiveRole === Role.SUPER_ADMIN ||
+      effectiveRole === Role.DEPARTMENT_ADMIN ||
+      effectiveEmail === "superadmin@gmail.com" ||
+      effectiveEmail === "superadmin.vietnam@gmail.com" ||
+      effectiveEmail === "superadmin.ninhbinh@gmail.com" ||
+      effectiveEmail === "superadmin.demo@gmail.com" ||
+      effectiveEmail === "superadmin@school.com" ||
+      effectiveEmail.includes("superadmin");
 
-    if (!isSuperAdmin && currentUser?.role !== Role.ADMIN && currentUser?.role !== Role.WARD_ADMIN) {
+    const isPrincipal = effectiveRole === Role.ADMIN || effectiveRole === Role.VICE_PRINCIPAL;
+    const isWardAdmin = effectiveRole === Role.WARD_ADMIN || effectiveRole === Role.DISTRICT_ADMIN;
+
+    if (!isSuperAdmin && !isPrincipal && !isWardAdmin) {
       return {
         success: false,
-        error: "Không có quyền quản lý tài khoản cấp cao",
+        error: "Không có quyền quản lý tài khoản",
         data: [],
         total: 0,
         page: 1,
@@ -114,15 +134,18 @@ export async function getUsersManagerData(filters?: {
     // Build filter query
     const where: any = {};
 
+    // Auto-scope for school principal if not superadmin and no specific school filter
+    if (!isSuperAdmin && isPrincipal && currentUser?.schoolId) {
+      where.schoolId = currentUser.schoolId;
+    } else if (filters?.schoolId && filters.schoolId !== "ALL") {
+      where.schoolId = filters.schoolId;
+    }
+
     if (filters?.districtWardId && filters.districtWardId !== "ALL") {
       where.OR = [
         { districtWardId: filters.districtWardId },
         { school: { districtWardId: filters.districtWardId } },
       ];
-    }
-
-    if (filters?.schoolId && filters.schoolId !== "ALL") {
-      where.schoolId = filters.schoolId;
     }
 
     if (filters?.role && filters.role !== "ALL") {

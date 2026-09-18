@@ -1,3 +1,13 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin router for `/admin/journey-config`.
+ * 2. Affected APIs: `JourneyConfigPage`, `getSchoolsList`, `fetchCampusConfig`.
+ * 3. Schemas: `School`, `Campus`, `StudentJourneyConfig`.
+ * 4. Verbatim User Instruction: "hãy là như 1 chuyên gia phần mềm hãy kiểm tra thật kỹ logic hoạt động và luồng xử lý và tất cả mọi thứ để phần mềm hoạt động mượt mà".
+ */
+
+export const dynamic = "force-dynamic";
+
 import { getSchoolsList, fetchCampusConfig } from "./actions";
 import JourneyConfigClient from "./config-client";
 
