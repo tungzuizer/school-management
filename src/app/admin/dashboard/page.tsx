@@ -154,6 +154,8 @@ export default function AdminDashboardPage() {
   });
 
   const isSuperAdmin =
+    session?.user?.email === "superadmin@gmail.com" ||
+    session?.user?.email === "superadmin.vietnam@gmail.com" ||
     session?.user?.email === "superadmin.ninhbinh@gmail.com" ||
     session?.user?.email === "superadmin.demo@gmail.com" ||
     session?.user?.email === "superadmin@school.com" ||
@@ -166,11 +168,11 @@ export default function AdminDashboardPage() {
     : "Tất cả các cơ sở trực thuộc";
 
   const categories = [
-    { id: "ALL" as DashboardCategory, label: "Toàn Cảnh Nền Tảng", count: "Tổng quan" },
-    { id: "ACADEMICS" as DashboardCategory, label: "Chuyên Môn & Điểm Thi", count: "OLS & Kế hoạch" },
-    { id: "COMPLIANCE" as DashboardCategory, label: "Tuân Thủ NQ 37", count: "Định mức & 36T" },
-    { id: "DISCIPLINE" as DashboardCategory, label: "Nề Nếp & Cảnh Báo", count: `${earlyWarnings.length} cảnh báo` },
-    { id: "CAMPUS" as DashboardCategory, label: "Mạng Lưới Trường", count: `${schools.length} cơ sở` },
+    { id: "ALL" as DashboardCategory, label: "Tất cả" },
+    { id: "ACADEMICS" as DashboardCategory, label: "Học tập & Điểm số" },
+    { id: "COMPLIANCE" as DashboardCategory, label: "Tuân thủ NQ 37" },
+    { id: "DISCIPLINE" as DashboardCategory, label: "Nề nếp & Cảnh báo" },
+    { id: "CAMPUS" as DashboardCategory, label: "Mạng lưới trường" },
   ];
 
   return (
@@ -178,212 +180,100 @@ export default function AdminDashboardPage() {
       <UnapprovedBanner />
 
       {/* ========================================================================= */}
-      {/* 1. EXECUTIVE COMMAND BANNER WITH REAL-TIME PULSE & CONTRAST DEPTH        */}
+      {/* 1. REFINED EXECUTIVE HEADER                                              */}
       {/* ========================================================================= */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#090d16] via-[#0d1527] to-[#090d16] text-white p-6 sm:p-8 shadow-2xl border border-slate-800 relative overflow-hidden">
-        {/* Subtle decorative glow accents */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="px-3 py-1 bg-blue-950/90 border border-blue-800 text-blue-300 text-xs font-bold uppercase tracking-wider rounded-lg shadow-xs">
-                {isSuperAdmin ? "Quản Trị Toàn Nền Tảng" : "Ban Giám Hiệu"}
-              </span>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-950/90 border border-emerald-800/80 rounded-lg text-emerald-300 text-xs font-semibold">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span>Hệ Thống Trực Tuyến</span>
-              </div>
-              <span className="px-3 py-1 bg-slate-900 border border-slate-700 text-slate-300 text-xs font-medium rounded-lg">
-                Giám Sát Toàn Website
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
-              {isSuperAdmin ? "Trung Tâm Tổng Chỉ Huy & Quản Trị Toàn Nền Tảng" : "Bảng Điều Hành Ban Giám Hiệu Nhà Trường"}
-            </h1>
-
-            <p className="text-xs sm:text-sm text-slate-300 flex items-center gap-2 flex-wrap">
-              <span className="capitalize">{todayStr}</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-blue-300 font-semibold">
-                Phạm vi giám sát: {activeSchoolName}
-              </span>
-            </p>
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">
+              {isSuperAdmin ? "Quản trị Toàn Hệ thống" : "Ban Giám hiệu"}
+            </span>
+            <span className="text-xs text-slate-500 capitalize">
+              {todayStr}
+            </span>
           </div>
-
-          {/* Quick Stat Indicators */}
-          <div className="flex items-center gap-3 bg-slate-900/90 p-4 rounded-xl border border-slate-800/90 shrink-0 shadow-lg backdrop-blur-sm">
-            <div className="text-center px-4 border-r border-slate-800">
-              <p className="text-2xl sm:text-3xl font-black text-white">{(stats?.totalStudents ?? 0).toLocaleString()}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Học Sinh</p>
-            </div>
-            <div className="text-center px-4 border-r border-slate-800">
-              <p className="text-2xl sm:text-3xl font-black text-blue-400">{(stats?.totalTeachers ?? 0).toLocaleString()}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Giáo Viên</p>
-            </div>
-            <div className="text-center px-4">
-              <p className="text-2xl sm:text-3xl font-black text-emerald-400">{stats?.attendanceRate ?? 0}%</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Chuyên Cần</p>
-            </div>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            {isSuperAdmin ? "Tổng quan Điều hành Hệ thống" : "Bảng Điều hành Nhà trường"}
+          </h1>
+          <p className="text-xs text-slate-500">
+            Phạm vi giám sát: <span className="font-semibold text-slate-700">{activeSchoolName}</span>
+          </p>
         </div>
 
-        {/* Quick Hub Links */}
-        <div className="relative z-10 mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <Link
-            href="/admin/users-manager"
-            className="p-2.5 bg-blue-900/80 hover:bg-blue-800 border border-blue-700 rounded-xl transition text-white text-xs font-bold text-center flex items-center justify-center gap-2 group shadow-sm"
-          >
-            <span>Tổng Kho Tài Khoản</span>
-            <span className="text-[10px] font-mono opacity-80 group-hover:opacity-100">[VIP]</span>
-          </Link>
+        {/* Quick action buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {isSuperAdmin && (
+            <Link
+              href="/admin/users-manager"
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+            >
+              Quản lý tài khoản
+            </Link>
+          )}
           <Link
             href="/admin/exam-analytics"
-            className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-slate-200 text-xs font-bold text-center flex items-center justify-center gap-2 group"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
           >
-            <span>Phân Tích Điểm OLS</span>
-            <span className="text-[10px] font-mono opacity-60 group-hover:opacity-100">[→]</span>
+            Phân tích điểm thi
           </Link>
           <Link
             href="/admin/nq37-compliance"
-            className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-slate-200 text-xs font-bold text-center flex items-center justify-center gap-2 group"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
           >
-            <span>Thẩm Định NQ 37</span>
-            <span className="text-[10px] font-mono opacity-60 group-hover:opacity-100">[→]</span>
+            Định mức NQ 37
           </Link>
           <Link
             href="/admin/early-warnings"
-            className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-slate-200 text-xs font-bold text-center flex items-center justify-center gap-2 group"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
           >
-            <span>AI Radar Cảnh Báo</span>
-            <span className="text-[10px] font-mono opacity-60 group-hover:opacity-100">[→]</span>
+            Cảnh báo ({earlyWarnings.length})
           </Link>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. CENTRALIZED USER DIRECTORY & IMPERSONATION HUB CARD                     */}
+      {/* 2. CATEGORY TABS & SCHOOL SELECTOR                                       */}
       {/* ========================================================================= */}
-      {isSuperAdmin && (
-        <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                QUẢN TRỊ DANH TÍNH TOÀN NỀN TẢNG
-              </span>
-              <span className="text-xs text-slate-400 font-medium">100% Tài Khoản @gmail.com</span>
-            </div>
-            <h2 className="text-base font-bold text-white">
-              Cổng Quản Trị Toàn Bộ Tài Khoản & Chuyển Đổi Phiên Làm Việc (Impersonation)
-            </h2>
-            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Truy cập, tạo mới, đặt lại mật khẩu và chuyển đổi phiên làm việc trực tiếp sang bất kỳ Hiệu Trưởng, Phó Hiệu Trưởng, Tổ Trưởng hoặc Giáo Viên nào trên toàn bộ hệ thống website.
-            </p>
-          </div>
-          <Link
-            href="/admin/users-manager"
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition shrink-0 flex items-center gap-2"
-          >
-            <span>Mở Tổng Kho Tài Khoản</span>
-            <span>→</span>
-          </Link>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 2. INTERACTIVE DOMAIN CLASSIFICATION TABS & CAMPUS SELECTOR               */}
-      {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
-        {/* Domain Classification Switcher */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-              Phân Loại Tác Nghiệp
-            </span>
-            <h2 className="text-base font-bold text-slate-900">Không Gian Làm Việc Theo Chuyên Đề</h2>
-          </div>
-
-          {/* Tab buttons */}
-          <div className="flex items-center gap-1.5 overflow-x-auto bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-            {categories.map((cat) => {
-              const isActive = activeCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-                    isActive
-                      ? "bg-slate-900 text-white shadow-md"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/70"
-                  }`}
-                >
-                  <span>{cat.label}</span>
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                      isActive ? "bg-slate-800 text-blue-300" : "bg-white text-slate-500 border border-slate-200"
-                    }`}
-                  >
-                    {cat.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+        {/* Tab buttons */}
+        <div className="flex items-center gap-1.5 overflow-x-auto">
+          {categories.map((cat) => {
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? "bg-slate-900 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Campus Filter Selector */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-semibold">Cơ sở trực thuộc:</span>
-            {refreshing && (
-              <span className="text-xs text-blue-800 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                Đang làm mới...
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <button
-              onClick={() => handleSchoolChange(undefined)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap border cursor-pointer ${
-                selectedSchoolId === undefined
-                  ? "bg-blue-600 text-white border-blue-600 shadow-xs"
-                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-              }`}
+        {/* Campus / School selector */}
+        {schools.length > 0 && (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-slate-500 font-medium">Cơ sở:</span>
+            <select
+              value={selectedSchoolId || ""}
+              onChange={(e) => handleSchoolChange(e.target.value || undefined)}
+              aria-label="Chọn trường hoặc cơ sở trực thuộc"
+              className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-blue-500"
             >
-              Tất Cả Các Trường ({schools.length})
-            </button>
-
-            {schools.map((sch) => {
-              const isSelected = selectedSchoolId === sch.id;
-              return (
-                <button
-                  key={sch.id}
-                  onClick={() => handleSchoolChange(sch.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap border cursor-pointer flex items-center gap-2 ${
-                    isSelected
-                      ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                      : "bg-white text-slate-800 border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  <span>{sch.name}</span>
-                  <span
-                    className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
-                      isSelected ? "bg-slate-800 text-blue-300" : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {sch.studentCount} HS
-                  </span>
-                </button>
-              );
-            })}
+              <option value="">Tất cả ({schools.length} trường)</option>
+              {schools.map((sch) => (
+                <option key={sch.id} value={sch.id}>
+                  {sch.name} ({sch.studentCount} HS)
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ========================================================================= */}
@@ -427,100 +317,93 @@ export default function AdminDashboardPage() {
       {/* 4. COMPLIANCE NGHỊ QUYẾT 37/2026/NQ-CP HUB                                */}
       {/* ========================================================================= */}
       {(activeCategory === "ALL" || activeCategory === "COMPLIANCE") && nq37Summary && nq37Summary.scorecard && (
-        <div className="bg-[#090d16] text-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800 space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 bg-blue-950 border border-blue-800 text-blue-300 text-[10px] font-bold uppercase tracking-wider rounded">
-                  NQ 37/2026/NQ-CP (Hiệu lực: 05/08/2026 - 30/06/2028)
+                <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">
+                  NQ 37/2026/NQ-CP
                 </span>
                 {nq37Summary.hasCriticalViolations ? (
-                  <span className="px-2.5 py-0.5 bg-rose-950 text-rose-300 text-[10px] font-bold rounded border border-rose-800">
-                    Cảnh Báo Vi Phạm Tiêu Chuẩn
+                  <span className="px-2.5 py-0.5 bg-rose-50 text-rose-700 text-xs font-semibold rounded-md border border-rose-200">
+                    Cần rà soát định mức
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 bg-emerald-950 text-emerald-300 text-[10px] font-bold rounded border border-emerald-800">
-                    Đạt Chuẩn Định Mức & Bằng Cấp
+                  <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200">
+                    Đạt chuẩn định mức
                   </span>
                 )}
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-white mt-1">
-                Thẩm Định Tuân Thủ Định Mức Lãnh Đạo & Nhân Sự Hỗ Trợ Giáo Dục
+              <h2 className="text-base font-bold text-slate-900 mt-1">
+                Tuân thủ Định mức Lãnh đạo & Nhân sự Hỗ trợ
               </h2>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href="/admin/nq37-compliance"
-                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shadow-xs"
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition shadow-xs"
               >
-                Trung Tâm Thẩm Định
+                Chi tiết thẩm định
               </Link>
               <Link
                 href="/admin/support-staff"
-                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs font-bold transition"
+                className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition"
               >
-                DS Nhân Sự Hỗ Trợ
+                DS Nhân sự
               </Link>
             </div>
           </div>
 
           {/* Statutory Deadlines & Compliance Score Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Hạn Kiện Toàn Bộ Máy
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 block mb-1">
+                Hạn kiện toàn bộ máy
               </span>
-              <p className="text-xl sm:text-2xl font-bold text-slate-100">
+              <p className="text-lg font-bold text-slate-800">
                 {nq37Summary.deadlines.arrangementDaysLeft > 0
                   ? `Còn ${nq37Summary.deadlines.arrangementDaysLeft} ngày`
                   : "Đến hạn hoàn tất"}
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Hạn chót: <strong className="text-slate-200">30/09/2026</strong> (Điều 8 NQ 37)
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Hạn chót: 30/09/2026
               </p>
             </div>
 
-            <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Lộ Trình Chuẩn Hóa 36T
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 block mb-1">
+                Lộ trình chuẩn hóa 36T
               </span>
-              <p className="text-xl sm:text-2xl font-bold text-blue-300">
+              <p className="text-lg font-bold text-blue-700">
                 {nq37Summary.deadlines.standardizationMonthsLeft} tháng nữa
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Thời hạn: <strong className="text-slate-200">05/08/2029</strong> (Điều 5.3.a)
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Thời hạn: 05/08/2029
               </p>
             </div>
 
-            <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Ban Giám Hiệu
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 block mb-1">
+                Ban Giám hiệu
               </span>
-              <p className="text-xl sm:text-2xl font-bold text-emerald-400">
+              <p className="text-lg font-bold text-emerald-700">
                 {nq37Summary.scorecard.leadershipAudit.principalActual} HT • {nq37Summary.scorecard.leadershipAudit.vicePrincipalActual} PHT
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Định mức: 1 HT + 1 PHT trường chính + 1 PHT/phân hiệu
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Theo định mức quy định
               </p>
             </div>
 
-            <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Tỷ Lệ Tuân Thủ NQ 37
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 block mb-1">
+                Tỷ lệ tuân thủ
               </span>
-              <p className="text-xl sm:text-2xl font-bold text-emerald-300">
+              <p className="text-lg font-bold text-emerald-700">
                 {nq37Summary.scorecard.overallScore}%
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                {nq37Summary.scorecard.sharedStaffAudit.accountantActual +
-                  nq37Summary.scorecard.sharedStaffAudit.clerkActual +
-                  nq37Summary.scorecard.sharedStaffAudit.treasurerActual +
-                  nq37Summary.scorecard.campusStaffAudits.reduce(
-                    (acc, c) => acc + Object.values(c.actualPerRole).reduce((sum, v) => sum + v, 0),
-                    0
-                  )}{" "}
-                vị trí hỗ trợ giáo dục
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Vị trí hỗ trợ giáo dục
               </p>
             </div>
           </div>

@@ -97,30 +97,26 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
   };
 
   return (
-    <div className="fixed bottom-20 right-3.5 lg:bottom-6 lg:right-6 z-40">
+    <div className="fixed bottom-16 right-3 sm:bottom-5 sm:right-5 z-40">
       {/* Compact Trigger Button */}
       {!isOpen && (
         <div className="relative flex items-center gap-1 group">
           <button
             onClick={() => setIsOpen(true)}
-            className="flex items-center gap-2 p-2.5 lg:px-4 lg:py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
-            title="Mở Trợ lý AI Smart 💬"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-full shadow-md hover:bg-slate-800 transition-colors cursor-pointer border border-slate-700"
+            title="Mở Trợ lý AI"
           >
-            <div className="relative">
-              <Bot className="w-5 h-5 text-yellow-300 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 border border-white rounded-full animate-ping" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border border-white rounded-full" />
-            </div>
-            <span className="text-xs font-extrabold tracking-wide hidden lg:inline-block pr-0.5">
-              Trợ lý AI 💬
+            <Bot className="w-4 h-4 text-blue-400" />
+            <span className="text-xs font-semibold hidden sm:inline-block">
+              Trợ lý AI
             </span>
           </button>
 
           {/* Quick Dismiss Button */}
           <button
             onClick={() => setIsDismissed(true)}
-            className="w-5 h-5 rounded-full bg-slate-200/90 text-slate-500 hover:bg-slate-300 hover:text-slate-800 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-2xs"
-            title="Ẩn bong bóng AI"
+            className="w-5 h-5 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-800 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            title="Ẩn nút AI"
           >
             <X className="w-3 h-3" />
           </button>
@@ -129,23 +125,17 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
 
       {/* Expanded Modal Window */}
       {isOpen && (
-        <div className="w-[92vw] sm:w-[360px] md:w-[400px] h-[480px] sm:h-[500px] bg-white/95 rounded-3xl shadow-2xl border border-slate-200/80 flex flex-col overflow-hidden animate-modal-pop backdrop-blur-xl">
-          <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 p-3.5 text-white flex items-center justify-between shadow-md">
-            <div className="flex items-center gap-2.5">
-              <div className="relative w-8 h-8 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <Bot className="w-4 h-4 text-yellow-300" />
-                <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-400 rounded-full border border-slate-900" />
-              </div>
+        <div className="w-[92vw] sm:w-[360px] md:w-[380px] h-[460px] bg-white rounded-2xl shadow-xl border border-slate-200 flex flex-col overflow-hidden">
+          <div className="bg-slate-900 p-3.5 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="w-4 h-4 text-blue-400" />
               <div>
-                <h3 className="font-extrabold text-xs sm:text-sm flex items-center gap-1">
-                  Trợ Lý AI Giáo Dục
-                  <Sparkles className="w-3 h-3 text-yellow-300 animate-pulse" />
-                </h3>
-                <p className="text-[10px] text-blue-100/90 font-medium">Đồng hành học tập 24/7</p>
+                <h3 className="font-bold text-xs">Trợ lý AI</h3>
+                <p className="text-[10px] text-slate-400 font-medium">Hỗ trợ thông tin trực tuyến</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-white/80">
+            <div className="flex items-center gap-1 text-slate-300">
               <button
                 onClick={() =>
                   setMessages([
@@ -158,13 +148,13 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
                   ])
                 }
                 title="Làm mới trò chuyện"
-                className="p-1.5 hover:bg-white/15 rounded-xl transition-colors cursor-pointer active-press"
+                className="p-1 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 hover:bg-white/15 rounded-xl transition-colors cursor-pointer active-press"
+                className="p-1 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                 title="Thu nhỏ"
               >
                 <Minimize2 className="w-3.5 h-3.5" />
@@ -174,7 +164,7 @@ export function FloatingAIChatWidget({ userRole = "TEACHER" }: Props) {
                   setIsOpen(false);
                   setIsDismissed(true);
                 }}
-                className="p-1.5 hover:bg-rose-500/20 text-rose-200 hover:text-white rounded-xl transition-colors cursor-pointer active-press"
+                className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                 title="Đóng hoàn toàn"
               >
                 <X className="w-3.5 h-3.5" />

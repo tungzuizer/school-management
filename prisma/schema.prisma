@@ -206,6 +206,7 @@ model User {
   @@index([districtWardId])
   @@index([schoolId])
   @@index([campusId])
+  @@index([schoolId, role])
 }
 
 model UserRoleScope {
@@ -465,6 +466,7 @@ model Student {
   @@index([groupId])
   @@index([studentCode])
   @@index([status])
+  @@index([classId, status])
 }
 
 model Teacher {
@@ -642,6 +644,7 @@ model Attendance {
   @@index([classId])
   @@index([date])
   @@index([status])
+  @@index([classId, date, period])
 }
 
 model Grade {
@@ -662,6 +665,7 @@ model Grade {
   @@index([subjectId])
   @@index([term])
   @@index([type])
+  @@index([studentId, subjectId, term])
 }
 
 model ConductRecord {

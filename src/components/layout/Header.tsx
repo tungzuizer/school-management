@@ -90,21 +90,21 @@ export default function Header({
 
   return (
     <>
-      <header className="h-12 sm:h-16 glass-header flex items-center justify-between px-2.5 sm:px-4 md:px-6 shrink-0 z-30 sticky top-0 transition-all duration-300 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-2xs">
+      <header className="h-14 flex items-center justify-between px-3 sm:px-4 md:px-6 shrink-0 z-30 sticky top-0 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         {/* Left: Desktop Collapse Toggle, Mobile Menu Trigger & Logo */}
-        <div className="flex items-center gap-2 sm:gap-3.5">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Desktop Sidebar Collapse Toggle */}
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
               aria-label={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
               title={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
-              className="hidden lg:flex items-center justify-center p-2 min-h-[40px] min-w-[40px] rounded-xl text-slate-900 hover:text-blue-700 hover:bg-blue-50/80 border border-slate-200 transition-all active-press cursor-pointer group"
+              className="hidden lg:flex items-center justify-center p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               {isCollapsed ? (
-                <PanelLeft className="w-5 h-5 text-blue-600" aria-hidden="true" />
+                <PanelLeft className="w-4 h-4 text-blue-600" aria-hidden="true" />
               ) : (
-                <PanelLeftClose className="w-5 h-5 text-slate-800 group-hover:text-blue-700 transition-colors" aria-hidden="true" />
+                <PanelLeftClose className="w-4 h-4 text-slate-600" aria-hidden="true" />
               )}
             </button>
           )}
@@ -113,39 +113,39 @@ export default function Header({
           {onMobileMenuToggle && (
             <button
               onClick={onMobileMenuToggle}
-              aria-label="Mở mục lục điều hướng"
-              className="lg:hidden px-2.5 py-1.5 min-h-[34px] sm:min-h-[40px] min-w-[34px] sm:min-w-[40px] rounded-xl bg-indigo-50/90 border border-indigo-200 text-indigo-900 hover:bg-indigo-100 transition-all active-press cursor-pointer flex items-center gap-1 shadow-2xs font-extrabold text-[10.5px] sm:text-xs"
+              aria-label="Mở menu điều hướng"
+              className="lg:hidden px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
             >
-              <Menu className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-700" aria-hidden="true" />
-              <span className="hidden xs:inline">Mục lục</span>
+              <Menu className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden xs:inline">Menu</span>
             </button>
           )}
 
           <Link
             href={homeHref}
-            className="flex items-center gap-2 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 rounded-xl"
+            className="flex items-center gap-2 rounded-lg"
             title="Về Trang tổng quan"
             aria-label="Về Trang tổng quan"
           >
             <img
               src="/logo.png"
               alt="Logo Nhà Trường"
-              className="w-7 h-7 sm:w-8 sm:h-8 object-contain rounded-xl shadow-xs transition-transform duration-300 hover:scale-105"
+              className="w-7 h-7 sm:w-8 sm:h-8 object-contain rounded-lg"
             />
           </Link>
         </div>
 
         {/* Right: Search + Notifications + User Menu */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-2">
           {/* Quick Search Button (Ctrl + K) */}
           <button
             onClick={() => setCommandPaletteOpen(true)}
             aria-label="Tìm kiếm nhanh (Ctrl K)"
-            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 min-h-[34px] sm:min-h-[40px] rounded-xl border border-slate-200/80 bg-slate-50/90 text-slate-900 text-[10.5px] sm:text-xs hover:bg-white hover:border-indigo-300 hover:text-indigo-900 hover:shadow-xs transition-all active-press cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
           >
-            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600" aria-hidden="true" />
-            <span className="hidden md:inline font-bold">Tìm nhanh...</span>
-            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-extrabold text-slate-900 bg-white rounded-md border border-slate-200 shadow-2xs">
+            <Search className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
+            <span className="hidden md:inline font-medium">Tìm nhanh...</span>
+            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-500 bg-white rounded border border-slate-200">
               Ctrl K
             </kbd>
           </button>
@@ -153,41 +153,41 @@ export default function Header({
           {/* Notification Bell */}
           <button
             aria-label={`Thông báo ${notificationCount > 0 ? `(${notificationCount} mới)` : ""}`}
-            className="relative p-2 sm:p-2.5 min-h-[34px] min-w-[34px] sm:min-h-[40px] sm:min-w-[40px] rounded-xl text-slate-800 hover:bg-slate-100 hover:text-indigo-900 transition-all bell-swing active-press flex items-center justify-center"
+            className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex items-center justify-center"
             title="Thông báo"
           >
-            <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+            <Bell className="w-4 h-4" aria-hidden="true" />
             {notificationCount > 0 && (
-              <span className="absolute top-1 right-1 bg-rose-600 text-white text-[8.5px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center ring-2 ring-white">
+              <span className="absolute top-1.5 right-1.5 bg-rose-600 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
                 {notificationCount > 9 ? "9+" : notificationCount}
               </span>
             )}
           </button>
 
           {/* User Profile Dropdown */}
-          <div className="relative border-l border-slate-200/80 pl-1.5 sm:pl-2.5">
+          <div className="relative border-l border-slate-200 pl-2">
             <button
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
               aria-label={`Tài khoản: ${userName}`}
               aria-expanded={userDropdownOpen}
-              className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 min-h-[34px] sm:min-h-[40px] rounded-xl hover:bg-slate-100/80 transition-all active-press cursor-pointer"
+              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
             >
               {session?.user?.image ? (
                 <img
                   src={session.user.image}
                   alt={userName}
-                  className="w-6.5 h-6.5 sm:w-8 sm:h-8 rounded-xl object-cover ring-2 ring-indigo-100 shadow-xs"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-1 ring-slate-200"
                 />
               ) : (
-                <div className="w-6.5 h-6.5 sm:w-8 sm:h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-[10.5px] sm:text-xs shadow-xs ring-2 ring-indigo-100">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
                   {userName.charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="hidden md:block text-left">
-                <p className="text-xs font-extrabold text-slate-900 leading-tight">{userName}</p>
-                <p className="text-[10px] text-indigo-700 font-bold leading-tight">{userRole}</p>
+                <p className="text-xs font-semibold text-slate-800 leading-tight">{userName}</p>
+                <p className="text-[11px] text-slate-500 leading-tight">{userRole}</p>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500 hidden md:block" aria-hidden="true" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden md:block" aria-hidden="true" />
             </button>
 
             {/* Dropdown Menu */}

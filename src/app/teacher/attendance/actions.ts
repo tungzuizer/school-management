@@ -388,23 +388,7 @@ export async function saveAttendance(
   }
 
   try {
-    // 1. Check if Attendance for this period already exists (STRICT ONE-TIME RULE)
-    const existingCount = await prisma.attendance.count({
-      where: {
-        classId,
-        date: dateObj,
-        period,
-      },
-    });
-
-    if (existingCount > 0) {
-      return {
-        success: false,
-        error: `Tiết ${period} ngày ${date} của lớp ${classRoom.name} đã được điểm danh trước đó và đã bị KHÓA. Mỗi tiết học chỉ được điểm danh 1 lần duy nhất!`,
-      };
-    }
-
-    // 2. Check DataLock for the month
+    // 1. Check DataLock for the month
     const monthLabel = `Tháng ${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
     const isLocked = await prisma.dataLock.findFirst({
       where: {
@@ -417,10 +401,24 @@ export async function saveAttendance(
       return { success: false, error: `Dữ liệu điểm danh ${monthLabel} đã bị khóa sổ toàn trường` };
     }
 
-    // 3. Save attendance inside transaction
-    await prisma.$transaction(
-      records.map((r) =>
-        prisma.attendance.create({
+    // 2. Atomically verify strict one-time rule and persist records inside interactive transaction
+    await prisma.$transaction(async (tx) => {
+      const existingCount = await tx.attendance.count({
+        where: {
+          classId,
+          date: dateObj,
+          period,
+        },
+      });
+
+      if (existingCount > 0) {
+        throw new Error(
+          `Tiết ${period} ngày ${date} của lớp ${classRoom.name} đã được điểm danh trước đó và đã bị KHÓA. Mỗi tiết học chỉ được điểm danh 1 lần duy nhất!`
+        );
+      }
+
+      for (const r of records) {
+        await tx.attendance.create({
           data: {
             studentId: r.studentId,
             classId,
@@ -429,9 +427,9 @@ export async function saveAttendance(
             status: r.status as any,
             note: r.note || null,
           },
-        })
-      )
-    );
+        });
+      }
+    });
 
     revalidatePath("/teacher/attendance");
     revalidatePath("/admin/dashboard");

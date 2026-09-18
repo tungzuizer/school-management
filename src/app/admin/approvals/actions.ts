@@ -22,6 +22,8 @@ export async function getApprovalItems() {
       return { lessonPlans: [], changeRequests: [], teacherRegistrations: [], principalOrg: null };
 
     const isSuperAdmin =
+      session.user.email === "superadmin@gmail.com" ||
+      session.user.email === "superadmin.vietnam@gmail.com" ||
       session.user.email === "superadmin.ninhbinh@gmail.com" ||
       session.user.email === "superadmin.demo@gmail.com" ||
       session.user.email === "superadmin@school.com" ||
@@ -165,6 +167,8 @@ export async function processApproval(data: {
     if (!session?.user?.id) return { success: false, error: "Chưa đăng nhập" };
 
     const isSuperAdmin =
+      session.user.email === "superadmin@gmail.com" ||
+      session.user.email === "superadmin.vietnam@gmail.com" ||
       session.user.email === "superadmin.ninhbinh@gmail.com" ||
       session.user.email === "superadmin.demo@gmail.com" ||
       session.user.email === "superadmin@school.com" ||

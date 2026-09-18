@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getTenantContext } from "@/lib/tenant";
 
 /**
  * FACT-FORCING GATE CONTEXT:
@@ -29,8 +30,15 @@ export interface CampusFinancialSummary {
 
 export async function getFinancialExpenditureData(year: number = 2026, campusId?: string) {
   try {
+    const ctx = await getTenantContext().catch(() => null);
+    const whereClause: any = {};
+    if (ctx?.schoolId && ctx.userRole !== "SUPER_ADMIN" && ctx.userRole !== "DEPARTMENT_ADMIN" && ctx.userRole !== "DISTRICT_ADMIN") {
+      whereClause.schoolId = ctx.schoolId;
+    }
+
     // Query actual campuses and schools from live database
     const campuses = await prisma.campus.findMany({
+      where: whereClause,
       include: {
         school: true,
         classRooms: {

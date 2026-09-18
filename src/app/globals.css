@@ -43,7 +43,8 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-be-vietnam-pro), "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
@@ -75,13 +76,15 @@ body {
   background: rgba(79, 70, 229, 0.7);
 }
 
-/* Prevent iOS input zoom */
-input, select, textarea {
-  font-size: 16px !important;
+/* Prevent iOS input zoom on mobile only */
+@media (max-width: 639px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* ==========================================================================
-   SUPERIOR INTERACTIVE ELEMENTS (Pro Touch Ergonomics ≥44px)
+   SUPERIOR INTERACTIVE ELEMENTS (Clean, Responsive Ergonomics)
    ========================================================================== */
 
 button,
@@ -89,13 +92,20 @@ a[role="button"],
 input[type="button"],
 input[type="submit"],
 .interactive-btn {
-  min-height: 44px;
   touch-action: manipulation;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.2s ease,
-              box-shadow 0.2s ease,
-              background-color 0.2s ease,
-              border-color 0.2s ease !important;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.15s ease,
+              box-shadow 0.15s ease,
+              background-color 0.15s ease,
+              border-color 0.15s ease !important;
+}
+
+@media (max-width: 640px) {
+  button:not(.compact-btn),
+  a[role="button"]:not(.compact-btn),
+  .interactive-btn:not(.compact-btn) {
+    min-height: 40px;
+  }
 }
 
 button:not(:disabled):hover,

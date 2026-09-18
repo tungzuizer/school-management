@@ -32,6 +32,8 @@ export default async function TT15EvaluationPage(props: { searchParams?: Promise
   const schoolId = session.user.schoolId;
   const campusId = session.user.campusId;
   const isSuperAdmin =
+    session.user.email === "superadmin@gmail.com" ||
+    session.user.email === "superadmin.vietnam@gmail.com" ||
     session.user.email === "superadmin.ninhbinh@gmail.com" ||
     session.user.email === "superadmin.demo@gmail.com" ||
     session.user.email === "superadmin@school.com" ||

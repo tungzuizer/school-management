@@ -88,6 +88,8 @@ export async function getUsersManagerData(filters?: {
     });
 
     const isSuperAdmin =
+      currentUser?.email === "superadmin@gmail.com" ||
+      currentUser?.email === "superadmin.vietnam@gmail.com" ||
       currentUser?.email === "superadmin.ninhbinh@gmail.com" ||
       currentUser?.email === "superadmin.demo@gmail.com" ||
       currentUser?.email === "superadmin@school.com" ||
@@ -246,11 +248,11 @@ export async function getUsersManagerData(filters?: {
       role: u.role,
       isApproved: u.isApproved,
       schoolId: u.schoolId,
-      schoolName: u.school?.name || (u.role === Role.SUPER_ADMIN ? "Hệ thống Toàn tỉnh Ninh Bình" : "Chưa gắn trường"),
+      schoolName: u.school?.name || (u.role === Role.SUPER_ADMIN ? "Hệ thống Giáo Dục Toàn Quốc" : "Chưa gắn trường"),
       districtWardId: u.districtWardId,
-      districtWardName: u.districtWard?.name || (u.school?.districtWardId ? "Theo trường trực thuộc" : "Toàn tỉnh"),
+      districtWardName: u.districtWard?.name || (u.school?.districtWardId ? "Theo trường trực thuộc" : "Toàn quốc"),
       departmentId: u.departmentId,
-      departmentName: u.department?.name || "Sở GD&ĐT Tỉnh Ninh Bình",
+      departmentName: u.department?.name || "Bộ GD&ĐT / Sở GD&ĐT",
       createdAt: u.createdAt.toISOString(),
       scopesCount: u.userRoleScopes?.length || 0,
     }));

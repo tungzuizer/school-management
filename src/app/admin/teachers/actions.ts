@@ -11,7 +11,7 @@
 import prisma from "@/lib/prisma";
 
 import bcrypt from "bcryptjs";
-import { getTenantContext } from "@/lib/tenant";
+import { getTenantContext, isSuperAdmin } from "@/lib/tenant";
 import { recordAuditLog } from "@/lib/audit-logger";
 import { resolveUniqueTeacherEmail, DEFAULT_INITIAL_PASSWORD } from "@/lib/account-automation";
 
@@ -34,14 +34,9 @@ export interface TeacherCredentialItem {
 
 function assertPrincipalOrAdmin(ctx: { userRole?: string; userEmail?: string }) {
   const allowedRoles = ["SUPER_ADMIN", "ADMIN", "DEPARTMENT_ADMIN", "DISTRICT_ADMIN", "VICE_PRINCIPAL"];
-  const isSuperAdminEmail =
-    ctx.userEmail === "superadmin@school.com" ||
-    ctx.userEmail === "sysadmin@so-gddt.gov.vn" ||
-    ctx.userEmail === "admin@school.com";
-
   const hasAllowedRole = ctx.userRole && allowedRoles.includes(ctx.userRole);
 
-  if (!hasAllowedRole && !isSuperAdminEmail) {
+  if (!hasAllowedRole && !isSuperAdmin(ctx)) {
     throw new Error("Truy cập bị từ chối: Chỉ Hiệu trưởng (ADMIN) hoặc Quản trị viên cấp cao mới có quyền xem và quản lý tài khoản/mật khẩu.");
   }
 }
@@ -428,6 +423,20 @@ export async function resetTeacherPasswordSecure(
   try {
     const ctx = await getTenantContext();
     assertPrincipalOrAdmin(ctx);
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, schoolId: true },
+    });
+    if (!targetUser) {
+      return { success: false, error: "Không tìm thấy người dùng giáo viên." };
+    }
+
+    if (!isSuperAdmin(ctx) && ctx.userRole !== "DEPARTMENT_ADMIN" && ctx.userRole !== "DISTRICT_ADMIN") {
+      if (ctx.schoolId && targetUser.schoolId && ctx.schoolId !== targetUser.schoolId) {
+        return { success: false, error: "Bạn không có quyền thay đổi mật khẩu của giáo viên trường khác." };
+      }
+    }
 
     const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
     if (rawPassword.length < 6) {

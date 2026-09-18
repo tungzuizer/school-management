@@ -68,12 +68,11 @@ export default function WardDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         {stats.map((s, i) => (
-          <div key={i} className={`rounded-2xl p-4 ${s.color} border shadow-2xs hover:shadow-md transition-all`}>
-            <s.icon className="w-5 h-5 mb-2 opacity-80" />
-            <p className="text-2xl font-extrabold tracking-tight">{s.value.toLocaleString()}</p>
-            <p className="text-xs font-semibold mt-1 opacity-90">{s.label}</p>
+          <div key={i} className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+            <p className="text-xs font-medium text-slate-500">{s.label}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">{s.value.toLocaleString()}</p>
           </div>
         ))}
       </div>

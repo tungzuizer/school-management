@@ -17,14 +17,12 @@ import {
   getTeacherCourses,
   getIncompleteRecords,
 } from "./actions";
-import { DailyPositivityWidget } from "@/components/ui/DailyPositivityWidget";
-import { ConfettiEffect } from "@/components/ui/ConfettiEffect";
-import { StudentPraiseModal } from "@/components/ui/StudentPraiseModal";
 import UnapprovedBanner from "@/components/ui/UnapprovedBanner";
 import {
-  Users, CheckCircle2, AlertTriangle, Clock, Calendar, BookOpen, Sparkles,
-  MessageSquare, ChevronRight, Bell, RefreshCw, NotebookPen, Calculator,
-  ClipboardCheck, Zap, Award, UserPlus,
+  Users, CheckCircle2, AlertTriangle, Clock, Calendar, BookOpen,
+  ChevronRight, Bell, RefreshCw,
+  ClipboardCheck, Zap,
+  NotebookPen, Calculator, Sparkles, Award, MessageSquare,
 } from "lucide-react";
 
 interface HomeroomClass { id: string; name: string; gradeLevel: number; schoolName: string; campusName: string | null; totalStudents: number; }
@@ -42,11 +40,9 @@ interface IncompleteItem { label: string; count: number; href: string; }
 
 export default function TeacherDashboardPage() {
   const { data: session } = useSession();
-  const userName = session?.user?.name || "Thay / Co";
+  const userName = session?.user?.name || "Thầy/Cô";
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"360" | "timetable" | "courses" | "homeroom">("360");
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [praiseModalOpen, setPraiseModalOpen] = useState(false);
   const [homeroom, setHomeroom] = useState<HomeroomClass | null>(null);
   const [attendance, setAttendance] = useState<AttendanceData | null>(null);
   const [schedules, setSchedules] = useState<ScheduleSlot[]>([]);
@@ -85,7 +81,6 @@ export default function TeacherDashboardPage() {
         setAttendance(attData); setAcademicRisks(acadData); setViolationRisks(violData);
         setCounselingNeeds(counselData as CounselingNeed[]); setUnreadFeedbacks(feedData);
         setDailyReport(repData); setCompetition(compData); setIncompleteList(incData);
-        if (attData.attendanceRate >= 95 && repData.exists) setShowConfetti(true);
       }
     } catch (err) { console.error("Dashboard error:", err); } finally { setLoading(false); }
   }, [session]);
@@ -112,15 +107,14 @@ export default function TeacherDashboardPage() {
   const totalRisks = academicRisks.length + violationRisks.length + counselingNeeds.length;
 
   const TABS = [
-    { key: "360" as const, label: "Bang Dieu Khien 360 deg", icon: Zap, color: "text-slate-900", activeText: "text-slate-900", activeBorder: "border-slate-200" },
-    { key: "timetable" as const, label: "Thoi Khoa Bieu Tuan", icon: Calendar, color: "text-blue-600", activeText: "text-blue-700", activeBorder: "border-blue-200" },
-    { key: "courses" as const, label: "Mon Giang Day", icon: BookOpen, color: "text-violet-600", activeText: "text-violet-700", activeBorder: "border-violet-200" },
-    ...(homeroom ? [{ key: "homeroom" as const, label: `Goc Chu Nhiem ${homeroom.name}`, icon: Users, color: "text-emerald-600", activeText: "text-emerald-700", activeBorder: "border-emerald-200" }] : []),
+    { key: "360" as const, label: "Tổng quan", icon: Zap },
+    { key: "timetable" as const, label: "Thời khóa biểu tuần", icon: Calendar },
+    { key: "courses" as const, label: "Môn giảng dạy", icon: BookOpen },
+    ...(homeroom ? [{ key: "homeroom" as const, label: `Chủ nhiệm ${homeroom.name}`, icon: Users }] : []),
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <ConfettiEffect trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
+    <div className="space-y-5 animate-fade-in">
 
       {(!isApproved || session?.user?.isApproved === false) && (
         <div className="relative overflow-hidden bg-amber-50 border-2 border-amber-300 rounded-3xl p-6 shadow-lg space-y-4">
@@ -141,67 +135,79 @@ export default function TeacherDashboardPage() {
         </div>
       )}
 
-      <div className="relative overflow-hidden rounded-3xl shadow-xl animate-hero-reveal">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(165,180,252,0.2),transparent_55%)]" />
-        <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/8 rounded-full blur-3xl pointer-events-none animate-float" />
-        <div className="absolute -left-10 bottom-0 w-40 h-40 bg-violet-600/20 rounded-full blur-2xl pointer-events-none" />
-        <div className="relative z-10 p-6 sm:p-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-md text-white rounded-xl text-xs font-black border border-white/20">
-                  <Sparkles className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300" /> He Thong Quan Ly Giao Duc Thong Minh
-                </span>
-                {homeroom && (
-                  <span className="px-3 py-1 bg-emerald-500/30 backdrop-blur-md text-emerald-200 rounded-xl text-xs font-black border border-emerald-400/40">
-                    GVCN Lop {homeroom.name}
-                  </span>
-                )}
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Kinh chao {userName}! 🌟</h1>
-              <p className="text-xs sm:text-sm text-indigo-100 max-w-2xl font-semibold leading-relaxed">
-                {schedules.length > 0
-                  ? `Hom nay Thay/Co co ${schedules.length} tiet giang day. ${currentPeriodItem ? `Hien tai dang dien ra tiet ${currentPeriodItem.period} mon ${currentPeriodItem.subjectName}.` : "Chuc Thay/Co mot ngay lam viec hieu qua!"}`
-                  : "Hom nay Thay/Co khong co lich day tren thoi khoa bieu. Hay danh thoi gian soan bai va dong hanh cung hoc sinh!"}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
-              {homeroom && (
-                <Link
-                  href="/teacher/homeroom?tab=overview&action=add-student"
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4 text-white" /> <span>+ Thêm Học Sinh</span>
-                </Link>
-              )}
-              <button onClick={() => setPraiseModalOpen(true)} className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-amber-950 font-black rounded-2xl text-xs shadow-lg shadow-amber-400/30 transition-all hover:scale-105 active:scale-95 cursor-pointer shimmer-h">
-                <Award className="w-4 h-4 text-amber-950 fill-amber-950 relative z-10" />
-                <span className="relative z-10">Tuyen Duong Hoc Sinh 🌟</span>
-              </button>
-              <button onClick={() => loadDashboardData()} className="p-3 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md text-white transition-all active-press cursor-pointer" title="Lam moi du lieu">
-                <RefreshCw className="w-5 h-5" />
-              </button>
-              {homeroom && (
-                <Link href="/teacher/attendance" className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-slate-900 font-black text-xs shadow-lg hover:bg-slate-50 transition-all hover:scale-105 active:scale-95">
-                  <ClipboardCheck className="w-4 h-4 text-indigo-700" /> <span>Diem Danh Lop {homeroom.name}</span>
-                </Link>
-              )}
-            </div>
+      {/* Clean Modern Executive Header */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200">
+              Giáo viên
+            </span>
+            {homeroom && (
+              <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">
+                GVCN Lớp {homeroom.name}
+              </span>
+            )}
+            <span className="text-xs text-slate-500">
+              {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
+            </span>
           </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Xin chào, {userName}
+          </h1>
+          <p className="text-xs text-slate-500">
+            {schedules.length > 0
+              ? `Hôm nay có ${schedules.length} tiết giảng dạy. ${currentPeriodItem ? `Hiện tại đang diễn ra tiết ${currentPeriodItem.period} môn ${currentPeriodItem.subjectName}.` : "Chúc Thầy/Cô một ngày làm việc hiệu quả!"}`
+              : "Hôm nay không có lịch dạy trên thời khóa biểu."}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          {homeroom && (
+            <Link
+              href="/teacher/attendance"
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+            >
+              <ClipboardCheck className="w-4 h-4" />
+              <span>Điểm danh {homeroom.name}</span>
+            </Link>
+          )}
+          <Link
+            href="/teacher/grades"
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
+          >
+            Sổ điểm
+          </Link>
+          <Link
+            href="/teacher/lesson-plans"
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
+          >
+            Giáo án
+          </Link>
+          <button
+            onClick={() => loadDashboardData()}
+            className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+            title="Làm mới"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      <DailyPositivityWidget role="teacher" className="shadow-xs" />
-
-      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 shadow-sm overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-1 bg-white p-2 rounded-2xl border border-slate-200/80 shadow-xs overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
           return (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-200 cursor-pointer whitespace-nowrap ${isActive ? `bg-white shadow-sm border ${tab.activeBorder} ${tab.activeText}` : "text-slate-600 hover:text-slate-900 hover:bg-white/60"}`}>
-              <Icon className={`w-4 h-4 ${isActive ? tab.color : "text-slate-400"}`} />
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
+                isActive
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
               <span>{tab.label}</span>
             </button>
           );
@@ -209,43 +215,47 @@ export default function TeacherDashboardPage() {
       </div>
 
       {activeTab === "360" && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {[
-              { label: "Tiet Day Hom Nay", value: `${schedules.length} tiet`, sub: currentPeriodItem ? `Dang hoc: Tiet ${currentPeriodItem.period}` : "Khong co tiet dang day", icon: Clock, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", valueColor: "text-indigo-700", delay: "card-reveal-1" },
-              ...(homeroom && attendance ? [{ label: `Hien Dien Lop ${homeroom.name}`, value: `${attendance.attendanceRate}%`, sub: `${attendance.presentCount}/${attendance.totalStudents} co mat (${attendance.absentCount} vang)`, icon: CheckCircle2, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", valueColor: "text-emerald-600", delay: "card-reveal-2" }] : [{ label: "Vai Tro Day", value: "Bo mon", sub: "Chua phan cong chu nhiem", icon: BookOpen, iconBg: "bg-blue-100", iconColor: "text-blue-600", valueColor: "text-blue-600", delay: "card-reveal-2" }]),
-              { label: "Hoc Sinh Can Ho Tro", value: `${totalRisks} hoc sinh`, sub: "Canh bao hoc tap & thi dua", icon: AlertTriangle, iconBg: "bg-rose-100", iconColor: "text-rose-600", valueColor: "text-rose-600", delay: "card-reveal-3" },
-              { label: "Tac Vu Can Xu Ly", value: `${incompleteList.length} viec`, sub: "Nhac nho cong viec ngay", icon: Bell, iconBg: "bg-amber-100", iconColor: "text-amber-600", valueColor: "text-amber-600", delay: "card-reveal-4" },
+              { label: "Tiết dạy hôm nay", value: `${schedules.length} tiết`, sub: currentPeriodItem ? `Đang học: Tiết ${currentPeriodItem.period}` : "Không có tiết đang diễn ra", icon: Clock, iconBg: "bg-blue-50", iconColor: "text-blue-600", valueColor: "text-slate-900" },
+              ...(homeroom && attendance ? [{ label: `Hiện diện lớp ${homeroom.name}`, value: `${attendance.attendanceRate}%`, sub: `${attendance.presentCount}/${attendance.totalStudents} có mặt (${attendance.absentCount} vắng)`, icon: CheckCircle2, iconBg: "bg-emerald-50", iconColor: "text-emerald-600", valueColor: "text-emerald-700" }] : [{ label: "Vai trò", value: "Bộ môn", sub: "Chưa phân công chủ nhiệm", icon: BookOpen, iconBg: "bg-slate-50", iconColor: "text-slate-600", valueColor: "text-slate-900" }]),
+              { label: "Cần hỗ trợ", value: `${totalRisks} học sinh`, sub: "Cảnh báo học tập & nề nếp", icon: AlertTriangle, iconBg: "bg-rose-50", iconColor: "text-rose-600", valueColor: "text-rose-700" },
+              { label: "Tác vụ cần xử lý", value: `${incompleteList.length} việc`, sub: "Nhắc nhở công việc ngày", icon: Bell, iconBg: "bg-amber-50", iconColor: "text-amber-600", valueColor: "text-slate-900" },
             ].map((card) => {
               const Icon = card.icon;
               return (
-                <div key={card.label} className={`card-reveal ${card.delay} bg-white rounded-3xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`}>
+                <div key={card.label} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 transition-colors">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">{card.label}</p>
-                      <h3 className={`text-2xl font-black ${card.valueColor} animate-number-reveal`}>{card.value}</h3>
-                      <p className="text-[11px] text-slate-500 font-semibold mt-1">{card.sub}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-500 mb-1">{card.label}</p>
+                      <h3 className={`text-xl sm:text-2xl font-bold ${card.valueColor}`}>{card.value}</h3>
+                      <p className="text-[11px] text-slate-400 mt-1 truncate">{card.sub}</p>
                     </div>
-                    <div className={`w-11 h-11 rounded-2xl ${card.iconBg} flex items-center justify-center shrink-0`}><Icon className={`w-5 h-5 ${card.iconColor}`} /></div>
+                    <div className={`w-9 h-9 rounded-xl ${card.iconBg} flex items-center justify-center shrink-0`}>
+                      <Icon className={`w-4 h-4 ${card.iconColor}`} />
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200/90 p-5 shadow-sm space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md"><Clock className="w-4 h-4 text-white" /></div>
-                  <h2 className="text-base font-black text-slate-900">Lich Giang Day Hom Nay</h2>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                  <h2 className="text-sm font-bold text-slate-900">Lịch giảng dạy hôm nay</h2>
                 </div>
-                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl">{new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" })}</span>
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                  {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" })}
+                </span>
               </div>
               {schedules.length === 0 ? (
-                <div className="py-12 text-center space-y-3">
-                  <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto"><Calendar className="w-6 h-6 text-slate-400" /></div>
-                  <p className="text-sm font-semibold text-slate-500">Hom nay khong co tiet day theo thoi khoa bieu.</p>
+                <div className="py-10 text-center space-y-2">
+                  <Calendar className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="text-xs text-slate-500">Hôm nay không có tiết dạy theo thời khóa biểu.</p>
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -428,8 +438,6 @@ export default function TeacherDashboardPage() {
           </div>
         </div>
       )}
-
-      <StudentPraiseModal isOpen={praiseModalOpen} onClose={() => setPraiseModalOpen(false)} teacherUserId={session?.user?.id || ""} onSuccess={() => setShowConfetti(true)} />
     </div>
   );
 }

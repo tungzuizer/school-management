@@ -53,25 +53,25 @@ const roleThemeStyles: Record<
   }
 > = {
   TEACHER: {
-    activeText: "text-emerald-700 font-bold",
-    activeIcon: "text-emerald-600 scale-110 drop-shadow-[0_2px_8px_rgba(5,150,105,0.35)]",
-    activeDot: "bg-emerald-500 shadow-[0_0_6px_#10b981]",
-    menuOpenBtn: "bg-emerald-600 text-white border-emerald-400/80 shadow-[0_4px_16px_rgba(5,150,105,0.45)] scale-105",
+    activeText: "text-emerald-700 font-semibold",
+    activeIcon: "text-emerald-700",
+    activeDot: "bg-emerald-600",
+    menuOpenBtn: "bg-emerald-600 text-white",
     menuOpenText: "text-emerald-700",
   },
   STUDENT: {
-    activeText: "text-indigo-700 font-bold",
-    activeIcon: "text-indigo-600 scale-110 drop-shadow-[0_2px_8px_rgba(79,70,229,0.35)]",
-    activeDot: "bg-indigo-500 shadow-[0_0_6px_#6366f1]",
-    menuOpenBtn: "bg-indigo-600 text-white border-indigo-400/80 shadow-[0_4px_16px_rgba(79,70,229,0.45)] scale-105",
+    activeText: "text-indigo-700 font-semibold",
+    activeIcon: "text-indigo-700",
+    activeDot: "bg-indigo-600",
+    menuOpenBtn: "bg-indigo-600 text-white",
     menuOpenText: "text-indigo-700",
   },
   DEFAULT: {
-    activeText: "text-sky-700 font-bold",
-    activeIcon: "text-sky-600 scale-110 drop-shadow-[0_2px_8px_rgba(2,132,199,0.35)]",
-    activeDot: "bg-sky-500 shadow-[0_0_6px_#0ea5e9]",
-    menuOpenBtn: "bg-sky-600 text-white border-sky-400/80 shadow-[0_4px_16px_rgba(2,132,199,0.45)] scale-105",
-    menuOpenText: "text-sky-700",
+    activeText: "text-blue-700 font-semibold",
+    activeIcon: "text-blue-700",
+    activeDot: "bg-blue-600",
+    menuOpenBtn: "bg-blue-600 text-white",
+    menuOpenText: "text-blue-700",
   },
 };
 
@@ -143,8 +143,8 @@ export default function MobileBottomNav({
       aria-label="Điều hướng nhanh di động"
       className="fixed bottom-6 inset-x-3 sm:inset-x-6 sm:bottom-8 z-40 lg:hidden max-w-[420px] mx-auto select-none"
     >
-      {/* Apple iOS Liquid Glass Optical Frosted Capsule Dock (Elevated) */}
-      <div className="bg-white/80 backdrop-blur-2xl border border-white/70 shadow-[0_16px_48px_-6px_rgba(15,23,42,0.22),inset_0_1.5px_2px_rgba(255,255,255,0.95)] rounded-full px-4 py-2.5 flex items-center justify-between gap-1 text-slate-700">
+      {/* Clean Mobile Dock */}
+      <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-lg rounded-full px-4 py-2 flex items-center justify-between gap-1 text-slate-700">
         {/* Left 2 Quick Items */}
         {leftItems.map((item) => {
           const isActive =
