@@ -2,8 +2,16 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
+import { checkLoginRateLimit } from "./rate-limiter";
 
-const isDemoAllowed = process.env.ALLOW_DEMO_LOGIN !== "false";
+// Demo mode is strictly disabled in production; only allowed if explicitly configured in development
+const isDemoAllowed =
+  process.env.NODE_ENV !== "production" &&
+  process.env.ALLOW_DEMO_LOGIN === "true";
+
+if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
+  console.error("CRITICAL SECURITY ALERT: NEXTAUTH_SECRET is not set in production environment!");
+}
 
 function cleanEmail(email: string): string {
   if (!email || !email.includes("@")) return email ? email.trim().toLowerCase() : "";
@@ -43,6 +51,12 @@ export const authOptions: NextAuthOptions = {
         const email = cleanEmail(rawEmail);
         const inputPassword = credentials.password.trim();
 
+        // Enforce rate limiting on login attempts
+        const rateLimit = checkLoginRateLimit(rawEmail);
+        if (!rateLimit.allowed) {
+          throw new Error("Tài khoản bị tạm khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau 15 phút.");
+        }
+
         let user = null;
         try {
           user = await prisma.user.findUnique({
@@ -76,8 +90,10 @@ export const authOptions: NextAuthOptions = {
             if (isPasswordValid) {
               // Chỉ buộc đổi mật khẩu cho tài khoản KHÔNG phải demo
               const demoEmails = [
-                "superadmin@school.com", "admin@school.com", "dept@school.com",
+                "superadmin@gmail.com", "superadmin.vietnam@gmail.com", "superadmin.ninhbinh@gmail.com",
+                "superadmin.demo@gmail.com", "superadmin@school.com", "admin@school.com", "dept@school.com",
                 "ward@school.com", "vp1@school.com", "teacher@school.com", "student@school.com",
+                "sogd.hanoi@gmail.com", "sogd.tphcm@gmail.com", "sogd.danang@gmail.com", "admin.sogd.ninhbinh@gmail.com",
                 "sysadmin@so-gddt.gov.vn", "cbso@so-gddt.gov.vn", "cbphong@phonggd.gov.vn",
                 "ht.tanxa@school.edu.vn"
               ];

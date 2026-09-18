@@ -13,6 +13,24 @@ export interface TenantContext {
   campusId?: string;        // Phan hieu / Co so (VICE_PRINCIPAL scope)
 }
 
+/**
+ * Checks if context or session represents a Super Admin account.
+ */
+export function isSuperAdmin(ctx: { userRole?: string; role?: string; userEmail?: string; email?: string }): boolean {
+  const role = ctx.userRole || ctx.role;
+  if (role === "SUPER_ADMIN") return true;
+  const email = (ctx.userEmail || ctx.email || "").toLowerCase().trim();
+  const superAdminEmails = [
+    "superadmin@gmail.com",
+    "superadmin.vietnam@gmail.com",
+    "superadmin.ninhbinh@gmail.com",
+    "superadmin.demo@gmail.com",
+    "superadmin@school.com",
+    "sysadmin@so-gddt.gov.vn",
+  ];
+  return superAdminEmails.includes(email) || email.includes("superadmin");
+}
+
 export async function getTenantContext(): Promise<TenantContext> {
   const session = await getServerSession(authOptions);
 
@@ -50,12 +68,7 @@ export function buildSchoolFilter(ctx: TenantContext): Record<string, any> {
     return { schoolId: "unapproved-no-access-000" };
   }
 
-  const isSuperAdmin =
-    ctx.userEmail === "superadmin@school.com" ||
-    ctx.userEmail === "sysadmin@so-gddt.gov.vn" ||
-    ctx.userRole === "SUPER_ADMIN";
-
-  if (isSuperAdmin) return {};
+  if (isSuperAdmin(ctx)) return {};
 
   const role = ctx.userRole;
 
@@ -80,12 +93,7 @@ export function buildSchoolDirectFilter(ctx: TenantContext): Record<string, any>
     return { id: "unapproved-no-access-000" };
   }
 
-  const isSuperAdmin =
-    ctx.userEmail === "superadmin@school.com" ||
-    ctx.userEmail === "sysadmin@so-gddt.gov.vn" ||
-    ctx.userRole === "SUPER_ADMIN";
-
-  if (isSuperAdmin) return {};
+  if (isSuperAdmin(ctx)) return {};
 
   const role = ctx.userRole;
 
@@ -179,12 +187,7 @@ export async function getWardAllowedCampusIds(
  * System Admin sees only aggregate/infrastructure data, not individual records.
  */
 export function assertNotSuperAdminOnAcademicDetail(ctx: TenantContext): void {
-  const isSuperAdmin =
-    ctx.userEmail === "superadmin@school.com" ||
-    ctx.userEmail === "sysadmin@so-gddt.gov.vn" ||
-    ctx.userRole === "SUPER_ADMIN";
-
-  if (isSuperAdmin) {
+  if (isSuperAdmin(ctx)) {
     throw new Error("Quan tri vien he thong khong duoc xem du lieu hoc vu chi tiet. (403)");
   }
 }

@@ -22,6 +22,8 @@ export async function getLessonPlansForAdmin(schoolId?: string) {
     if (!session?.user?.id) return [];
 
     const isSuperAdmin =
+      session.user.email === "superadmin@gmail.com" ||
+      session.user.email === "superadmin.vietnam@gmail.com" ||
       session.user.email === "superadmin.ninhbinh@gmail.com" ||
       session.user.email === "superadmin.demo@gmail.com" ||
       session.user.email === "superadmin@school.com" ||

@@ -61,55 +61,41 @@ interface SidebarProps {
   userName?: string;
 }
 
-const roleConfig: Record<string, { bg: string; accent: string; sidebarBg: string; mobileAccent: string; activeGlow: string }> = {
+const roleConfig: Record<string, { bg: string; accent: string; mobileAccent: string }> = {
   ADMIN: {
-    bg: "bg-gradient-to-r from-blue-600 to-indigo-700",
-    accent: "bg-blue-500/20 text-blue-200 border-blue-400/30",
-    sidebarBg: "bg-slate-950",
+    bg: "bg-blue-600",
+    accent: "bg-blue-500/10 text-blue-300 border-blue-500/20",
     mobileAccent: "text-blue-600",
-    activeGlow: "shadow-[0_0_20px_rgba(37,99,235,0.35)]",
   },
   SUPER_ADMIN: {
-    bg: "bg-gradient-to-r from-rose-600 to-red-700",
-    accent: "bg-rose-500/20 text-rose-200 border-rose-400/30",
-    sidebarBg: "bg-slate-950",
+    bg: "bg-rose-600",
+    accent: "bg-rose-500/10 text-rose-300 border-rose-500/20",
     mobileAccent: "text-rose-600",
-    activeGlow: "shadow-[0_0_20px_rgba(225,29,72,0.35)]",
   },
   DEPARTMENT_ADMIN: {
-    bg: "bg-gradient-to-r from-sky-600 to-blue-700",
-    accent: "bg-sky-500/20 text-sky-200 border-sky-400/30",
-    sidebarBg: "bg-slate-950",
+    bg: "bg-sky-600",
+    accent: "bg-sky-500/10 text-sky-300 border-sky-500/20",
     mobileAccent: "text-sky-600",
-    activeGlow: "shadow-[0_0_20px_rgba(2,132,199,0.35)]",
   },
   WARD_ADMIN: {
-    bg: "bg-gradient-to-r from-teal-600 to-emerald-700",
-    accent: "bg-teal-500/20 text-teal-200 border-teal-400/30",
-    sidebarBg: "bg-slate-950",
+    bg: "bg-teal-600",
+    accent: "bg-teal-500/10 text-teal-300 border-teal-500/20",
     mobileAccent: "text-teal-600",
-    activeGlow: "shadow-[0_0_20px_rgba(13,148,136,0.35)]",
   },
   VICE_PRINCIPAL: {
-    bg: "bg-gradient-to-r from-violet-600 to-indigo-700",
-    accent: "bg-violet-500/20 text-violet-200 border-violet-400/30",
-    sidebarBg: "bg-slate-950",
+    bg: "bg-violet-600",
+    accent: "bg-violet-500/10 text-violet-300 border-violet-500/20",
     mobileAccent: "text-violet-600",
-    activeGlow: "shadow-[0_0_20px_rgba(124,58,237,0.35)]",
   },
   TEACHER: {
-    bg: "bg-gradient-to-r from-emerald-600 to-teal-700",
-    accent: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
-    sidebarBg: "bg-slate-950",
+    bg: "bg-emerald-600",
+    accent: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
     mobileAccent: "text-emerald-600",
-    activeGlow: "shadow-[0_0_20px_rgba(5,150,105,0.35)]",
   },
   STUDENT: {
-    bg: "bg-gradient-to-r from-amber-600 to-orange-600",
-    accent: "bg-amber-500/20 text-amber-200 border-amber-400/30",
-    sidebarBg: "bg-slate-950",
-    mobileAccent: "text-amber-600",
-    activeGlow: "shadow-[0_0_20px_rgba(217,119,6,0.35)]",
+    bg: "bg-indigo-600",
+    accent: "bg-indigo-500/10 text-indigo-300 border-indigo-500/20",
+    mobileAccent: "text-indigo-600",
   },
 };
 
@@ -137,21 +123,17 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
     <>
       {/* ==================== DESKTOP SIDEBAR ==================== */}
       <aside
-        className={`hidden md:flex w-64 min-h-screen ${config.sidebarBg} text-white flex-col border-r border-slate-800/80 shadow-2xl relative z-20`}
+        className="hidden md:flex w-64 min-h-screen bg-slate-900 text-white flex-col border-r border-slate-800 shadow-md relative z-20"
       >
-        {/* Ambient Top Glow */}
-        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent pointer-events-none" />
-
         {/* Logo & Brand */}
-        <div className="p-5 border-b border-slate-800/80 relative">
-          <div className="flex items-center gap-3.5">
-            <div className="shrink-0 bg-white/10 p-1.5 rounded-2xl border border-white/10 flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105">
-              <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain rounded-xl" />
+        <div className="p-4 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="shrink-0 bg-white/10 p-1.5 rounded-xl border border-white/10 flex items-center justify-center">
+              <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain rounded-lg" />
             </div>
             <div className="min-w-0">
-              <h2 className="font-extrabold text-base tracking-tight truncate text-slate-100">{title}</h2>
-              <span className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border ${config.accent} font-bold mt-0.5`}>
-                <Sparkles className="w-3 h-3 animate-pulse" />
+              <h2 className="font-bold text-sm tracking-tight truncate text-slate-100">{title}</h2>
+              <span className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-md border ${config.accent} font-medium mt-0.5`}>
                 {roleLabels[role] || role}
               </span>
             </div>
@@ -159,7 +141,7 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto custom-scrollbar relative">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar relative">
           {items.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = iconMap[item.icon] || LayoutDashboard;
@@ -168,19 +150,19 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 prefetch={true}
-                className={`group flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 relative ${
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors duration-150 relative ${
                   isActive
-                    ? `bg-white/15 text-white ${config.activeGlow} border border-white/10 backdrop-blur-md`
-                    : "text-slate-300 hover:bg-white/10 hover:text-white hover:translate-x-1"
+                    ? "bg-slate-800 text-white font-semibold"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
                 }`}
               >
                 {isActive && (
-                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 ${config.bg} rounded-r-full shadow-md`} />
+                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 ${config.bg} rounded-r-sm`} />
                 )}
-                <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-indigo-300" : "text-slate-300 group-hover:text-white"}`} />
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-blue-400" : "text-slate-400 group-hover:text-slate-200"}`} />
                 <span className="truncate">{item.label}</span>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="ml-auto bg-rose-500 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full min-w-[22px] text-center shadow-sm animate-pulse">
+                  <span className="ml-auto bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
                     {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 )}
@@ -190,13 +172,13 @@ export default function Sidebar({ items, title, role }: SidebarProps) {
         </nav>
 
         {/* Footer: Logout */}
-        <div className="border-t border-slate-800/80 p-3 relative">
+        <div className="border-t border-slate-800 p-3">
           <button
             onClick={() => handleClientSignOut("/login")}
-            className="flex items-center gap-3.5 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white hover:bg-rose-500/25 hover:text-white transition-all duration-200 active-press cursor-pointer group"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors duration-150 cursor-pointer"
             title="Đăng xuất"
           >
-            <LogOut className="w-5 h-5 shrink-0 text-white/80 group-hover:text-white" />
+            <LogOut className="w-4 h-4 shrink-0" />
             <span>Đăng xuất</span>
           </button>
         </div>

@@ -51,6 +51,8 @@ export async function getPrincipalsAndAdmins(filters?: {
     });
 
     const isSuperAdmin =
+      currentUser?.email === "superadmin@gmail.com" ||
+      currentUser?.email === "superadmin.vietnam@gmail.com" ||
       currentUser?.email === "superadmin.ninhbinh@gmail.com" ||
       currentUser?.email === "superadmin.demo@gmail.com" ||
       currentUser?.email === "superadmin@school.com" ||
@@ -355,6 +357,8 @@ export async function resetUserPassword(userId: string, newPassword?: string) {
 
     const userRole = session.user.role;
     const isSuperAdmin =
+      session.user.email === "superadmin@gmail.com" ||
+      session.user.email === "superadmin.vietnam@gmail.com" ||
       session.user.email === "superadmin.ninhbinh@gmail.com" ||
       session.user.email === "superadmin.demo@gmail.com" ||
       session.user.email === "superadmin@school.com" ||

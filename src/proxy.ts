@@ -9,9 +9,15 @@ export default withAuth(
     const email = token?.email as string;
 
     const isSuperAdmin =
+      role === "SUPER_ADMIN" ||
       email === "superadmin@school.com" ||
       email === "sysadmin@so-gddt.gov.vn" ||
-      role === "SUPER_ADMIN";
+      (email && email.toLowerCase().includes("superadmin"));
+
+    // Block unapproved accounts from accessing protected portal routes
+    if (token?.isApproved === false) {
+      return NextResponse.redirect(new URL("/unauthorized?reason=pending_approval", req.url));
+    }
 
     // SUPER_ADMIN: infra only — blocked from academic data routes
     if (isSuperAdmin) {

@@ -249,12 +249,29 @@ export async function registerTeacher(input: RegisterTeacherInput) {
       return { success: false, error: "Trường học được chọn không tồn tại." };
     }
 
+    if (role === "ADMIN") {
+      const existingAdmin = await prisma.user.findFirst({
+        where: {
+          schoolId: targetSchool.id,
+          role: "ADMIN",
+          isApproved: true,
+        },
+      });
+      if (existingAdmin) {
+        return {
+          success: false,
+          error: "Trường này đã có Hiệu trưởng / Quản trị viên đang hoạt động. Vui lòng liên hệ Sở GD&ĐT để được cấp quyền.",
+        };
+      }
+    }
+
     finalDepartmentId = finalDepartmentId || targetSchool.departmentId || undefined;
     finalDistrictWardId = finalDistrictWardId || targetSchool.districtWardId || undefined;
 
     // Create user and teacher record if TEACHER
     const newUser = await prisma.$transaction(async (tx) => {
-      const isApprovedStatus = (role === "ADMIN"); // Principal is auto-activated for quick setup per User Instruction
+      // In production, self-registered accounts require administrator verification
+      const isApprovedStatus = process.env.NODE_ENV !== "production" && role === "ADMIN";
 
       const user = await tx.user.create({
         data: {

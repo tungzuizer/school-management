@@ -55,31 +55,17 @@ async function getStudentFromSession() {
       }
     }
 
-    // Tầng 3: Nếu là tài khoản học sinh (STUDENT) nhưng chưa có bản ghi Student thì tự động tạo/gán lớp mẫu
-    if (!student && (session.user.role === "STUDENT" || session.user.email?.startsWith("hs") || session.user.email?.includes("student"))) {
+    // Tầng 3: Nếu là tài khoản học sinh (STUDENT) nhưng chưa có bản ghi Student thì chỉ tạo mới cho chính user này nếu ở môi trường dev
+    if (!student && session.user.role === "STUDENT" && process.env.NODE_ENV !== "production") {
       const defaultClass = await prisma.classRoom.findFirst({
         orderBy: { name: "asc" },
         include: { school: true },
       });
 
-      const firstAvailableStudent = await prisma.student.findFirst({
-        include: {
-          user: true,
-          classRoom: {
-            include: {
-              school: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "asc" },
-      });
-
-      if (firstAvailableStudent) {
-        student = firstAvailableStudent;
-      } else if (defaultClass) {
+      if (defaultClass) {
         const studentCode = session.user.email?.startsWith("hs")
           ? session.user.email.split("@")[0].toUpperCase()
-          : "HS26100001";
+          : `HS${Date.now().toString().slice(-8)}`;
         student = await prisma.student.create({
           data: {
             userId: session.user.id,

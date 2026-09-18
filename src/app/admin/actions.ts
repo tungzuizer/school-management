@@ -41,6 +41,8 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
     if (!user) return null;
 
     const isSuperAdmin =
+      user.email === "superadmin@gmail.com" ||
+      user.email === "superadmin.vietnam@gmail.com" ||
       user.email === "superadmin.ninhbinh@gmail.com" ||
       user.email === "superadmin.demo@gmail.com" ||
       user.email === "superadmin@school.com" ||

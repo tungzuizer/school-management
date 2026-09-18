@@ -225,7 +225,7 @@ export async function saveGrade(
   }
 }
 
-// Save all grades for a class at once (batch)
+// Save all grades for a class at once (optimized batch transaction)
 export async function saveAllGrades(
   subjectId: string,
   term: number,
@@ -244,13 +244,120 @@ export async function saveAllGrades(
     return { success: false, error: "Tài khoản của bạn đang chờ Hiệu trưởng phê duyệt và cấp quyền dữ liệu." };
   }
 
-  try {
-    for (const g of grades) {
-      const res = await saveGrade(g.studentId, subjectId, term, g.type, g.score, g.existingId);
-      if (!res.success) return res;
+  if (!grades || grades.length === 0) {
+    return { success: true };
+  }
+
+  // Pre-validate all scores
+  for (const g of grades) {
+    if (typeof g.score !== "number" || g.score < 0 || g.score > 10) {
+      return { success: false, error: "Tất cả điểm số phải nằm trong khoảng từ 0 đến 10" };
     }
+  }
+
+  try {
+    const studentIds = Array.from(new Set(grades.map((g) => g.studentId)));
+    const students = await prisma.student.findMany({
+      where: { id: { in: studentIds } },
+      include: { classRoom: true },
+    });
+
+    if (students.length === 0) {
+      return { success: false, error: "Không tìm thấy thông tin học sinh trong danh sách." };
+    }
+
+    const schoolIds = Array.from(
+      new Set(students.map((s) => s.classRoom?.schoolId).filter((id): id is string => Boolean(id)))
+    );
+    if (schoolIds.length > 0) {
+      const isLocked = await prisma.dataLock.findFirst({
+        where: {
+          schoolId: { in: schoolIds },
+          lockType: `GRADE_HK${term}`,
+          isLocked: true,
+        },
+      });
+      if (isLocked) {
+        return { success: false, error: `Dữ liệu điểm Học kỳ ${term} đã bị khóa sổ toàn trường.` };
+      }
+    }
+
+    const teacher = await prisma.teacher.findUnique({ where: { userId: session.user.id } });
+    const userRole = (session.user as any).role;
+    const isManagement = userRole === "ADMIN" || userRole === "PRINCIPAL" || userRole === "VICE_PRINCIPAL";
+
+    if (!teacher && !isManagement) {
+      return { success: false, error: "Không tìm thấy hồ sơ giáo viên." };
+    }
+
+    if (teacher && !isManagement) {
+      const classIds = Array.from(
+        new Set(students.map((s) => s.classId).filter((id): id is string => Boolean(id)))
+      );
+      const assignments = await prisma.teachingAssignment.findMany({
+        where: {
+          teacherId: teacher.id,
+          classId: { in: classIds },
+          subjectId,
+        },
+      });
+      const assignedClassIds = new Set(assignments.map((a) => a.classId));
+      const homeroomClassIds = new Set(
+        students.filter((s) => s.classRoom?.homeroomTeacherId === teacher.id).map((s) => s.classId)
+      );
+
+      for (const s of students) {
+        if (s.classId && !assignedClassIds.has(s.classId) && !homeroomClassIds.has(s.classId)) {
+          return {
+            success: false,
+            error: "Bạn không được phân công giảng dạy môn học này cho lớp của một số học sinh.",
+          };
+        }
+      }
+    }
+
+    // Query existing grades for all students in one single lookup
+    const existingGrades = await prisma.grade.findMany({
+      where: {
+        studentId: { in: studentIds },
+        subjectId,
+        term,
+      },
+      select: { id: true, studentId: true, type: true },
+    });
+
+    const existingMap = new Map<string, string>();
+    for (const eg of existingGrades) {
+      existingMap.set(`${eg.studentId}_${eg.type}`, eg.id);
+    }
+
+    // Execute atomic batch transaction
+    await prisma.$transaction(async (tx) => {
+      for (const g of grades) {
+        const targetId = g.existingId || existingMap.get(`${g.studentId}_${g.type}`);
+        if (targetId) {
+          await tx.grade.update({
+            where: { id: targetId },
+            data: { score: g.score },
+          });
+        } else {
+          const created = await tx.grade.create({
+            data: {
+              studentId: g.studentId,
+              subjectId,
+              term,
+              type: g.type as any,
+              score: g.score,
+            },
+          });
+          existingMap.set(`${g.studentId}_${g.type}`, created.id);
+        }
+      }
+    });
+
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message || "Lỗi khi lưu điểm" };
+    console.error("Batch save grades error:", error);
+    return { success: false, error: error.message || "Lỗi khi lưu điểm hàng loạt" };
   }
 }
