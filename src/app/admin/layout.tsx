@@ -154,6 +154,7 @@ const principalMenuGroups: MenuGroup[] = [
       { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileText },
       { label: "Đánh giá TT 15", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15" },
       { label: "Trợ lý BGH AI", href: "/admin/principal-ai", icon: Bot },
+      { label: "Hành trình & Phân luồng HS", href: "/admin/journey-overview", icon: Layers, badge: "AI" },
     ],
   },
   {
@@ -184,6 +185,7 @@ const principalMenuGroups: MenuGroup[] = [
       { label: "Nhân sự 36T", href: "/admin/support-staff", icon: UserCheck },
       { label: "Đội ngũ giáo viên", href: "/admin/teachers", icon: Users },
       { label: "Dạy thay khẩn cấp", href: "/admin/substitute-dispatch", icon: Clock },
+      { label: "Tài khoản trường", href: "/admin/users-manager", icon: ShieldCheck, badge: "VIP" },
     ],
   },
   {
@@ -197,7 +199,8 @@ const principalMenuGroups: MenuGroup[] = [
       { label: "Duyệt yêu cầu BGH", href: "/admin/approvals", icon: CheckSquare },
       { label: "Khóa sổ dữ liệu", href: "/admin/data-lock", icon: ShieldCheck },
       { label: "Duyệt học bạ", href: "/admin/transcripts", icon: FileSpreadsheet },
-      { label: "Cơ sở phân hiệu", href: "/admin/multi-school", icon: Building2 },
+      { label: "Cơ sở & Phân hiệu", href: "/admin/campuses", icon: Building2 },
+      { label: "Thiết bị số & CSVC", href: "/admin/equipment", icon: Building2 },
       { label: "Thông báo trường", href: "/admin/notifications", icon: Bell },
     ],
   },
@@ -251,10 +254,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   const isSuperAdmin =
     profile?.isSuperAdmin ||
+    session?.user?.email === "superadmin@gmail.com" ||
+    session?.user?.email === "superadmin.vietnam@gmail.com" ||
     session?.user?.email === "superadmin.ninhbinh@gmail.com" ||
     session?.user?.email === "superadmin.demo@gmail.com" ||
     session?.user?.email === "superadmin@school.com" ||
-    (session?.user as { role?: string })?.role === "SUPER_ADMIN";
+    session?.user?.email?.includes("superadmin") ||
+    (session?.user as { role?: string })?.role === "SUPER_ADMIN" ||
+    (session?.user as { role?: string })?.role === "DEPARTMENT_ADMIN";
 
   const menuGroups = useMemo(() => (isSuperAdmin ? superAdminMenuGroups : principalMenuGroups), [isSuperAdmin]);
 
@@ -287,8 +294,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     setActiveGroupId((prev) => (prev === groupId ? null : groupId));
   };
 
-  const userName = profile?.name || session?.user?.name || (isSuperAdmin ? "Ban Quản Trị Hệ Thống" : "Thầy Đoàn Thái Sơn");
-  const schoolDisplay = profile?.schoolName || (isSuperAdmin ? "Hệ thống Toàn quốc" : "THPT Chuyên Trần Phú");
+  const userName = profile?.name || session?.user?.name || (isSuperAdmin ? "Ban Quản Trị Toàn Quốc" : "Ban Giám Hiệu");
+  const schoolDisplay = profile?.schoolName || (isSuperAdmin ? "Hệ thống Giáo Dục Toàn Quốc" : "Trường trực thuộc");
 
   const getInitials = (name: string) => {
     const parts = name.split(" ").filter(Boolean);

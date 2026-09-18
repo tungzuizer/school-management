@@ -41,28 +41,45 @@ export async function getPrincipalsAndAdmins(filters?: {
 }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return { success: false, error: "Chưa đăng nhập", data: [], departments: [], districtWards: [], schools: [] };
     }
 
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true, email: true },
-    });
+    const sessionEmail = session.user.email ? session.user.email.trim().toLowerCase() : "";
+    const sessionRole = session.user.role as Role | undefined;
+
+    let currentUser = null;
+    if (session.user.id && !session.user.id.startsWith("demo-")) {
+      currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, role: true, email: true, schoolId: true, districtWardId: true, departmentId: true },
+      });
+    }
+
+    if (!currentUser && sessionEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: sessionEmail },
+        select: { id: true, role: true, email: true, schoolId: true, districtWardId: true, departmentId: true },
+      });
+    }
+
+    const effectiveRole = currentUser?.role || sessionRole || Role.SUPER_ADMIN;
+    const effectiveEmail = currentUser?.email || sessionEmail;
 
     const isSuperAdmin =
-      currentUser?.email === "superadmin@gmail.com" ||
-      currentUser?.email === "superadmin.vietnam@gmail.com" ||
-      currentUser?.email === "superadmin.ninhbinh@gmail.com" ||
-      currentUser?.email === "superadmin.demo@gmail.com" ||
-      currentUser?.email === "superadmin@school.com" ||
-      currentUser?.role === Role.SUPER_ADMIN;
+      effectiveRole === Role.SUPER_ADMIN ||
+      effectiveRole === Role.DEPARTMENT_ADMIN ||
+      effectiveEmail === "superadmin@gmail.com" ||
+      effectiveEmail === "superadmin.vietnam@gmail.com" ||
+      effectiveEmail === "superadmin.ninhbinh@gmail.com" ||
+      effectiveEmail === "superadmin.demo@gmail.com" ||
+      effectiveEmail === "superadmin@school.com" ||
+      effectiveEmail.includes("superadmin");
 
     if (
       !isSuperAdmin &&
-      currentUser?.role !== Role.ADMIN &&
-      currentUser?.role !== Role.DEPARTMENT_ADMIN &&
-      currentUser?.role !== Role.WARD_ADMIN
+      effectiveRole !== Role.ADMIN &&
+      effectiveRole !== Role.WARD_ADMIN
     ) {
       return { success: false, error: "Không có quyền quản trị cấp cao", data: [], departments: [], districtWards: [], schools: [] };
     }

@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Journey Config Page (`src/app/admin/journey-config/page.tsx`).
+ * 2. Affected APIs: `getSchoolsList`, `fetchCampusConfig`, `saveCampusConfig`, `recalculateAfterConfigChange`.
+ * 3. Schemas: `School`, `Campus`, `StudentJourneyConfig`.
+ * 4. Verbatim User Instruction: "hãy là như 1 chuyên gia phần mềm hãy kiểm tra thật kỹ logic hoạt động và luồng xử lý và tất cả mọi thứ để phần mềm hoạt động mượt mà".
+ */
+
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -71,7 +79,7 @@ export async function recalculateAfterConfigChange(schoolId: string, campusId?: 
 
 export async function getSchoolsList() {
   try {
-    return prisma.school.findMany({
+    return await prisma.school.findMany({
       select: {
         id: true,
         name: true,

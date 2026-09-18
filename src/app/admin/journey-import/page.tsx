@@ -1,3 +1,13 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin router for `/admin/journey-import`.
+ * 2. Affected APIs: `JourneyImportPage`, `getImportContextData`, `listRecentBatches`.
+ * 3. Schemas: `School`, `Student`, `Subject`, `ExamPeriod`, `StudentImportBatch`.
+ * 4. Verbatim User Instruction: "hãy là như 1 chuyên gia phần mềm hãy kiểm tra thật kỹ logic hoạt động và luồng xử lý và tất cả mọi thứ để phần mềm hoạt động mượt mà".
+ */
+
+export const dynamic = "force-dynamic";
+
 import { getImportContextData, listRecentBatches } from "./actions";
 import JourneyImportClient from "./import-client";
 
