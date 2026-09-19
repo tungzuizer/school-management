@@ -21,6 +21,11 @@ import { seedAcademicAndFacilities } from "./seed-data/academic-facilities";
 import { seedExamAnalyticsAndTranscripts } from "./seed-data/exam-analytics";
 import { seedLessonPlansAndCurriculum } from "./seed-data/lesson-plans";
 import { seedApprovalsAndDispatch } from "./seed-data/approvals-dispatch";
+import { seedClassroomOperations } from "./seed-data/classroom-operations";
+import { seedSchoolCalendarAndGovernance } from "./seed-data/school-calendar-governance";
+import { seedKpiOperations } from "./seed-data/kpi-operations";
+import { seedAiJourneyAnalytics } from "./seed-data/ai-journey-analytics";
+import { seedAccreditationAndSystemAdmin } from "./seed-data/accreditation-system-admin";
 
 const prisma = new PrismaClient();
 
@@ -45,6 +50,40 @@ async function cleanDatabase(prismaClient: PrismaClient) {
 
   // Fallback delete in reverse dependency order
   await Promise.allSettled([
+    prismaClient.transcriptUnlockRequest.deleteMany(),
+    prismaClient.tT15EvidenceFile.deleteMany(),
+    prismaClient.schoolPointEvaluationDetail.deleteMany(),
+    prismaClient.schoolPointEvaluation.deleteMany(),
+    prismaClient.tT15Indicator.deleteMany(),
+    prismaClient.fileAuditLog.deleteMany(),
+    prismaClient.systemEvidenceFile.deleteMany(),
+    prismaClient.studentImportMapping.deleteMany(),
+    prismaClient.studentImportStaging.deleteMany(),
+    prismaClient.studentImportBatch.deleteMany(),
+    prismaClient.interventionRecord.deleteMany(),
+    prismaClient.studentJourneySnapshot.deleteMany(),
+    prismaClient.journeyThresholdConfig.deleteMany(),
+    prismaClient.aiAnalysisLog.deleteMany(),
+    prismaClient.aiReportSummary.deleteMany(),
+    prismaClient.aiRecommendation.deleteMany(),
+    prismaClient.aiAlert.deleteMany(),
+    prismaClient.qualityObjectiveHistory.deleteMany(),
+    prismaClient.qualityObjectiveEvidence.deleteMany(),
+    prismaClient.kpiUnlockLog.deleteMany(),
+    prismaClient.kpiApprovalLog.deleteMany(),
+    prismaClient.kpiEvidence.deleteMany(),
+    prismaClient.kpiValue.deleteMany(),
+    prismaClient.kpiTarget.deleteMany(),
+    prismaClient.kpiAssignment.deleteMany(),
+    prismaClient.kpiPeriod.deleteMany(),
+    prismaClient.earlyWarning.deleteMany(),
+    prismaClient.decisionLog.deleteMany(),
+    prismaClient.weeklyActivity.deleteMany(),
+    prismaClient.monthlyPlan.deleteMany(),
+    prismaClient.academicCalendar.deleteMany(),
+    prismaClient.classJournalEntry.deleteMany(),
+    prismaClient.dailyReport.deleteMany(),
+    prismaClient.participationRecord.deleteMany(),
     prismaClient.approvalComment.deleteMany(),
     prismaClient.approvalWorkflow.deleteMany(),
     prismaClient.substituteAssignment.deleteMany(),
@@ -158,6 +197,46 @@ async function main() {
 
   // 9. Khởi tạo Duyệt yêu cầu BGH & Điều chuyển dạy thay (TeacherChangeRequest, SubstituteAssignment, ApprovalWorkflow)
   await seedApprovalsAndDispatch(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 10. Khởi tạo Hoạt động lớp học, Sổ đầu bài, Báo cáo ngày & Ý kiến phụ huynh
+  await seedClassroomOperations(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 11. Khởi tạo Lịch năm học, Kế hoạch tuần/tháng, Cảnh báo sớm AI & Quyết định BGH
+  await seedSchoolCalendarAndGovernance(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 12. Khởi tạo Quản trị KPI chu kỳ, Phân công chỉ tiêu, Minh chứng số & Lịch sử duyệt
+  await seedKpiOperations(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 13. Khởi tạo AI Insights, Đề xuất điều hành, Snapshot hành trình & Can thiệp sư phạm
+  await seedAiJourneyAnalytics(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 14. Khởi tạo Kiểm định Chất lượng TT15, Công văn, Thiết bị kho vận & An ninh bảo mật
+  await seedAccreditationAndSystemAdmin(
     prisma,
     schoolStruct,
     personnelStruct,

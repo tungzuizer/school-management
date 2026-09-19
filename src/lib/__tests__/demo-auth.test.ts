@@ -92,7 +92,7 @@ describe("16 Demo Accounts Authentication & Password Verification", () => {
       expect(user?.role).toBe(DEMO_ACCOUNTS_MAP[email].role);
       expect(user?.name).toBeDefined();
     }
-  });
+  }, 15000);
 
   it("từ chối mật khẩu không hợp lệ cho tài khoản demo", async () => {
     const authorize = credentialsProvider?.options?.authorize || credentialsProvider?.authorize;

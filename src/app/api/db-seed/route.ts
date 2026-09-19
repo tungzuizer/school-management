@@ -22,6 +22,11 @@ import { seedAcademicAndFacilities } from "../../../../prisma/seed-data/academic
 import { seedExamAnalyticsAndTranscripts } from "../../../../prisma/seed-data/exam-analytics";
 import { seedLessonPlansAndCurriculum } from "../../../../prisma/seed-data/lesson-plans";
 import { seedApprovalsAndDispatch } from "../../../../prisma/seed-data/approvals-dispatch";
+import { seedClassroomOperations } from "../../../../prisma/seed-data/classroom-operations";
+import { seedSchoolCalendarAndGovernance } from "../../../../prisma/seed-data/school-calendar-governance";
+import { seedKpiOperations } from "../../../../prisma/seed-data/kpi-operations";
+import { seedAiJourneyAnalytics } from "../../../../prisma/seed-data/ai-journey-analytics";
+import { seedAccreditationAndSystemAdmin } from "../../../../prisma/seed-data/accreditation-system-admin";
 
 async function runSeed() {
   // 1. Wipe database
@@ -39,6 +44,40 @@ async function runSeed() {
   } catch (error) {
     console.warn("⚠️ TRUNCATE CASCADE gặp giới hạn quyền, dọn dẹp qua Prisma deleteMany...");
     await Promise.allSettled([
+      prisma.transcriptUnlockRequest.deleteMany(),
+      prisma.tT15EvidenceFile.deleteMany(),
+      prisma.schoolPointEvaluationDetail.deleteMany(),
+      prisma.schoolPointEvaluation.deleteMany(),
+      prisma.tT15Indicator.deleteMany(),
+      prisma.fileAuditLog.deleteMany(),
+      prisma.systemEvidenceFile.deleteMany(),
+      prisma.studentImportMapping.deleteMany(),
+      prisma.studentImportStaging.deleteMany(),
+      prisma.studentImportBatch.deleteMany(),
+      prisma.interventionRecord.deleteMany(),
+      prisma.studentJourneySnapshot.deleteMany(),
+      prisma.journeyThresholdConfig.deleteMany(),
+      prisma.aiAnalysisLog.deleteMany(),
+      prisma.aiReportSummary.deleteMany(),
+      prisma.aiRecommendation.deleteMany(),
+      prisma.aiAlert.deleteMany(),
+      prisma.qualityObjectiveHistory.deleteMany(),
+      prisma.qualityObjectiveEvidence.deleteMany(),
+      prisma.kpiUnlockLog.deleteMany(),
+      prisma.kpiApprovalLog.deleteMany(),
+      prisma.kpiEvidence.deleteMany(),
+      prisma.kpiValue.deleteMany(),
+      prisma.kpiTarget.deleteMany(),
+      prisma.kpiAssignment.deleteMany(),
+      prisma.kpiPeriod.deleteMany(),
+      prisma.earlyWarning.deleteMany(),
+      prisma.decisionLog.deleteMany(),
+      prisma.weeklyActivity.deleteMany(),
+      prisma.monthlyPlan.deleteMany(),
+      prisma.academicCalendar.deleteMany(),
+      prisma.classJournalEntry.deleteMany(),
+      prisma.dailyReport.deleteMany(),
+      prisma.participationRecord.deleteMany(),
       prisma.approvalComment.deleteMany(),
       prisma.approvalWorkflow.deleteMany(),
       prisma.substituteAssignment.deleteMany(),
@@ -148,6 +187,46 @@ async function runSeed() {
     classesStudents
   );
 
+  // 10. Classroom Operations
+  await seedClassroomOperations(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 11. School Calendar & Governance
+  await seedSchoolCalendarAndGovernance(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 12. KPI Operations
+  await seedKpiOperations(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 13. AI Journey Analytics
+  await seedAiJourneyAnalytics(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 14. Accreditation & System Admin
+  await seedAccreditationAndSystemAdmin(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
   return {
     school: schoolStruct.school.name,
     campusesCount: schoolStruct.campuses.length,
@@ -160,7 +239,8 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const secret = searchParams.get("secret");
-    if (process.env.NODE_ENV === "production" && secret !== "seed123") {
+    const expectedSecret = process.env.SEED_SECRET || (process.env.NODE_ENV !== "production" ? "seed123" : undefined);
+    if (process.env.NODE_ENV === "production" && (!expectedSecret || secret !== expectedSecret)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -184,9 +264,10 @@ export async function GET(req: Request) {
         student: "hocsinh.thpholu@gmail.com / 123456",
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Internal Server Error";
     console.error("Lỗi khi chạy db-seed API:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
