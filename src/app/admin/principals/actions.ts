@@ -389,7 +389,7 @@ export async function resetUserPassword(userId: string, newPassword?: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return { success: false, error: "Không tìm thấy tài khoản" };
 
-    const passwordToSet = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
+    const passwordToSet = newPassword && newPassword.trim() ? newPassword.trim() : "123456";
     if (passwordToSet.length < 6) {
       return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
     }

@@ -164,7 +164,7 @@ export default function AdminPrincipalsPage() {
 
   const openPasswordModal = (u: PrincipalUserItem) => {
     setResetUser(u);
-    setCustomPasswordInput("abc123");
+    setCustomPasswordInput("123456");
     setShowPasswordText(true);
     setResetSuccessInfo("");
     setShowPasswordModal(true);
@@ -174,7 +174,7 @@ export default function AdminPrincipalsPage() {
     e.preventDefault();
     if (!resetUser) return;
     setIsSubmitting(true);
-    const pwdToSet = customPasswordInput.trim() || "abc123";
+    const pwdToSet = customPasswordInput.trim() || "123456";
     const res = await resetUserPassword(resetUser.id, pwdToSet);
     setIsSubmitting(false);
 
@@ -259,8 +259,7 @@ export default function AdminPrincipalsPage() {
   };
 
   const getKnownPassword = (email: string) => {
-    if (email.startsWith("superadmin")) return "SuperAdmin@2026! hoặc abc123";
-    return "abc123";
+    return "123456";
   };
 
   const filteredWards = selectedDeptId
@@ -697,17 +696,17 @@ export default function AdminPrincipalsPage() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setCustomPasswordInput("abc123")}
-                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
-                >
-                  Đặt abc123
-                </button>
-                <button
-                  type="button"
                   onClick={() => setCustomPasswordInput("123456")}
                   className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold rounded-lg"
                 >
                   Đặt 123456
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomPasswordInput("Password@123")}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+                >
+                  Đặt Password@123
                 </button>
               </div>
 

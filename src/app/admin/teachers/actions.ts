@@ -224,7 +224,7 @@ export async function updateTeacher(
 
 export async function resetTeacherPassword(userId: string, newPassword?: string) {
   try {
-    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
+    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "123456";
     if (rawPassword.length < 6) return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
 
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
@@ -449,7 +449,7 @@ export async function getTeacherCredentialsOverview(filters?: {
       isApproved: t.user.isApproved,
       mustChangePassword: t.user.mustChangePassword,
       createdAt: t.user.createdAt.toISOString(),
-      defaultPasswordHint: "abc123", // Mật khẩu chuẩn khởi tạo toàn trường
+      defaultPasswordHint: "123456", // Mật khẩu chuẩn khởi tạo toàn trường
     }));
 
     return { success: true, data: credentialItems };
@@ -485,7 +485,7 @@ export async function resetTeacherPasswordSecure(
       }
     }
 
-    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
+    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "123456";
     if (rawPassword.length < 6) {
       return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
     }

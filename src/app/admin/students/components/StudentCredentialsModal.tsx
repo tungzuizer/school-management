@@ -367,7 +367,7 @@ export default function StudentCredentialsModal({
               Tổng số học sinh: <strong className="text-slate-900">{filtered.length}</strong> / {credentials.length}
             </span>
             <span className="text-[11px] text-slate-600">
-              Mật khẩu mặc định hệ thống: <strong className="text-slate-800">abc123</strong>
+              Mật khẩu mặc định hệ thống: <strong className="text-slate-800">123456</strong>
             </span>
           </div>
         </div>

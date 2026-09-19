@@ -120,7 +120,7 @@ export default function StudentsPage() {
   // Password Reset state
   const [pwdModalOpen, setPwdModalOpen] = useState(false);
   const [selectedStudentForPwd, setSelectedStudentForPwd] = useState<StudentData | null>(null);
-  const [newPwdInput, setNewPwdInput] = useState("abc123");
+  const [newPwdInput, setNewPwdInput] = useState("123456");
   const [resettingPwd, setResettingPwd] = useState(false);
 
   // Credential Management Hub state (BGH exclusive)
@@ -309,7 +309,7 @@ export default function StudentsPage() {
 
   const openPasswordModal = (s: StudentData) => {
     setSelectedStudentForPwd(s);
-    setNewPwdInput("abc123");
+    setNewPwdInput("123456");
     setPwdModalOpen(true);
   };
 
@@ -390,7 +390,7 @@ export default function StudentsPage() {
           : null,
         group: null,
       });
-      setNewPwdInput("abc123");
+      setNewPwdInput("123456");
       setPwdModalOpen(true);
     }
   };
@@ -817,7 +817,7 @@ export default function StudentsPage() {
                         </td>
                         <td className="px-4 py-3">
                           <span className="font-mono text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1 font-semibold">
-                            <KeyRound className="w-3 h-3 text-amber-600" /> abc123
+                            <KeyRound className="w-3 h-3 text-amber-600" /> 123456
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -1129,7 +1129,7 @@ export default function StudentsPage() {
         <div className="space-y-4">
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
             <p className="font-semibold mb-1">🔑 Quản lý Mật khẩu Học sinh</p>
-            <p>Mật khẩu mặc định hiện tại của tài khoản: <strong className="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">abc123</strong></p>
+            <p>Mật khẩu mặc định hiện tại của tài khoản: <strong className="font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">123456</strong></p>
           </div>
 
           <div>
@@ -1146,17 +1146,17 @@ export default function StudentsPage() {
           <div className="flex gap-2 pt-1">
             <button
               type="button"
-              onClick={() => setNewPwdInput("abc123")}
-              className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
-            >
-              Gán: abc123
-            </button>
-            <button
-              type="button"
               onClick={() => setNewPwdInput("123456")}
               className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
             >
               Gán: 123456
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewPwdInput("Password@123")}
+              className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+            >
+              Gán: Password@123
             </button>
           </div>
 

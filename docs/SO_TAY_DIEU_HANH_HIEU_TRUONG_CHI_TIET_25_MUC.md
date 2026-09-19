@@ -1,23 +1,23 @@
 <!--
 Fact-Forcing Gate Declaration:
-- Importers / Callers: School Principals, Vice Principals, Academic Heads, School Administrators
+- Importers / Callers: School Principals, Vice Principals, Academic Heads, School Administrators, Teachers
 - Affected API: All 25 Management Modules in /admin/* on EduSmart Management Platform
-- Data schemas: Thông tư 15/2020/TT-BGDĐT, Thông tư 22/2021/TT-BGDĐT, Công văn 5512/BGDĐT-GDTrH, Thông tư 32/2018/TT-BGDĐT, Nghị định 130/2018/NĐ-CP (Chữ ký số)
-- User's verbatim instruction: "hãy làm chi tiết từng mục của acc hiệu trưởng hướng dẫn chi tiết từng chức năng tất cả các mục ở menu trên acc hiệu trưởng"
+- Data schemas: Thông tư 27/2020/TT-BGDĐT (Đánh giá HS Tiểu học), Thông tư 28/2020/TT-BGDĐT (Điều lệ Trường Tiểu học), Công văn 2345/BGDĐT-GDTH, Thông tư 32/2018/TT-BGDĐT, Nghị định 130/2018/NĐ-CP (Chữ ký số)
+- User's verbatim instruction: "đọc lại file tên KẾ HOẠCH GIÁO DỤC 2026-2027 và hãy upadte và cập nhập thêm dữ liệu"
 -->
 # 👑 SỔ TAY ĐIỀU HÀNH DÀNH RIÊNG CHO HIỆU TRƯỞNG & BAN GIÁM HIỆU
 ## HƯỚNG DẪN CHI TIẾT 100% CÁC CHỨC NĂNG & QUY TRÌNH TÁC NGHIỆP (25 MỤC MENU ADMIN)
-*Áp dụng chuẩn hóa theo Thông tư 15/2020, Thông tư 22/2021, Công văn 5512 của Bộ GD&ĐT và Nghị định 130/2018 về Chữ ký số*
+*Áp dụng chuẩn hóa theo Kế hoạch Giáo dục Năm học 2026-2027 (Trường Tiểu học Phố Lu), Thông tư 27/2020, Thông tư 28/2020, Công văn 2345 của Bộ GD&ĐT và Nghị định 130/2018 về Chữ ký số*
 
 ---
 
-## 🧭 LỜI NÓI ĐẦU DÀNH CHO HIỆU TRƯỞNG
+## 🧭 LỜI NÓI ĐẦU DÀNH CHO HIỆU TRƯỞNG & BAN GIÁM HIỆU
 
 Kính thưa Thầy/Cô trong Ban Giám Hiệu!
 
-Hệ sinh thái Quản trị Giáo dục **EduSmart** được xây dựng nhằm giải phóng hoàn toàn gánh nặng hồ sơ, sổ sách giấy tờ cồng kềnh, giúp Ban Giám Hiệu chuyển đổi từ phương thức quản lý hành chính thụ động sang **Quản trị dữ liệu số theo thời gian thực (Real-time Data-driven Governance)**.
+Hệ sinh thái Quản trị Giáo dục **EduSmart** được thiết kế chuyên biệt theo mô hình liên trường / đa phân hiệu của **Trường Tiểu học Phố Lu** (Quy mô 62 lớp, 1.706 học sinh, 120 CB-GV-NV, 4 Phân hiệu + 1 Điểm lẻ), giúp Ban Giám Hiệu chuyển đổi hoàn toàn từ phương thức quản lý giấy tờ thủ công sang **Quản trị dữ liệu số theo thời gian thực (Real-time Data-driven Governance)**.
 
-Tài liệu này được biên soạn theo khung **7 Tiêu Chuẩn Tác Nghiệp Chuyên Sâu** cho toàn bộ 25 phân hệ chức năng trên tài khoản Hiệu trưởng, chia thành **5 Cụm Trọng Tâm Điều Hành**. Mỗi mục đều có sẵn mẫu lời phê chuẩn mực sư phạm và hướng dẫn xử lý sự cố trong 10 giây.
+Tài liệu này được biên soạn theo khung **7 Tiêu Chuẩn Tác Nghiệp Chuyên Sâu** cho toàn bộ 25 phân hệ chức năng trên tài khoản Hiệu trưởng, chia thành **5 Cụm Trọng Tâm Điều Hành**. Mỗi mục đều có sẵn số liệu thực tế, mẫu lời phê chuẩn mực sư phạm và hướng dẫn xử lý sự cố trong 10 giây.
 
 ---
 

@@ -3,13 +3,13 @@
  * 1. Importers/Callers: `src/components/layout/Header.tsx`, `src/components/layout/MobileDrawer.tsx`, `src/app/admin/layout.tsx`.
  * 2. Affected APIs: `SystemAccountsModal` default export component.
  * 3. Schemas: `AccountInfo` (role, name, email, defaultPass, icon, color, highlight).
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa tài khoản SuperAdmin toàn quốc superadmin@gmail.com và hiển thị mẫu 3 miền.
+ * 4. Verbatim User Instruction: "và các tài khoản demo III. Bảng Danh Mục Tài Khoản & Mật Khẩu Nghiệp Vụ Tất cả tài khoản sử dụng mật khẩu mặc định: 123456... --- vô sẽ ko yêu cầu đổi mk nữa".
  */
 
 "use client";
 
 import { useState } from "react";
-import { KeyRound, Eye, EyeOff, Copy, Check, X, Shield, Building2, User, BookOpen, Crown, GraduationCap, Calculator, Users } from "lucide-react";
+import { KeyRound, Eye, EyeOff, Copy, Check, X, Shield, Building2, User, BookOpen, Crown, GraduationCap, Calculator, Users, MapPin } from "lucide-react";
 
 interface AccountInfo {
   role: string;
@@ -23,134 +23,135 @@ interface AccountInfo {
 
 const accountsList: AccountInfo[] = [
   {
-    role: "Quản Trị Toàn Quốc (SuperAdmin)",
-    name: "Ban Quản Trị Nền Tảng Giáo Dục Toàn Quốc",
-    email: "superadmin@gmail.com",
-    defaultPass: "abc123",
+    role: "SuperAdmin Toàn Quốc",
+    name: "Quản trị viên Quốc gia (Bộ GD&ĐT)",
+    email: "superadmin.vietnam@gmail.com",
+    defaultPass: "123456",
     icon: Crown,
     color: "bg-amber-100 border-amber-300 text-amber-900",
     highlight: true,
   },
   {
-    role: "Lãnh đạo Sở GD&ĐT Hà Nội",
-    name: "Giám đốc Sở Giáo dục & Đào tạo Hà Nội",
-    email: "sogd.hanoi@gmail.com",
-    defaultPass: "abc123",
+    role: "Sở GD&ĐT Tỉnh Lào Cai",
+    name: "Lãnh đạo Sở GD&ĐT (Bà Dương Bích Nguyệt)",
+    email: "admin.sogd.laocai@gmail.com",
+    defaultPass: "123456",
     icon: Building2,
     color: "bg-purple-100 border-purple-300 text-purple-900",
     highlight: true,
   },
   {
-    role: "Lãnh đạo Sở GD&ĐT TP.HCM",
-    name: "Giám đốc Sở Giáo dục & Đào tạo TP. Hồ Chí Minh",
-    email: "sogd.tphcm@gmail.com",
-    defaultPass: "abc123",
+    role: "Phòng GD&ĐT Huyện Bảo Thắng",
+    name: "Lãnh đạo Phòng GD&ĐT (ThS. Bùi Thị Hải Vân)",
+    email: "gd.baothang@gmail.com",
+    defaultPass: "123456",
     icon: Building2,
-    color: "bg-purple-100 border-purple-300 text-purple-900",
+    color: "bg-rose-100 border-rose-300 text-rose-900",
+    highlight: true,
   },
   {
-    role: "Lãnh đạo Sở GD&ĐT Đà Nẵng",
-    name: "Giám đốc Sở Giáo dục & Đào tạo TP. Đà Nẵng",
-    email: "sogd.danang@gmail.com",
-    defaultPass: "abc123",
-    icon: Building2,
-    color: "bg-purple-100 border-purple-300 text-purple-900",
-  },
-  {
-    role: "Lãnh đạo Sở GD&ĐT Ninh Bình",
-    name: "TS. Phan Thành Công (Giám đốc Sở GD&ĐT Ninh Bình)",
-    email: "admin.sogd.ninhbinh@gmail.com",
-    defaultPass: "abc123",
-    icon: Building2,
-    color: "bg-purple-100 border-purple-300 text-purple-900",
-  },
-  {
-    role: "Phòng GD&ĐT Cầu Giấy (Hà Nội)",
-    name: "Trưởng phòng GD&ĐT Quận Cầu Giấy",
-    email: "pgd.caugiay@gmail.com",
-    defaultPass: "abc123",
+    role: "UBND Xã Bảo Thắng",
+    name: "Cán bộ Giáo dục Xã / Chủ tịch UBND",
+    email: "ubnd.baothang@gmail.com",
+    defaultPass: "123456",
     icon: Building2,
     color: "bg-rose-100 border-rose-300 text-rose-900",
   },
   {
-    role: "Phòng GD&ĐT Quận 1 (TP.HCM)",
-    name: "Trưởng phòng GD&ĐT Quận 1",
-    email: "pgd.quan1@gmail.com",
-    defaultPass: "abc123",
-    icon: Building2,
-    color: "bg-rose-100 border-rose-300 text-rose-900",
-  },
-  {
-    role: "Phòng GD TP. Ninh Bình",
-    name: "ThS. Đinh Xuân Cảnh (Trưởng phòng GD TP. Ninh Bình)",
-    email: "gd.tpninhbinh@gmail.com",
-    defaultPass: "abc123",
-    icon: Building2,
-    color: "bg-rose-100 border-rose-300 text-rose-900",
-  },
-  {
-    role: "Hiệu Trưởng (THPT Chu Văn An - Hà Nội)",
-    name: "Thầy Hiệu trưởng (THPT Chu Văn An)",
-    email: "hieutruong.chuvanan@gmail.com",
-    defaultPass: "abc123",
+    role: "Hiệu trưởng Toàn trường",
+    name: "ThS. Trần Thị Thanh Hà",
+    email: "hieutruong.thpholu@gmail.com",
+    defaultPass: "123456",
     icon: Shield,
     color: "bg-indigo-100 border-indigo-300 text-indigo-900",
     highlight: true,
   },
   {
-    role: "Hiệu Trưởng (THPT Chuyên Lê Hồng Phong - TP.HCM)",
-    name: "Thầy Hiệu trưởng (THPT Chuyên Lê Hồng Phong)",
-    email: "hieutruong.lehongphong@gmail.com",
-    defaultPass: "abc123",
-    icon: Shield,
-    color: "bg-indigo-100 border-indigo-300 text-indigo-900",
-    highlight: true,
-  },
-  {
-    role: "Hiệu Trưởng (THPT Trần Phú)",
-    name: "Thầy Đinh Văn Khang (Hiệu trưởng)",
-    email: "hieutruong.thpt.tranphu@gmail.com",
-    defaultPass: "abc123",
-    icon: Shield,
-    color: "bg-indigo-100 border-indigo-300 text-indigo-900",
-  },
-  {
-    role: "Phó Hiệu Trưởng (Chuyên môn)",
-    name: "Cô Nguyễn Thị Mai (Phó Hiệu trưởng)",
-    email: "hieuphe.thpt.tranphu@gmail.com",
-    defaultPass: "abc123",
-    icon: Building2,
-    color: "bg-teal-100 border-teal-300 text-teal-900",
-  },
-  {
-    role: "Tổ Trưởng Chuyên Môn (Toán)",
-    name: "Thầy Đinh Quốc Tuấn (Tổ trưởng Toán)",
-    email: "gv.toan.tuan.tp@gmail.com",
-    defaultPass: "abc123",
-    icon: Users,
-    color: "bg-cyan-100 border-cyan-300 text-cyan-900",
-  },
-  {
-    role: "Giáo Viên Bộ Môn (Tin học)",
-    name: "Cô Vũ Minh Trang (GV Tin học)",
-    email: "gv.tin.trang.tp@gmail.com",
-    defaultPass: "abc123",
-    icon: BookOpen,
-    color: "bg-emerald-100 border-emerald-300 text-emerald-900",
-  },
-  {
-    role: "Kế Toán / Nghị quyết 37",
-    name: "Nguyễn Thị Phương Mai (Kế toán trưởng)",
-    email: "ketoan.tp@gmail.com",
-    defaultPass: "abc123",
+    role: "Kế toán trưởng",
+    name: "Nguyễn Thị Phương Mai",
+    email: "ketoan.thpholu@gmail.com",
+    defaultPass: "123456",
     icon: Calculator,
     color: "bg-orange-100 border-orange-300 text-orange-900",
   },
   {
-    role: "Học sinh Mẫu (10A1)",
-    name: "Học sinh Đinh Bảo Châu (Mã: HS26TP100001)",
-    email: "hs26tp100001@gmail.com",
-    defaultPass: "abc123",
+    role: "PHT Điểm Trung tâm",
+    name: "ThS. Nguyễn Văn Trung (Quản lý 20 lớp)",
+    email: "pht.trungtam@gmail.com",
+    defaultPass: "123456",
+    icon: Building2,
+    color: "bg-teal-100 border-teal-300 text-teal-900",
+  },
+  {
+    role: "PHT Phân hiệu Sơn Hà 1",
+    name: "Thầy Nguyễn Văn Sơn (Quản lý 12 lớp)",
+    email: "pht.sonha1@gmail.com",
+    defaultPass: "123456",
+    icon: MapPin,
+    color: "bg-teal-100 border-teal-300 text-teal-900",
+  },
+  {
+    role: "PHT Phân hiệu Sơn Hà 2",
+    name: "Cô Hoàng Thị Hà (Quản lý 10 lớp)",
+    email: "pht.sonha2@gmail.com",
+    defaultPass: "123456",
+    icon: MapPin,
+    color: "bg-teal-100 border-teal-300 text-teal-900",
+  },
+  {
+    role: "PHT Phân hiệu Sơn Hải",
+    name: "Thầy Lê Văn Hải (Quản lý 10 lớp)",
+    email: "pht.sonhai@gmail.com",
+    defaultPass: "123456",
+    icon: MapPin,
+    color: "bg-teal-100 border-teal-300 text-teal-900",
+  },
+  {
+    role: "PHT Phân hiệu Phố Lu 3",
+    name: "Cô Đặng Thị Lu (Quản lý 8 lớp)",
+    email: "pht.pholu3@gmail.com",
+    defaultPass: "123456",
+    icon: MapPin,
+    color: "bg-teal-100 border-teal-300 text-teal-900",
+  },
+  {
+    role: "PHT Điểm lẻ An Tiến",
+    name: "Thầy Phạm Văn Tiến (Quản lý 2 lớp ghép)",
+    email: "pht.antien@gmail.com",
+    defaultPass: "123456",
+    icon: MapPin,
+    color: "bg-teal-100 border-teal-300 text-teal-900",
+  },
+  {
+    role: "Tổ trưởng Chuyên môn K1",
+    name: "Cô Vũ Thị Hoa (Khối 1)",
+    email: "to.khoi1@gmail.com",
+    defaultPass: "123456",
+    icon: Users,
+    color: "bg-cyan-100 border-cyan-300 text-cyan-900",
+  },
+  {
+    role: "Tổ trưởng Tổ Đặc thù",
+    name: "Cô Đào Thị Linh (Tiếng Anh, Tin, MT, AN)",
+    email: "to.dacthu@gmail.com",
+    defaultPass: "123456",
+    icon: Users,
+    color: "bg-cyan-100 border-cyan-300 text-cyan-900",
+  },
+  {
+    role: "Giáo viên Tiểu học mẫu",
+    name: "Cô Nguyễn Thu Hằng (GVCN 1A1)",
+    email: "giaovien.thpholu@gmail.com",
+    defaultPass: "123456",
+    icon: BookOpen,
+    color: "bg-emerald-100 border-emerald-300 text-emerald-900",
+    highlight: true,
+  },
+  {
+    role: "Học sinh Tiểu học mẫu",
+    name: "Nguyễn Minh Khang (Lớp 1A1)",
+    email: "hocsinh.thpholu@gmail.com",
+    defaultPass: "123456",
     icon: GraduationCap,
     color: "bg-blue-100 border-blue-300 text-blue-900",
     highlight: true,
@@ -207,7 +208,7 @@ export default function SystemAccountsModal({ isOpen, onClose }: SystemAccountsM
             </div>
             <div>
               <h2 className="text-lg font-extrabold text-slate-900">Danh Sách Tài Khoản & Mật Khẩu Đăng Nhập</h2>
-              <p className="text-xs text-slate-500">Mật khẩu khởi tạo mặc định cho tất cả tài khoản là <strong className="font-mono text-amber-800">abc123</strong> (hoặc <strong className="font-mono text-amber-800">123456</strong>)</p>
+              <p className="text-xs text-slate-500">Mật khẩu khởi tạo mặc định cho tất cả tài khoản là <strong className="font-mono text-amber-800 font-bold">123456</strong></p>
             </div>
           </div>
           <button

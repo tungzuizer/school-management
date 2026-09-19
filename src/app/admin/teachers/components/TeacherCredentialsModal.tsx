@@ -330,7 +330,7 @@ export default function TeacherCredentialsModal({
               Tổng số giáo viên: <strong>{filtered.length}</strong> / {credentials.length}
             </span>
             <span className="text-[11px] text-slate-400">
-              Mật khẩu mặc định hệ thống: <strong className="text-slate-700">abc123</strong>
+              Mật khẩu mặc định hệ thống: <strong className="text-slate-700">123456</strong>
             </span>
           </div>
         </div>
