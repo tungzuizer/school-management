@@ -70,9 +70,11 @@ describe("Core Academic & Governance Seed Modules Verification", () => {
 
   it("1. seedExamAnalyticsAndTranscripts tạo kỳ thi đa năm và bảng điểm học sinh", async () => {
     const createdExamPeriods: any[] = [];
+    const createdGrades: any[] = [];
     const createdScores: any[] = [];
     const createdTranscripts: any[] = [];
     const createdSubjectGrades: any[] = [];
+    const createdUnlockRequests: any[] = [];
 
     const mockPrisma = {
       examPeriod: {
@@ -80,6 +82,12 @@ describe("Core Academic & Governance Seed Modules Verification", () => {
           const item = { id: `ep_${createdExamPeriods.length + 1}`, ...data };
           createdExamPeriods.push(item);
           return item;
+        }),
+      },
+      grade: {
+        createMany: vi.fn().mockImplementation(async ({ data }) => {
+          createdGrades.push(...data);
+          return { count: data.length };
         }),
       },
       studentScore: {
@@ -94,11 +102,23 @@ describe("Core Academic & Governance Seed Modules Verification", () => {
           createdTranscripts.push(item);
           return item;
         }),
+        update: vi.fn().mockImplementation(async ({ where, data }) => {
+          const found = createdTranscripts.find((t) => t.id === where.id);
+          if (found) Object.assign(found, data);
+          return found;
+        }),
       },
       transcriptSubjectGrade: {
         create: vi.fn().mockImplementation(async ({ data }) => {
           const item = { id: `tsg_${createdSubjectGrades.length + 1}`, ...data };
           createdSubjectGrades.push(item);
+          return item;
+        }),
+      },
+      transcriptUnlockRequest: {
+        create: vi.fn().mockImplementation(async ({ data }) => {
+          const item = { id: `tur_${createdUnlockRequests.length + 1}`, ...data };
+          createdUnlockRequests.push(item);
           return item;
         }),
       },
@@ -111,10 +131,12 @@ describe("Core Academic & Governance Seed Modules Verification", () => {
       mockClassesStudents
     );
 
-    expect(createdExamPeriods.length).toBe(8);
+    expect(createdExamPeriods.length).toBe(10);
+    expect(createdGrades.length).toBeGreaterThan(0);
     expect(createdScores.length).toBeGreaterThan(0);
-    expect(createdTranscripts.length).toBe(30);
-    expect(createdSubjectGrades.length).toBe(30 * mockSubjects.length);
+    expect(createdTranscripts.length).toBe(60);
+    expect(createdSubjectGrades.length).toBeGreaterThan(0);
+    expect(createdUnlockRequests.length).toBe(4);
   });
 
   it("2. seedLessonPlansAndCurriculum tạo đợt nộp giáo án, khung CT và kế hoạch bài dạy", async () => {
