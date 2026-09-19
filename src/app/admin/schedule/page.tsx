@@ -2,8 +2,8 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin navigation (`src/app/admin/schedule/page.tsx`).
  * 2. Affected APIs: `getScheduleData`, `getScheduleFormData`, `createScheduleEntry`, `updateScheduleEntry`, `deleteScheduleEntry`, `clearClassSchedule`, `bulkImportSchedules`, `getTimetableMatrixAction`, `generateAiTimetableAction`, `swapScheduleSlotsAction`, `validateScheduleSwapAction`, `getTeacherWorkloadStatsAction`.
- * 3. Schema: `Schedule`, `ClassRoom`, `Teacher`, `Subject`, `TeachingAssignment`.
- * 4. Verbatim User Instruction: "thêm chức năng thời khóa biểu thông minh Các tiết Chào cờ sinh hoạt phải đc cố định vào thứ 2 và thứ 6. Các môn có thể được cố định buổi dạy. Và gv chỉ dạy 5 buổi/ tuần không bị trùng nhau. 1 ngày chỉ đc 7 tiết và phải thông minh và hỗ trợ ban giám hiệu lập thời khóa biểu".
+ * 3. Schema: `Schedule`, `ClassRoom`, `Teacher`, `Subject`, `TeachingAssignment`, `Campus`, `School`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu & Điểm trường trực thuộc cho Thời khóa biểu.
  */
 
 "use client";
@@ -51,6 +51,7 @@ import {
   Activity,
   Lock,
   AlertTriangle,
+  MapPin,
 } from "lucide-react";
 import { StatCardSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { parseSpreadsheetBuffer, mapRowsToSchedules } from "@/lib/excel-parser";
@@ -128,11 +129,15 @@ type ScheduleEntry = {
 };
 
 type SchoolOption = { id: string; name: string };
+type CampusOption = { id: string; name: string; schoolId?: string | null };
 type ClassOption = {
   id: string;
   name: string;
   gradeLevel: number;
-  school?: { id: string; name: string };
+  schoolId?: string | null;
+  campusId?: string | null;
+  school?: { id: string; name: string } | null;
+  campus?: { id: string; name: string } | null;
   homeroomTeacherId?: string | null;
   homeroomTeacher?: { id: string; user: { name: string } } | null;
 };
@@ -193,7 +198,9 @@ export default function SchedulePage() {
 
   // Base Options
   const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [campuses, setCampuses] = useState<CampusOption[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>("");
+  const [selectedCampus, setSelectedCampus] = useState<string>("ALL");
   const [selectedGrade, setSelectedGrade] = useState<number | "ALL">("ALL");
 
   const [classes, setClasses] = useState<ClassOption[]>([]);
@@ -203,6 +210,18 @@ export default function SchedulePage() {
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+
+  const getCampusBadgeStyle = (campusName?: string | null) => {
+    if (!campusName) return "bg-slate-100 text-slate-700 border-slate-200";
+    const name = campusName.toLowerCase();
+    if (name.includes("trung tâm")) return "bg-indigo-50 text-indigo-700 border-indigo-200";
+    if (name.includes("sơn hà 1")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (name.includes("sơn hà 2")) return "bg-teal-50 text-teal-700 border-teal-200";
+    if (name.includes("sơn hải")) return "bg-amber-50 text-amber-700 border-amber-200";
+    if (name.includes("phố lu 3")) return "bg-purple-50 text-purple-700 border-purple-200";
+    if (name.includes("an tiến")) return "bg-rose-50 text-rose-700 border-rose-200";
+    return "bg-blue-50 text-blue-700 border-blue-200";
+  };
 
   // Matrix View Data State
   const [matrixSchedules, setMatrixSchedules] = useState<ScheduleItem[]>([]);
@@ -268,25 +287,26 @@ export default function SchedulePage() {
     const dd = String(d.getDate()).padStart(2, "0");
     const newDateStr = `${yyyy}-${mm}-${dd}`;
     setSelectedDate(newDateStr);
-    loadData(selectedClassId, selectedSchoolId, newDateStr);
+    loadData(selectedClassId, selectedSchoolId, selectedCampus, newDateStr);
   };
 
   const handleDateChange = (newDateStr: string) => {
     setSelectedDate(newDateStr);
-    loadData(selectedClassId, selectedSchoolId, newDateStr);
+    loadData(selectedClassId, selectedSchoolId, selectedCampus, newDateStr);
   };
 
-  async function loadData(classId?: string, schoolId?: string, dateStr?: string) {
+  async function loadData(classId?: string, schoolId?: string, campusId?: string, dateStr?: string) {
     setLoading(true);
     const activeDateStr = dateStr || selectedDate;
     try {
-      const scheduleRes = await getScheduleData(classId, schoolId, activeDateStr);
+      const scheduleRes = await getScheduleData(classId, schoolId, campusId === "ALL" ? undefined : campusId, activeDateStr);
       const activeSchoolId = schoolId || scheduleRes.selectedClass?.school?.id || "";
 
       const formOptions = await getScheduleFormData(activeSchoolId);
 
       setSchools(scheduleRes.schools);
-      setClasses(scheduleRes.classes);
+      setCampuses(scheduleRes.campuses || []);
+      setClasses(scheduleRes.classes as any);
       setSchedules(scheduleRes.schedules as ScheduleEntry[]);
       setSelectedClassId(scheduleRes.selectedClassId);
       setSelectedClass(scheduleRes.selectedClass as any);
@@ -349,12 +369,14 @@ export default function SchedulePage() {
 
   const handleSchoolChange = async (schoolId: string) => {
     setSelectedSchoolId(schoolId);
+    setSelectedCampus("ALL");
     setRefreshing(true);
     try {
-      const scheduleRes = await getScheduleData(undefined, schoolId, selectedDate);
+      const scheduleRes = await getScheduleData(undefined, schoolId, undefined, selectedDate);
       const activeSchoolId = schoolId || scheduleRes.selectedClass?.school?.id || "";
 
-      setClasses(scheduleRes.classes);
+      setCampuses(scheduleRes.campuses || []);
+      setClasses(scheduleRes.classes as any);
       setSchedules(scheduleRes.schedules as ScheduleEntry[]);
       setSelectedClassId(scheduleRes.selectedClassId);
       setSelectedClass(scheduleRes.selectedClass as any);
@@ -372,11 +394,35 @@ export default function SchedulePage() {
     }
   };
 
+  const handleCampusChange = async (campusId: string) => {
+    setSelectedCampus(campusId);
+    setRefreshing(true);
+    try {
+      const scheduleRes = await getScheduleData(
+        undefined,
+        selectedSchoolId,
+        campusId === "ALL" ? undefined : campusId,
+        selectedDate
+      );
+      setClasses(scheduleRes.classes as any);
+      setSchedules(scheduleRes.schedules as ScheduleEntry[]);
+      setSelectedClassId(scheduleRes.selectedClassId);
+      setSelectedClass(scheduleRes.selectedClass as any);
+      setDays(scheduleRes.days);
+
+      loadMatrixData(selectedSchoolId, scheduleRes.selectedClassId);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleClassChange = async (classId: string) => {
     setSelectedClassId(classId);
     setRefreshing(true);
     try {
-      const data = await getScheduleData(classId, selectedSchoolId, selectedDate);
+      const data = await getScheduleData(classId, selectedSchoolId, selectedCampus === "ALL" ? undefined : selectedCampus, selectedDate);
       setSchedules(data.schedules as ScheduleEntry[]);
       setSelectedClass(data.selectedClass as any);
       setDays(data.days);
@@ -689,6 +735,9 @@ export default function SchedulePage() {
   };
 
   const filteredClasses = classes.filter((c) => {
+    if (selectedCampus !== "ALL" && selectedCampus !== "") {
+      if (c.campusId !== selectedCampus) return false;
+    }
     if (selectedGrade !== "ALL" && c.gradeLevel !== selectedGrade) return false;
     return true;
   });
@@ -1002,6 +1051,47 @@ export default function SchedulePage() {
               </div>
             )}
 
+            {/* Campus Selector Bar (Thanh chọn Phân hiệu & Điểm trường trực thuộc) */}
+            <div className="bg-slate-50/80 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-2">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold px-1">
+                <span className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
+                  <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Chọn Phân hiệu / Điểm trường trực thuộc để lọc:
+                </span>
+                <span className="text-[11px] bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full font-bold">
+                  {campuses.length} Phân hiệu & Điểm trường
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => handleCampusChange("ALL")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                    selectedCampus === "ALL" || selectedCampus === ""
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                      : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" /> Toàn trường (Tất cả điểm trường)
+                </button>
+                {campuses.map((c) => {
+                  const isSelected = selectedCampus === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => handleCampusChange(c.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                        isSelected
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                          : `bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100`
+                      }`}
+                    >
+                      <MapPin className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-indigo-500"}`} />
+                      <span>{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Grade Filters & Class Tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
@@ -1041,7 +1131,7 @@ export default function SchedulePage() {
             {/* Classes Tabs */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
               {filteredClasses.length === 0 ? (
-                <p className="text-xs text-slate-400 italic py-1">Không tìm thấy lớp học phù hợp</p>
+                <p className="text-xs text-slate-400 italic py-1">Không tìm thấy lớp học phù hợp với phân hiệu / khối đã chọn</p>
               ) : (
                 filteredClasses.map((cls) => {
                   const isSelected = selectedClassId === cls.id;
@@ -1049,7 +1139,7 @@ export default function SchedulePage() {
                     <button
                       key={cls.id}
                       onClick={() => handleClassChange(cls.id)}
-                      className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
+                      className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
                         isSelected
                           ? "bg-indigo-600 text-white border-indigo-600 shadow-xs ring-2 ring-indigo-500/20"
                           : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
@@ -1057,6 +1147,11 @@ export default function SchedulePage() {
                     >
                       <BookOpen className="w-3.5 h-3.5" />
                       <span>Lớp {cls.name}</span>
+                      {cls.campus && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold border ${getCampusBadgeStyle(cls.campus.name)}`}>
+                          {cls.campus.name.replace("Phân hiệu ", "").replace("Điểm trường ", "")}
+                        </span>
+                      )}
                     </button>
                   );
                 })

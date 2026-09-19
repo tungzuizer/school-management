@@ -40,7 +40,7 @@ export async function seedAcademicAndFacilities(
     {
       code: "TB-TIN-01",
       name: "Bộ máy tính thực hành Tin học Tiểu học (30 máy)",
-      category: EquipmentCategory.LABORATORY,
+      category: EquipmentCategory.IT_COMPUTER,
       qty: 30,
       campusIdx: 0,
       loc: "Phòng Tin học Trung tâm",
@@ -48,7 +48,7 @@ export async function seedAcademicAndFacilities(
     {
       code: "TB-NN-01",
       name: "Phòng học Ngoại ngữ tương tác đa phương tiện",
-      category: EquipmentCategory.TEACHING,
+      category: EquipmentCategory.PROJECTOR_SCREEN,
       qty: 1,
       campusIdx: 0,
       loc: "Phòng Ngoại ngữ Trung tâm",
@@ -56,7 +56,7 @@ export async function seedAcademicAndFacilities(
     {
       code: "TB-STEM-01",
       name: "Bộ đồ dùng thực hành STEM & Robotics Tiểu học",
-      category: EquipmentCategory.TEACHING,
+      category: EquipmentCategory.IT_COMPUTER,
       qty: 15,
       campusIdx: 0,
       loc: "Không gian Sáng tạo STEM Phố Lu",
@@ -64,7 +64,7 @@ export async function seedAcademicAndFacilities(
     {
       code: "TB-MC-SH1",
       name: "Máy chiếu tương tác thông minh Panasonic",
-      category: EquipmentCategory.ELECTRONIC,
+      category: EquipmentCategory.PROJECTOR_SCREEN,
       qty: 6,
       campusIdx: 1,
       loc: "Khu Lớp học Sơn Hà 1",
@@ -72,7 +72,7 @@ export async function seedAcademicAndFacilities(
     {
       code: "TB-AM-SH1",
       name: "Hệ thống loa âm thanh & đàn Organ phím điện tử",
-      category: EquipmentCategory.MUSIC,
+      category: EquipmentCategory.MUSIC_ARTS,
       qty: 4,
       campusIdx: 1,
       loc: "Phòng Âm nhạc Sơn Hà 1",
@@ -96,7 +96,7 @@ export async function seedAcademicAndFacilities(
     {
       code: "TB-TH-PL3",
       name: "Bộ thiết bị dạy học số hóa & Tivi 65 inch 4K",
-      category: EquipmentCategory.ELECTRONIC,
+      category: EquipmentCategory.PROJECTOR_SCREEN,
       qty: 8,
       campusIdx: 4,
       loc: "Phòng chức năng Phố Lu 3",
@@ -104,7 +104,7 @@ export async function seedAcademicAndFacilities(
     {
       code: "TB-DD-AT",
       name: "Bộ đồ dùng trực quan Toán - Tiếng Việt lớp 1, 2",
-      category: EquipmentCategory.TEACHING,
+      category: EquipmentCategory.GENERAL,
       qty: 4,
       campusIdx: 5,
       loc: "Phòng học đa năng Điểm An Tiến",
@@ -213,7 +213,7 @@ export async function seedAcademicAndFacilities(
           classId: st.classId,
           date: curDate,
           period: 1,
-          status: idx % 19 === 0 && d === 0 ? AttendanceStatus.EXCUSED : AttendanceStatus.PRESENT,
+          status: idx % 19 === 0 && d === 0 ? AttendanceStatus.ABSENT_EXCUSED : AttendanceStatus.PRESENT,
           note: idx % 19 === 0 && d === 0 ? "Nghỉ phép do ốm có đơn phụ huynh" : "Đi học đúng giờ",
         },
       });
@@ -229,7 +229,7 @@ export async function seedAcademicAndFacilities(
       targetValue: 100.0,
       actualValue: 99.8,
       unit: "%",
-      status: QualityObjectiveStatus.IN_PROGRESS,
+      status: QualityObjectiveStatus.NEAR_TARGET,
     },
     {
       code: "MTCL-2026-02",
@@ -238,7 +238,7 @@ export async function seedAcademicAndFacilities(
       targetValue: 99.2,
       actualValue: 98.6,
       unit: "%",
-      status: QualityObjectiveStatus.IN_PROGRESS,
+      status: QualityObjectiveStatus.NEAR_TARGET,
     },
     {
       code: "MTCL-2026-03",
@@ -247,7 +247,7 @@ export async function seedAcademicAndFacilities(
       targetValue: 100.0,
       actualValue: 95.0,
       unit: "%",
-      status: QualityObjectiveStatus.IN_PROGRESS,
+      status: QualityObjectiveStatus.ACHIEVED,
     },
   ];
 

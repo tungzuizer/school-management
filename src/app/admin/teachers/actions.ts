@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: `src/app/admin/teachers/page.tsx`, `src/app/admin/teachers/components/TeacherCredentialsModal.tsx`, `src/app/admin/teachers/components/TeacherCredentialSlipsModal.tsx`.
- * 2. Affected APIs: `getTeacherCredentialsOverview`, `resetTeacherPasswordSecure`, `getTeacherCredentialSlips`, `resetTeacherPassword`, `createTeacher`, `getTeachers`.
- * 3. Schemas: Prisma models `User`, `Teacher`, `School`, `ClassRoom`.
- * 4. Verbatim User Instruction: "tôi muốn mỗi giáo viên mỗi học sinh sẽ có tài khoản mà mật khẩu và có thể hiện thị chỉ cho hiệu trưởng hoặc admin nhìn thấy được".
+ * 2. Affected APIs: `getTeacherCredentialsOverview`, `resetTeacherPasswordSecure`, `getTeacherCredentialSlips`, `resetTeacherPassword`, `createTeacher`, `getTeachers`, `getAdminCampuses`, `getSchoolsForTeacherSelect`.
+ * 3. Schemas: Prisma models `User`, `Teacher`, `School`, `Campus`, `ClassRoom`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu cho Quản lý Giáo viên.
  */
 
 "use server";
@@ -41,18 +41,26 @@ function assertPrincipalOrAdmin(ctx: { userRole?: string; userEmail?: string }) 
   }
 }
 
-export async function getTeachers(search?: string, specialty?: string, schoolId?: string) {
+export async function getTeachers(search?: string, specialty?: string, schoolId?: string, campusId?: string) {
   const where: any = {};
 
-  if (schoolId) {
+  if (schoolId && schoolId !== "ALL" && schoolId !== "") {
     where.user = { ...(where.user || {}), schoolId };
   } else {
     try {
       const ctx = await getTenantContext();
-      if (ctx.schoolId) {
+      if (ctx.schoolId && ctx.userRole !== "SUPER_ADMIN" && ctx.userRole !== "ADMIN") {
         where.user = { ...(where.user || {}), schoolId: ctx.schoolId };
       }
     } catch { /* allow */ }
+  }
+
+  if (campusId && campusId !== "ALL" && campusId !== "") {
+    where.OR = [
+      { user: { campusId } },
+      { homeroomClasses: { some: { campusId } } },
+      { teachingAssignments: { some: { classRoom: { campusId } } } },
+    ];
   }
 
   if (specialty) {
@@ -65,13 +73,38 @@ export async function getTeachers(search?: string, specialty?: string, schoolId?
   return prisma.teacher.findMany({
     where,
     include: {
-      user: { select: { id: true, name: true, email: true, isApproved: true, school: { select: { id: true, name: true } } } },
-      homeroomClasses: { select: { id: true, name: true, gradeLevel: true } },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isApproved: true,
+          campusId: true,
+          campus: { select: { id: true, name: true } },
+          school: { select: { id: true, name: true } },
+        },
+      },
+      homeroomClasses: {
+        select: {
+          id: true,
+          name: true,
+          gradeLevel: true,
+          campusId: true,
+          campus: { select: { id: true, name: true } },
+        },
+      },
       teachingAssignments: {
         select: {
           id: true,
           subject: { select: { name: true } },
-          classRoom: { select: { name: true } },
+          classRoom: {
+            select: {
+              name: true,
+              gradeLevel: true,
+              campusId: true,
+              campus: { select: { id: true, name: true } },
+            },
+          },
         },
       },
     },
@@ -84,6 +117,20 @@ export async function getSchoolsForTeacherSelect() {
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+}
+
+export async function getAdminCampuses(schoolId?: string) {
+  try {
+    const where = schoolId && schoolId !== "ALL" ? { schoolId } : {};
+    return await prisma.campus.findMany({
+      where,
+      select: { id: true, name: true, schoolId: true },
+      orderBy: { name: "asc" },
+    });
+  } catch (error) {
+    console.error("Error fetching campuses for teachers:", error);
+    return [];
+  }
 }
 
 export async function createTeacher(data: {

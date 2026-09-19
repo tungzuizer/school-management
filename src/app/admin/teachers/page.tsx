@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin navigation (`src/app/admin/teachers/page.tsx`), admin layout.
- * 2. Affected APIs: Server actions `getTeachers`, `createBulkTeachers`, `getTeacherCredentialsOverview`, `resetTeacherPasswordSecure`, `getTeacherCredentialSlips`.
- * 3. Schema: Prisma `Teacher`, `User`, `School`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa giao diện quản lý Giáo viên cho SuperAdmin quản trị toàn hệ thống.
+ * 2. Affected APIs: Server actions `getTeachers`, `getAdminCampuses`, `getSchoolsForTeacherSelect`, `createBulkTeachers`, `getTeacherCredentialsOverview`, `resetTeacherPasswordSecure`, `getTeacherCredentialSlips`.
+ * 3. Schema: Prisma `Teacher`, `User`, `School`, `Campus`, `ClassRoom`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu cho Quản lý Giáo viên.
  */
 
 "use client";
@@ -12,6 +12,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   getTeachers,
   getSchoolsForTeacherSelect,
+  getAdminCampuses,
   createTeacher,
   updateTeacher,
   resetTeacherPassword,
@@ -34,6 +35,7 @@ import {
   Plus,
   School,
   Building2,
+  MapPin,
   BookOpen,
   GraduationCap,
   LayoutGrid,
@@ -52,14 +54,40 @@ interface TeacherData {
   specialty: string | null;
   phone: string | null;
   degree: string | null;
-  user: { id: string; name: string; email: string; role?: string; isApproved?: boolean; school?: { id: string; name: string } | null };
-  homeroomClasses: { id: string; name: string; gradeLevel: number }[];
-  teachingAssignments: { id: string; subject: { name: string }; classRoom: { name: string; gradeLevel?: number } }[];
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role?: string;
+    isApproved?: boolean;
+    campusId?: string | null;
+    campus?: { id: string; name: string } | null;
+    school?: { id: string; name: string } | null;
+  };
+  homeroomClasses: {
+    id: string;
+    name: string;
+    gradeLevel: number;
+    campusId?: string | null;
+    campus?: { id: string; name: string } | null;
+  }[];
+  teachingAssignments: {
+    id: string;
+    subject: { name: string };
+    classRoom: {
+      name: string;
+      gradeLevel?: number;
+      campusId?: string | null;
+      campus?: { id: string; name: string } | null;
+    };
+  }[];
 }
 
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState<TeacherData[]>([]);
   const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
+  const [campuses, setCampuses] = useState<{ id: string; name: string; schoolId: string }[]>([]);
+  const [selectedCampus, setSelectedCampus] = useState<string>("ALL");
   const [search, setSearch] = useState("");
   const [filterSchool, setFilterSchool] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState("");
@@ -191,14 +219,21 @@ export default function TeachersPage() {
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    const [teachersData, schoolsData] = await Promise.all([
-      getTeachers(search || undefined, filterSpecialty || undefined, filterSchool || undefined),
+    const [teachersData, schoolsData, campusesData] = await Promise.all([
+      getTeachers(
+        search || undefined,
+        filterSpecialty || undefined,
+        filterSchool || undefined,
+        selectedCampus && selectedCampus !== "ALL" ? selectedCampus : undefined
+      ),
       getSchoolsForTeacherSelect(),
+      getAdminCampuses(filterSchool || undefined),
     ]);
     setTeachers(teachersData as unknown as TeacherData[]);
     setSchools(schoolsData);
+    setCampuses(campusesData);
     setLoading(false);
-  }, [search, filterSpecialty, filterSchool]);
+  }, [search, filterSpecialty, filterSchool, selectedCampus]);
 
   const uniqueSpecialties = Array.from(new Set(teachers.map((t) => t.specialty).filter(Boolean))) as string[];
   const uniqueGrades = Array.from(
@@ -209,7 +244,7 @@ export default function TeachersPage() {
       ]).filter(Boolean)
     )
   ).sort((a: any, b: any) => a - b);
-  const gradeOptions = uniqueGrades.length > 0 ? uniqueGrades : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const gradeOptions = uniqueGrades.length > 0 ? uniqueGrades : [1, 2, 3, 4, 5];
 
   const filteredTeachers = teachers.filter((t) => {
     if (!filterGrade) return true;
@@ -218,6 +253,26 @@ export default function TeachersPage() {
     const inTeaching = t.teachingAssignments.some((a) => (a.classRoom as any)?.gradeLevel === gradeNum);
     return inHomeroom || inTeaching;
   });
+
+  const getCampusBadgeStyle = (campusName?: string | null) => {
+    if (!campusName) return "bg-slate-100 text-slate-700 border-slate-200";
+    if (campusName.includes("Trung tâm") || campusName.includes("Chính")) return "bg-indigo-50 text-indigo-700 border-indigo-200";
+    if (campusName.includes("Sơn Hà 1")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (campusName.includes("Sơn Hà 2")) return "bg-teal-50 text-teal-700 border-teal-200";
+    if (campusName.includes("Sơn Hải")) return "bg-amber-50 text-amber-700 border-amber-200";
+    if (campusName.includes("Phố Lu 3")) return "bg-purple-50 text-purple-700 border-purple-200";
+    if (campusName.includes("An Tiến")) return "bg-rose-50 text-rose-700 border-rose-200";
+    return "bg-blue-50 text-blue-700 border-blue-200";
+  };
+
+  const getTeacherCampusName = (t: TeacherData) => {
+    return (
+      t.user?.campus?.name ||
+      t.homeroomClasses.find((c) => c.campus?.name)?.campus?.name ||
+      t.teachingAssignments.find((a) => a.classRoom?.campus?.name)?.classRoom?.campus?.name ||
+      "Điểm Trung tâm"
+    );
+  };
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -438,40 +493,84 @@ export default function TeachersPage() {
         </div>
       </div>
 
-      {/* School Cards Bar (Thẻ chọn Trường) */}
-      {schools.length > 0 && (
-        <div className="mb-5 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
-            <span className="flex items-center gap-1.5"><School className="w-3.5 h-3.5 text-indigo-600" /> Chọn trường học để lọc danh sách giáo viên:</span>
-            <span>{schools.length} Trường khả dụng</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setFilterSchool("")}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
-                filterSchool === ""
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" /> Tất cả các trường
-            </button>
-            {schools.map((s) => (
+      {/* School & Campus Filter Header */}
+      <div className="mb-5 space-y-3">
+        {/* School Selector Bar (Nếu có nhiều trường) */}
+        {schools.length > 1 && (
+          <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+              <span className="flex items-center gap-1.5"><School className="w-3.5 h-3.5 text-indigo-600" /> Chọn trường học để lọc:</span>
+              <span>{schools.length} Trường khả dụng</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={s.id}
-                onClick={() => setFilterSchool(s.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
-                  filterSchool === s.id
+                onClick={() => setFilterSchool("")}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                  filterSchool === ""
                     ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                     : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                 }`}
               >
-                <School className="w-3.5 h-3.5" /> {s.name}
+                <Building2 className="w-3.5 h-3.5" /> Tất cả các trường
               </button>
-            ))}
+              {schools.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setFilterSchool(s.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                    filterSchool === s.id
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  <School className="w-3.5 h-3.5" /> {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Campus Selector Bar (Thanh chọn Phân hiệu / Điểm trường) */}
+        <div className="bg-slate-50/80 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold px-1">
+            <span className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
+              <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Chọn Phân hiệu / Điểm trường trực thuộc để lọc Giáo viên:
+            </span>
+            <span className="text-[11px] bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full font-bold">
+              {campuses.length} Phân hiệu & Điểm trường
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCampus("ALL")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                selectedCampus === "ALL" || selectedCampus === ""
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" /> Toàn trường (Tất cả điểm trường)
+            </button>
+            {campuses.map((c) => {
+              const isSelected = selectedCampus === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCampus(c.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                    isSelected
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                      : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <MapPin className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-indigo-500"}`} />
+                  <span>{c.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Filters & View Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -542,92 +641,105 @@ export default function TeachersPage() {
           ) : filteredTeachers.length === 0 ? (
             <div className="col-span-full py-12 text-center text-slate-400 text-xs">Không tìm thấy giáo viên phù hợp</div>
           ) : (
-            filteredTeachers.map((t) => (
-              <div
-                key={t.id}
-                className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all space-y-3 flex flex-col justify-between hover-lift group"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors block">
-                        {t.user?.name || "Giáo viên"}
-                      </span>
-                      {t.user?.school?.name && (
-                        <span className="text-[10px] text-indigo-700 font-semibold block">
-                          {t.user.school.name}
+            filteredTeachers.map((t) => {
+              const teacherCampus = getTeacherCampusName(t);
+              return (
+                <div
+                  key={t.id}
+                  className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all space-y-3 flex flex-col justify-between hover-lift group"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors block">
+                          {t.user?.name || "Giáo viên"}
                         </span>
-                      )}
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${getCampusBadgeStyle(
+                              teacherCampus
+                            )}`}
+                          >
+                            <MapPin className="w-2.5 h-2.5" />
+                            {teacherCampus}
+                          </span>
+                          {t.user?.school?.name && (
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              {t.user.school.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {t.user?.role === "ADMIN" ? (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-200">
+                            Hiệu trưởng
+                          </span>
+                        ) : t.user?.role === "VICE_PRINCIPAL" ? (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-200">
+                            Phó Hiệu trưởng
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200">
+                            {t.specialty || "Giáo viên"}
+                          </span>
+                        )}
+                        {t.user?.isApproved === false ? (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                            Chờ duyệt
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Hoạt động
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {t.user?.role === "ADMIN" ? (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-200">
-                          Hiệu trưởng
-                        </span>
-                      ) : t.user?.role === "VICE_PRINCIPAL" ? (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-200">
-                          Phó Hiệu trưởng
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200">
-                          {t.specialty || "Giáo viên"}
-                        </span>
-                      )}
-                      {t.user?.isApproved === false ? (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-                          Chờ duyệt
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          Hoạt động
-                        </span>
-                      )}
+
+                    <p className="text-xs text-slate-500 truncate">
+                      <span className="font-semibold text-slate-700">Email:</span> {t.user?.email || "—"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      <span className="font-semibold text-slate-700">Bằng cấp:</span> {t.degree || "—"} |{" "}
+                      <span className="font-semibold text-slate-700">SĐT:</span> {t.phone || "—"}
+                    </p>
+
+                    <div className="pt-1 space-y-1">
+                      <span className="text-xs text-slate-500 font-medium">Chủ nhiệm / Phân công:</span>
+                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pt-0.5">
+                        {t.homeroomClasses.map((c) => (
+                          <span key={c.id} className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md">
+                            CN: {c.name}
+                          </span>
+                        ))}
+                        {t.teachingAssignments.map((a) => (
+                          <span key={a.id} className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                            {a.subject.name} ({a.classRoom.name})
+                          </span>
+                        ))}
+                        {t.homeroomClasses.length === 0 && t.teachingAssignments.length === 0 && (
+                          <span className="text-[11px] text-slate-400 italic">Chưa phân công</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-500 truncate">
-                    <span className="font-semibold text-slate-700">Email:</span> {t.user?.email || "—"}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    <span className="font-semibold text-slate-700">Bằng cấp:</span> {t.degree || "—"} |{" "}
-                    <span className="font-semibold text-slate-700">SĐT:</span> {t.phone || "—"}
-                  </p>
-
-                  <div className="pt-1 space-y-1">
-                    <span className="text-xs text-slate-500 font-medium">Chủ nhiệm / Phân công:</span>
-                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pt-0.5">
-                      {t.homeroomClasses.map((c) => (
-                        <span key={c.id} className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md">
-                          CN: {c.name}
-                        </span>
-                      ))}
-                      {t.teachingAssignments.map((a) => (
-                        <span key={a.id} className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
-                          {a.subject.name} ({a.classRoom.name})
-                        </span>
-                      ))}
-                      {t.homeroomClasses.length === 0 && t.teachingAssignments.length === 0 && (
-                        <span className="text-[11px] text-slate-400 italic">Chưa phân công</span>
-                      )}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(t)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                        Chỉnh sửa
+                      </button>
+                      <button onClick={() => openPasswordModal(t)} className="text-xs font-semibold text-amber-700 hover:text-amber-900 inline-flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5" /> Đổi MK
+                      </button>
                     </div>
+                    <button onClick={() => setDeleteConfirm(t.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">
+                      Xóa
+                    </button>
                   </div>
                 </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => openEdit(t)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-                      Chỉnh sửa
-                    </button>
-                    <button onClick={() => openPasswordModal(t)} className="text-xs font-semibold text-amber-700 hover:text-amber-900 inline-flex items-center gap-1">
-                      <Lock className="w-3.5 h-3.5" /> Đổi MK
-                    </button>
-                  </div>
-                  <button onClick={() => setDeleteConfirm(t.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">
-                    Xóa
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
@@ -638,7 +750,7 @@ export default function TeachersPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên & Phân hiệu</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Chuyên môn</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Mật khẩu</th>
@@ -652,7 +764,7 @@ export default function TeachersPage() {
             <tbody className="divide-y">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
                       <span>Đang tải danh sách giáo viên...</span>
@@ -660,55 +772,77 @@ export default function TeachersPage() {
                   </td>
                 </tr>
               ) : filteredTeachers.length === 0 ? (
-                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Không tìm thấy giáo viên phù hợp</td></tr>
+                <tr><td colSpan={9} className="px-6 py-8 text-center text-gray-500">Không tìm thấy giáo viên phù hợp</td></tr>
               ) : (
-                filteredTeachers.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{t.user?.name || "Giáo viên"}</div>
-                      {t.user?.school?.name && (
-                        <div className="text-[11px] text-indigo-600 font-medium">{t.user.school.name}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{t.user?.email || "—"}</td>
-                    <td className="px-6 py-4 text-gray-600">{t.specialty || "—"}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <span className="font-mono text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1 font-semibold">
-                        <KeyRound className="w-3 h-3 text-amber-600" /> abc123
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{t.degree || "—"}</td>
-                    <td className="px-6 py-4 text-gray-600">{t.phone || "—"}</td>
-                    <td className="px-6 py-4">
-                      {t.homeroomClasses.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {t.homeroomClasses.map(c => (
-                            <span key={c.id} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">{c.name}</span>
-                          ))}
+                filteredTeachers.map((t) => {
+                  const teacherCampus = getTeacherCampusName(t);
+                  return (
+                    <tr key={t.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900">{t.user?.name || "Giáo viên"}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${getCampusBadgeStyle(
+                              teacherCampus
+                            )}`}
+                          >
+                            <MapPin className="w-2.5 h-2.5" />
+                            {teacherCampus}
+                          </span>
                         </div>
-                      ) : "—"}
-                    </td>
-                    <td className="px-6 py-4">
-                      {t.teachingAssignments.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {t.teachingAssignments.slice(0, 3).map(a => (
-                            <span key={a.id} className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
-                              {a.subject.name} - {a.classRoom.name}
-                            </span>
-                          ))}
-                          {t.teachingAssignments.length > 3 && (
-                            <span className="text-gray-500 text-xs">+{t.teachingAssignments.length - 3}</span>
-                          )}
-                        </div>
-                      ) : "—"}
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button onClick={() => openEdit(t)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Sửa</button>
-                      <button onClick={() => openPasswordModal(t)} className="text-amber-700 hover:text-amber-900 text-sm font-medium">Đổi MK</button>
-                      <button onClick={() => setDeleteConfirm(t.id)} className="text-red-600 hover:text-red-800 text-sm font-medium">Xóa</button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">{t.user?.email || "—"}</td>
+                      <td className="px-6 py-4 text-gray-600">{t.specialty || "—"}</td>
+                      <td className="px-6 py-4 text-gray-600">
+                        <span className="font-mono text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1 font-semibold">
+                          <KeyRound className="w-3 h-3 text-amber-600" /> abc123
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">{t.degree || "—"}</td>
+                      <td className="px-6 py-4 text-gray-600">{t.phone || "—"}</td>
+                      <td className="px-6 py-4">
+                        {t.homeroomClasses.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {t.homeroomClasses.map((c) => (
+                              <span key={c.id} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-semibold">
+                                {c.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {t.teachingAssignments.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {t.teachingAssignments.slice(0, 3).map((a) => (
+                              <span key={a.id} className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs">
+                                {a.subject.name} - {a.classRoom.name}
+                              </span>
+                            ))}
+                            {t.teachingAssignments.length > 3 && (
+                              <span className="text-gray-500 text-xs">+{t.teachingAssignments.length - 3}</span>
+                            )}
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <button onClick={() => openEdit(t)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                          Sửa
+                        </button>
+                        <button onClick={() => openPasswordModal(t)} className="text-amber-700 hover:text-amber-900 text-sm font-medium">
+                          Đổi MK
+                        </button>
+                        <button onClick={() => setDeleteConfirm(t.id)} className="text-red-600 hover:text-red-800 text-sm font-medium">
+                          Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

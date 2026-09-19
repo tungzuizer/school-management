@@ -1,9 +1,18 @@
-    "use client";
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/admin/layout.tsx` (Menu Item: Báo cáo hàng ngày `/admin/daily-reports`).
+ * 2. Affected APIs: `getAdminDailyReports`, `getSchoolsForFilter`, `getCampusesForFilter`, `getDailyReportStats`, `getReportDetail`.
+ * 3. Schemas: `ReportItem`, `Stats`, `School`, `Campus`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu cho Báo cáo hàng ngày.
+ */
+
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
   getAdminDailyReports,
   getSchoolsForFilter,
+  getCampusesForFilter,
   getDailyReportStats,
   getReportDetail,
 } from "./actions";
@@ -23,6 +32,7 @@ import {
   AlertCircle,
   BarChart3,
   FileCheck,
+  MapPin,
 } from "lucide-react";
 
 interface ReportItem {
@@ -59,29 +69,46 @@ interface School {
   name: string;
 }
 
+interface Campus {
+  id: string;
+  name: string;
+  schoolId?: string;
+}
+
 export default function AdminDailyReportsPage() {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
   const [selectedSchool, setSelectedSchool] = useState("");
+  const [selectedCampus, setSelectedCampus] = useState("");
   const [schools, setSchools] = useState<School[]>([]);
+  const [campuses, setCampuses] = useState<Campus[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
   const [showDetail, setShowDetail] = useState(false);
 
-  // Load schools on mount
+  // Load schools and campuses on mount
   useEffect(() => {
     getSchoolsForFilter().then(setSchools);
+    getCampusesForFilter().then(setCampuses);
   }, []);
 
-  // Load data when date or school changes
+  // Reload campuses when school changes
+  useEffect(() => {
+    getCampusesForFilter(selectedSchool || undefined).then((c) => {
+      setCampuses(c);
+      setSelectedCampus("");
+    });
+  }, [selectedSchool]);
+
+  // Load data when date, school, or campus changes
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
       const [reps, st] = await Promise.all([
-        getAdminDailyReports(selectedDate, selectedSchool || undefined),
+        getAdminDailyReports(selectedDate, selectedSchool || undefined, selectedCampus || undefined),
         getDailyReportStats(selectedDate),
       ]);
       setReports(reps as ReportItem[]);
@@ -90,7 +117,7 @@ export default function AdminDailyReportsPage() {
       console.error("Error loading reports:", err);
     }
     setLoading(false);
-  }, [selectedDate, selectedSchool]);
+  }, [selectedDate, selectedSchool, selectedCampus]);
 
   useEffect(() => {
     loadData(true);
@@ -124,10 +151,22 @@ export default function AdminDailyReportsPage() {
             <FileText className="w-6 h-6 text-indigo-650" /> Báo cáo hàng ngày — Tổng hợp
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Xem tổng hợp báo cáo hàng ngày từ tất cả các lớp trong toàn trường
+            Xem tổng hợp báo cáo hàng ngày từ tất cả các lớp trong toàn trường và các phân hiệu
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <select
+            value={selectedCampus}
+            onChange={(e) => setSelectedCampus(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm bg-blue-50/60 font-semibold text-blue-900 border-blue-200"
+          >
+            <option value="">Tất cả Phân hiệu / Điểm trường</option>
+            {campuses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
           <select
             value={selectedSchool}
             onChange={(e) => setSelectedSchool(e.target.value)}

@@ -2,8 +2,8 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: `src/app/admin/users-manager/page.tsx`, SuperAdmin Centralized User Directory.
  * 2. Affected APIs: `getUsersManagerData`, `toggleUserApproval`, `resetUserPassword`, `createUserAccount`, `deleteUserAccount`.
- * 3. Schemas: `User`, `Role`, `School`, `DistrictWard`, `EducationDepartment`, `UserRoleScope`, `AuditLog`, `AuditAction`.
- * 4. Verbatim User Instruction: "tôi muốn tất cả tài khoản đôi là @gmail.com và tôi cần các tài khoản đó được xem và quản lý với acc superadmin , và tôi cần bạn tạo lại cấu trúc về tất cả các mục ở superadmin".
+ * 3. Schemas: `User`, `Role`, `School`, `Campus`, `DistrictWard`, `EducationDepartment`, `UserRoleScope`, `AuditLog`, `AuditAction`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu và hiển thị phân hiệu cho Tổng kho tài khoản.
  */
 
 "use server";
@@ -26,6 +26,8 @@ export interface ManagedUserItem {
   schoolId: string | null;
   schoolName: string;
   schoolCode?: string;
+  campusId?: string | null;
+  campusName?: string;
   districtWardId: string | null;
   districtWardName: string;
   departmentId: string | null;
@@ -59,6 +61,7 @@ export interface UserStatsSummary {
 export async function getUsersManagerData(filters?: {
   districtWardId?: string;
   schoolId?: string;
+  campusId?: string;
   role?: string;
   status?: "ALL" | "APPROVED" | "PENDING";
   search?: string;
@@ -79,6 +82,7 @@ export async function getUsersManagerData(filters?: {
         stats: null,
         districtWards: [],
         schools: [],
+        campuses: [],
       };
     }
 
@@ -89,14 +93,14 @@ export async function getUsersManagerData(filters?: {
     if (session.user.id && !session.user.id.startsWith("demo-")) {
       currentUser = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { id: true, role: true, email: true, schoolId: true, districtWardId: true, departmentId: true },
+        select: { id: true, role: true, email: true, schoolId: true, districtWardId: true, departmentId: true, campusId: true },
       });
     }
 
     if (!currentUser && sessionEmail) {
       currentUser = await prisma.user.findUnique({
         where: { email: sessionEmail },
-        select: { id: true, role: true, email: true, schoolId: true, districtWardId: true, departmentId: true },
+        select: { id: true, role: true, email: true, schoolId: true, districtWardId: true, departmentId: true, campusId: true },
       });
     }
 
@@ -128,6 +132,7 @@ export async function getUsersManagerData(filters?: {
         stats: null,
         districtWards: [],
         schools: [],
+        campuses: [],
       };
     }
 
@@ -139,6 +144,15 @@ export async function getUsersManagerData(filters?: {
       where.schoolId = currentUser.schoolId;
     } else if (filters?.schoolId && filters.schoolId !== "ALL") {
       where.schoolId = filters.schoolId;
+    }
+
+    if (filters?.campusId && filters.campusId !== "ALL" && filters.campusId !== "") {
+      where.OR = [
+        { campusId: filters.campusId },
+        { student: { classRoom: { campusId: filters.campusId } } },
+        { teacher: { homeroomClasses: { some: { campusId: filters.campusId } } } },
+        { teacher: { teachingAssignments: { some: { classRoom: { campusId: filters.campusId } } } } },
+      ];
     }
 
     if (filters?.districtWardId && filters.districtWardId !== "ALL") {
@@ -183,7 +197,7 @@ export async function getUsersManagerData(filters?: {
     const pageSize = Math.max(10, Math.min(100, filters?.pageSize || 50));
     const skip = (page - 1) * pageSize;
 
-    const [totalMatching, rawUsers, allCounts, districtWards, schools] = await Promise.all([
+    const [totalMatching, rawUsers, allCounts, districtWards, schools, campuses] = await Promise.all([
       prisma.user.count({ where }),
       prisma.user.findMany({
         where,
@@ -194,11 +208,15 @@ export async function getUsersManagerData(filters?: {
           role: true,
           isApproved: true,
           schoolId: true,
+          campusId: true,
           districtWardId: true,
           departmentId: true,
           createdAt: true,
           school: {
             select: { id: true, name: true, branchType: true, districtWardId: true },
+          },
+          campus: {
+            select: { id: true, name: true },
           },
           districtWard: {
             select: { id: true, name: true, code: true },
@@ -234,6 +252,10 @@ export async function getUsersManagerData(filters?: {
       }),
       prisma.school.findMany({
         select: { id: true, name: true, districtWardId: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.campus.findMany({
+        select: { id: true, name: true, schoolId: true },
         orderBy: { name: "asc" },
       }),
     ]);
@@ -272,6 +294,8 @@ export async function getUsersManagerData(filters?: {
       isApproved: u.isApproved,
       schoolId: u.schoolId,
       schoolName: u.school?.name || (u.role === Role.SUPER_ADMIN ? "Hệ thống Giáo Dục Toàn Quốc" : "Chưa gắn trường"),
+      campusId: u.campusId,
+      campusName: u.campus?.name || (u.school?.name ? "Điểm Trung tâm" : "Toàn trường"),
       districtWardId: u.districtWardId,
       districtWardName: u.districtWard?.name || (u.school?.districtWardId ? "Theo trường trực thuộc" : "Toàn quốc"),
       departmentId: u.departmentId,
@@ -290,6 +314,7 @@ export async function getUsersManagerData(filters?: {
       stats,
       districtWards: districtWards.map((w) => ({ id: w.id, name: w.name, code: w.code })),
       schools: schools.map((s) => ({ id: s.id, name: s.name, districtWardId: s.districtWardId })),
+      campuses: campuses.map((c) => ({ id: c.id, name: c.name, schoolId: c.schoolId })),
     };
   } catch (error: any) {
     console.error("Error in getUsersManagerData:", error);
@@ -404,6 +429,7 @@ export async function createUserAccount(data: {
   password?: string;
   role: Role;
   schoolId?: string;
+  campusId?: string;
   districtWardId?: string;
   departmentId?: string;
   phone?: string;
@@ -444,6 +470,7 @@ export async function createUserAccount(data: {
         role: data.role,
         isApproved: true,
         schoolId: data.schoolId || null,
+        campusId: data.campusId || null,
         districtWardId: data.districtWardId || null,
         departmentId: resolvedDeptId || null,
       },

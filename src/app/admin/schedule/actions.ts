@@ -2,8 +2,8 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin Timetable Dashboard (`src/app/admin/schedule/page.tsx`), Timetable Components (`TimetableMatrixView.tsx`, `AiScheduleModal.tsx`, `ScheduleSwapModal.tsx`, `TeacherWorkloadDrawer.tsx`), Teacher & Student Schedule Views.
  * 2. Affected APIs: `generateAiTimetableAction`, `validateScheduleSwapAction`, `swapScheduleSlotsAction`, `getTeacherWorkloadStatsAction`, `getTimetableMatrixAction`, `getScheduleData`, `getScheduleFormData`, `createScheduleEntry`, `updateScheduleEntry`, `deleteScheduleEntry`, `clearClassSchedule`, `bulkImportSchedules`.
- * 3. Schema: `Schedule` (classId, subjectId, teacherId, dayOfWeek, period, room), `TeachingAssignment`, `ClassRoom` (homeroomTeacherId), `Subject`, `Teacher`.
- * 4. Verbatim User Instruction: "thêm chức năng thời khóa biểu thông minh Các tiết Chào cờ sinh hoạt phải đc cố định vào thứ 2 và thứ 6. Các môn có thể được cố định buổi dạy. Và gv chỉ dạy 5 buổi/ tuần không bị trùng nhau. 1 ngày chỉ đc 7 tiết và phải thông minh và hỗ trợ ban giám hiệu lập thời khóa biểu".
+ * 3. Schema: `Schedule` (classId, subjectId, teacherId, dayOfWeek, period, room), `TeachingAssignment`, `ClassRoom` (homeroomTeacherId, campusId, schoolId), `Campus`, `Subject`, `Teacher`, `School`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu & Điểm trường trực thuộc cho Thời khóa biểu.
  */
 
 "use server";
@@ -109,15 +109,23 @@ function getWeekDays(dateStr?: string) {
   return { monday, sunday, days, selectedDateStr: formatDateStr(baseDate) };
 }
 
-export async function getScheduleData(classId?: string, schoolId?: string, dateStr?: string) {
+export async function getScheduleData(classId?: string, schoolId?: string, campusId?: string, dateStr?: string) {
   const { days, selectedDateStr } = getWeekDays(dateStr);
 
-  const schools = await prisma.school.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
+  const [schools, campuses] = await Promise.all([
+    prisma.school.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.campus.findMany({
+      select: { id: true, name: true, schoolId: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
-  const classWhere = schoolId ? { schoolId } : {};
+  const classWhere: any = {};
+  if (schoolId && schoolId !== "ALL" && schoolId !== "") classWhere.schoolId = schoolId;
+  if (campusId && campusId !== "ALL" && campusId !== "") classWhere.campusId = campusId;
 
   const classes = await prisma.classRoom.findMany({
     where: classWhere,
@@ -126,6 +134,7 @@ export async function getScheduleData(classId?: string, schoolId?: string, dateS
       name: true,
       gradeLevel: true,
       schoolId: true,
+      campusId: true,
       homeroomTeacherId: true,
       homeroomTeacher: {
         select: {
@@ -135,6 +144,7 @@ export async function getScheduleData(classId?: string, schoolId?: string, dateS
         },
       },
       school: { select: { id: true, name: true } },
+      campus: { select: { id: true, name: true } },
     },
     orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
   });
@@ -161,7 +171,7 @@ export async function getScheduleData(classId?: string, schoolId?: string, dateS
             },
           },
           classRoom: {
-            select: { id: true, name: true, gradeLevel: true },
+            select: { id: true, name: true, gradeLevel: true, campusId: true, campus: { select: { id: true, name: true } } },
           },
         },
         orderBy: [{ dayOfWeek: "asc" }, { period: "asc" }],
@@ -173,6 +183,7 @@ export async function getScheduleData(classId?: string, schoolId?: string, dateS
 
   return {
     schools,
+    campuses,
     classes,
     selectedClass,
     schedules,
