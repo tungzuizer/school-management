@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: `prisma/seed.ts` (lines 100-140), `src/app/api/db-seed/route.ts` (lines 90-130).
- * 2. Affected APIs: `seedClassesAndStudents`, class list retrieval, homeroom dashboard, timetable schedule, student roster.
+ * 1. Importers/Callers: `prisma/seed.ts`, `src/app/api/db-seed/route.ts`.
+ * 2. Affected APIs: `seedClassesAndStudents`, `ClassesStudentsResult`.
  * 3. Data Schemas: `ClassRoom`, `Group`, `Student`, `User`, `TeachingAssignment`, `Schedule`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - "Cơ chế phân bổ 62 lớp học và 1.706 học sinh vào 5 Phân hiệu & Điểm trường".
+ * 4. Verbatim User Instruction: "bạn đang fake dữ liệu tôi đấy hả sao mục điêm thi lại 0 có gì kế hoạch giảng giạy cũng không có sổ đầu bài cũng không có gì tôi bảo bạn mô phỏng dữ liệu mà kiểu như bạn tạo trước 1 dữ liệu của trường đó rồi bạn add vô"
  */
 
 import { PrismaClient, Role, StudentStatus } from "@prisma/client";
@@ -114,7 +114,7 @@ export async function seedClassesAndStudents(
 ): Promise<ClassesStudentsResult> {
   console.log("\n🎒 [5/6] Khởi tạo 62 Lớp học, Phân công giảng dạy, Thời khóa biểu và Học sinh...");
   const { school, campuses } = schoolStruct;
-  const { teachers, subjects } = personnelStruct;
+  const { teachers, subjects, sampleTeacher } = personnelStruct;
 
   const campusMap = new Map(campuses.map((c) => [c.spec.key, c]));
   const classSpecs = build62ClassesSpec();
@@ -130,7 +130,10 @@ export async function seedClassesAndStudents(
   for (let idx = 0; idx < classSpecs.length; idx++) {
     const spec = classSpecs[idx];
     const campusItem = campusMap.get(spec.campusKey) || campuses[0];
-    const homeroomTeacherObj = teachers[idx % teachers.length].teacher;
+    const homeroomTeacherObj =
+      spec.name === "1A1" && sampleTeacher
+        ? sampleTeacher
+        : teachers[6 + idx]?.teacher || teachers[idx % teachers.length].teacher;
 
     const classRoom = await prisma.classRoom.create({
       data: {
@@ -165,10 +168,14 @@ export async function seedClassesAndStudents(
 
     for (let sIdx = 0; sIdx < roster.length; sIdx++) {
       const stData = roster[sIdx];
+      const isDemoStudent = spec.name === "1A1" && sIdx === 0;
+      const stEmail = isDemoStudent ? "hocsinh.thpholu@gmail.com" : stData.email;
+      const stName = isDemoStudent ? "Nguyễn Minh Khang (Học sinh Mẫu 1A1)" : stData.name;
+
       const stUser = await prisma.user.create({
         data: {
-          name: stData.name,
-          email: stData.email,
+          name: stName,
+          email: stEmail,
           password: standardPassword,
           role: Role.STUDENT,
           isApproved: true,
@@ -180,18 +187,18 @@ export async function seedClassesAndStudents(
       const student = await prisma.student.create({
         data: {
           userId: stUser.id,
-          studentCode: stData.studentCode,
+          studentCode: isDemoStudent ? "HS26100001" : stData.studentCode,
           classId: classRoom.id,
           groupId: groups[sIdx % groups.length].id,
           status: StudentStatus.STUDYING,
           dob: stData.dob,
-          gender: stData.gender,
-          ethnicity: sIdx % 3 === 0 ? "Tày" : sIdx % 5 === 0 ? "Dao" : "Kinh",
+          gender: isDemoStudent ? "MALE" : stData.gender,
+          ethnicity: isDemoStudent ? "Kinh" : sIdx % 3 === 0 ? "Tày" : sIdx % 5 === 0 ? "Dao" : "Kinh",
           nationality: "Việt Nam",
           phone: stData.phone,
           addressCurrent: stData.address,
-          parentName: stData.parentName,
-          parentPhone: stData.parentPhone,
+          parentName: isDemoStudent ? "Nguyễn Văn Đức" : stData.parentName,
+          parentPhone: isDemoStudent ? "0912345678" : stData.parentPhone,
           isClassMonitor: sIdx === 0,
           classRole: sIdx === 0 ? "LOP_TRUONG" : sIdx === 1 ? "LOP_PHO" : "THANH_VIEN",
         },
@@ -199,39 +206,34 @@ export async function seedClassesAndStudents(
 
       createdStudents.push({
         id: student.id,
-        name: stData.name,
+        name: stName,
         classId: classRoom.id,
         campusId: campusItem.campus.id,
         gradeLevel: spec.gradeLevel,
         user: stUser,
       });
-
-      // Special demo student account for 1A1
-      if (spec.name === "1A1" && sIdx === 0) {
-        await prisma.user.upsert({
-          where: { email: "hocsinh.thpholu@gmail.com" },
-          update: { password: standardPassword, schoolId: school.id },
-          create: {
-            name: "Nguyễn Minh Khang (Học sinh Tiểu học Mẫu 1A1)",
-            email: "hocsinh.thpholu@gmail.com",
-            password: standardPassword,
-            role: Role.STUDENT,
-            isApproved: true,
-            schoolId: school.id,
-            campusId: campusItem.campus.id,
-          },
-        });
-      }
     }
 
     // Phân công giảng dạy (Teaching Assignments)
     const assignments = [];
+    const corePrimarySubjects = ["Toán", "Tiếng Việt", "Tự nhiên và Xã hội", "Đạo đức", "Hoạt động trải nghiệm", "Chào cờ", "Sinh hoạt lớp"];
+
     for (const sub of subjects) {
-      const assignedTeacher = teachers.find((t) => t.specialty.includes(sub.name))?.teacher || teachers[idx % teachers.length].teacher;
+      let assignedTeacherId = homeroomTeacherObj.id;
+      if (spec.name === "1A1" && sampleTeacher) {
+        if (corePrimarySubjects.includes(sub.name)) {
+          assignedTeacherId = sampleTeacher.id;
+        } else {
+          assignedTeacherId = teachers.find((t) => t.specialty.includes(sub.name))?.teacher.id || teachers[idx % teachers.length].teacher.id;
+        }
+      } else {
+        assignedTeacherId = teachers.find((t) => t.specialty.includes(sub.name))?.teacher.id || teachers[idx % teachers.length].teacher.id;
+      }
+
       assignments.push({
         classId: classRoom.id,
         subjectId: sub.id,
-        teacherId: assignedTeacher.id,
+        teacherId: assignedTeacherId,
       });
     }
     if (assignments.length > 0) {

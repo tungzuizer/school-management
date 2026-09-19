@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: `prisma/seed-data/academic-facilities.ts`, `prisma/seed.ts`, `src/app/api/db-seed/route.ts`.
- * 2. Uniqueness: No existing file seeds LessonPlanPeriod, LessonPlan, LessonPlanReview, and Curriculum for Phố Lu & 5 Campuses.
- * 3. Data Schemas: Prisma models `LessonPlanPeriod`, `LessonPlan`, `LessonPlanReview`, `Curriculum`, `LessonPlanStatus`.
- * 4. Verbatim User Instruction: "phần điểm thi kế hoạch giảng giạy duyệt yêu bgh chưa có dữ liệu".
+ * 1. Importers/Callers: `prisma/seed.ts`, `src/app/api/db-seed/route.ts`, `src/lib/__tests__/academic-business-modules.test.ts`.
+ * 2. Affected APIs: `seedLessonPlansAndCurriculum`.
+ * 3. Data Schemas: `LessonPlanPeriod`, `LessonPlan`, `LessonPlanReview`, `Curriculum`, `LessonPlanStatus`.
+ * 4. Verbatim User Instruction: "bạn đang fake dữ liệu tôi đấy hả sao mục điêm thi lại 0 có gì kế hoạch giảng giạy cũng không có sổ đầu bài cũng không có gì tôi bảo bạn mô phỏng dữ liệu mà kiểu như bạn tạo trước 1 dữ liệu của trường đó rồi bạn add vô"
  */
 
 import { PrismaClient, LessonPlanStatus } from "@prisma/client";
@@ -19,7 +19,7 @@ export async function seedLessonPlansAndCurriculum(
 ): Promise<void> {
   console.log("\n📚 Khởi tạo Kế hoạch giảng dạy & Giáo án điện tử (LessonPlanPeriod, LessonPlan, LessonPlanReview, Curriculum)...");
   const { school, campuses } = schoolStruct;
-  const { subjects, principalUser, vpUsers, teachers } = personnelStruct;
+  const { subjects, principalUser, vpUsers, teachers, sampleTeacher } = personnelStruct;
   const { classes } = classesStudents;
 
   // 1. Khởi tạo 4 Kỳ nộp Kế hoạch bài dạy (LessonPlanPeriod)
@@ -318,7 +318,10 @@ export async function seedLessonPlansAndCurriculum(
     const tmpl = lessonPlanTemplates[i];
     const targetSub = subjects.find((s) => s.name === tmpl.subjectName) || subjects[0];
     const targetClass = classes.find((c) => c.name === tmpl.className) || classes[i % classes.length];
-    const targetTeacher = teachers[i % teachers.length]?.teacher || teachers[0].teacher;
+    const targetTeacher =
+      tmpl.className === "1A1" && sampleTeacher
+        ? sampleTeacher
+        : teachers[i % teachers.length]?.teacher || teachers[0].teacher;
 
     const plan = await prisma.lessonPlan.create({
       data: {
@@ -365,10 +368,14 @@ export async function seedLessonPlansAndCurriculum(
     }
   }
 
-  // Tạo thêm 16 bài dạy đang chờ thẩm định / dự thảo cho các giáo viên khác
+  // Tạo thêm 16 bài dạy đang chờ thẩm định / dự thảo cho các giáo viên khác (kèm 2 bài cho sampleTeacher)
   for (let j = 0; j < 16; j++) {
-    const targetTeacher = teachers[(j + 8) % teachers.length]?.teacher || teachers[0].teacher;
-    const targetClass = classes[(j * 3 + 2) % classes.length];
+    const isSampleTeacherPlan = j === 0 || j === 1;
+    const targetTeacher =
+      isSampleTeacherPlan && sampleTeacher
+        ? sampleTeacher
+        : teachers[(j + 8) % teachers.length]?.teacher || teachers[0].teacher;
+    const targetClass = isSampleTeacherPlan ? classes.find((c) => c.name === "1A1") || classes[0] : classes[(j * 3 + 2) % classes.length];
     const targetSub = subjects[j % subjects.length];
     const weekNum = 1 + (j % 4);
 
@@ -380,7 +387,7 @@ export async function seedLessonPlansAndCurriculum(
       LessonPlanStatus.REJECTED,
       LessonPlanStatus.DRAFT,
     ];
-    const planStatus = statuses[j % statuses.length];
+    const planStatus = isSampleTeacherPlan ? (j === 0 ? LessonPlanStatus.SUBMITTED : LessonPlanStatus.DRAFT) : statuses[j % statuses.length];
 
     const plan = await prisma.lessonPlan.create({
       data: {

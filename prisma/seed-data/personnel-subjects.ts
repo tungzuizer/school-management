@@ -11,6 +11,7 @@ import { SchoolStructureResult } from "./school-structure";
 
 export interface PersonnelSubjectsResult {
   principalUser: any;
+  accountantUser?: any;
   vpUsers: any[];
   subjectGroups: any[];
   subjects: any[];
@@ -21,6 +22,8 @@ export interface PersonnelSubjectsResult {
     specialty: string;
     campusId: string;
   }>;
+  sampleTeacherUser: any;
+  sampleTeacher: any;
 }
 
 export async function seedPersonnelAndSubjects(
@@ -169,13 +172,16 @@ export async function seedPersonnelAndSubjects(
   }
 
   // 3.1. Tạo 62 Giáo viên Chủ nhiệm & Bộ môn Tiểu học (phụ trách 62 lớp)
+  let sampleTeacherUser: any = null;
+  let sampleTeacher: any = null;
+
   for (let i = 1; i <= 62; i++) {
-    const campusItem = campuses[i % campuses.length];
+    const campusItem = i === 1 ? campuses[0] : campuses[i % campuses.length];
     const gradeLevel = ((i - 1) % 5) + 1;
     const email = i === 1 ? "giaovien.thpholu@gmail.com" : `gv.chunhiem.${i}@gmail.com`;
     const name =
       i === 1
-        ? "Cô Nguyễn Thu Hằng (Giáo viên Tiểu học Mẫu)"
+        ? "Cô Nguyễn Thu Hằng (GVCN 1A1 - Trung tâm)"
         : `Thầy/Cô Giáo viên Tiểu học ${i} (Khối ${gradeLevel})`;
 
     const user = await prisma.user.create({
@@ -196,6 +202,11 @@ export async function seedPersonnelAndSubjects(
         specialty: `Giáo viên Tiểu học Khối ${gradeLevel}`,
       },
     });
+
+    if (i === 1) {
+      sampleTeacherUser = user;
+      sampleTeacher = teacher;
+    }
 
     await prisma.userRoleScope.create({
       data: {
@@ -255,5 +266,7 @@ export async function seedPersonnelAndSubjects(
     subjectGroups: createdGroups,
     subjects: createdSubjects,
     teachers: createdTeachers,
+    sampleTeacherUser: sampleTeacherUser || createdTeachers[0].user,
+    sampleTeacher: sampleTeacher || createdTeachers[0].teacher,
   };
 }
