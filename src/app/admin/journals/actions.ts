@@ -106,13 +106,23 @@ export async function getAdminJournalMetadata(campusId?: string, schoolId?: stri
 export async function getAdminJournalEntries(classId: string, dateStr: string) {
   if (!(await isAuthorizedAdmin()) || !classId || !dateStr) return [];
 
-  const date = new Date(dateStr);
-  date.setHours(0, 0, 0, 0);
+  const [y, m, d] = dateStr.includes("-")
+    ? dateStr.split("-").map(Number)
+    : [new Date(dateStr).getFullYear(), new Date(dateStr).getMonth() + 1, new Date(dateStr).getDate()];
+  const startUtc = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+  const endUtc = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
+  const localStart = new Date(y, m - 1, d, 0, 0, 0, 0);
+  const localEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+  const minDate = new Date(Math.min(startUtc.getTime(), localStart.getTime()) - 3600 * 1000);
+  const maxDate = new Date(Math.max(endUtc.getTime(), localEnd.getTime()) + 3600 * 1000);
 
   const entries = await prisma.classJournalEntry.findMany({
     where: {
       classId,
-      date,
+      date: {
+        gte: minDate,
+        lte: maxDate,
+      },
     },
     include: {
       subject: { select: { name: true } },

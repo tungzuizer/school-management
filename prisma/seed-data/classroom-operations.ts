@@ -1,15 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: `prisma/seed.ts` (line 24), `src/app/api/db-seed/route.ts` (line 25).
- * 2. Uniqueness: Dedicated seed module for ClassJournalEntry, DailyReport, ParticipationRecord, ConductRecord, Incident, ParentFeedback.
- * 3. Data Schemas:
- *    - ClassJournalEntry: { id: string, classId: string, subjectId: string, teacherId: string, date: DateTime, dayOfWeek: number, period: number, lessonTitle?: string, content?: string, absentees?: string, notes?: string, isConfirmed: boolean, confirmedAt?: DateTime }
- *    - DailyReport: { id: string, classId: string, date: DateTime, absentCount: number, lateCount: number, incidentSummary?: string, parentFeedbackSummary?: string, aiGeneratedText?: string, editedText?: string, status: ReportStatus, sentAt?: DateTime }
- *    - ParticipationRecord: { id: string, studentId: string, classId: string, date: DateTime, title: string, category: string, points: number, note?: string, createdById?: string }
- *    - ConductRecord: { id: string, studentId: string, period: AcademicPeriod, conductRating?: ConductRating, academicRating?: AcademicRating, note?: string }
- *    - Incident: { id: string, studentId: string, classId: string, date: DateTime, type: IncidentType, description: string, reportedBy?: string }
- *    - ParentFeedback: { id: string, studentId: string, date: DateTime, channel?: string, content: string, handledBy?: string, response?: string }
- * 4. Verbatim User Instruction: "tôi muốn bạn thêm dữ liệu mô phỏng cho tất cả dữ liệu".
+ * 2. Affected APIs: `seedClassroomOperations`, server action `getJournalEntries`, `getAdminJournalEntries`.
+ * 3. Data Schemas: `ClassJournalEntry`, `DailyReport`, `ParticipationRecord`, `ConductRecord`, `Incident`, `ParentFeedback`.
+ * 4. Verbatim User Instruction: "bạn đang fake dữ liệu tôi đấy hả sao mục điêm thi lại 0 có gì kế hoạch giảng giạy cũng không có sổ đầu bài cũng không có gì tôi bảo bạn mô phỏng dữ liệu mà kiểu như bạn tạo trước 1 dữ liệu của trường đó rồi bạn add vô"
  */
 
 import {
@@ -32,27 +26,68 @@ export async function seedClassroomOperations(
 ): Promise<void> {
   console.log("\n📖 Khởi tạo Hoạt động lớp học, Sổ đầu bài điện tử, Báo cáo ngày, Khen thưởng/Kỷ luật & Ý kiến PH...");
   const { school, campuses } = schoolStruct;
-  const { subjects, principalUser, teachers } = personnelStruct;
+  const { subjects, principalUser, teachers, sampleTeacher } = personnelStruct;
   const { classes, students } = classesStudents;
+  const class1A1 = classes.find((c) => c.name === "1A1") || classes[0];
 
-  // 1. Khởi tạo 40 Sổ Đầu Bài Điện Tử (ClassJournalEntry)
-  console.log("   - Tạo 40 nhật ký tiết dạy Sổ Đầu Bài theo các phân hiệu...");
+  // 1. Khởi tạo 60 Sổ Đầu Bài Điện Tử (ClassJournalEntry)
+  console.log("   - Tạo 60 nhật ký tiết dạy Sổ Đầu Bài theo các phân hiệu (kèm toàn bộ tiết học Lớp 1A1)...");
   const journalLessonTitles = [
-    { subName: "Toán", title: "Ôn tập các số đến 100 và phép tính cộng trừ có nhớ", note: "Lớp học sôi nổi, 95% học sinh làm đúng bài tập nhóm, nắm vững kỹ năng tính nhẩm.", score: 10 },
+    { subName: "Toán", title: "Ôn tập các số đến 10 và phép tính cộng trừ ban đầu", note: "Lớp học sôi nổi, 95% học sinh làm đúng bài tập nhóm, nắm vững kỹ năng tính nhẩm.", score: 10 },
     { subName: "Tiếng Việt", title: "Bài 3: Em yêu mùa hè quê em - Đọc và mở rộng vốn từ", note: "Học sinh luyện đọc diễn cảm tốt. Cần rèn thêm chữ viết cho 2 học sinh ngồi bàn cuối.", score: 9 },
     { subName: "Tiếng Anh", title: "Unit 1: Hello Friends - Lesson 2: Vocabulary & Speaking", note: "100% học sinh phát âm chuẩn các mẫu câu chào hỏi giao tiếp cơ bản.", score: 10 },
     { subName: "Tin học và Công nghệ", title: "Bài 2: Khám phá thế giới máy tính và an toàn thông tin số", note: "Học sinh thực hành thao tác chuột và bàn phím thành thạo tại phòng máy thực hành.", score: 10 },
     { subName: "Khoa học", title: "Bài 4: Nước và vai trò của nước đối với sự sống", note: "Tổ chức thí nghiệm trực quan, học sinh thảo luận nhóm tích cực và đưa ra kết luận chuẩn xác.", score: 10 },
+    { subName: "Tự nhiên và Xã hội", title: "Bài 1: Gia đình của em và giữ an toàn tại nhà", note: "Học sinh chia sẻ nhiệt tình về các thành viên trong gia đình.", score: 10 },
+    { subName: "Đạo đức", title: "Bài 2: Em tự giác làm việc của mình", note: "Học sinh hiểu ý nghĩa của việc tự giác, cam kết thực hiện ở lớp và ở nhà.", score: 10 },
   ];
 
+  // 1.1. Tạo sổ đầu bài chuyên biệt cho Lớp 1A1 (gắn với giáo viên mẫu sampleTeacher)
+  const sepDays = [
+    "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11",
+    "2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18",
+    "2026-09-19", "2026-09-21", "2026-09-22"
+  ];
+
+  for (let dayIdx = 0; dayIdx < sepDays.length; dayIdx++) {
+    const dateStr = sepDays[dayIdx];
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dayDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+    const dayOfWeek = (dayIdx % 5) + 1; // 1 to 5 (Mon to Fri)
+
+    for (let period = 1; period <= 4; period++) {
+      const spec = journalLessonTitles[(dayIdx * 2 + period) % journalLessonTitles.length];
+      const targetSub = subjects.find((s) => s.name === spec.subName) || subjects[0];
+      const targetTeacher = sampleTeacher || teachers[0].teacher;
+
+      await prisma.classJournalEntry.create({
+        data: {
+          classId: class1A1.id,
+          subjectId: targetSub.id,
+          teacherId: targetTeacher.id,
+          date: dayDate,
+          dayOfWeek,
+          period,
+          lessonTitle: `${spec.title} (Tiết ${period})`,
+          content: spec.note,
+          absentees: dayIdx % 4 === 0 && period === 1 ? "Vắng 1 em (Bùi Minh Nhật - sốt nhẹ, có phép)" : null,
+          notes: "Lớp 1A1 nề nếp học tập tốt, học sinh tự giác và hăng hái xây dựng bài.",
+          isConfirmed: true,
+          confirmedAt: dayDate,
+        },
+      });
+    }
+  }
+
+  // 1.2. Tạo sổ đầu bài cho các lớp và phân hiệu khác
   for (let i = 0; i < 40; i++) {
-    const targetClass = classes[i % classes.length];
+    const targetClass = classes[(i + 1) % classes.length];
     const spec = journalLessonTitles[i % journalLessonTitles.length];
     const targetSubject = subjects.find((s) => s.name === spec.subName) || subjects[0];
     const targetTeacher = teachers[i % teachers.length]?.teacher || teachers[0].teacher;
 
-    const baseDate = new Date("2026-09-07");
-    baseDate.setDate(baseDate.getDate() + (i % 12));
+    const baseDate = new Date("2026-09-07T00:00:00.000Z");
+    baseDate.setDate(baseDate.getDate() + (i % 14));
 
     await prisma.classJournalEntry.create({
       data: {
@@ -72,14 +107,13 @@ export async function seedClassroomOperations(
     });
   }
 
-  // 2. Khởi tạo 30 Báo Cáo Ngày Lớp Học (DailyReport)
-  console.log("   - Tạo 30 báo cáo tình hình nền nếp chuyên cần hàng ngày của các lớp...");
-  for (let d = 0; d < 30; d++) {
-    const targetClass = classes[d % classes.length];
-    const reportDate = new Date("2026-09-08");
-    reportDate.setDate(reportDate.getDate() + (d % 10));
+  // 2. Khởi tạo 35 Báo Cáo Ngày Lớp Học (DailyReport)
+  console.log("   - Tạo 35 báo cáo tình hình nền nếp chuyên cần hàng ngày của các lớp...");
+  for (let d = 0; d < 35; d++) {
+    const targetClass = d < sepDays.length ? class1A1 : classes[d % classes.length];
+    const reportDate = new Date("2026-09-07T00:00:00.000Z");
+    reportDate.setDate(reportDate.getDate() + (d % 14));
 
-    const total = 28 + (d % 8);
     const absent = d % 5 === 0 ? 1 : 0;
 
     await prisma.dailyReport.create({

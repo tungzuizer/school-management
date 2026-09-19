@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/student/page.tsx`, `src/app/student/grades/page.tsx`, `src/app/student/schedule/page.tsx`.
+ * 2. Affected APIs: Server actions in `student/actions.ts` (`getStudentFromSession`, `getStudentGrades`, `getStudentDashboardData`).
+ * 3. Schema: Prisma `Student`, `User`, `Grade`, `ClassRoom`, `Subject`, `Attendance`.
+ * 4. Verbatim User Instruction: "bạn đang fake dữ liệu tôi đấy hả sao mục điêm thi lại 0 có gì kế hoạch giảng giạy cũng không có sổ đầu bài cũng không có gì tôi bảo bạn mô phỏng dữ liệu mà kiểu như bạn tạo trước 1 dữ liệu của trường đó rồi bạn add vô"
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
@@ -25,9 +33,10 @@ async function getStudentFromSession() {
     // Tầng 2: Nếu chưa tìm thấy theo userId, tìm theo email hoặc studentCode
     if (!student && session.user.email) {
       const email = session.user.email.toLowerCase();
-      const studentCode = email.startsWith("hs")
-        ? email.split("@")[0].toUpperCase()
-        : "HS26100001";
+      const studentCode =
+        email.startsWith("hs26") || (email.startsWith("hs") && !email.startsWith("hocsinh"))
+          ? email.split("@")[0].toUpperCase()
+          : "HS26100001";
 
       student = await prisma.student.findFirst({
         where: {
