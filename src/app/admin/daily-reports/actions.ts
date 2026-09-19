@@ -1,9 +1,17 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/admin/daily-reports/page.tsx`.
+ * 2. Affected APIs: `getAdminDailyReports`, `getSchoolsForFilter`, `getCampusesForFilter`, `getReportDetail`, `getReportsInRange`, `getDailyReportStats`.
+ * 3. Schemas: Prisma models `DailyReport`, `ClassRoom`, `School`, `Campus`, `Teacher`, `User`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu cho Báo cáo hàng ngày.
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
 
-// Get all daily reports for a specific date, optionally filtered by school
-export async function getAdminDailyReports(date: string, schoolId?: string) {
+// Get all daily reports for a specific date, optionally filtered by school and campus
+export async function getAdminDailyReports(date: string, schoolId?: string, campusId?: string) {
   try {
     const dateObj = new Date(date);
     const startOfDay = new Date(dateObj);
@@ -11,11 +19,14 @@ export async function getAdminDailyReports(date: string, schoolId?: string) {
     const endOfDay = new Date(dateObj);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const where: Record<string, unknown> = {
+    const where: Record<string, any> = {
       date: { gte: startOfDay, lte: endOfDay },
     };
-    if (schoolId) {
-      where.classRoom = { schoolId };
+    if (schoolId && schoolId !== "ALL" && schoolId !== "") {
+      where.classRoom = { ...(where.classRoom || {}), schoolId };
+    }
+    if (campusId && campusId !== "ALL" && campusId !== "") {
+      where.classRoom = { ...(where.classRoom || {}), campusId };
     }
 
     return await prisma.dailyReport.findMany({
@@ -46,6 +57,21 @@ export async function getSchoolsForFilter() {
     });
   } catch (err) {
     console.error("getSchoolsForFilter error:", err);
+    return [];
+  }
+}
+
+// Get all campuses for filter dropdown
+export async function getCampusesForFilter(schoolId?: string) {
+  try {
+    const where = schoolId && schoolId !== "ALL" ? { schoolId } : {};
+    return await prisma.campus.findMany({
+      where,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, schoolId: true },
+    });
+  } catch (err) {
+    console.error("getCampusesForFilter error:", err);
     return [];
   }
 }

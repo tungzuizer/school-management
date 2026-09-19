@@ -2,8 +2,8 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: `src/app/admin/journals/page.tsx`.
  * 2. Affected APIs: Server actions `getAdminJournalMetadata`, `getAdminJournalEntries`, `deleteAdminJournalEntry`, `confirmAdminJournalEntry`.
- * 3. Schema: Prisma `ClassRoom`, `ClassJournalEntry`, `User`, `Role`, `School`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Mở rộng phân quyền và quản trị sổ đầu bài cho SuperAdmin.
+ * 3. Schema: Prisma `ClassRoom`, `Campus`, `School`, `ClassJournalEntry`, `User`, `Role`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu / Điểm trường trực thuộc cho Sổ đầu bài.
  */
 
 "use server";
@@ -12,6 +12,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Role } from "@prisma/client";
+import { getTenantContext } from "@/lib/tenant";
 
 // Check if user is authorized admin (SuperAdmin, School Admin, Vice Principal, Dept Admin)
 async function isAuthorizedAdmin() {
@@ -35,20 +36,50 @@ async function isAuthorizedAdmin() {
   );
 }
 
-export async function getAdminJournalMetadata() {
-  if (!(await isAuthorizedAdmin())) return { classes: [], schools: [] };
+export async function getAdminJournalMetadata(campusId?: string, schoolId?: string) {
+  if (!(await isAuthorizedAdmin())) return { classes: [], campuses: [], schools: [] };
 
-  const [classes, schools] = await Promise.all([
+  const ctx = await getTenantContext().catch(() => null);
+  let targetSchoolId: string | undefined;
+  let targetCampusId: string | undefined;
+
+  if (schoolId && schoolId !== "ALL" && schoolId !== "") {
+    targetSchoolId = schoolId;
+  } else if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN" && ctx?.userRole !== "ADMIN") {
+    targetSchoolId = ctx.schoolId;
+  }
+
+  if (ctx?.campusId) {
+    targetCampusId = ctx.campusId;
+  } else if (campusId && campusId !== "ALL" && campusId !== "") {
+    targetCampusId = campusId;
+  }
+
+  const classWhere: any = {};
+  if (targetSchoolId) classWhere.schoolId = targetSchoolId;
+  if (targetCampusId) classWhere.campusId = targetCampusId;
+
+  const campusWhere: any = {};
+  if (targetSchoolId) campusWhere.schoolId = targetSchoolId;
+
+  const [classes, campuses, schools] = await Promise.all([
     prisma.classRoom.findMany({
-      orderBy: { name: "asc" },
+      where: classWhere,
+      orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
       include: {
         school: { select: { id: true, name: true } },
+        campus: { select: { id: true, name: true } },
         homeroomTeacher: {
           include: {
             user: { select: { name: true } },
           },
         },
       },
+    }),
+    prisma.campus.findMany({
+      where: campusWhere,
+      select: { id: true, name: true, schoolId: true },
+      orderBy: { name: "asc" },
     }),
     prisma.school.findMany({
       select: { id: true, name: true },
@@ -58,11 +89,15 @@ export async function getAdminJournalMetadata() {
 
   return {
     schools,
+    campuses,
     classes: classes.map((c) => ({
       id: c.id,
       name: c.name,
+      gradeLevel: c.gradeLevel,
       schoolId: c.schoolId || null,
       schoolName: c.school?.name || "Toàn trường",
+      campusId: c.campusId || null,
+      campusName: c.campus?.name || "Điểm Trung tâm",
       homeroomTeacherName: c.homeroomTeacher?.user?.name || "Chưa phân công",
     })),
   };

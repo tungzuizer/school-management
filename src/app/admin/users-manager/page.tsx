@@ -3,7 +3,7 @@
  * 1. Importers/Callers: `src/app/admin/layout.tsx` (Menu Item: Quản lý Tài khoản & Phân quyền `/admin/users-manager`).
  * 2. Affected APIs: `getUsersManagerData`, `toggleUserApproval`, `resetUserPassword`, `createUserAccount`, `deleteUserAccount`.
  * 3. Schemas: `ManagedUserItem`, `LookupOption`, `UserStatsSummary`, `Role`.
- * 4. Verbatim User Instruction: "tôi muốn tất cả tài khoản đôi là @gmail.com và tôi cần các tài khoản đó được xem và quản lý với acc superadmin , và tôi cần bạn tạo lại cấu trúc về tất cả các mục ở superadmin".
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu và hiển thị phân hiệu cho Tổng kho tài khoản.
  */
 
 "use client";
@@ -34,6 +34,7 @@ import {
   X,
   Mail,
   User,
+  MapPin,
 } from "lucide-react";
 import {
   getUsersManagerData,
@@ -71,10 +72,12 @@ export default function UsersManagerPage() {
   const [stats, setStats] = useState<UserStatsSummary | null>(null);
   const [districtWards, setDistrictWards] = useState<LookupOption[]>([]);
   const [schools, setSchools] = useState<LookupOption[]>([]);
+  const [campuses, setCampuses] = useState<{ id: string; name: string; schoolId: string }[]>([]);
 
   // Filter states
   const [selectedWardId, setSelectedWardId] = useState("ALL");
   const [selectedSchoolId, setSelectedSchoolId] = useState("ALL");
+  const [selectedCampusId, setSelectedCampusId] = useState("ALL");
   const [selectedRole, setSelectedRole] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState<"ALL" | "APPROVED" | "PENDING">("ALL");
   const [searchTerm, setSearchTerm] = useState("");
@@ -95,6 +98,7 @@ export default function UsersManagerPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState<Role>(Role.TEACHER);
   const [newSchoolId, setNewSchoolId] = useState("");
+  const [newCampusId, setNewCampusId] = useState("");
   const [newWardId, setNewWardId] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newPassword, setNewPassword] = useState("abc123");
@@ -110,6 +114,7 @@ export default function UsersManagerPage() {
       const res = await getUsersManagerData({
         districtWardId: selectedWardId,
         schoolId: selectedSchoolId,
+        campusId: selectedCampusId,
         role: selectedRole,
         status: selectedStatus,
         search: searchTerm,
@@ -122,6 +127,7 @@ export default function UsersManagerPage() {
         setStats(res.stats);
         setDistrictWards(res.districtWards);
         setSchools(res.schools);
+        setCampuses(res.campuses || []);
         setTotalPages(res.totalPages);
         setTotalRecords(res.total);
       } else {
@@ -136,7 +142,7 @@ export default function UsersManagerPage() {
 
   useEffect(() => {
     fetchData();
-  }, [selectedWardId, selectedSchoolId, selectedRole, selectedStatus, page, pageSize]);
+  }, [selectedWardId, selectedSchoolId, selectedCampusId, selectedRole, selectedStatus, page, pageSize]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +200,7 @@ export default function UsersManagerPage() {
         role: newRole,
         password: newPassword,
         schoolId: newSchoolId || undefined,
+        campusId: newCampusId || undefined,
         districtWardId: newWardId || undefined,
         phone: newPhone || undefined,
       });
@@ -205,6 +212,7 @@ export default function UsersManagerPage() {
         setNewName("");
         setNewEmail("");
         setNewPhone("");
+        setNewCampusId("");
         setNewPassword("abc123");
         fetchData();
         setTimeout(() => setSuccessMsg(""), 4000);
@@ -234,7 +242,7 @@ export default function UsersManagerPage() {
   };
 
   const copyCredentials = (user: ManagedUserItem) => {
-    const text = `Họ tên: ${user.name}\nEmail: ${user.email}\nMật khẩu: abc123\nVai trò: ${user.role}\nTrường/Đơn vị: ${user.schoolName}`;
+    const text = `Họ tên: ${user.name}\nEmail: ${user.email}\nMật khẩu: abc123\nVai trò: ${user.role}\nTrường/Đơn vị: ${user.schoolName}\nPhân hiệu: ${user.campusName || "Điểm Trung tâm"}`;
     navigator.clipboard.writeText(text);
     setCopiedId(user.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -410,23 +418,23 @@ export default function UsersManagerPage() {
         </div>
 
         {/* Multi-tier Dropdown filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-3 border-t border-slate-100">
           <div>
             <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-              Khu Vực Quản Lý (3 Khu vực)
+              Phân hiệu / Điểm trường
             </label>
             <select
-              value={selectedWardId}
+              value={selectedCampusId}
               onChange={(e) => {
-                setSelectedWardId(e.target.value);
+                setSelectedCampusId(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2 bg-blue-50/50 border border-blue-200 rounded-xl text-xs font-bold text-blue-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
-              <option value="ALL">Tất cả 3 Khu vực</option>
-              {districtWards.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
+              <option value="ALL">Tất cả Phân hiệu / Điểm</option>
+              {campuses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -434,7 +442,7 @@ export default function UsersManagerPage() {
 
           <div>
             <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-              Trường Trực Thuộc (6 Trường THPT)
+              Trường Trực Thuộc
             </label>
             <select
               value={selectedSchoolId}
@@ -444,10 +452,31 @@ export default function UsersManagerPage() {
               }}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
-              <option value="ALL">Tất cả 6 Trường THPT</option>
+              <option value="ALL">Tất cả các Trường</option>
               {schools.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+              Khu Vực Quản Lý
+            </label>
+            <select
+              value={selectedWardId}
+              onChange={(e) => {
+                setSelectedWardId(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="ALL">Tất cả Khu vực</option>
+              {districtWards.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
                 </option>
               ))}
             </select>
@@ -497,6 +526,46 @@ export default function UsersManagerPage() {
           </div>
         </div>
       </div>
+
+      {/* Quick Campus Filter Pills */}
+      {campuses.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => {
+              setSelectedCampusId("ALL");
+              setPage(1);
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 ${
+              selectedCampusId === "ALL"
+                ? "bg-slate-900 text-white shadow-sm"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Toàn Trường ({campuses.length} Phân hiệu/Điểm)</span>
+          </button>
+          {campuses.map((c) => {
+            const isSelected = selectedCampusId === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedCampusId(c.id);
+                  setPage(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 ${
+                  isSelected
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                <span>{c.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Main Users Directory Table */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -577,13 +646,21 @@ export default function UsersManagerPage() {
                         </span>
                       </td>
 
-                      {/* School & DistrictWard */}
+                      {/* School, Campus & DistrictWard */}
                       <td className="py-3.5 px-4">
-                        <div className="space-y-0.5">
+                        <div className="space-y-1">
                           <p className="font-bold text-slate-800 flex items-center gap-1">
                             <School className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span>{u.schoolName}</span>
                           </p>
+                          {u.campusName && (
+                            <div className="flex items-center gap-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <MapPin className="w-2.5 h-2.5" />
+                                <span>{u.campusName}</span>
+                              </span>
+                            </div>
+                          )}
                           <p className="text-[11px] text-slate-500 flex items-center gap-1">
                             <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
                             <span>{u.districtWardName}</span>
@@ -787,7 +864,7 @@ export default function UsersManagerPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Gắn Trường THPT</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Gắn Trường Trực Thuộc</label>
                   <select
                     value={newSchoolId}
                     onChange={(e) => setNewSchoolId(e.target.value)}
@@ -803,20 +880,36 @@ export default function UsersManagerPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Gắn Khu Vực</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Phân hiệu / Điểm trường</label>
                   <select
-                    value={newWardId}
-                    onChange={(e) => setNewWardId(e.target.value)}
+                    value={newCampusId}
+                    onChange={(e) => setNewCampusId(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
-                    <option value="">Theo trường hoặc Toàn tỉnh</option>
-                    {districtWards.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
+                    <option value="">Mặc định (Điểm Trung tâm)</option>
+                    {campuses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
                       </option>
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Gắn Khu Vực Quản Lý</label>
+                <select
+                  value={newWardId}
+                  onChange={(e) => setNewWardId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="">Theo trường hoặc Toàn tỉnh</option>
+                  {districtWards.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

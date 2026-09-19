@@ -1,21 +1,41 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Admin classes management page (`src/app/admin/classes/page.tsx`).
+ * 2. Affected APIs: `getClasses`, `getCampusesForSelect`, `getSchoolsForSelect`, `getTeachersForSelect`, `createClass`, `updateClass`, `deleteClass`, `createBulkClasses`.
+ * 3. Schema: Prisma `ClassRoom`, `School`, `Campus`, `Teacher`, `User`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa bộ lọc Phân hiệu cho Quản lý Lớp học.
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant";
 
 
-export async function getClasses(search?: string, schoolId?: string, gradeLevel?: number) {
+export async function getClasses(search?: string, campusId?: string, gradeLevel?: number, schoolId?: string) {
   try {
     const where: any = {};
     if (search) where.name = { contains: search, mode: "insensitive" };
-    if (schoolId) {
-      where.schoolId = schoolId;
-    } else {
-      try {
-        const ctx = await getTenantContext();
-        if (ctx.schoolId) where.schoolId = ctx.schoolId;
-      } catch {}
+
+    // Check tenant context for campus / school scoping
+    try {
+      const ctx = await getTenantContext();
+      if (ctx.campusId) {
+        where.campusId = ctx.campusId;
+      } else if (campusId && campusId !== "ALL") {
+        where.campusId = campusId;
+      }
+
+      if (ctx.schoolId) {
+        where.schoolId = ctx.schoolId;
+      } else if (schoolId && schoolId !== "ALL") {
+        where.schoolId = schoolId;
+      }
+    } catch {
+      if (campusId && campusId !== "ALL") where.campusId = campusId;
+      if (schoolId && schoolId !== "ALL") where.schoolId = schoolId;
     }
+
     if (gradeLevel) where.gradeLevel = gradeLevel;
 
     return await prisma.classRoom.findMany({

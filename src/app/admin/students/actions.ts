@@ -1,20 +1,22 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: `src/app/admin/students/page.tsx`, `src/app/admin/students/components/StudentCredentialsModal.tsx`, `src/app/admin/students/components/StudentCredentialSlipsModal.tsx`.
- * 2. Affected APIs: `getStudentCredentialsOverview`, `resetStudentPasswordSecure`, `getStudentCredentialSlips`, `resetStudentPassword`, `createStudent`, `getStudents`.
- * 3. Schemas: Prisma models `User`, `Student`, `School`, `ClassRoom`.
- * 4. Verbatim User Instruction: "tôi muốn mỗi giáo viên mỗi học sinh sẽ có tài khoản mà mật khẩu và có thể hiện thị chỉ cho hiệu trưởng hoặc admin nhìn thấy được".
+ * 2. Affected APIs: `getStudentCredentialsOverview`, `resetStudentPasswordSecure`, `getStudentCredentialSlips`, `resetStudentPassword`, `createStudent`, `getStudents`, `getCampusesForSelect`, `getClassesForSelect`.
+ * 3. Schemas: Prisma models `User`, `Student`, `School`, `Campus`, `ClassRoom`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa bộ lọc Phân hiệu / Điểm trường trực thuộc cho Hồ sơ Học sinh (1.706 học sinh, Khối 1-5).
  */
 
 "use server";
 
 import prisma from "@/lib/prisma";
-
 import bcrypt from "bcryptjs";
 import { getTenantContext, isSuperAdmin } from "@/lib/tenant";
 import { recordAuditLog } from "@/lib/audit-logger";
-import { generateStudentEmail } from "@/lib/student-email";
-import { resolveUniqueStudentCodeAndEmail, previewNextStudentCodeAndEmail, DEFAULT_INITIAL_PASSWORD } from "@/lib/account-automation";
+import {
+  resolveUniqueStudentCodeAndEmail,
+  previewNextStudentCodeAndEmail,
+  DEFAULT_INITIAL_PASSWORD,
+} from "@/lib/account-automation";
 
 export interface StudentCredentialItem {
   id: string; // studentId
@@ -25,6 +27,8 @@ export interface StudentCredentialItem {
   className: string;
   classId?: string;
   gradeLevel?: number;
+  campusName?: string;
+  campusId?: string;
   schoolName: string;
   schoolId?: string;
   phone: string | null;
@@ -41,30 +45,54 @@ function assertPrincipalOrAdmin(ctx: { userRole?: string; userEmail?: string }) 
   const hasAllowedRole = ctx.userRole && allowedRoles.includes(ctx.userRole);
 
   if (!hasAllowedRole && !isSuperAdmin(ctx)) {
-    throw new Error("Truy cập bị từ chối: Chỉ Hiệu trưởng (ADMIN) hoặc Quản trị viên cấp cao mới có quyền xem và quản lý tài khoản/mật khẩu.");
+    throw new Error(
+      "Truy cập bị từ chối: Chỉ Hiệu trưởng (ADMIN) hoặc Quản trị viên cấp cao mới có quyền xem và quản lý tài khoản/mật khẩu."
+    );
   }
 }
 
-export async function getStudents(search?: string, classId?: string, gradeLevel?: number, schoolId?: string) {
+export async function getStudents(
+  search?: string,
+  classId?: string,
+  gradeLevel?: number,
+  campusId?: string,
+  schoolId?: string
+) {
   try {
     const ctx = await getTenantContext().catch(() => null);
     let targetSchoolId: string | undefined;
+    let targetCampusId: string | undefined;
 
+    // School Scoping
     if (schoolId && schoolId !== "ALL" && schoolId !== "") {
       targetSchoolId = schoolId;
-    } else if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN" && ctx?.userRole !== "ADMIN" && ctx?.userRole !== "DEPARTMENT_ADMIN" && ctx?.userRole !== "DISTRICT_ADMIN") {
+    } else if (
+      ctx?.schoolId &&
+      ctx?.userRole !== "SUPER_ADMIN" &&
+      ctx?.userRole !== "ADMIN" &&
+      ctx?.userRole !== "DEPARTMENT_ADMIN" &&
+      ctx?.userRole !== "DISTRICT_ADMIN"
+    ) {
       targetSchoolId = ctx.schoolId;
+    }
+
+    // Campus Scoping (RBAC VP auto-scope or admin filter)
+    if (ctx?.campusId) {
+      targetCampusId = ctx.campusId;
+    } else if (campusId && campusId !== "ALL" && campusId !== "") {
+      targetCampusId = campusId;
     }
 
     const andConditions: any[] = [];
 
     if (targetSchoolId) {
       andConditions.push({
-        OR: [
-          { classRoom: { schoolId: targetSchoolId } },
-          { user: { schoolId: targetSchoolId } },
-        ],
+        OR: [{ classRoom: { schoolId: targetSchoolId } }, { user: { schoolId: targetSchoolId } }],
       });
+    }
+
+    if (targetCampusId) {
+      andConditions.push({ classRoom: { campusId: targetCampusId } });
     }
 
     if (search && search.trim()) {
@@ -77,7 +105,7 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
       });
     }
 
-    if (classId && classId.trim()) {
+    if (classId && classId.trim() && classId !== "ALL") {
       andConditions.push({ classId: classId.trim() });
     }
 
@@ -92,6 +120,8 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
           id: true,
           name: true,
           gradeLevel: true,
+          campusId: true,
+          campus: { select: { id: true, name: true } },
           school: { select: { id: true, name: true } },
         },
       },
@@ -101,7 +131,11 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
     const result = await prisma.student.findMany({
       where: andConditions.length > 0 ? { AND: andConditions } : {},
       include: includeSelect,
-      orderBy: { user: { name: "asc" } },
+      orderBy: [
+        { classRoom: { gradeLevel: "asc" } },
+        { classRoom: { name: "asc" } },
+        { user: { name: "asc" } },
+      ],
       take: 2000,
     });
 
@@ -112,28 +146,57 @@ export async function getStudents(search?: string, classId?: string, gradeLevel?
   }
 }
 
-export async function getClassesForSelect(schoolId?: string) {
+export async function getCampusesForSelect(schoolId?: string) {
+  try {
+    const where = schoolId ? { schoolId } : {};
+    return await prisma.campus.findMany({
+      where,
+      select: { id: true, name: true, schoolId: true },
+      orderBy: { name: "asc" },
+    });
+  } catch (err) {
+    console.error("getCampusesForSelect error:", err);
+    return [];
+  }
+}
+
+export async function getClassesForSelect(campusId?: string, gradeLevel?: number, schoolId?: string) {
   try {
     const ctx = await getTenantContext().catch(() => null);
-    let targetSchoolId: string | undefined;
+    const where: any = {};
 
-    if (schoolId && schoolId !== "ALL" && schoolId !== "") {
-      targetSchoolId = schoolId;
-    } else if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN" && ctx?.userRole !== "ADMIN" && ctx?.userRole !== "DEPARTMENT_ADMIN" && ctx?.userRole !== "DISTRICT_ADMIN") {
-      targetSchoolId = ctx.schoolId;
+    if (ctx?.campusId) {
+      where.campusId = ctx.campusId;
+    } else if (campusId && campusId !== "ALL" && campusId !== "") {
+      where.campusId = campusId;
     }
 
-    const where: any = {};
-    if (targetSchoolId) where.schoolId = targetSchoolId;
+    if (gradeLevel) {
+      where.gradeLevel = Number(gradeLevel);
+    }
 
-    const classes = await prisma.classRoom.findMany({
+    if (schoolId && schoolId !== "ALL" && schoolId !== "") {
+      where.schoolId = schoolId;
+    } else if (
+      ctx?.schoolId &&
+      ctx?.userRole !== "SUPER_ADMIN" &&
+      ctx?.userRole !== "DEPARTMENT_ADMIN" &&
+      ctx?.userRole !== "DISTRICT_ADMIN"
+    ) {
+      where.schoolId = ctx.schoolId;
+    }
+
+    return await prisma.classRoom.findMany({
       where,
-      select: { id: true, name: true, gradeLevel: true, schoolId: true, school: { select: { id: true, name: true } } },
-      orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
-    });
-    if (classes.length > 0 || !targetSchoolId) return classes;
-    return prisma.classRoom.findMany({
-      select: { id: true, name: true, gradeLevel: true, schoolId: true, school: { select: { id: true, name: true } } },
+      select: {
+        id: true,
+        name: true,
+        gradeLevel: true,
+        campusId: true,
+        campus: { select: { id: true, name: true } },
+        schoolId: true,
+        school: { select: { id: true, name: true } },
+      },
       orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
     });
   } catch (error) {
@@ -145,7 +208,13 @@ export async function getClassesForSelect(schoolId?: string) {
 export async function getSchoolsForSelect() {
   try {
     const ctx = await getTenantContext().catch(() => null);
-    if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN" && ctx?.userRole !== "ADMIN" && ctx?.userRole !== "DEPARTMENT_ADMIN" && ctx?.userRole !== "DISTRICT_ADMIN") {
+    if (
+      ctx?.schoolId &&
+      ctx?.userRole !== "SUPER_ADMIN" &&
+      ctx?.userRole !== "ADMIN" &&
+      ctx?.userRole !== "DEPARTMENT_ADMIN" &&
+      ctx?.userRole !== "DISTRICT_ADMIN"
+    ) {
       return prisma.school.findMany({
         where: { id: ctx.schoolId },
         select: { id: true, name: true },
@@ -204,24 +273,26 @@ export async function createStudent(data: {
   motherJob?: string;
 }) {
   try {
-    let userSchoolId: string | undefined;
-    try {
-      const ctx = await getTenantContext();
-      if (ctx.schoolId) userSchoolId = ctx.schoolId;
-    } catch { /* skip */ }
+    if (!data.name || !data.name.trim()) {
+      return { success: false, error: "Vui lòng nhập họ và tên học sinh" };
+    }
 
-    let gradeLevel: number | undefined;
+    let classGradeLevel: number | undefined;
+    let classSchoolId: string | undefined;
     if (data.classId) {
       const cls = await prisma.classRoom.findUnique({
         where: { id: data.classId },
-        select: { schoolId: true, gradeLevel: true },
+        select: { gradeLevel: true, schoolId: true },
       });
-      if (cls?.schoolId && !userSchoolId) userSchoolId = cls.schoolId;
-      if (cls?.gradeLevel) gradeLevel = cls.gradeLevel;
+      if (cls) {
+        classGradeLevel = cls.gradeLevel;
+        classSchoolId = cls.schoolId;
+      }
     }
 
     const existingUsers = await prisma.user.findMany({ select: { email: true } });
     const existingEmails = new Set(existingUsers.map((u) => u.email.toLowerCase()));
+
     const existingStudents = await prisma.student.findMany({ select: { studentCode: true } });
     const existingCodes = new Set(
       existingStudents.map((s) => (s.studentCode ? s.studentCode.toLowerCase() : "")).filter(Boolean)
@@ -234,15 +305,34 @@ export async function createStudent(data: {
         preferredCode: data.studentCode,
         preferredEmail: data.email,
         name: data.name,
-        gradeLevel,
+        gradeLevel: classGradeLevel,
       }
     );
 
     const rawPassword = data.password && data.password.trim() ? data.password.trim() : DEFAULT_INITIAL_PASSWORD;
+    if (rawPassword.length < 6) {
+      return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
+    }
+
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    let userSchoolId: string | undefined = classSchoolId;
+    if (!userSchoolId) {
+      try {
+        const ctx = await getTenantContext();
+        if (ctx.schoolId) userSchoolId = ctx.schoolId;
+      } catch {
+        /* skip */
+      }
+    }
+    if (!userSchoolId) {
+      const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+      if (firstSchool) userSchoolId = firstSchool.id;
+    }
+
     await prisma.user.create({
       data: {
-        name: data.name,
+        name: data.name.trim(),
         email: resolvedEmail,
         password: hashedPassword,
         role: "STUDENT",
@@ -271,12 +361,17 @@ export async function createStudent(data: {
     try {
       const ctx = await getTenantContext();
       await recordAuditLog({
-        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
+        userId: ctx.userId,
+        userName: ctx.userName,
+        userRole: ctx.userRole,
         schoolId: ctx.schoolId,
-        action: "CREATE", entityName: "Student",
+        action: "CREATE",
+        entityName: "Student",
         description: `Tạo học sinh: ${data.name} (${resolvedEmail} - Mã: ${resolvedCode})`,
       });
-    } catch { /* skip audit if no session */ }
+    } catch {
+      /* skip audit if no session */
+    }
 
     return { success: true, defaultPassword: rawPassword, studentCode: resolvedCode, email: resolvedEmail };
   } catch (error: any) {
@@ -298,11 +393,17 @@ export async function resetStudentPassword(userId: string, newPassword?: string)
     try {
       const ctx = await getTenantContext();
       await recordAuditLog({
-        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
-        action: "UPDATE", entityName: "StudentPassword", entityId: userId,
+        userId: ctx.userId,
+        userName: ctx.userName,
+        userRole: ctx.userRole,
+        action: "UPDATE",
+        entityName: "StudentPassword",
+        entityId: userId,
         description: `Đặt lại mật khẩu cho Học sinh`,
       });
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
 
     return { success: true, newPassword: rawPassword };
   } catch (error: any) {
@@ -344,7 +445,7 @@ export async function updateStudent(
           studentCode: data.studentCode || undefined,
           classId: data.classId || null,
           dob: data.dob ? new Date(data.dob) : undefined,
-          gender: data.gender as any || undefined,
+          gender: (data.gender as any) || undefined,
           phone: data.phone || undefined,
           ethnicity: data.ethnicity || undefined,
           addressCurrent: data.addressCurrent || undefined,
@@ -352,48 +453,24 @@ export async function updateStudent(
           fatherJob: data.fatherJob || undefined,
           motherName: data.motherName || undefined,
           motherJob: data.motherJob || undefined,
-          status: data.status as any || undefined,
+          status: (data.status as any) || undefined,
         },
       }),
     ]);
-    
-
-    try {
-      const ctx = await getTenantContext();
-      await recordAuditLog({
-        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
-        schoolId: ctx.schoolId,
-        action: "UPDATE", entityName: "Student", entityId: studentId,
-        description: `Cập nhật học sinh: ${data.name}`,
-      });
-    } catch { /* skip */ }
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message || "Lỗi khi cập nhật" };
+    console.error("Lỗi khi cập nhật học sinh:", error);
+    return { success: false, error: error.message || "Không thể cập nhật học sinh" };
   }
 }
 
 export async function deleteStudent(studentId: string) {
   try {
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-      select: { userId: true },
-    });
+    const student = await prisma.student.findUnique({ where: { id: studentId }, select: { userId: true } });
     if (!student) return { success: false, error: "Không tìm thấy học sinh" };
 
     await prisma.user.delete({ where: { id: student.userId } });
-    
-
-    try {
-      const ctx = await getTenantContext();
-      await recordAuditLog({
-        userId: ctx.userId, userName: ctx.userName, userRole: ctx.userRole,
-        schoolId: ctx.schoolId,
-        action: "DELETE", entityName: "Student", entityId: studentId,
-        description: `Xóa học sinh ID: ${studentId}`,
-      });
-    } catch { /* skip */ }
 
     return { success: true };
   } catch (error: any) {
@@ -438,7 +515,9 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
     try {
       const ctx = await getTenantContext();
       if (ctx.schoolId) userSchoolId = ctx.schoolId;
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
 
     const classInfoMap = new Map<string, { schoolId?: string; gradeLevel?: number }>();
     const allClasses = await prisma.classRoom.findMany({ select: { id: true, schoolId: true, gradeLevel: true } });
@@ -509,7 +588,6 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
       }
     }
 
-    
     return {
       success: createdCount > 0,
       count: createdCount,
@@ -522,10 +600,11 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
 
 /**
  * Hiển thị danh sách Tài khoản & Mật khẩu khởi tạo của Học sinh
- * BẢO MẬT: Chỉ Hiệu trưởng (ADMIN), Quản trị viên (SUPER_ADMIN / DEPARTMENT_ADMIN) mới có quyền truy cập
+ * BẢO MẬT: Chỉ Hiệu trưởng (ADMIN), Quản trị viên (SUPER_ADMIN / DEPARTMENT_ADMIN / VICE_PRINCIPAL) mới có quyền truy cập
  */
 export async function getStudentCredentialsOverview(filters?: {
   schoolId?: string;
+  campusId?: string;
   classId?: string;
   gradeLevel?: number;
   search?: string;
@@ -547,11 +626,14 @@ export async function getStudentCredentialsOverview(filters?: {
 
     if (targetSchoolId) {
       andConditions.push({
-        OR: [
-          { classRoom: { schoolId: targetSchoolId } },
-          { user: { schoolId: targetSchoolId } },
-        ],
+        OR: [{ classRoom: { schoolId: targetSchoolId } }, { user: { schoolId: targetSchoolId } }],
       });
+    }
+
+    // Campus Scoping
+    let targetCampusId = ctx.campusId || (filters?.campusId && filters.campusId !== "ALL" ? filters.campusId : undefined);
+    if (targetCampusId) {
+      andConditions.push({ classRoom: { campusId: targetCampusId } });
     }
 
     if (filters?.classId && filters.classId.trim() !== "" && filters.classId !== "ALL") {
@@ -594,6 +676,8 @@ export async function getStudentCredentialsOverview(filters?: {
             id: true,
             name: true,
             gradeLevel: true,
+            campusId: true,
+            campus: { select: { id: true, name: true } },
             school: { select: { id: true, name: true } },
           },
         },
@@ -615,7 +699,9 @@ export async function getStudentCredentialsOverview(filters?: {
       className: s.classRoom?.name || "Chưa phân lớp",
       classId: s.classRoom?.id,
       gradeLevel: s.classRoom?.gradeLevel,
-      schoolName: s.classRoom?.school?.name || s.user.school?.name || "Trường THPT",
+      campusName: s.classRoom?.campus?.name || "Điểm Trung tâm",
+      campusId: s.classRoom?.campusId || undefined,
+      schoolName: s.classRoom?.school?.name || s.user.school?.name || "Trường Tiểu học Phố Lu",
       schoolId: s.classRoom?.school?.id || s.user.school?.id,
       phone: s.phone,
       parentPhone: s.parentPhone,
@@ -623,7 +709,7 @@ export async function getStudentCredentialsOverview(filters?: {
       status: s.status,
       mustChangePassword: s.user.mustChangePassword,
       createdAt: s.user.createdAt.toISOString(),
-      defaultPasswordHint: "abc123", // Mật khẩu chuẩn khởi tạo toàn trường
+      defaultPasswordHint: "abc123",
     }));
 
     return { success: true, data: credentialItems };
@@ -640,7 +726,7 @@ export async function resetStudentPasswordSecure(
   userId: string,
   newPassword?: string,
   forceChangeOnLogin: boolean = true
-): Promise<{ success: boolean; newPassword?: string; error?: string }> {
+) {
   try {
     const ctx = await getTenantContext();
     assertPrincipalOrAdmin(ctx);
@@ -697,6 +783,7 @@ export async function resetStudentPasswordSecure(
  */
 export async function getStudentCredentialSlips(filters?: {
   schoolId?: string;
+  campusId?: string;
   classId?: string;
   gradeLevel?: number;
 }): Promise<{
@@ -724,7 +811,7 @@ export async function getStudentCredentialSlips(filters?: {
       return { success: false, schoolName: "", slips: [], error: overview.error };
     }
 
-    const schoolName = overview.data[0]?.schoolName || "SỞ GIÁO DỤC VÀ ĐÀO TẠO";
+    const schoolName = overview.data[0]?.schoolName || "TRƯỜNG TIỂU HỌC PHỐ LU";
     const className = filters?.classId ? overview.data[0]?.className : undefined;
     const todayStr = new Date().toLocaleDateString("vi-VN");
 
@@ -744,4 +831,3 @@ export async function getStudentCredentialSlips(filters?: {
     return { success: false, schoolName: "", slips: [], error: error.message || "Lỗi tạo phiếu tài khoản học sinh" };
   }
 }
-

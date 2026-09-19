@@ -1,15 +1,15 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin router at `/admin/lesson-plans`, navigation bar in admin layout.
- * 2. Affected APIs: Server actions `getLessonPlansForAdmin`, `reviewLessonPlan`, `getAdminSchools`, component `FileViewerModal`.
- * 3. Schema: LessonPlan, Teacher, Subject, ClassRoom, School, LessonPlanReview.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa toàn bộ giao diện các trang Quản trị cho SuperAdmin.
+ * 2. Affected APIs: Server actions `getLessonPlansForAdmin`, `reviewLessonPlan`, `getAdminSchools`, `getAdminCampuses`, component `FileViewerModal`.
+ * 3. Schema: LessonPlan, Teacher, Subject, ClassRoom, School, Campus, LessonPlanReview.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu / Điểm trường trực thuộc cho Quản lý & Phê duyệt Kế hoạch bài dạy.
  */
 
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getLessonPlansForAdmin, reviewLessonPlan, getAdminSchools } from "./actions";
+import { getLessonPlansForAdmin, reviewLessonPlan, getAdminSchools, getAdminCampuses } from "./actions";
 import { useToast } from "@/components/ui/Toast";
 import { useEasyMode } from "@/lib/useEasyMode";
 import FileViewerModal from "@/components/storage/FileViewerModal";
@@ -34,6 +34,9 @@ import {
   Download,
   Building2,
   CheckCircle2,
+  MapPin,
+  GraduationCap,
+  Layers,
 } from "lucide-react";
 
 interface LessonPlanReview {
@@ -49,6 +52,9 @@ interface LessonPlanItem {
   id: string;
   teacherName: string;
   schoolName?: string;
+  campusId?: string | null;
+  campusName?: string;
+  gradeLevel?: number;
   subjectName: string;
   className: string;
   weekNumber: number;
@@ -76,7 +82,10 @@ export default function AdminLessonPlansPage() {
   const [plans, setPlans] = useState<LessonPlanItem[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<LessonPlanItem[]>([]);
   const [schools, setSchools] = useState<{ id: string; name: string; schoolType?: string; branchType?: string }[]>([]);
+  const [campuses, setCampuses] = useState<{ id: string; name: string; schoolId: string }[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<string>("ALL");
+  const [selectedCampus, setSelectedCampus] = useState<string>("ALL");
+  const [selectedGrade, setSelectedGrade] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { isEasyMode } = useEasyMode();
@@ -110,19 +119,25 @@ export default function AdminLessonPlansPage() {
     if (!silent) setLoading(true);
     setIsRefreshing(true);
     try {
-      const [items, schoolList] = await Promise.all([
-        getLessonPlansForAdmin(selectedSchool),
+      const [items, schoolList, campusList] = await Promise.all([
+        getLessonPlansForAdmin(
+          selectedSchool,
+          selectedCampus !== "ALL" ? selectedCampus : undefined,
+          selectedGrade ? Number(selectedGrade) : undefined
+        ),
         getAdminSchools(),
+        getAdminCampuses(selectedSchool),
       ]);
       setPlans(items as any);
       setSchools(schoolList);
+      setCampuses(campusList);
     } catch (e: any) {
       showToast("Lỗi khi tải thông tin giáo án: " + (e.message || ""), "error");
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [selectedSchool, showToast]);
+  }, [selectedSchool, selectedCampus, selectedGrade, showToast]);
 
   useEffect(() => {
     fetchPlans();
@@ -151,6 +166,16 @@ export default function AdminLessonPlansPage() {
       );
     }
 
+    // Filter by Campus
+    if (selectedCampus && selectedCampus !== "ALL") {
+      result = result.filter((p) => p.campusId === selectedCampus);
+    }
+
+    // Filter by Grade
+    if (selectedGrade !== "") {
+      result = result.filter((p) => p.gradeLevel === Number(selectedGrade));
+    }
+
     // Filter by Search text
     if (searchTerm.trim() !== "") {
       const searchLower = searchTerm.toLowerCase();
@@ -160,6 +185,7 @@ export default function AdminLessonPlansPage() {
           p.title.toLowerCase().includes(searchLower) ||
           p.subjectName.toLowerCase().includes(searchLower) ||
           p.className.toLowerCase().includes(searchLower) ||
+          (p.campusName && p.campusName.toLowerCase().includes(searchLower)) ||
           (p.schoolName && p.schoolName.toLowerCase().includes(searchLower))
       );
     }
@@ -175,7 +201,7 @@ export default function AdminLessonPlansPage() {
     }
 
     setFilteredPlans(result);
-  }, [plans, activeTab, searchTerm, selectedSubject, selectedClass]);
+  }, [plans, activeTab, selectedCampus, selectedGrade, searchTerm, selectedSubject, selectedClass]);
 
   const uniqueSubjects = Array.from(new Set(plans.map((p) => p.subjectName))).sort();
   const uniqueClasses = Array.from(new Set(plans.map((p) => p.className))).sort();
@@ -259,6 +285,16 @@ export default function AdminLessonPlansPage() {
     }
   };
 
+  const getCampusBadgeColor = (name: string) => {
+    if (name.includes("Trung tâm")) return "bg-indigo-50 text-indigo-700 border-indigo-200";
+    if (name.includes("Sơn Hà 1")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (name.includes("Sơn Hà 2")) return "bg-teal-50 text-teal-700 border-teal-200";
+    if (name.includes("Sơn Hải")) return "bg-amber-50 text-amber-700 border-amber-200";
+    if (name.includes("Phố Lu 3")) return "bg-purple-50 text-purple-700 border-purple-200";
+    if (name.includes("An Tiến")) return "bg-rose-50 text-rose-700 border-rose-200";
+    return "bg-slate-50 text-slate-700 border-slate-200";
+  };
+
   const pendingCount = plans.filter(
     (p) =>
       p.status === "VP_APPROVED" ||
@@ -274,11 +310,11 @@ export default function AdminLessonPlansPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
-            Quản Lý & Phê Duyệt Giáo Án
+            Quản Lý & Phê Duyệt Kế Hoạch Bài Dạy (Giáo Án)
             {isRefreshing && !loading && <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin" />}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
-            Hệ thống kiểm duyệt, phân tích và thông qua kế hoạch bài dạy trên toàn trường & hệ thống
+            Hệ thống kiểm duyệt, phân tích và thông qua kế hoạch bài dạy theo từng Phân hiệu & Khối lớp
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -306,6 +342,47 @@ export default function AdminLessonPlansPage() {
           >
             <RefreshCw className="w-4 h-4" /> Tải lại
           </button>
+        </div>
+      </div>
+
+      {/* Campus Selector Bar (Thanh chọn Phân hiệu & Điểm trường trực thuộc) */}
+      <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+          <span className="flex items-center gap-1.5 font-bold text-slate-700">
+            <MapPin className="w-3.5 h-3.5 text-indigo-600" /> Chọn Phân hiệu / Điểm trường trực thuộc để lọc:
+          </span>
+          <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">
+            {campuses.length} Phân hiệu & Điểm trường
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedCampus("ALL")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+              selectedCampus === "ALL" || selectedCampus === ""
+                ? "bg-indigo-600 text-white border-indigo-600 shadow-xs scale-102"
+                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" /> Toàn trường (Tất cả điểm trường)
+          </button>
+          {campuses.map((c) => {
+            const isSelected = selectedCampus === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCampus(c.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                  isSelected
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs scale-102"
+                    : `bg-white text-slate-700 border-slate-200 hover:bg-slate-50`
+                }`}
+              >
+                <MapPin className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-indigo-500"}`} />
+                <span>{c.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -381,6 +458,36 @@ export default function AdminLessonPlansPage() {
           })}
         </div>
 
+        {/* Khối Lớp Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+          <span className="text-slate-500 font-bold shrink-0 flex items-center gap-1">
+            <GraduationCap className="w-3.5 h-3.5 text-indigo-600" /> Khối:
+          </span>
+          <button
+            onClick={() => setSelectedGrade("")}
+            className={`px-3 py-1 rounded-lg font-bold transition-all ${
+              selectedGrade === ""
+                ? "bg-indigo-600 text-white shadow-2xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            Tất cả khối
+          </button>
+          {[1, 2, 3, 4, 5].map((g) => (
+            <button
+              key={g}
+              onClick={() => setSelectedGrade(String(g))}
+              className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                selectedGrade === String(g)
+                  ? "bg-indigo-600 text-white shadow-2xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Khối {g}
+            </button>
+          ))}
+        </div>
+
         {/* Search and Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
           <div className="relative">
@@ -389,7 +496,7 @@ export default function AdminLessonPlansPage() {
             </span>
             <input
               type="text"
-              placeholder="Tìm theo tên giáo viên, chủ đề, trường..."
+              placeholder="Tìm theo tên giáo viên, bài học, phân hiệu..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
@@ -461,10 +568,10 @@ export default function AdminLessonPlansPage() {
                       <span className="text-[11px] font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md">
                         Tuần {p.weekNumber}
                       </span>
-                      {p.schoolName && (
-                        <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                          <Building2 className="w-3 h-3 text-slate-400" />
-                          {p.schoolName}
+                      {p.campusName && (
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md border flex items-center gap-1 ${getCampusBadgeColor(p.campusName)}`}>
+                          <MapPin className="w-3 h-3" />
+                          {p.campusName}
                         </span>
                       )}
                       <span className="text-xs text-slate-600 font-semibold">
@@ -577,7 +684,7 @@ export default function AdminLessonPlansPage() {
                       <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl sm:rounded-2xl p-3.5 sm:p-4 space-y-3">
                         <div className="flex items-center gap-1.5 text-indigo-900 font-bold text-xs">
                           <AlertCircle className="w-4 h-4 text-indigo-600" />
-                          <span>Hiệu Trưởng Đánh Giá & Phê Duyệt:</span>
+                          <span>Ban Giám Hiệu Đánh Giá & Phê Duyệt:</span>
                         </div>
 
                         <div>
@@ -599,7 +706,7 @@ export default function AdminLessonPlansPage() {
                           <button
                             onClick={() => handleReview(p.id, "APPROVED")}
                             disabled={isSubmitting}
-                            className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50 min-h-[44px]"
+                            className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50 min-h-[44px] cursor-pointer"
                           >
                             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCheck className="w-4 h-4" />}
                             <span>{isSubmitting ? "Đang xử lý..." : "Phê Duyệt Giáo Án (Hoàn tất)"}</span>
@@ -608,7 +715,7 @@ export default function AdminLessonPlansPage() {
                           <button
                             onClick={() => handleReview(p.id, "REJECTED")}
                             disabled={isSubmitting}
-                            className="w-full sm:flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50 min-h-[44px]"
+                            className="w-full sm:flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50 min-h-[44px] cursor-pointer"
                           >
                             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileX className="w-4 h-4" />}
                             <span>{isSubmitting ? "Đang xử lý..." : "Từ Chối / Yêu Cầu Sửa Lại"}</span>

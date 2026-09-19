@@ -2,8 +2,8 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Admin journals route `/admin/journals`.
  * 2. Affected APIs: Server actions `getAdminJournalMetadata`, `getAdminJournalEntries`, `deleteAdminJournalEntry`, `confirmAdminJournalEntry`.
- * 3. Schema: Prisma `ClassRoom`, `ClassJournalEntry`, `School`, `User`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa toàn bộ giao diện các trang Quản trị cho SuperAdmin.
+ * 3. Schema: Prisma `ClassRoom`, `Campus`, `School`, `ClassJournalEntry`, `User`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu cho Giám sát Sổ đầu bài.
  */
 
 "use client";
@@ -20,20 +20,30 @@ import { useEasyMode } from "@/lib/useEasyMode";
 import {
   Check,
   Info,
-  User,
   ListRestart,
   Trash2,
   Building2,
   BookOpen,
   Calendar,
+  MapPin,
+  Sparkles,
 } from "lucide-react";
 
 interface ClassOption {
   id: string;
   name: string;
+  gradeLevel: number;
   schoolId?: string | null;
   schoolName?: string;
+  campusId?: string | null;
+  campusName?: string;
   homeroomTeacherName: string;
+}
+
+interface CampusOption {
+  id: string;
+  name: string;
+  schoolId: string;
 }
 
 interface JournalEntry {
@@ -56,8 +66,10 @@ interface JournalEntry {
 
 export default function AdminJournalsPage() {
   const [classes, setClasses] = useState<ClassOption[]>([]);
-  const [schools, setSchools] = useState<{ id: string; name: string; code: string }[]>([]);
-  const [selectedSchool, setSelectedSchool] = useState<string>("ALL");
+  const [campuses, setCampuses] = useState<CampusOption[]>([]);
+  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCampus, setSelectedCampus] = useState<string>("ALL");
+  const [selectedGrade, setSelectedGrade] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -66,14 +78,18 @@ export default function AdminJournalsPage() {
   const { isEasyMode } = useEasyMode();
   const { showToast, ToastComponent } = useToast();
 
+  const primaryGrades = [1, 2, 3, 4, 5];
+
   useEffect(() => {
     let mounted = true;
     getAdminJournalMetadata()
       .then((data) => {
         if (!mounted) return;
         const fetchedClasses = (data.classes || []) as ClassOption[];
+        const fetchedCampuses = (data.campuses || []) as CampusOption[];
         const fetchedSchools = (data.schools || []) as any;
         setClasses(fetchedClasses);
+        setCampuses(fetchedCampuses);
         setSchools(fetchedSchools);
         if (fetchedClasses.length > 0) {
           setSelectedClass(fetchedClasses[0].id);
@@ -143,9 +159,21 @@ export default function AdminJournalsPage() {
     }
   };
 
-  const visibleClasses = classes.filter((c) =>
-    selectedSchool === "ALL" ? true : c.schoolId === selectedSchool
-  );
+  const getCampusBadge = (campusName?: string | null) => {
+    if (!campusName) return { label: "Điểm Trung tâm", bg: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+    if (campusName.includes("Sơn Hà 1")) return { label: "Sơn Hà 1", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    if (campusName.includes("Sơn Hà 2")) return { label: "Sơn Hà 2", bg: "bg-teal-50 text-teal-700 border-teal-200" };
+    if (campusName.includes("Sơn Hải")) return { label: "Sơn Hải", bg: "bg-amber-50 text-amber-700 border-amber-200" };
+    if (campusName.includes("Phố Lu 3")) return { label: "Phố Lu 3", bg: "bg-purple-50 text-purple-700 border-purple-200" };
+    if (campusName.includes("An Tiến")) return { label: "Điểm lẻ An Tiến", bg: "bg-rose-50 text-rose-700 border-rose-200" };
+    return { label: campusName, bg: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+  };
+
+  const visibleClasses = classes.filter((c) => {
+    const matchCampus = selectedCampus === "ALL" || c.campusId === selectedCampus;
+    const matchGrade = !selectedGrade || c.gradeLevel === Number(selectedGrade);
+    return matchCampus && matchGrade;
+  });
 
   const selectedClassObj = classes.find((c) => c.id === selectedClass);
   const periods = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -155,42 +183,68 @@ export default function AdminJournalsPage() {
       {ToastComponent}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-indigo-600" />
-            Giám Sát Sổ Đầu Bài Toàn Trường
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <BookOpen className="w-6 h-6 text-indigo-600" />
+              Giám Sát Sổ Đầu Bài Toàn Trường
+            </h1>
+            <span className="bg-indigo-100 text-indigo-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-indigo-200">
+              62 Lớp • 5 Phân hiệu & Điểm lẻ
+            </span>
+          </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Theo dõi, ký duyệt thay thế hoặc điều chỉnh sổ đầu bài của tất cả các lớp trong toàn hệ thống
+            Theo dõi, ký duyệt thay thế hoặc điều chỉnh sổ đầu bài của tất cả các lớp theo từng Phân hiệu trực thuộc
           </p>
         </div>
-        {schools.length > 0 && (
-          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-2xs">
-            <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
-            <select
-              value={selectedSchool}
-              onChange={(e) => {
-                const newSchool = e.target.value;
-                setSelectedSchool(newSchool);
-                const nextClasses = classes.filter((c) =>
-                  newSchool === "ALL" ? true : c.schoolId === newSchool
-                );
-                if (nextClasses.length > 0) {
-                  setSelectedClass(nextClasses[0].id);
-                } else {
-                  setSelectedClass("");
-                }
-              }}
-              className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả các trường</option>
-              {schools.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+      </div>
+
+      {/* Campus Selector Bar (Thanh chọn Phân hiệu & Điểm trường) */}
+      <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+          <span className="flex items-center gap-1.5 font-bold text-slate-700">
+            <MapPin className="w-3.5 h-3.5 text-indigo-600" /> Chọn Phân hiệu / Điểm trường trực thuộc để lọc:
+          </span>
+          <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">
+            {campuses.length} Phân hiệu & Điểm trường
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              setSelectedCampus("ALL");
+              const next = classes.filter((c) => !selectedGrade || c.gradeLevel === Number(selectedGrade));
+              if (next.length > 0) setSelectedClass(next[0].id);
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+              selectedCampus === "ALL" || selectedCampus === ""
+                ? "bg-indigo-600 text-white border-indigo-600 shadow-xs scale-102"
+                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" /> Toàn trường (Tất cả điểm trường)
+          </button>
+          {campuses.map((c) => {
+            const isSelected = selectedCampus === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedCampus(c.id);
+                  const next = classes.filter((cl) => cl.campusId === c.id && (!selectedGrade || cl.gradeLevel === Number(selectedGrade)));
+                  if (next.length > 0) setSelectedClass(next[0].id);
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                  isSelected
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs scale-102"
+                    : `bg-white text-slate-700 border-slate-200 hover:bg-slate-50`
+                }`}
+              >
+                <MapPin className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-indigo-500"}`} />
+                <span>{c.name}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {isEasyMode && (
@@ -198,17 +252,41 @@ export default function AdminJournalsPage() {
           <Info className="w-5 h-5 shrink-0 text-indigo-600 mt-0.5" />
           <div className="space-y-1 bg-transparent">
             <p className="font-bold text-indigo-950">Hướng dẫn dành cho Ban Giám Hiệu / SuperAdmin:</p>
-            <p>1. Chọn trường học, lớp học và ngày cần kiểm tra từ thanh công cụ phía dưới.</p>
+            <p>1. Chọn Phân hiệu / Điểm trường, Khối lớp (Khối 1-5) và Lớp học cần giám sát.</p>
             <p>2. Hệ thống sẽ hiển thị các tiết học tiêu chuẩn và trạng thái ghi bài của giáo viên bộ môn.</p>
-            <p>3. Trong trường hợp Giáo viên chủ nhiệm (GVCN) gặp sự cố kỹ thuật hoặc vắng mặt, Ban giám hiệu có thể click vào nút kiểm duyệt (Ký thay) để khóa tiết học.</p>
-            <p>4. Ban Giám Hiệu cũng có quyền xóa bài ghi nếu phát hiện thông tin không chính xác hoặc trùng lặp.</p>
+            <p>3. Trong trường hợp Giáo viên chủ nhiệm gặp sự cố kỹ thuật, Ban giám hiệu có thể click vào nút kiểm duyệt (Ký thay) để xác nhận tiết học.</p>
           </div>
         </div>
       )}
 
       {/* Selectors */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Lọc Khối lớp</label>
+            <select
+              value={selectedGrade}
+              onChange={(e) => {
+                const newGrade = e.target.value;
+                setSelectedGrade(newGrade);
+                const next = classes.filter((c) => {
+                  const matchCampus = selectedCampus === "ALL" || c.campusId === selectedCampus;
+                  const matchGrade = !newGrade || c.gradeLevel === Number(newGrade);
+                  return matchCampus && matchGrade;
+                });
+                if (next.length > 0) setSelectedClass(next[0].id);
+              }}
+              className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 font-semibold cursor-pointer"
+            >
+              <option value="">Tất cả Khối lớp (Khối 1 - 5)</option>
+              {primaryGrades.map((g) => (
+                <option key={g} value={g}>
+                  Khối {g}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Lớp học cần giám sát</label>
             <select
@@ -219,11 +297,12 @@ export default function AdminJournalsPage() {
               <option value="" disabled>--- Chọn lớp ---</option>
               {visibleClasses.map((c) => (
                 <option key={c.id} value={c.id}>
-                  Lớp {c.name} {c.schoolName ? `(${c.schoolName})` : ""} - GVCN: {c.homeroomTeacherName}
+                  Lớp {c.name} {c.campusName ? `(${c.campusName})` : ""} - GVCN: {c.homeroomTeacherName}
                 </option>
               ))}
             </select>
           </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Ngày học</label>
             <input
@@ -233,10 +312,21 @@ export default function AdminJournalsPage() {
               className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
             />
           </div>
-          <div className="text-xs sm:text-sm text-slate-500 pb-2.5">
-            GVCN lớp: <span className="font-bold text-slate-800">{selectedClassObj?.homeroomTeacherName || "Chưa phân công"}</span>
-          </div>
         </div>
+
+        {selectedClassObj && (
+          <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+            <div className="flex items-center gap-2">
+              <span>Phân hiệu trực thuộc:</span>
+              <span className={`font-extrabold px-2 py-0.5 rounded-md border ${getCampusBadge(selectedClassObj.campusName).bg}`}>
+                📍 {getCampusBadge(selectedClassObj.campusName).label}
+              </span>
+            </div>
+            <div>
+              GVCN: <span className="font-bold text-slate-800">{selectedClassObj.homeroomTeacherName}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Periods list */}
@@ -256,8 +346,8 @@ export default function AdminJournalsPage() {
           </div>
         ) : visibleClasses.length === 0 ? (
           <div className="py-12 text-center text-slate-500">
-            <p className="text-sm font-semibold">Chưa có lớp học nào trong hệ thống hoặc trường đã chọn</p>
-            <p className="text-xs text-slate-400 mt-1">Vui lòng tạo lớp học trong trang Quản lý trường học trước.</p>
+            <p className="text-sm font-semibold">Chưa có lớp học nào trong phân hiệu hoặc khối đã chọn</p>
+            <p className="text-xs text-slate-400 mt-1">Vui lòng chọn phân hiệu hoặc khối lớp khác.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -291,7 +381,7 @@ export default function AdminJournalsPage() {
                           <div className="space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="text-sm sm:text-base font-bold text-slate-900">{entry.subjectName}</span>
-                              <span className="text-xs text-slate-500 font-medium">| GV dạy: <strong className="text-slate-800">{entry.teacherName}</strong></span>
+                              <span className="text-xs text-slate-600 font-medium">| GV dạy: <strong className="text-slate-800">{entry.teacherName}</strong></span>
                               {entry.isConfirmed ? (
                                 <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
                                   <Check className="w-3 h-3 stroke-[3]" /> Đã xác nhận
@@ -306,8 +396,8 @@ export default function AdminJournalsPage() {
                               Bài học: {entry.lessonTitle}
                             </div>
                             {entry.content && (
-                              <p className="text-xs sm:text-sm text-slate-600">
-                                <span className="font-semibold text-slate-400">Nội dung chính:</span> {entry.content}
+                              <p className="text-xs sm:text-sm text-slate-700">
+                                <span className="font-bold text-slate-800">Nội dung chính:</span> {entry.content}
                               </p>
                             )}
                             <div className="flex flex-wrap gap-2 pt-1 text-xs">
@@ -324,7 +414,7 @@ export default function AdminJournalsPage() {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-xs sm:text-sm font-medium text-slate-400 italic">Trống - Không có bài ghi dạy cho tiết học này</span>
+                          <span className="text-xs sm:text-sm font-medium text-slate-500 italic">Trống - Không có bài ghi dạy cho tiết học này</span>
                         )}
                       </div>
                     </div>
@@ -343,7 +433,7 @@ export default function AdminJournalsPage() {
                           )}
                           <button
                             onClick={() => handleDelete(entry.id)}
-                            className="p-1.5 border border-slate-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition cursor-pointer shadow-2xs"
+                            className="p-1.5 border border-slate-200 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-xl transition cursor-pointer shadow-2xs"
                             title="Xóa bài ghi"
                           >
                             <Trash2 className="w-4 h-4" />

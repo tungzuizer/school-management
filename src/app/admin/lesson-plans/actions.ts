@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: `src/app/admin/lesson-plans/page.tsx`.
- * 2. Affected APIs: Server actions `getLessonPlansForAdmin`, `reviewLessonPlan`.
- * 3. Schema: Prisma `LessonPlan`, `LessonPlanReview`, `Role`, `LessonPlanStatus`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa phân quyền phê duyệt giáo án cho SuperAdmin toàn hệ thống.
+ * 2. Affected APIs: Server actions `getLessonPlansForAdmin`, `reviewLessonPlan`, `getAdminCampuses`, `getAdminSchools`.
+ * 3. Schema: Prisma `LessonPlan`, `LessonPlanReview`, `Campus`, `ClassRoom`, `School`, `Role`, `LessonPlanStatus`.
+ * 4. Verbatim User Instruction: "phần quản lý lớp học, sổ đầu bài , kế hoạch giạy học, hồ sơ học sinh, thời khóa biểu và tất cả mục khác phần mục chọn để lọc cho dễ tìm sao lại để mỗi trường chỗ đso phải là phân hiệu chứ" - Chuẩn hóa bộ lọc Phân hiệu cho Quản lý & Phê duyệt Kế hoạch bài dạy (Giáo án).
  */
 
 "use server";
@@ -12,11 +12,11 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { LessonPlanStatus, Role } from "@prisma/client";
-
+import { getTenantContext } from "@/lib/tenant";
 import { recordAuditLog } from "@/lib/audit-logger";
 
 // Get all lesson plans for admin / superadmin approval portal
-export async function getLessonPlansForAdmin(schoolId?: string) {
+export async function getLessonPlansForAdmin(schoolId?: string, campusId?: string, gradeLevel?: number) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return [];
@@ -38,6 +38,23 @@ export async function getLessonPlansForAdmin(schoolId?: string) {
 
     if (!isAllowed) return [];
 
+    const ctx = await getTenantContext().catch(() => null);
+
+    let targetSchoolId: string | undefined;
+    let targetCampusId: string | undefined;
+
+    if (schoolId && schoolId !== "ALL" && schoolId !== "") {
+      targetSchoolId = schoolId;
+    } else if (ctx?.schoolId && ctx?.userRole !== "SUPER_ADMIN" && ctx?.userRole !== "ADMIN") {
+      targetSchoolId = ctx.schoolId;
+    }
+
+    if (ctx?.campusId) {
+      targetCampusId = ctx.campusId;
+    } else if (campusId && campusId !== "ALL" && campusId !== "") {
+      targetCampusId = campusId;
+    }
+
     const where: any = {
       status: {
         in: [
@@ -50,10 +67,13 @@ export async function getLessonPlansForAdmin(schoolId?: string) {
       },
     };
 
-    if (schoolId && schoolId !== "ALL") {
-      where.teacher = {
-        user: { schoolId },
-      };
+    const classRoomWhere: any = {};
+    if (targetSchoolId) classRoomWhere.schoolId = targetSchoolId;
+    if (targetCampusId) classRoomWhere.campusId = targetCampusId;
+    if (gradeLevel) classRoomWhere.gradeLevel = gradeLevel;
+
+    if (Object.keys(classRoomWhere).length > 0) {
+      where.classRoom = classRoomWhere;
     }
 
     const plans = await prisma.lessonPlan.findMany({
@@ -61,11 +81,21 @@ export async function getLessonPlansForAdmin(schoolId?: string) {
       include: {
         teacher: {
           include: {
-            user: { select: { name: true, school: { select: { id: true, name: true } } } },
+            user: { select: { name: true, school: { select: { id: true, name: true } }, campus: { select: { id: true, name: true } } } },
           },
         },
         subject: { select: { name: true } },
-        classRoom: { select: { name: true } },
+        classRoom: {
+          select: {
+            id: true,
+            name: true,
+            gradeLevel: true,
+            campusId: true,
+            schoolId: true,
+            campus: { select: { id: true, name: true } },
+            school: { select: { id: true, name: true } },
+          },
+        },
         reviews: { orderBy: { createdAt: "asc" } },
       },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -74,9 +104,12 @@ export async function getLessonPlansForAdmin(schoolId?: string) {
     return plans.map((p) => ({
       id: p.id,
       teacherName: p.teacher?.user?.name || "Giáo viên",
-      schoolName: (p.teacher?.user as any)?.school?.name || "Toàn trường",
+      schoolName: p.classRoom?.school?.name || (p.teacher?.user as any)?.school?.name || "Toàn trường",
+      campusId: p.classRoom?.campusId || (p.teacher?.user as any)?.campus?.id || null,
+      campusName: p.classRoom?.campus?.name || (p.teacher?.user as any)?.campus?.name || "Điểm Trung tâm",
       subjectName: p.subject?.name || "Môn học",
       className: p.classRoom?.name || "Lớp học",
+      gradeLevel: p.classRoom?.gradeLevel || 1,
       weekNumber: p.weekNumber,
       periodStart: p.periodStart,
       periodEnd: p.periodEnd,
@@ -191,6 +224,21 @@ export async function reviewLessonPlan(data: {
     return { success: true };
   } catch (error: any) {
     return { success: false, error: "Lỗi hệ thống: " + error.message };
+  }
+}
+
+// Lấy danh sách các phân hiệu trực thuộc
+export async function getAdminCampuses(schoolId?: string) {
+  try {
+    const where = schoolId && schoolId !== "ALL" ? { schoolId } : {};
+    return await prisma.campus.findMany({
+      where,
+      select: { id: true, name: true, schoolId: true },
+      orderBy: { name: "asc" },
+    });
+  } catch (error) {
+    console.error("Error fetching campuses for lesson plans:", error);
+    return [];
   }
 }
 

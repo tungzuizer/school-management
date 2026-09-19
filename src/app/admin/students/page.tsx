@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Admin Students Management Page (`src/app/admin/students/page.tsx`), admin layout.
- * 2. Affected APIs: `getStudentCredentialsOverview`, `getStudentCredentialSlips`, `resetStudentPassword`, `StudentCredentialsModal`, `StudentCredentialSlipsModal`.
- * 3. Data Schemas: `StudentCredentialItem`, `StudentData`, `ClassOption`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa giao diện quản lý Học sinh cho SuperAdmin toàn hệ thống.
+ * 1. Importers/Callers: Next.js App Router `/admin/students`, Admin layout navigation.
+ * 2. Affected APIs: `getStudents`, `getCampusesForSelect`, `getClassesForSelect`, `getSchoolsForSelect`, `createStudent`, `updateStudent`, `resetStudentPassword`, `deleteStudent`, `createBulkStudents`, `getStudentCredentialsOverview`, `getStudentCredentialSlips`, `getNextStudentCodePreviewAction`.
+ * 3. Data Schemas: `StudentData`, `ClassOption`, `CampusOption`, `StudentCredentialItem`, `BulkStudentInput`.
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa bộ lọc Phân hiệu / Điểm trường trực thuộc cho 1.706 học sinh và 62 lớp học (Khối 1-5).
  */
 
 "use client";
@@ -11,6 +11,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   getStudents,
+  getCampusesForSelect,
   getClassesForSelect,
   getSchoolsForSelect,
   createStudent,
@@ -26,10 +27,20 @@ import {
 } from "./actions";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { KeyRound, Lock, Loader2, Cloud, FileSpreadsheet, Plus, School, Building2, LayoutGrid, Table, GraduationCap, Users, ShieldCheck, Download } from "lucide-react";
+import {
+  KeyRound,
+  Lock,
+  FileSpreadsheet,
+  Plus,
+  Building2,
+  LayoutGrid,
+  Table,
+  ShieldCheck,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
 import StudentCredentialsModal from "./components/StudentCredentialsModal";
 import StudentCredentialSlipsModal from "./components/StudentCredentialSlipsModal";
-import { generateStudentEmail } from "@/lib/student-email";
 
 interface StudentData {
   id: string;
@@ -45,7 +56,14 @@ interface StudentData {
   motherName: string | null;
   motherJob: string | null;
   user: { id: string; name: string; email: string };
-  classRoom: { id: string; name: string; gradeLevel: number; school?: { id: string; name: string } | null } | null;
+  classRoom: {
+    id: string;
+    name: string;
+    gradeLevel: number;
+    campusId?: string | null;
+    campus?: { id: string; name: string } | null;
+    school?: { id: string; name: string } | null;
+  } | null;
   group: { id: string; name: string } | null;
 }
 
@@ -53,6 +71,14 @@ interface ClassOption {
   id: string;
   name: string;
   gradeLevel: number;
+  campusId?: string | null;
+  campus?: { id: string; name: string } | null;
+}
+
+interface CampusOption {
+  id: string;
+  name: string;
+  schoolId: string;
 }
 
 const defaultForm = {
@@ -75,10 +101,11 @@ const defaultForm = {
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<StudentData[]>([]);
+  const [campuses, setCampuses] = useState<CampusOption[]>([]);
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
-  const [filterSchool, setFilterSchool] = useState("ALL");
+  const [filterCampus, setFilterCampus] = useState("ALL");
   const [filterGrade, setFilterGrade] = useState("");
   const [filterClass, setFilterClass] = useState("");
   const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
@@ -105,9 +132,6 @@ export default function StudentsPage() {
   const [credSchoolName, setCredSchoolName] = useState("");
   const [credClassName, setCredClassName] = useState<string | undefined>(undefined);
 
-  // Dynamic grade options derived from active classes
-  const uniqueGrades = Array.from(new Set(classes.map((c) => c.gradeLevel))).filter(Boolean).sort((a, b) => a - b);
-  const gradeOptions = uniqueGrades.length > 0 ? uniqueGrades : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   // Bulk import state
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkClassId, setBulkClassId] = useState("");
@@ -116,19 +140,27 @@ export default function StudentsPage() {
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ count: number; errors: string[] } | null>(null);
 
+  // Khối lớp Tiểu học chuẩn hóa (Khối 1 đến Khối 5)
+  const primaryGrades = [1, 2, 3, 4, 5];
+
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     const gradeNum = filterGrade ? Number(filterGrade) : undefined;
-    const [studentsData, classesData, schoolsData] = await Promise.all([
-      getStudents(search || undefined, filterClass || undefined, gradeNum, filterSchool || undefined),
-      getClassesForSelect(filterSchool || undefined),
+    const campusParam = filterCampus !== "ALL" ? filterCampus : undefined;
+
+    const [studentsData, campusesData, classesData, schoolsData] = await Promise.all([
+      getStudents(search || undefined, filterClass || undefined, gradeNum, campusParam),
+      getCampusesForSelect(),
+      getClassesForSelect(campusParam, gradeNum),
       getSchoolsForSelect(),
     ]);
+
     setStudents(studentsData as unknown as StudentData[]);
+    setCampuses(campusesData);
     setClasses(classesData);
     setSchools(schoolsData);
     setLoading(false);
-  }, [search, filterClass, filterGrade, filterSchool]);
+  }, [search, filterCampus, filterGrade, filterClass]);
 
   useEffect(() => {
     loadData(true);
@@ -301,7 +333,7 @@ export default function StudentsPage() {
     if (!silent) setLoadingCreds(true);
     setCredModalOpen(true);
     const res = await getStudentCredentialsOverview({
-      schoolId: filterSchool !== "ALL" ? filterSchool : undefined,
+      campusId: filterCampus !== "ALL" ? filterCampus : undefined,
       classId: filterClass || undefined,
       gradeLevel: filterGrade ? Number(filterGrade) : undefined,
     });
@@ -315,7 +347,7 @@ export default function StudentsPage() {
 
   const handleOpenSlips = async () => {
     const res = await getStudentCredentialSlips({
-      schoolId: filterSchool !== "ALL" ? filterSchool : undefined,
+      campusId: filterCampus !== "ALL" ? filterCampus : undefined,
       classId: filterClass || undefined,
       gradeLevel: filterGrade ? Number(filterGrade) : undefined,
     });
@@ -348,7 +380,14 @@ export default function StudentsPage() {
         motherName: null,
         motherJob: null,
         user: { id: item.userId, name: item.name, email: item.email },
-        classRoom: item.classId ? { id: item.classId, name: item.className, gradeLevel: item.gradeLevel || 10 } : null,
+        classRoom: item.classId
+          ? {
+              id: item.classId,
+              name: item.className,
+              gradeLevel: item.gradeLevel || 1,
+              campus: item.campusName ? { id: item.campusId || "", name: item.campusName } : null,
+            }
+          : null,
         group: null,
       });
       setNewPwdInput("abc123");
@@ -396,10 +435,7 @@ export default function StudentsPage() {
       }
 
       let gender = "";
-      if (
-        rawGender.toLowerCase().startsWith("nam") ||
-        rawGender.toUpperCase() === "MALE"
-      ) {
+      if (rawGender.toLowerCase().startsWith("nam") || rawGender.toUpperCase() === "MALE") {
         gender = "MALE";
       } else if (
         rawGender.toLowerCase().startsWith("nữ") ||
@@ -461,21 +497,6 @@ export default function StudentsPage() {
     reader.readAsText(file);
   };
 
-  const downloadSampleCSV = () => {
-    const headers = "Mã HS,Họ tên,Email,Ngày sinh,Giới tính,SĐT,Dân tộc,Địa chỉ\n";
-    const rows = [
-      "HS001,Nguyễn Văn A,nguyenvana@school.edu.vn,2008-05-15,Nam,0912345678,Kinh,Hà Nội",
-      "HS002,Trần Thị B,tranthib@school.edu.vn,2008-08-20,Nữ,0987654321,Kinh,Hồ Chí Minh",
-    ].join("\n");
-    const blob = new Blob(["\uFEFF" + headers + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "mau_nhap_hoc_sinh.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const handleBulkSubmit = async () => {
     if (parsedStudents.length === 0) {
       showToast("Chưa có dữ liệu hợp lệ để nhập", "error");
@@ -503,16 +524,36 @@ export default function StudentsPage() {
     DROPPED_OUT: "Nghỉ học",
   };
   const statusColor: Record<string, string> = {
-    STUDYING: "bg-green-100 text-green-800",
-    TRANSFERRED: "bg-yellow-100 text-yellow-800",
-    DROPPED_OUT: "bg-red-100 text-red-800",
+    STUDYING: "bg-emerald-100 text-emerald-800",
+    TRANSFERRED: "bg-amber-100 text-amber-800",
+    DROPPED_OUT: "bg-rose-100 text-rose-800",
+  };
+
+  const getCampusBadge = (campusName?: string | null) => {
+    if (!campusName) return { label: "Điểm Trung tâm", bg: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+    if (campusName.includes("Sơn Hà 1")) return { label: "Sơn Hà 1", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    if (campusName.includes("Sơn Hà 2")) return { label: "Sơn Hà 2", bg: "bg-teal-50 text-teal-700 border-teal-200" };
+    if (campusName.includes("Sơn Hải")) return { label: "Sơn Hải", bg: "bg-amber-50 text-amber-700 border-amber-200" };
+    if (campusName.includes("Phố Lu 3")) return { label: "Phố Lu 3", bg: "bg-purple-50 text-purple-700 border-purple-200" };
+    if (campusName.includes("An Tiến")) return { label: "Điểm lẻ An Tiến", bg: "bg-rose-50 text-rose-700 border-rose-200" };
+    return { label: campusName, bg: "bg-indigo-50 text-indigo-700 border-indigo-200" };
   };
 
   return (
-    <div>
+    <div className="space-y-5">
       {ToastComponent}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý Học sinh</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Hồ sơ Học sinh</h1>
+            <span className="bg-indigo-100 text-indigo-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-indigo-200">
+              1.706 Học sinh • Khối 1 - 5
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Quản lý lý lịch học sinh, phân hiệu trực thuộc, mã định danh và tài khoản đăng nhập
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => openCredentialsHub(false)}
@@ -542,98 +583,104 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      {/* School Cards Bar (Thẻ chọn Trường) */}
-      {schools.length > 0 && (
-        <div className="mb-5 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
-            <span className="flex items-center gap-1.5"><School className="w-3.5 h-3.5 text-indigo-600" /> Chọn trường học để lọc danh sách học sinh:</span>
-            <span>{schools.length} Trường khả dụng</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                setFilterSchool("ALL");
-                setFilterClass("");
-              }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
-                filterSchool === "ALL" || filterSchool === ""
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" /> Tất cả các trường
-            </button>
-            {schools.map((s) => (
+      {/* Campus Selector Bar (Thanh chọn Phân hiệu & Điểm trường) */}
+      <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+          <span className="flex items-center gap-1.5 font-bold text-slate-700">
+            <MapPin className="w-3.5 h-3.5 text-indigo-600" /> Chọn Phân hiệu / Điểm trường trực thuộc để lọc:
+          </span>
+          <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">
+            {campuses.length} Phân hiệu & Điểm trường
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              setFilterCampus("ALL");
+              setFilterClass("");
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+              filterCampus === "ALL" || filterCampus === ""
+                ? "bg-indigo-600 text-white border-indigo-600 shadow-xs scale-102"
+                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" /> Toàn trường (Tất cả điểm trường)
+          </button>
+          {campuses.map((c) => {
+            const isSelected = filterCampus === c.id;
+            return (
               <button
-                key={s.id}
+                key={c.id}
                 onClick={() => {
-                  setFilterSchool(s.id);
+                  setFilterCampus(c.id);
                   setFilterClass("");
                 }}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
-                  filterSchool === s.id
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                  isSelected
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs scale-102"
+                    : `bg-white text-slate-700 border-slate-200 hover:bg-slate-50`
                 }`}
               >
-                <School className="w-3.5 h-3.5" /> {s.name}
+                <MapPin className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-indigo-500"}`} />
+                <span>{c.name}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* Filters & View Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2.5">
           <input
             type="text"
-            placeholder="Tìm theo tên, mã HS..."
+            placeholder="Tìm học sinh theo tên, mã định danh..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-52 sm:w-64 bg-white shadow-2xs"
+            className="px-3.5 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs w-56 sm:w-64 bg-slate-50/50 shadow-2xs font-medium"
           />
 
-          {/* Lọc theo Khối */}
+          {/* Lọc Khối 1 - 5 */}
           <select
             value={filterGrade}
             onChange={(e) => {
               setFilterGrade(e.target.value);
               setFilterClass("");
             }}
-            className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
+            className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-slate-50/50 shadow-2xs font-semibold text-slate-700"
           >
-            <option value="">Tất cả khối</option>
-            {gradeOptions.map((g) => (
+            <option value="">Tất cả Khối lớp (Khối 1 - 5)</option>
+            {primaryGrades.map((g) => (
               <option key={g} value={g}>
                 Khối {g}
               </option>
             ))}
           </select>
 
-          {/* Lọc theo Lớp */}
+          {/* Lọc Lớp học theo Phân hiệu & Khối */}
           <select
             value={filterClass}
             onChange={(e) => setFilterClass(e.target.value)}
-            className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-white shadow-2xs"
+            className="px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs bg-slate-50/50 shadow-2xs font-semibold text-slate-700"
           >
-            <option value="">Tất cả lớp</option>
+            <option value="">Tất cả Lớp học</option>
             {classes
               .filter((c) => !filterGrade || c.gradeLevel === Number(filterGrade))
               .map((c) => (
                 <option key={c.id} value={c.id}>
-                  Lớp {c.name} (Khối {c.gradeLevel})
+                  Lớp {c.name} {c.campus?.name ? `(${c.campus.name})` : ""}
                 </option>
               ))}
           </select>
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex items-center bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold border border-slate-200">
           <button
             onClick={() => setViewMode("GRID")}
             className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-              viewMode === "GRID" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+              viewMode === "GRID" ? "bg-white text-indigo-700 shadow-xs font-black" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" /> Dạng Thẻ
@@ -641,7 +688,7 @@ export default function StudentsPage() {
           <button
             onClick={() => setViewMode("TABLE")}
             className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-              viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+              viewMode === "TABLE" ? "bg-white text-indigo-700 shadow-xs font-black" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Table className="w-3.5 h-3.5" /> Dạng Bảng
@@ -653,153 +700,154 @@ export default function StudentsPage() {
       {viewMode === "GRID" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in">
           {loading ? (
-            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Đang tải danh sách học sinh...</div>
+            <div className="col-span-full py-16 text-center text-slate-400 text-xs">Đang tải danh sách học sinh...</div>
           ) : students.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-slate-400 text-xs">Chưa có học sinh nào</div>
+            <div className="col-span-full py-16 text-center text-slate-400 text-xs">Không tìm thấy học sinh nào phù hợp với bộ lọc</div>
           ) : (
-            students.map((s) => (
-              <div
-                key={s.id}
-                className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all space-y-3 flex flex-col justify-between hover-lift group"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
-                      {s.user?.name || "Học sinh"}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusColor[s.status] || "bg-slate-100 text-slate-700"}`}>
-                      {statusLabel[s.status] || s.status}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-500">
-                    <span className="font-semibold text-slate-700">Mã HS:</span> {s.studentCode || "—"} |{" "}
-                    <span className="font-semibold text-slate-700">Lớp:</span> {s.classRoom?.name || "Chưa xếp lớp"}
-                    {s.classRoom?.school?.name && (
-                      <span className="ml-1.5 inline-block text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 font-medium">
-                        🏫 {s.classRoom.school.name}
+            students.map((s) => {
+              const campusBadge = getCampusBadge(s.classRoom?.campus?.name);
+              return (
+                <div
+                  key={s.id}
+                  className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all space-y-3 flex flex-col justify-between hover-lift group"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
+                        {s.user?.name || "Học sinh"}
                       </span>
-                    )}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    <span className="font-semibold text-slate-700">Ngày sinh:</span> {safeFormatDisplayDate(s.dob)} |{" "}
-                    <span className="font-semibold text-slate-700">Giới tính:</span> {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate">
-                    <span className="font-semibold text-slate-700">SĐT:</span> {s.phone || "—"}
-                  </p>
-                </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusColor[s.status] || "bg-slate-100 text-slate-700"}`}>
+                        {statusLabel[s.status] || s.status}
+                      </span>
+                    </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => openEdit(s)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-                      Chỉnh sửa
-                    </button>
-                    <button onClick={() => openPasswordModal(s)} className="text-xs font-semibold text-amber-700 hover:text-amber-900 inline-flex items-center gap-1">
-                      <Lock className="w-3.5 h-3.5" /> Đổi MK
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${campusBadge.bg}`}>
+                        📍 {campusBadge.label}
+                      </span>
+                      {s.classRoom && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                          Lớp {s.classRoom.name}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-slate-500">
+                      <span className="font-semibold text-slate-700">Mã HS:</span> {s.studentCode || "—"} |{" "}
+                      <span className="font-semibold text-slate-700">Giới tính:</span> {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      <span className="font-semibold text-slate-700">Ngày sinh:</span> {safeFormatDisplayDate(s.dob)}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">
+                      <span className="font-semibold text-slate-700">Email:</span> {s.user?.email || "—"}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(s)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                        Chỉnh sửa
+                      </button>
+                      <button onClick={() => openPasswordModal(s)} className="text-xs font-semibold text-amber-700 hover:text-amber-900 inline-flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5" /> Đổi MK
+                      </button>
+                    </div>
+                    <button onClick={() => setDeleteConfirm(s.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">
+                      Xóa
                     </button>
                   </div>
-                  <button onClick={() => setDeleteConfirm(s.id)} className="text-xs font-semibold text-rose-600 hover:text-rose-800">
-                    Xóa
-                  </button>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
 
       {/* Table View */}
       {viewMode === "TABLE" && (
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-2xs border border-slate-200/80 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-slate-50/80 border-b border-slate-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Mã HS</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Họ tên</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Lớp</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Ngày sinh</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Giới tính</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">SĐT</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Mật khẩu</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase">Mã HS</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase">Họ tên</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase">Phân hiệu & Lớp</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase">Ngày sinh</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase">Giới tính</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase">Mật khẩu</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase">Trạng thái</th>
+                  <th className="text-right px-4 py-3 text-xs font-bold text-slate-600 uppercase">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-slate-100 text-xs">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                      Đang tải...
+                    <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                      Đang tải danh sách học sinh...
                     </td>
                   </tr>
                 ) : students.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
                       Chưa có học sinh nào
                     </td>
                   </tr>
                 ) : (
-                  students.map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-600">{s.studentCode || "—"}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{s.user?.name || "Học sinh"}</td>
-                      <td className="px-4 py-3 text-sm">
-                        {s.classRoom ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs w-fit font-medium">
-                              Lớp {s.classRoom.name}
+                  students.map((s) => {
+                    const campusBadge = getCampusBadge(s.classRoom?.campus?.name);
+                    return (
+                      <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="px-4 py-3 font-mono text-slate-700 font-semibold">{s.studentCode || "—"}</td>
+                        <td className="px-4 py-3 font-bold text-slate-900">{s.user?.name || "Học sinh"}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-slate-800">
+                              {s.classRoom ? `Lớp ${s.classRoom.name}` : "Chưa phân lớp"}
                             </span>
-                            {s.classRoom.school?.name && (
-                              <span className="text-[10px] text-slate-500 font-medium">
-                                {s.classRoom.school.name}
-                              </span>
-                            )}
+                            <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded border w-fit ${campusBadge.bg}`}>
+                              📍 {campusBadge.label}
+                            </span>
                           </div>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {safeFormatDisplayDate(s.dob)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{s.phone || "—"}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        <span className="font-mono text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1 font-semibold">
-                          <KeyRound className="w-3 h-3 text-amber-600" /> abc123
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded text-xs ${statusColor[s.status] || ""}`}>
-                          {statusLabel[s.status] || s.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right space-x-2">
-                        <button
-                          onClick={() => openEdit(s)}
-                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          onClick={() => openPasswordModal(s)}
-                          className="text-amber-700 hover:text-amber-900 text-sm font-medium"
-                        >
-                          Đổi MK
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirm(s.id)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Xóa
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{safeFormatDisplayDate(s.dob)}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1 font-semibold">
+                            <KeyRound className="w-3 h-3 text-amber-600" /> abc123
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${statusColor[s.status] || ""}`}>
+                            {statusLabel[s.status] || s.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right space-x-2">
+                          <button
+                            onClick={() => openEdit(s)}
+                            className="text-indigo-600 hover:text-indigo-800 font-bold"
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            onClick={() => openPasswordModal(s)}
+                            className="text-amber-700 hover:text-amber-900 font-bold"
+                          >
+                            Đổi MK
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(s.id)}
+                            className="text-rose-600 hover:text-rose-800 font-bold"
+                          >
+                            Xóa
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -816,7 +864,6 @@ export default function StudentsPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           {!editing ? (
-            /* Định Danh & Tài Khoản Cố Định (Chế độ Thêm mới) */
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/90 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
@@ -860,7 +907,6 @@ export default function StudentsPage() {
               </p>
             </div>
           ) : (
-            /* Thông tin tài khoản (Chế độ Sửa) */
             <div className="space-y-3">
               <h3 className="font-semibold text-gray-800 border-b pb-1">Thông tin tài khoản</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -915,7 +961,7 @@ export default function StudentsPage() {
                 <option value="">Chưa xếp lớp</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} (Khối {c.gradeLevel})
+                    {c.name} {c.campus?.name ? `(${c.campus.name})` : ""}
                   </option>
                 ))}
               </select>
@@ -929,17 +975,15 @@ export default function StudentsPage() {
                 type="date"
                 value={form.dob}
                 onChange={(e) => setForm({ ...form, dob: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               />
             </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
               <select
                 value={form.gender}
                 onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               >
                 <option value="">Chọn</option>
                 <option value="MALE">Nam</option>
@@ -952,36 +996,41 @@ export default function StudentsPage() {
                 type="text"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Dân tộc</label>
               <input
                 type="text"
                 value={form.ethnicity}
                 onChange={(e) => setForm({ ...form, ethnicity: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                placeholder="VD: Kinh"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                placeholder="VD: Tày, Mông, Kinh..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ hiện tại</label>
+              <input
+                type="text"
+                value={form.addressCurrent}
+                onChange={(e) => setForm({ ...form, addressCurrent: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                placeholder="VD: Thôn Sơn Hà, Xã Bảo Thắng"
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ hiện tại</label>
-            <input
-              type="text"
-              value={form.addressCurrent}
-              onChange={(e) => setForm({ ...form, addressCurrent: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+
           {editing && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               >
                 <option value="STUDYING">Đang học</option>
                 <option value="TRANSFERRED">Chuyển trường</option>
@@ -999,7 +1048,7 @@ export default function StudentsPage() {
                 type="text"
                 value={form.fatherName}
                 onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               />
             </div>
             <div>
@@ -1008,7 +1057,7 @@ export default function StudentsPage() {
                 type="text"
                 value={form.fatherJob}
                 onChange={(e) => setForm({ ...form, fatherJob: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               />
             </div>
           </div>
@@ -1019,7 +1068,7 @@ export default function StudentsPage() {
                 type="text"
                 value={form.motherName}
                 onChange={(e) => setForm({ ...form, motherName: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               />
             </div>
             <div>
@@ -1028,7 +1077,7 @@ export default function StudentsPage() {
                 type="text"
                 value={form.motherJob}
                 onChange={(e) => setForm({ ...form, motherJob: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
               />
             </div>
           </div>
@@ -1037,14 +1086,14 @@ export default function StudentsPage() {
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-semibold"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm font-bold"
             >
               {submitting ? "Đang lưu..." : editing ? "Cập nhật" : "Thêm mới"}
             </button>
@@ -1054,16 +1103,16 @@ export default function StudentsPage() {
 
       {/* Delete Modal */}
       <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Xác nhận xóa" size="sm">
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-6 text-sm">
           Bạn có chắc muốn xóa học sinh này? Tài khoản và tất cả dữ liệu liên quan sẽ bị xóa.
         </p>
         <div className="flex justify-end gap-3">
-          <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
+          <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm">
             Hủy
           </button>
           <button
             onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 text-sm font-bold"
           >
             Xóa
           </button>
@@ -1131,185 +1180,19 @@ export default function StudentsPage() {
         </div>
       </Modal>
 
-      {/* Bulk Import Modal */}
-      <Modal
-        isOpen={bulkModalOpen}
-        onClose={() => setBulkModalOpen(false)}
-        title="Nhập danh sách học sinh hàng loạt (Excel / CSV)"
-        size="xl"
-      >
-        <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
-          <div className="bg-slate-50 border border-slate-200 text-slate-800 p-4 rounded-2xl text-xs sm:text-sm flex items-start justify-between gap-4">
-            <div className="space-y-1 text-slate-700">
-              <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
-                Hướng dẫn nhập dữ liệu học sinh:
-              </p>
-              <p>1. Sao chép trực tiếp từ bảng tính Excel / Google Sheets hoặc tải file CSV mẫu.</p>
-              <p>
-                2. Mật khẩu mặc định khởi tạo cho các tài khoản học sinh là:{" "}
-                <code className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded-md font-mono font-bold">abc123</code>
-              </p>
-              <p>
-                3. Thứ tự các cột:{" "}
-                <span className="font-semibold text-slate-900">
-                  Mã HS, Họ tên, Email, Ngày sinh (YYYY-MM-DD), Giới tính (Nam/Nữ), SĐT, Dân tộc, Địa chỉ
-                </span>
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={downloadSampleCSV}
-              className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-indigo-600" /> Tải CSV Mẫu
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Gán mặc định vào Lớp</label>
-              <select
-                value={bulkClassId}
-                onChange={(e) => handleBulkClassChange(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-xs font-medium text-slate-800 outline-none cursor-pointer"
-              >
-                <option value="">Chưa xếp lớp (Không chọn)</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    Lớp {c.name} (Khối {c.gradeLevel})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Hoặc Chọn File CSV</label>
-              <input
-                type="file"
-                accept=".csv, .txt"
-                onChange={handleFileUpload}
-                className="w-full text-xs text-slate-900 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer border border-slate-200 rounded-xl p-1 bg-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase">Dán dữ liệu từ Excel / CSV vào đây:</label>
-            <textarea
-              rows={5}
-              value={bulkInput}
-              onChange={(e) => handleBulkTextChange(e.target.value)}
-              placeholder={`HS001\tNguyễn Văn A\tnguyenvana@school.edu.vn\t2008-05-15\tNam\t0912345678\tKinh\tNinh Bình\nHS002\tTrần Thị B\ttranthib@school.edu.vn\t2008-08-20\tNữ\t0987654321\tKinh\tNinh Bình`}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-indigo-500 text-slate-800 outline-none"
-            />
-          </div>
-
-          {bulkResult && (
-            <div
-              className={`p-3.5 rounded-xl text-xs sm:text-sm border ${
-                bulkResult.count > 0 ? "bg-emerald-50 border-emerald-200 text-emerald-900 font-medium" : "bg-rose-50 border-rose-200 text-rose-900 font-medium"
-              }`}
-            >
-              <p className="font-bold">Kết quả: Đã thêm thành công {bulkResult.count} học sinh.</p>
-              {bulkResult.errors.length > 0 && (
-                <div className="mt-2 text-xs text-rose-800 max-h-28 overflow-y-auto space-y-1 font-medium">
-                  <p className="font-bold uppercase">Ghi chú / Cảnh báo:</p>
-                  {bulkResult.errors.map((err, idx) => (
-                    <p key={idx}>• {err}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Preview Table */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wider">
-                Xem trước dữ liệu ({parsedStudents.length} học sinh)
-              </h4>
-            </div>
-            <div className="border border-slate-200 rounded-2xl overflow-x-auto max-h-60 bg-white">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold sticky top-0 uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="p-2.5 border-r border-slate-200 text-center w-12">STT</th>
-                    <th className="p-2.5 border-r border-slate-200">Mã HS</th>
-                    <th className="p-2.5 border-r border-slate-200">Họ tên *</th>
-                    <th className="p-2.5 border-r border-slate-200">Email</th>
-                    <th className="p-2.5 border-r border-slate-200">Ngày sinh</th>
-                    <th className="p-2.5 border-r border-slate-200">Giới tính</th>
-                    <th className="p-2.5 border-r border-slate-200">SĐT</th>
-                    <th className="p-2.5">Địa chỉ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {parsedStudents.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="p-6 text-center text-slate-400 font-medium">
-                        Chưa có dữ liệu. Hãy dán nội dung hoặc chọn file CSV ở trên.
-                      </td>
-                    </tr>
-                  ) : (
-                    parsedStudents.map((s, idx) => (
-                      <tr key={idx} className={!s.name ? "bg-rose-50/60" : "hover:bg-slate-50/80 transition"}>
-                        <td className="p-2.5 border-r border-slate-100 text-slate-500 text-center font-medium">{idx + 1}</td>
-                        <td className="p-2.5 border-r border-slate-100 font-mono text-slate-700">
-                          {s.studentCode || <span className="text-slate-400">Tự sinh</span>}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-100 font-bold text-slate-900">
-                          {s.name || <span className="text-rose-600 font-bold">Thiếu tên!</span>}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-100 font-mono text-slate-600">
-                          {s.email || <span className="text-slate-400 italic">Tự sinh email</span>}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-100 text-slate-600">{s.dob || "—"}</td>
-                        <td className="p-2.5 border-r border-slate-100 text-slate-600">
-                          {s.gender === "MALE" ? "Nam" : s.gender === "FEMALE" ? "Nữ" : "—"}
-                        </td>
-                        <td className="p-2.5 border-r border-slate-100 text-slate-600">{s.phone || "—"}</td>
-                        <td className="p-2.5 text-slate-600 max-w-xs truncate">{s.addressCurrent || "—"}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setBulkModalOpen(false)}
-              className="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 transition cursor-pointer"
-            >
-              Đóng
-            </button>
-            <button
-              type="button"
-              onClick={handleBulkSubmit}
-              disabled={bulkSubmitting || parsedStudents.length === 0}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-xs sm:text-sm font-bold disabled:opacity-50 flex items-center gap-2 shadow-2xs transition cursor-pointer"
-            >
-              {bulkSubmitting ? "Đang tiến hành nhập..." : `Lưu tất cả ${parsedStudents.length} học sinh`}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Student Credentials Modal (BGH Only) */}
+      {/* Credential Management Modal (BGH Only) */}
       <StudentCredentialsModal
         isOpen={credModalOpen}
         onClose={() => setCredModalOpen(false)}
         credentials={credentialsList}
         classes={classes}
         schools={schools}
+        loading={loadingCreds}
         onResetPassword={handleResetFromCredModal}
         onOpenSlips={handleOpenSlips}
-        loading={loadingCreds}
       />
 
-      {/* Student Credential Slips Modal (A4 Handover Print) */}
+      {/* Credential Slips Modal (In Phiếu Giao Nhận) */}
       <StudentCredentialSlipsModal
         isOpen={credSlipsModalOpen}
         onClose={() => setCredSlipsModalOpen(false)}
@@ -1317,7 +1200,124 @@ export default function StudentsPage() {
         className={credClassName}
         slips={credSlips}
       />
+
+      {/* Bulk Import Modal */}
+      <Modal
+        isOpen={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        title="Nhập danh sách học sinh từ CSV / Văn bản"
+        size="lg"
+      >
+        <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 text-xs">
+          <div className="bg-indigo-50 border border-indigo-200 p-3.5 rounded-2xl text-indigo-900 space-y-2">
+            <p className="font-bold flex items-center gap-1.5 text-sm">
+              <Sparkles className="w-4 h-4 text-indigo-600" /> Hướng dẫn định dạng dữ liệu:
+            </p>
+            <p className="text-slate-600 leading-relaxed">
+              Bạn có thể copy paste dữ liệu từ Excel/Google Sheets hoặc tải lên file CSV.
+              Cột dữ liệu theo thứ tự: <code className="bg-white px-1.5 py-0.5 rounded border font-bold">Mã HS, Họ tên, Email, Ngày sinh (YYYY-MM-DD hoặc DD/MM/YYYY), Giới tính, SĐT, Dân tộc, Địa chỉ</code>
+            </p>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Phân lớp mặc định cho danh sách nhập</label>
+            <select
+              value={bulkClassId}
+              onChange={(e) => handleBulkClassChange(e.target.value)}
+              className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium"
+            >
+              <option value="">-- Không chọn (xếp lớp sau) --</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.campus?.name ? `(${c.campus.name})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-bold text-slate-700">Dán nội dung bảng (TSV/CSV)</label>
+              <label className="cursor-pointer text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
+                <FileSpreadsheet className="w-3.5 h-3.5" /> Chọn tệp .CSV
+                <input type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
+              </label>
+            </div>
+            <textarea
+              value={bulkInput}
+              onChange={(e) => handleBulkTextChange(e.target.value)}
+              placeholder="HS26100001	Nguyễn Văn Anh	hs26100001@gmail.com	2019-05-15	Nam	0912345678	Tày	Thôn Sơn Hà"
+              rows={6}
+              className="w-full px-3 py-2 border rounded-xl font-mono text-[11px] focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {parsedStudents.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800">
+                  Xem trước dữ liệu ({parsedStudents.length} học sinh sẵn sàng nhập):
+                </span>
+              </div>
+              <div className="max-h-48 overflow-y-auto border rounded-xl">
+                <table className="w-full text-[11px]">
+                  <thead className="bg-slate-100 sticky top-0">
+                    <tr>
+                      <th className="p-1.5 text-left">Mã HS</th>
+                      <th className="p-1.5 text-left">Họ tên</th>
+                      <th className="p-1.5 text-left">Email</th>
+                      <th className="p-1.5 text-left">Ngày sinh</th>
+                      <th className="p-1.5 text-left">Giới tính</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {parsedStudents.map((s, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="p-1.5 font-mono">{s.studentCode || "Tự tạo"}</td>
+                        <td className="p-1.5 font-semibold">{s.name}</td>
+                        <td className="p-1.5 font-mono">{s.email || "Tự tạo"}</td>
+                        <td className="p-1.5">{s.dob || "—"}</td>
+                        <td className="p-1.5">{s.gender || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {bulkResult && (
+            <div className={`p-3 rounded-xl border ${bulkResult.count > 0 ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-rose-50 border-rose-200 text-rose-900"}`}>
+              <p className="font-bold">Đã tạo thành công {bulkResult.count} học sinh.</p>
+              {bulkResult.errors.length > 0 && (
+                <ul className="list-disc pl-4 mt-1 space-y-0.5 text-[11px]">
+                  {bulkResult.errors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <button
+              type="button"
+              onClick={() => setBulkModalOpen(false)}
+              className="px-4 py-2 border rounded-xl hover:bg-slate-50 font-semibold"
+            >
+              Đóng
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkSubmit}
+              disabled={bulkSubmitting || parsedStudents.length === 0}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {bulkSubmitting ? "Đang xử lý..." : `Xác nhận nhập (${parsedStudents.length} HS)`}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
-
