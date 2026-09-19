@@ -19,6 +19,9 @@ import { seedSchoolStructure } from "../../../../prisma/seed-data/school-structu
 import { seedPersonnelAndSubjects } from "../../../../prisma/seed-data/personnel-subjects";
 import { seedClassesAndStudents } from "../../../../prisma/seed-data/classes-students";
 import { seedAcademicAndFacilities } from "../../../../prisma/seed-data/academic-facilities";
+import { seedExamAnalyticsAndTranscripts } from "../../../../prisma/seed-data/exam-analytics";
+import { seedLessonPlansAndCurriculum } from "../../../../prisma/seed-data/lesson-plans";
+import { seedApprovalsAndDispatch } from "../../../../prisma/seed-data/approvals-dispatch";
 
 async function runSeed() {
   // 1. Wipe database
@@ -36,6 +39,18 @@ async function runSeed() {
   } catch (error) {
     console.warn("⚠️ TRUNCATE CASCADE gặp giới hạn quyền, dọn dẹp qua Prisma deleteMany...");
     await Promise.allSettled([
+      prisma.approvalComment.deleteMany(),
+      prisma.approvalWorkflow.deleteMany(),
+      prisma.substituteAssignment.deleteMany(),
+      prisma.teacherChangeRequest.deleteMany(),
+      prisma.lessonPlanReview.deleteMany(),
+      prisma.lessonPlan.deleteMany(),
+      prisma.lessonPlanPeriod.deleteMany(),
+      prisma.curriculum.deleteMany(),
+      prisma.transcriptSubjectGrade.deleteMany(),
+      prisma.academicTranscript.deleteMany(),
+      prisma.studentScore.deleteMany(),
+      prisma.examPeriod.deleteMany(),
       prisma.officialDocument.deleteMany(),
       prisma.equipmentTransfer.deleteMany(),
       prisma.equipment.deleteMany(),
@@ -49,12 +64,8 @@ async function runSeed() {
       prisma.grade.deleteMany(),
       prisma.attendance.deleteMany(),
       prisma.schedule.deleteMany(),
-      prisma.curriculum.deleteMany(),
       prisma.teachingAssignment.deleteMany(),
-      prisma.teacherChangeRequest.deleteMany(),
       prisma.notification.deleteMany(),
-      prisma.studentScore.deleteMany(),
-      prisma.examPeriod.deleteMany(),
       prisma.student.deleteMany(),
       prisma.group.deleteMany(),
       prisma.classRoom.deleteMany(),
@@ -107,6 +118,30 @@ async function runSeed() {
 
   // 6. Facilities & academics
   await seedAcademicAndFacilities(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 7. Exam Analytics & Transcripts
+  await seedExamAnalyticsAndTranscripts(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 8. Lesson Plans & Curriculum
+  await seedLessonPlansAndCurriculum(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 9. Approvals & Dispatch
+  await seedApprovalsAndDispatch(
     prisma,
     schoolStruct,
     personnelStruct,

@@ -18,6 +18,9 @@ import { seedSchoolStructure } from "./seed-data/school-structure";
 import { seedPersonnelAndSubjects } from "./seed-data/personnel-subjects";
 import { seedClassesAndStudents } from "./seed-data/classes-students";
 import { seedAcademicAndFacilities } from "./seed-data/academic-facilities";
+import { seedExamAnalyticsAndTranscripts } from "./seed-data/exam-analytics";
+import { seedLessonPlansAndCurriculum } from "./seed-data/lesson-plans";
+import { seedApprovalsAndDispatch } from "./seed-data/approvals-dispatch";
 
 const prisma = new PrismaClient();
 
@@ -42,6 +45,18 @@ async function cleanDatabase(prismaClient: PrismaClient) {
 
   // Fallback delete in reverse dependency order
   await Promise.allSettled([
+    prismaClient.approvalComment.deleteMany(),
+    prismaClient.approvalWorkflow.deleteMany(),
+    prismaClient.substituteAssignment.deleteMany(),
+    prismaClient.teacherChangeRequest.deleteMany(),
+    prismaClient.lessonPlanReview.deleteMany(),
+    prismaClient.lessonPlan.deleteMany(),
+    prismaClient.lessonPlanPeriod.deleteMany(),
+    prismaClient.curriculum.deleteMany(),
+    prismaClient.transcriptSubjectGrade.deleteMany(),
+    prismaClient.academicTranscript.deleteMany(),
+    prismaClient.studentScore.deleteMany(),
+    prismaClient.examPeriod.deleteMany(),
     prismaClient.officialDocument.deleteMany(),
     prismaClient.equipmentTransfer.deleteMany(),
     prismaClient.equipment.deleteMany(),
@@ -55,12 +70,8 @@ async function cleanDatabase(prismaClient: PrismaClient) {
     prismaClient.grade.deleteMany(),
     prismaClient.attendance.deleteMany(),
     prismaClient.schedule.deleteMany(),
-    prismaClient.curriculum.deleteMany(),
     prismaClient.teachingAssignment.deleteMany(),
-    prismaClient.teacherChangeRequest.deleteMany(),
     prismaClient.notification.deleteMany(),
-    prismaClient.studentScore.deleteMany(),
-    prismaClient.examPeriod.deleteMany(),
     prismaClient.student.deleteMany(),
     prismaClient.group.deleteMany(),
     prismaClient.classRoom.deleteMany(),
@@ -121,8 +132,32 @@ async function main() {
     standardPassword
   );
 
-  // 6. Khởi tạo Cơ sở vật chất (80 phòng), Thiết bị dạy học, Điểm số TT27 & Mục tiêu chất lượng
+  // 6. Khởi tạo Cơ sở vật chất (80 phòng), Thiết bị dạy học, Chuyên cần & Mục tiêu chất lượng
   await seedAcademicAndFacilities(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 7. Khởi tạo Điểm thi TT27 & Exam Analytics đa năm + Học bạ điện tử
+  await seedExamAnalyticsAndTranscripts(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 8. Khởi tạo Kế hoạch giảng dạy & Giáo án điện tử (LessonPlanPeriod, LessonPlan, LessonPlanReview, Curriculum)
+  await seedLessonPlansAndCurriculum(
+    prisma,
+    schoolStruct,
+    personnelStruct,
+    classesStudents
+  );
+
+  // 9. Khởi tạo Duyệt yêu cầu BGH & Điều chuyển dạy thay (TeacherChangeRequest, SubstituteAssignment, ApprovalWorkflow)
+  await seedApprovalsAndDispatch(
     prisma,
     schoolStruct,
     personnelStruct,
