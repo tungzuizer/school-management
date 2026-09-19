@@ -91,7 +91,7 @@ export default function TeacherStudentsPage() {
   // Password reset & Delete modal state
   const [pwdModalOpen, setPwdModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<TeacherStudentData | null>(null);
-  const [newPwdInput, setNewPwdInput] = useState("abc123");
+  const [newPwdInput, setNewPwdInput] = useState("123456");
   const [resettingPwd, setResettingPwd] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);

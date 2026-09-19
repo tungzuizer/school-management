@@ -1,8 +1,43 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/api/auth/[...nextauth]/route.ts`, `src/lib/tenant.ts`, `src/app/actions/user-password.ts`.
+ * 2. Affected APIs: `authOptions`, `DEMO_EXEMPT_EMAILS`, NextAuth `authorize`, `jwt`, `session` callbacks.
+ * 3. Schemas: Prisma model `User` (`mustChangePassword`, `role`, `email`, `schoolId`, `campusId`).
+ * 4. Verbatim User Instruction: "và các tài khoản demo \nIII. Bảng Danh Mục Tài Khoản & Mật Khẩu Nghiệp Vụ\n\nTất cả tài khoản sử dụng mật khẩu mặc định: 123456\n\n[Bảng 16 tài khoản]\n\n--- vô sẽ ko yêu cầu đổi mk nữa còn các tài khoản các vẫn cần đổi mật khẩu" - Miễn trừ cờ đổi mật khẩu cho 16 tài khoản demo Trường TH Phố Lu và giữ nguyên cờ đổi mật khẩu cho các tài khoản người dùng khác.
+ */
+
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 import { checkLoginRateLimit } from "./rate-limiter";
+
+// Danh mục tài khoản demo nghiệp vụ chuẩn được miễn trừ yêu cầu đổi mật khẩu lần đầu
+export const DEMO_EXEMPT_EMAILS = new Set([
+  "superadmin.vietnam@gmail.com",
+  "admin.sogd.laocai@gmail.com",
+  "gd.baothang@gmail.com",
+  "ubnd.baothang@gmail.com",
+  "hieutruong.thpholu@gmail.com",
+  "ketoan.thpholu@gmail.com",
+  "pht.trungtam@gmail.com",
+  "pht.sonha1@gmail.com",
+  "pht.sonha2@gmail.com",
+  "pht.sonhai@gmail.com",
+  "pht.pholu3@gmail.com",
+  "pht.antien@gmail.com",
+  "to.khoi1@gmail.com",
+  "to.dacthu@gmail.com",
+  "giaovien.thpholu@gmail.com",
+  "hocsinh.thpholu@gmail.com",
+  // Demo fallback alias
+  "superadmin@school.edu.vn",
+  "admin@school.edu.vn",
+  "teacher@school.edu.vn",
+  "student@school.edu.vn",
+  "hs26100001@gmail.com",
+  "hs26100002@gmail.com",
+]);
 
 // Demo mode is strictly disabled in production; only allowed if explicitly configured in development
 const isDemoAllowed =
@@ -88,23 +123,9 @@ export const authOptions: NextAuthOptions = {
             }
 
             if (isPasswordValid) {
-              // Chỉ buộc đổi mật khẩu cho tài khoản KHÔNG phải demo
-              const demoEmails = [
-                "superadmin@gmail.com", "superadmin.vietnam@gmail.com", "superadmin.ninhbinh@gmail.com",
-                "superadmin.demo@gmail.com", "superadmin@school.com", "admin@school.com", "dept@school.com",
-                "ward@school.com", "vp1@school.com", "teacher@school.com", "student@school.com",
-                "sogd.hanoi@gmail.com", "sogd.tphcm@gmail.com", "sogd.danang@gmail.com", "admin.sogd.ninhbinh@gmail.com",
-                "sysadmin@so-gddt.gov.vn", "cbso@so-gddt.gov.vn", "cbphong@phonggd.gov.vn",
-                "ht.tanxa@school.edu.vn"
-              ];
-              const isDemoAccount = demoEmails.includes(email) || email.startsWith("hs");
-              let isDefaultPassword = false;
-
-              if (!isDemoAccount) {
-                isDefaultPassword =
-                  (await bcrypt.compare("abc123", user.password)) ||
-                  (await bcrypt.compare("123456", user.password));
-              }
+              const userEmailLower = user.email.toLowerCase();
+              const isDemoExempt = DEMO_EXEMPT_EMAILS.has(userEmailLower) || DEMO_EXEMPT_EMAILS.has(rawEmail);
+              const mustChange = isDemoExempt ? false : Boolean(user.mustChangePassword);
 
               return {
                 id: user.id,
@@ -113,7 +134,7 @@ export const authOptions: NextAuthOptions = {
                 role: user.role,
                 image: sanitizeImageUrl(user.image),
                 isApproved: user.isApproved,
-                mustChangePassword: isDefaultPassword,
+                mustChangePassword: mustChange,
                 departmentId: user.departmentId || undefined,
                 districtWardId: user.districtWardId || undefined,
                 schoolId: user.schoolId || undefined,
@@ -244,7 +265,7 @@ export const authOptions: NextAuthOptions = {
                   name: user.name,
                   role: user.role,
                   isApproved: user.isApproved,
-                  mustChangePassword: isDefaultPass,
+                  mustChangePassword: false,
                 };
               }
             } catch {
@@ -257,7 +278,7 @@ export const authOptions: NextAuthOptions = {
               name,
               role,
               isApproved: true,
-              mustChangePassword: isDefaultPass,
+              mustChangePassword: false,
             };
           }
         }

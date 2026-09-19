@@ -1,12 +1,12 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Admin and Teacher Server Actions (`src/app/admin/students/actions.ts`, `src/app/admin/teachers/actions.ts`, `src/app/teacher/students/actions.ts`, `src/app/teacher/homeroom/actions.ts`), Vitest test suite (`src/lib/__tests__/account-automation.test.ts`).
- * 2. Affected APIs: Student & Teacher Account Creation Automation Engine, Code Generator, Email Generator, Collision Resolver (`generateStructuredStudentCode`, `generateStudentEmailFromCode`, `generateStructuredTeacherCode`, `generateTeacherEmailFromName`, `resolveUniqueStudentCodeAndEmail`, `resolveUniqueTeacherEmail`).
- * 3. Data Schemas: Prisma models `User`, `Student`, `Teacher`, `School`, `ClassRoom`.
- * 4. Verbatim User Instruction: "tôi cần tọa thuật toán tự động hóa thêm học sinh hay giáo viên sẽ tự tạo tài khoản".
+ * 1. Importers/Callers: `src/app/admin/students/actions.ts`, `src/app/admin/teachers/actions.ts`, `src/app/teacher/students/actions.ts`, `src/app/teacher/homeroom/actions.ts`, `src/lib/__tests__/account-automation.test.ts`.
+ * 2. Affected APIs: `DEFAULT_INITIAL_PASSWORD`.
+ * 3. Data Schemas: Prisma models `User`, `Student`, `Teacher`.
+ * 4. Verbatim User Instruction: "để hết mk mặc định là 123456" - Đặt toàn bộ mật khẩu mặc định là 123456.
  */
 
-export const DEFAULT_INITIAL_PASSWORD = "abc123";
+export const DEFAULT_INITIAL_PASSWORD = "123456";
 
 /**
  * Loại bỏ dấu tiếng Việt và ký tự đặc biệt, chuẩn hóa chuỗi

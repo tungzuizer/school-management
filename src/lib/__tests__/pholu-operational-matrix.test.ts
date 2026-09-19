@@ -18,6 +18,17 @@ import {
 import type { TenantContext } from "../tenant";
 import { CAMPUS_SPECS } from "../../../prisma/seed-data/school-structure";
 import { build62ClassesSpec } from "../../../prisma/seed-data/classes-students";
+import {
+  PHO_LU_LEGAL_BASIS,
+  PHO_LU_SCHOOL_STATS,
+  PHO_LU_ACADEMIC_WEEKS,
+  PHO_LU_HOLIDAY_MAKEUP_SCHEDULES,
+  PHO_LU_QUALITY_TARGETS,
+  PHO_LU_INCLUSIVE_STATS,
+  getCampusInclusiveStats,
+  getTotalInclusiveStudents,
+  getQualityObjectiveByCode,
+} from "../pholu-operational-matrix";
 
 describe("Trường Tiểu học Phố Lu & 5 Phân hiệu — Operational Matrix Test Suite", () => {
   // 1. Cấu trúc trường & 5 Phân hiệu
@@ -151,6 +162,120 @@ describe("Trường Tiểu học Phố Lu & 5 Phân hiệu — Operational Matri
       };
       const filter = buildSchoolFilter(teacherCtx);
       expect(filter).toEqual({ schoolId: "sch_th_pholu" });
+    });
+  });
+
+  // 4. Ma trận Căn cứ Pháp lý năm học 2026-2027
+  describe("4. Căn cứ Pháp lý Chuẩn cấp Tiểu học (8 Văn bản cốt lõi)", () => {
+    it("chứa đầy đủ 8 văn bản pháp quy chỉ đạo năm học 2026-2027", () => {
+      expect(PHO_LU_LEGAL_BASIS.length).toBe(8);
+      const codes = PHO_LU_LEGAL_BASIS.map((b) => b.code);
+      expect(codes).toContain("LUAT-GD-43/2019/QH14");
+      expect(codes).toContain("TT-28/2020/TT-BGDĐT");
+      expect(codes).toContain("TT-27/2020/TT-BGDĐT");
+      expect(codes).toContain("TT-32/2018/TT-BGDĐT");
+      expect(codes).toContain("CV-2345/BGDĐT-GDTH");
+      expect(codes).toContain("CV-909/BGDĐT-GDTH");
+      expect(codes).toContain("QD-2796/QD-UBND");
+      expect(codes).toContain("CV-458/PGDDT-TH");
+    });
+
+    it("xác định đúng căn cứ đánh giá học sinh tiểu học là Thông tư 27/2020", () => {
+      const tt27 = PHO_LU_LEGAL_BASIS.find((b) => b.code === "TT-27/2020/TT-BGDĐT");
+      expect(tt27).toBeDefined();
+      expect(tt27?.scope).toBe("Cấp Tiểu học");
+      expect(tt27?.summary).toContain("Đánh giá thường xuyên và định kỳ");
+    });
+  });
+
+  // 5. Thống kê Quy mô Nhà trường & Phân bổ Học sinh Hòa nhập
+  describe("5. Thống kê Quy mô Năm học & Học sinh Khuyết tật Hòa nhập (37 HS)", () => {
+    it("thống kê chuẩn xác quy mô 62 lớp, 1.706 học sinh và 120 CB-GV-NV", () => {
+      expect(PHO_LU_SCHOOL_STATS.totalCampuses).toBe(6);
+      expect(PHO_LU_SCHOOL_STATS.totalClasses).toBe(62);
+      expect(PHO_LU_SCHOOL_STATS.totalStudents).toBe(1706);
+      expect(PHO_LU_SCHOOL_STATS.totalStaff).toBe(120);
+      expect(PHO_LU_SCHOOL_STATS.totalTeachers).toBe(98);
+      expect(PHO_LU_SCHOOL_STATS.totalManagers).toBe(6);
+      expect(PHO_LU_SCHOOL_STATS.inclusiveStudents).toBe(37);
+    });
+
+    it("tổng số học sinh hòa nhập trên 6 phân hiệu/điểm trường khớp đúng 37 học sinh", () => {
+      expect(getTotalInclusiveStudents()).toBe(37);
+      expect(PHO_LU_INCLUSIVE_STATS.length).toBe(6);
+
+      const trungTam = getCampusInclusiveStats("TRUNG_TAM");
+      const sonHa1 = getCampusInclusiveStats("SON_HA_1");
+      const sonHa2 = getCampusInclusiveStats("SON_HA_2");
+      const sonHai = getCampusInclusiveStats("SON_HAI");
+      const phoLu3 = getCampusInclusiveStats("PHO_LU_3");
+      const anTien = getCampusInclusiveStats("AN_TIEN");
+
+      expect(trungTam?.inclusiveCount).toBe(14);
+      expect(sonHa1?.inclusiveCount).toBe(8);
+      expect(sonHa2?.inclusiveCount).toBe(6);
+      expect(sonHai?.inclusiveCount).toBe(5);
+      expect(phoLu3?.inclusiveCount).toBe(3);
+      expect(anTien?.inclusiveCount).toBe(1);
+
+      // 100% học sinh hòa nhập đều có kế hoạch giáo dục cá nhân được duyệt
+      expect(PHO_LU_INCLUSIVE_STATS.every((c) => c.individualPlanStatus === "100%_APPROVED")).toBe(true);
+    });
+  });
+
+  // 6. Khung Thời gian 35 Tuần & Lịch Dạy bù 5 Đợt Nghỉ Lễ
+  describe("6. Khung Thời gian 35 Tuần & 5 Lịch Dạy bù Nghỉ Lễ", () => {
+    it("đảm bảo chuẩn 35 tuần thực học (HK1: 18 tuần, HK2: 17 tuần)", () => {
+      expect(PHO_LU_ACADEMIC_WEEKS.length).toBe(2);
+      const hk1 = PHO_LU_ACADEMIC_WEEKS.find((w) => w.term === 1);
+      const hk2 = PHO_LU_ACADEMIC_WEEKS.find((w) => w.term === 2);
+
+      expect(hk1?.totalWeeks).toBe(18);
+      expect(hk2?.totalWeeks).toBe(17);
+      expect(hk1?.midtermAssessmentWeek).toBe(9);
+      expect(hk2?.finalAssessmentWeek).toBe(35);
+    });
+
+    it("định nghĩa chuẩn xác 5 đợt nghỉ lễ và lịch dạy bù tương ứng", () => {
+      expect(PHO_LU_HOLIDAY_MAKEUP_SCHEDULES.length).toBe(5);
+      const holidayIds = PHO_LU_HOLIDAY_MAKEUP_SCHEDULES.map((h) => h.id);
+
+      expect(holidayIds).toEqual([
+        "HOLIDAY_01_QUOC_KHANH",
+        "HOLIDAY_02_TET_DUONG_LICH",
+        "HOLIDAY_03_TET_NGUYEN_DAN",
+        "HOLIDAY_04_GIO_TO_HUNG_VUONG",
+        "HOLIDAY_05_30_THANG_4_VA_1_THANG_5",
+      ]);
+
+      const tetNguyenDan = PHO_LU_HOLIDAY_MAKEUP_SCHEDULES.find((h) => h.id === "HOLIDAY_03_TET_NGUYEN_DAN");
+      expect(tetNguyenDan?.totalDaysOff).toBe(14); // 14 ngày nghỉ Tết Nguyên đán
+    });
+  });
+
+  // 7. 10 Mục tiêu Chất lượng Giáo dục Năm học 2026-2027
+  describe("7. 10 Mục tiêu Chất lượng Giáo dục Năm học 2026-2027", () => {
+    it("chứa đầy đủ 10 mục tiêu chất lượng trọng tâm", () => {
+      expect(PHO_LU_QUALITY_TARGETS.length).toBe(10);
+      const codes = PHO_LU_QUALITY_TARGETS.map((q) => q.code);
+      for (let i = 1; i <= 10; i++) {
+        const padded = i < 10 ? `0${i}` : `${i}`;
+        expect(codes).toContain(`MTCL-2026-${padded}`);
+      }
+    });
+
+    it("đạt chuẩn 100% về huy động trẻ, hoàn thành CTTH lớp 5, giáo dục STEM và học bạ số", () => {
+      const mtcl1 = getQualityObjectiveByCode("MTCL-2026-01");
+      const mtcl3 = getQualityObjectiveByCode("MTCL-2026-03");
+      const mtcl5 = getQualityObjectiveByCode("MTCL-2026-05");
+      const mtcl6 = getQualityObjectiveByCode("MTCL-2026-06");
+      const mtcl8 = getQualityObjectiveByCode("MTCL-2026-08");
+
+      expect(mtcl1?.targetPercent).toBe(100.0);
+      expect(mtcl3?.targetPercent).toBe(100.0);
+      expect(mtcl5?.targetPercent).toBe(100.0);
+      expect(mtcl6?.targetPercent).toBe(100.0);
+      expect(mtcl8?.targetPercent).toBe(100.0);
     });
   });
 });

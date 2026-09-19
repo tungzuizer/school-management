@@ -91,7 +91,7 @@ export default function UsersManagerPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [selectedUserForReset, setSelectedUserForReset] = useState<ManagedUserItem | null>(null);
-  const [customResetPass, setCustomResetPass] = useState("abc123");
+  const [customResetPass, setCustomResetPass] = useState("123456");
 
   // Create Form states
   const [newName, setNewName] = useState("");
@@ -101,7 +101,7 @@ export default function UsersManagerPage() {
   const [newCampusId, setNewCampusId] = useState("");
   const [newWardId, setNewWardId] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [newPassword, setNewPassword] = useState("abc123");
+  const [newPassword, setNewPassword] = useState("123456");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Copy state
@@ -213,7 +213,7 @@ export default function UsersManagerPage() {
         setNewEmail("");
         setNewPhone("");
         setNewCampusId("");
-        setNewPassword("abc123");
+        setNewPassword("123456");
         fetchData();
         setTimeout(() => setSuccessMsg(""), 4000);
       } else {
@@ -242,7 +242,7 @@ export default function UsersManagerPage() {
   };
 
   const copyCredentials = (user: ManagedUserItem) => {
-    const text = `Họ tên: ${user.name}\nEmail: ${user.email}\nMật khẩu: abc123\nVai trò: ${user.role}\nTrường/Đơn vị: ${user.schoolName}\nPhân hiệu: ${user.campusName || "Điểm Trung tâm"}`;
+    const text = `Họ tên: ${user.name}\nEmail: ${user.email}\nMật khẩu: 123456\nVai trò: ${user.role}\nTrường/Đơn vị: ${user.schoolName}\nPhân hiệu: ${user.campusName || "Điểm Trung tâm"}`;
     navigator.clipboard.writeText(text);
     setCopiedId(user.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -252,7 +252,7 @@ export default function UsersManagerPage() {
     if (confirm(`Chuyển phiên làm việc sang tài khoản: ${user.name} (${user.email})?`)) {
       await signIn("credentials", {
         email: user.email,
-        password: "abc123",
+        password: "123456",
         callbackUrl: "/admin/dashboard",
       });
     }
@@ -672,7 +672,7 @@ export default function UsersManagerPage() {
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
                           <div className="bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 font-mono text-[11px] font-bold text-slate-700">
-                            abc123
+                            123456
                           </div>
                           <button
                             onClick={() => copyCredentials(u)}
@@ -723,7 +723,7 @@ export default function UsersManagerPage() {
                           <button
                             onClick={() => {
                               setSelectedUserForReset(u);
-                              setCustomResetPass("abc123");
+                              setCustomResetPass("123456");
                               setShowResetModal(true);
                             }}
                             className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-amber-600 transition cursor-pointer"

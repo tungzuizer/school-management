@@ -381,7 +381,7 @@ export async function createStudent(data: {
 
 export async function resetStudentPassword(userId: string, newPassword?: string) {
   try {
-    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
+    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "123456";
     if (rawPassword.length < 6) return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
 
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
@@ -501,7 +501,7 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
       return { success: false, error: "Danh sách nhập rỗng", count: 0 };
     }
 
-    const defaultPasswordHash = await bcrypt.hash("abc123", 10);
+    const defaultPasswordHash = await bcrypt.hash(DEFAULT_INITIAL_PASSWORD, 10);
 
     const existingUsers = await prisma.user.findMany({ select: { email: true } });
     const existingEmails = new Set(existingUsers.map((u) => u.email.toLowerCase()));
@@ -709,7 +709,7 @@ export async function getStudentCredentialsOverview(filters?: {
       status: s.status,
       mustChangePassword: s.user.mustChangePassword,
       createdAt: s.user.createdAt.toISOString(),
-      defaultPasswordHint: "abc123",
+      defaultPasswordHint: "123456",
     }));
 
     return { success: true, data: credentialItems };
@@ -745,7 +745,7 @@ export async function resetStudentPasswordSecure(
       }
     }
 
-    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "abc123";
+    const rawPassword = newPassword && newPassword.trim() ? newPassword.trim() : "123456";
     if (rawPassword.length < 6) {
       return { success: false, error: "Mật khẩu tối thiểu 6 ký tự" };
     }

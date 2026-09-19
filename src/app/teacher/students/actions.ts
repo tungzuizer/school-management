@@ -340,7 +340,7 @@ export async function importBulkStudents(classId: string, rows: BulkStudentRow[]
   }
 }
 
-export async function resetStudentPasswordTeacher(studentId: string, newPassword = "abc123") {
+export async function resetStudentPasswordTeacher(studentId: string, newPassword = "123456") {
   try {
     const teacherUser = await getTeacherUser();
     if (!teacherUser) return { success: false, error: "Chưa đăng nhập" };

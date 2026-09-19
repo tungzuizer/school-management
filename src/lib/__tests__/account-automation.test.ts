@@ -156,7 +156,7 @@ describe("Account Automation - Collision Resolution for Teachers", () => {
 
 describe("Account Automation - Initial Defaults", () => {
   it("provides standard secure default password constant", () => {
-    expect(DEFAULT_INITIAL_PASSWORD).toBe("abc123");
+    expect(DEFAULT_INITIAL_PASSWORD).toBe("123456");
   });
 
   it("supports student demo credentials and studentCode formats", () => {
@@ -165,8 +165,8 @@ describe("Account Automation - Initial Defaults", () => {
     expect(studentCode).toBe("HS26100001");
     expect(studentCode.startsWith("HS26")).toBe(true);
 
-    const validPasswords = ["abc123", "123456", "Password@123", "student"];
+    const validPasswords = ["123456", "Password@123", "student"];
     expect(validPasswords).toContain("Password@123");
-    expect(validPasswords).toContain("abc123");
+    expect(validPasswords).toContain("123456");
   });
 });

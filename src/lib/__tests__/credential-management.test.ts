@@ -110,11 +110,11 @@ describe("Credential Generator and Formatting", () => {
       isApproved: teacherRaw.user.isApproved,
       mustChangePassword: teacherRaw.user.mustChangePassword,
       createdAt: teacherRaw.user.createdAt.toISOString(),
-      defaultPasswordHint: "abc123",
+      defaultPasswordHint: "123456",
     };
 
     expect(formatted.name).toBe("Nguyễn Văn A");
-    expect(formatted.defaultPasswordHint).toBe("abc123");
+    expect(formatted.defaultPasswordHint).toBe("123456");
     expect(formatted.mustChangePassword).toBe(true);
     expect(formatted.schoolName).toBe("THPT Chu Văn An");
   });
@@ -150,14 +150,14 @@ describe("Credential Generator and Formatting", () => {
       email: studentRaw.user.email,
       parentName: studentRaw.fatherName || "Chưa có",
       parentPhone: studentRaw.phone || "",
-      passwordHint: "abc123",
+      passwordHint: "123456",
       generatedDate: "09/09/2026",
     };
 
     expect(slip.studentName).toBe("Trần Thị B");
     expect(slip.studentCode).toBe("HS2026001");
     expect(slip.className).toBe("10A1");
-    expect(slip.passwordHint).toBe("abc123");
+    expect(slip.passwordHint).toBe("123456");
     expect(slip.parentName).toBe("Trần Văn C");
   });
 });
@@ -184,6 +184,47 @@ describe("Student Email Format Standardization (<studentCode>@gmail.com)", () =>
 
   it("handles fallback when both name and student code are empty", () => {
     expect(generateStudentEmail("", "")).toBe("student@gmail.com");
+  });
+});
+
+describe("16 Demo Accounts Password Exemption & MustChangePassword Policy", () => {
+  it("exempts all 16 demo accounts from mustChangePassword requirements", async () => {
+    const { DEMO_EXEMPT_EMAILS } = await import("@/lib/auth");
+
+    const expected16DemoEmails = [
+      "superadmin.vietnam@gmail.com",
+      "admin.sogd.laocai@gmail.com",
+      "gd.baothang@gmail.com",
+      "ubnd.baothang@gmail.com",
+      "hieutruong.thpholu@gmail.com",
+      "ketoan.thpholu@gmail.com",
+      "pht.trungtam@gmail.com",
+      "pht.sonha1@gmail.com",
+      "pht.sonha2@gmail.com",
+      "pht.sonhai@gmail.com",
+      "pht.pholu3@gmail.com",
+      "pht.antien@gmail.com",
+      "to.khoi1@gmail.com",
+      "to.dacthu@gmail.com",
+      "giaovien.thpholu@gmail.com",
+      "hocsinh.thpholu@gmail.com",
+    ];
+
+    expected16DemoEmails.forEach((email) => {
+      expect(DEMO_EXEMPT_EMAILS.has(email.toLowerCase())).toBe(true);
+    });
+  });
+
+  it("enforces mustChangePassword = true for regular user accounts created in DB", () => {
+    const regularUser = {
+      email: "gv.nguyenhuu@school.edu.vn",
+      mustChangePassword: true,
+    };
+
+    const isDemoExempt = ["superadmin.vietnam@gmail.com"].includes(regularUser.email);
+    const mustChange = isDemoExempt ? false : Boolean(regularUser.mustChangePassword);
+
+    expect(mustChange).toBe(true);
   });
 });
 

@@ -391,7 +391,7 @@ export async function resetUserPassword(userId: string, customPass?: string) {
       return { success: false, error: "Không tìm thấy người dùng" };
     }
 
-    const newRawPassword = customPass?.trim() || "abc123";
+    const newRawPassword = customPass?.trim() || "123456";
     const hashedPassword = await bcrypt.hash(newRawPassword, 10);
 
     await prisma.user.update({
@@ -453,7 +453,7 @@ export async function createUserAccount(data: {
       return { success: false, error: "Email này đã tồn tại trong hệ thống" };
     }
 
-    const rawPass = data.password?.trim() || "abc123";
+    const rawPass = data.password?.trim() || "123456";
     const hashedPassword = await bcrypt.hash(rawPass, 10);
 
     let resolvedDeptId = data.departmentId;
