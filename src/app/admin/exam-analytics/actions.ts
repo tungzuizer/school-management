@@ -1,16 +1,26 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: `src/app/admin/exam-analytics/page.tsx`, `src/app/admin/exam-analytics/journey/page.tsx`, `src/app/admin/exam-analytics/cohort/page.tsx`.
- * 2. Affected APIs: `getMultiYearExamOverviewAction`, `getCohortTrackingAction`, `getStudentJourneyAction`.
- * 3. Schemas: Prisma models `ExamPeriod`, `StudentScore`, `Student`, `Subject`, `ClassRoom`, `Campus`, `School`.
- * 4. Engine: `src/lib/exam-analytics-engine.ts`.
- * 5. Verbatim User Instruction: "update giao diện sáng và dễ nhìn hơn và khi mở thì nhưng cái phụ sẽ thu bé lại và đang bị lỗi 'The table public.StudentScore does not exist in the current database'".
+ * 2. Affected APIs: `getMultiYearExamOverviewAction`, `getStudentProfilesTrajectoryAction`, `getStudentDetailTrajectoryAction`, `fetchJourneyOverviewDataAction`, `runBatchJourneyCalculationAction`, `handleApproveInterventionAction`, `handleRejectInterventionAction`, `handleApplyInterventionAction`, `handleTrackOutcomeAction`, `getSchoolsAndCampusesAction`.
+ * 3. Schemas: Prisma models `ExamPeriod`, `StudentScore`, `Student`, `Subject`, `ClassRoom`, `Campus`, `School`, `StudentJourneySnapshot`, `InterventionRecord`.
+ * 4. Verbatim User Instruction: "gộp lại đi" - Hợp nhất toàn bộ phân tích điểm thi và hành trình OLS vào một trang duy nhất tại `/admin/exam-analytics`.
  */
 
 "use server";
 
 import prisma from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant";
+import { revalidatePath } from "next/cache";
+import { InterventionStatus } from "@prisma/client";
+import {
+  getCampusJourneyOverview,
+  batchComputeJourneyForCampus,
+  approveIntervention,
+  rejectIntervention,
+  applyIntervention,
+  trackInterventionOutcome,
+  listCampusInterventions,
+} from "@/lib/student-journey";
 import {
   computeMultiYearSubjectTrends,
   computeGradeDistribution,
@@ -520,3 +530,173 @@ export async function getStudentDetailTrajectoryAction(
     allExamScores: scoreRecords,
   };
 }
+
+/**
+ * Fetch Campus Journey Overview & Intervention List for Unified Journey Tab
+ */
+export async function fetchJourneyOverviewDataAction(schoolId?: string, campusId?: string) {
+  try {
+    const ctx = await getTenantContext().catch(() => null);
+    let targetSchoolId = schoolId || ctx?.schoolId;
+
+    if (!targetSchoolId || targetSchoolId === "ALL") {
+      const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+      if (!firstSchool) return null;
+      targetSchoolId = firstSchool.id;
+    }
+
+    const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
+
+    const overview = await getCampusJourneyOverview(targetSchoolId, cleanCampusId);
+    const interventionsList = await listCampusInterventions({
+      schoolId: targetSchoolId,
+      campusId: cleanCampusId,
+      limit: 50,
+    });
+
+    return {
+      ...overview,
+      interventionsList,
+    };
+  } catch (error) {
+    console.error("Error in fetchJourneyOverviewDataAction:", error);
+    return null;
+  }
+}
+
+/**
+ * Trigger Batch OLS Journey Calculation across Campus
+ */
+export async function runBatchJourneyCalculationAction(schoolId: string, campusId?: string) {
+  try {
+    const ctx = await getTenantContext();
+    if (!ctx) throw new Error("Chưa xác thực.");
+
+    const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
+    const result = await batchComputeJourneyForCampus(schoolId, cleanCampusId);
+    revalidatePath("/admin/exam-analytics");
+    return { success: true, result };
+  } catch (error: any) {
+    console.error("Error in runBatchJourneyCalculationAction:", error);
+    return { success: false, error: error.message || "Lỗi khi tính toán lại hành trình học sinh." };
+  }
+}
+
+/**
+ * Human Approver approves intervention proposal
+ */
+export async function handleApproveInterventionAction(interventionId: string, note?: string) {
+  try {
+    const ctx = await getTenantContext();
+    if (!ctx) throw new Error("Chưa xác thực.");
+
+    const updated = await approveIntervention({
+      interventionId,
+      approvedById: ctx.userId,
+      approvedByName: ctx.userName,
+      note,
+    });
+
+    revalidatePath("/admin/exam-analytics");
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error("Error in handleApproveInterventionAction:", error);
+    return { success: false, error: error.message || "Không thể phê duyệt can thiệp." };
+  }
+}
+
+/**
+ * Human Approver rejects intervention proposal
+ */
+export async function handleRejectInterventionAction(interventionId: string, reason: string) {
+  try {
+    const ctx = await getTenantContext();
+    if (!ctx) throw new Error("Chưa xác thực.");
+
+    const updated = await rejectIntervention({
+      interventionId,
+      rejectedById: ctx.userId,
+      rejectedByName: ctx.userName,
+      reason,
+    });
+
+    revalidatePath("/admin/exam-analytics");
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error("Error in handleRejectInterventionAction:", error);
+    return { success: false, error: error.message || "Không thể từ chối can thiệp." };
+  }
+}
+
+/**
+ * Teacher marks intervention as physically applied
+ */
+export async function handleApplyInterventionAction(interventionId: string, note?: string) {
+  try {
+    const ctx = await getTenantContext();
+    if (!ctx) throw new Error("Chưa xác thực.");
+
+    const updated = await applyIntervention({
+      interventionId,
+      appliedById: ctx.userId,
+      appliedByName: ctx.userName,
+      note,
+    });
+
+    revalidatePath("/admin/exam-analytics");
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error("Error in handleApplyInterventionAction:", error);
+    return { success: false, error: error.message || "Không thể áp dụng can thiệp." };
+  }
+}
+
+/**
+ * Record outcome & delta score for applied intervention
+ */
+export async function handleTrackOutcomeAction(interventionId: string, scoreDelta: number, outcomeNote: string) {
+  try {
+    const ctx = await getTenantContext();
+    if (!ctx) throw new Error("Chưa xác thực.");
+
+    const updated = await trackInterventionOutcome({
+      interventionId,
+      scoreDelta,
+      outcomeNote,
+      trackedById: ctx.userId,
+      trackedByName: ctx.userName,
+    });
+
+    revalidatePath("/admin/exam-analytics");
+    return { success: true, data: updated };
+  } catch (error: any) {
+    console.error("Error in handleTrackOutcomeAction:", error);
+    return { success: false, error: error.message || "Không thể lưu kết quả can thiệp." };
+  }
+}
+
+/**
+ * Get schools and campuses for selection
+ */
+export async function getSchoolsAndCampusesAction() {
+  try {
+    const schools = await prisma.school.findMany({
+      select: {
+        id: true,
+        name: true,
+        campuses: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+    return schools;
+  } catch (error) {
+    console.error("Error in getSchoolsAndCampusesAction:", error);
+    return [];
+  }
+}
+

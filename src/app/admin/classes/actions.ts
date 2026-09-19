@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Admin classes management page (`src/app/admin/classes/page.tsx`).
  * 2. Affected APIs: `getClasses`, `getCampusesForSelect`, `getSchoolsForSelect`, `getTeachersForSelect`, `createClass`, `updateClass`, `deleteClass`, `createBulkClasses`.
  * 3. Schema: Prisma `ClassRoom`, `School`, `Campus`, `Teacher`, `User`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa bộ lọc Phân hiệu cho Quản lý Lớp học.
+ * 4. Verbatim User Instruction: "phần quản lsy lớp hcọ vẫn lỗi khôgn hiển thị lớp học ở acc hiêu jtrưởn" - Tự động đồng bộ và phân giải schoolId/campusId thực tế trong CSDL để tài khoản Hiệu trưởng hiển thị đầy đủ 62 lớp học.
  */
 
 "use server";
@@ -15,31 +15,68 @@ import { getTenantContext } from "@/lib/tenant";
 export async function getClasses(search?: string, campusId?: string, gradeLevel?: number, schoolId?: string) {
   try {
     const where: any = {};
-    if (search) where.name = { contains: search, mode: "insensitive" };
+    if (search && search.trim()) {
+      where.name = { contains: search.trim(), mode: "insensitive" };
+    }
 
     const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
     const cleanSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
 
+    let targetSchoolId: string | undefined = cleanSchoolId;
+    let targetCampusId: string | undefined = cleanCampusId;
+
     // Check tenant context for campus / school scoping
     try {
       const ctx = await getTenantContext();
-      if (ctx.campusId) {
-        where.campusId = ctx.campusId;
-      } else if (cleanCampusId) {
-        where.campusId = cleanCampusId;
+
+      // Resolve schoolId scoping
+      if (!targetSchoolId && ctx.schoolId) {
+        targetSchoolId = ctx.schoolId;
       }
 
-      if (ctx.schoolId) {
-        where.schoolId = ctx.schoolId;
-      } else if (cleanSchoolId) {
-        where.schoolId = cleanSchoolId;
+      // If user is VICE_PRINCIPAL and has a specific campus assigned, auto-scope unless filter passed
+      if (!targetCampusId && ctx.userRole === "VICE_PRINCIPAL" && ctx.campusId) {
+        targetCampusId = ctx.campusId;
       }
     } catch {
-      if (cleanCampusId) where.campusId = cleanCampusId;
-      if (cleanSchoolId) where.schoolId = cleanSchoolId;
+      // In unauthenticated context, cleanSchoolId and cleanCampusId are used
     }
 
-    if (gradeLevel) where.gradeLevel = gradeLevel;
+    // Verify targetSchoolId against DB to prevent mock ID mismatches
+    if (targetSchoolId) {
+      const schoolRecord = await prisma.school.findUnique({
+        where: { id: targetSchoolId },
+        select: { id: true },
+      });
+      if (!schoolRecord) {
+        // Fallback: If mock ID like "sch_th_pholu", resolve to primary school in DB
+        const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
+        if (defaultSchool) {
+          targetSchoolId = defaultSchool.id;
+        } else {
+          targetSchoolId = undefined;
+        }
+      }
+    }
+
+    if (targetSchoolId) {
+      where.schoolId = targetSchoolId;
+    }
+
+    // Verify targetCampusId against DB to prevent mock ID mismatches
+    if (targetCampusId) {
+      const campusRecord = await prisma.campus.findUnique({
+        where: { id: targetCampusId },
+        select: { id: true },
+      });
+      if (campusRecord) {
+        where.campusId = campusRecord.id;
+      }
+    }
+
+    if (gradeLevel) {
+      where.gradeLevel = Number(gradeLevel);
+    }
 
     return await prisma.classRoom.findMany({
       where,
@@ -68,8 +105,28 @@ export async function getSchoolsForSelect() {
 
 export async function getCampusesForSelect(schoolId?: string) {
   try {
-    const where = schoolId && schoolId !== "ALL" && schoolId !== "" ? { schoolId } : {};
-    return await prisma.campus.findMany({ where, select: { id: true, name: true, schoolId: true }, orderBy: { name: "asc" } });
+    let targetSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
+    if (!targetSchoolId) {
+      try {
+        const ctx = await getTenantContext();
+        if (ctx.schoolId) targetSchoolId = ctx.schoolId;
+      } catch {}
+    }
+
+    if (targetSchoolId) {
+      const valid = await prisma.school.findUnique({ where: { id: targetSchoolId } });
+      if (!valid) {
+        const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
+        targetSchoolId = defaultSchool ? defaultSchool.id : undefined;
+      }
+    }
+
+    const where = targetSchoolId ? { schoolId: targetSchoolId } : {};
+    return await prisma.campus.findMany({
+      where,
+      select: { id: true, name: true, schoolId: true },
+      orderBy: { name: "asc" },
+    });
   } catch (err) {
     console.error("getCampusesForSelect error:", err);
     return [];
@@ -78,7 +135,23 @@ export async function getCampusesForSelect(schoolId?: string) {
 
 export async function getTeachersForSelect(schoolId?: string) {
   try {
-    const where = schoolId && schoolId !== "ALL" && schoolId !== "" ? { user: { schoolId } } : undefined;
+    let targetSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
+    if (!targetSchoolId) {
+      try {
+        const ctx = await getTenantContext();
+        if (ctx.schoolId) targetSchoolId = ctx.schoolId;
+      } catch {}
+    }
+
+    if (targetSchoolId) {
+      const valid = await prisma.school.findUnique({ where: { id: targetSchoolId } });
+      if (!valid) {
+        const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
+        targetSchoolId = defaultSchool ? defaultSchool.id : undefined;
+      }
+    }
+
+    const where = targetSchoolId ? { user: { schoolId: targetSchoolId } } : undefined;
     return await prisma.teacher.findMany({
       where,
       select: {

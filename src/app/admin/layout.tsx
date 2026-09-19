@@ -80,7 +80,7 @@ const superAdminMenuGroups: MenuGroup[] = [
     items: [
       { label: "Bảng chỉ huy Toàn nền tảng", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "Radar cảnh báo rủi ro AI", href: "/admin/early-warnings", icon: AlertCircle, badge: "AI" },
-      { label: "Phân tích học thuật & OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "OLS" },
+      { label: "Điểm thi & Hành trình OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "AI OLS" },
       { label: "Báo cáo điều hành tổng hợp", href: "/admin/daily-reports", icon: FileText },
       { label: "Chiến lược & Mục tiêu KPI", href: "/admin/strategy", icon: Target },
       { label: "Đánh giá chuẩn TT 15/2026", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15" },
@@ -149,12 +149,11 @@ const principalMenuGroups: MenuGroup[] = [
     icon: Activity,
     items: [
       { label: "Tổng quan BGH", href: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "Điểm thi OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "Mới" },
+      { label: "Điểm thi & Hành trình OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "AI OLS" },
       { label: "Radar cảnh báo", href: "/admin/early-warnings", icon: AlertCircle },
       { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileText },
       { label: "Đánh giá TT 15", href: "/admin/tt15-evaluation", icon: Target, badge: "TT 15" },
       { label: "Trợ lý BGH AI", href: "/admin/principal-ai", icon: Bot },
-      { label: "Hành trình & Phân luồng HS", href: "/admin/journey-overview", icon: Layers, badge: "AI" },
     ],
   },
   {
