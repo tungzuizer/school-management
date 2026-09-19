@@ -169,27 +169,11 @@ export async function seedAcademicAndFacilities(
     });
   }
 
-  // 3. Khởi tạo Điểm số định kỳ (Thông tư 27) & Chuyên cần cho các lớp mẫu
+  // 3. Khởi tạo Đánh giá phẩm chất năng lực & Chuyên cần cho các lớp mẫu
   const sampleStudents = students.slice(0, 60);
-  const mathSubject = subjects.find((s) => s.name === "Toán") || subjects[0];
-  const tvSubject = subjects.find((s) => s.name === "Tiếng Việt") || subjects[1] || subjects[0];
-  const engSubject = subjects.find((s) => s.name === "Tiếng Anh") || subjects[2] || subjects[0];
 
   for (let idx = 0; idx < sampleStudents.length; idx++) {
     const st = sampleStudents[idx];
-
-    // Điểm số môn Toán, TV, Tiếng Anh
-    const mathScore = 8.0 + ((idx * 3) % 25) / 10;
-    const tvScore = 7.5 + ((idx * 7) % 25) / 10;
-    const engScore = 8.5 + ((idx * 5) % 15) / 10;
-
-    await prisma.grade.createMany({
-      data: [
-        { studentId: st.id, subjectId: mathSubject.id, term: 1, type: GradeType.MIDTERM, score: Math.min(10, mathScore) },
-        { studentId: st.id, subjectId: tvSubject.id, term: 1, type: GradeType.MIDTERM, score: Math.min(10, tvScore) },
-        { studentId: st.id, subjectId: engSubject.id, term: 1, type: GradeType.MIDTERM, score: Math.min(10, engScore) },
-      ],
-    });
 
     // Đánh giá phẩm chất năng lực
     await prisma.conductRecord.create({
