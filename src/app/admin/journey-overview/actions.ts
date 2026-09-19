@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/app/admin/journey-overview/page.tsx`, `src/app/admin/journey-overview/overview-client.tsx`.
+ * 2. Affected APIs: `fetchJourneyOverviewData`, `runBatchJourneyCalculation`, `getSchoolsAndCampuses`.
+ * 3. Schemas: Prisma `School`, `Campus`, `StudentJourneySnapshot`, `InterventionRecord`.
+ * 4. Verbatim User Instruction: "mục điểm thi ols lỗi không thấy dữ liệu và phần quản lý hớp học lỗi không tìm thấy lớp"
+ */
+
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -17,18 +25,20 @@ import { revalidatePath } from "next/cache";
 export async function fetchJourneyOverviewData(schoolId?: string, campusId?: string) {
   try {
     const ctx = await getTenantContext().catch(() => null);
-    const targetSchoolId = schoolId || ctx?.schoolId;
+    let targetSchoolId = schoolId || ctx?.schoolId;
 
-    if (!targetSchoolId) {
+    if (!targetSchoolId || targetSchoolId === "ALL") {
       const firstSchool = await prisma.school.findFirst({ select: { id: true } });
       if (!firstSchool) return null;
-      return getCampusJourneyOverview(firstSchool.id, campusId);
+      targetSchoolId = firstSchool.id;
     }
 
-    const overview = await getCampusJourneyOverview(targetSchoolId, campusId);
+    const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
+
+    const overview = await getCampusJourneyOverview(targetSchoolId, cleanCampusId);
     const interventionsList = await listCampusInterventions({
       schoolId: targetSchoolId,
-      campusId,
+      campusId: cleanCampusId,
       limit: 50,
     });
 
