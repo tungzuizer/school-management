@@ -17,23 +17,26 @@ export async function getClasses(search?: string, campusId?: string, gradeLevel?
     const where: any = {};
     if (search) where.name = { contains: search, mode: "insensitive" };
 
+    const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
+    const cleanSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
+
     // Check tenant context for campus / school scoping
     try {
       const ctx = await getTenantContext();
       if (ctx.campusId) {
         where.campusId = ctx.campusId;
-      } else if (campusId && campusId !== "ALL") {
-        where.campusId = campusId;
+      } else if (cleanCampusId) {
+        where.campusId = cleanCampusId;
       }
 
       if (ctx.schoolId) {
         where.schoolId = ctx.schoolId;
-      } else if (schoolId && schoolId !== "ALL") {
-        where.schoolId = schoolId;
+      } else if (cleanSchoolId) {
+        where.schoolId = cleanSchoolId;
       }
     } catch {
-      if (campusId && campusId !== "ALL") where.campusId = campusId;
-      if (schoolId && schoolId !== "ALL") where.schoolId = schoolId;
+      if (cleanCampusId) where.campusId = cleanCampusId;
+      if (cleanSchoolId) where.schoolId = cleanSchoolId;
     }
 
     if (gradeLevel) where.gradeLevel = gradeLevel;
@@ -65,7 +68,7 @@ export async function getSchoolsForSelect() {
 
 export async function getCampusesForSelect(schoolId?: string) {
   try {
-    const where = schoolId ? { schoolId } : {};
+    const where = schoolId && schoolId !== "ALL" && schoolId !== "" ? { schoolId } : {};
     return await prisma.campus.findMany({ where, select: { id: true, name: true, schoolId: true }, orderBy: { name: "asc" } });
   } catch (err) {
     console.error("getCampusesForSelect error:", err);
@@ -75,8 +78,9 @@ export async function getCampusesForSelect(schoolId?: string) {
 
 export async function getTeachersForSelect(schoolId?: string) {
   try {
+    const where = schoolId && schoolId !== "ALL" && schoolId !== "" ? { user: { schoolId } } : undefined;
     return await prisma.teacher.findMany({
-      where: schoolId ? { user: { schoolId } } : undefined,
+      where,
       select: {
         id: true,
         specialty: true,

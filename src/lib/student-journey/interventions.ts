@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/lib/student-journey/index.ts`, `src/app/admin/journey-overview/actions.ts`.
+ * 2. Affected APIs: `listCampusInterventions`, `createIntervention`, `approveIntervention`, `rejectIntervention`, `applyIntervention`, `trackInterventionOutcome`.
+ * 3. Schemas: Prisma model `InterventionRecord`, `Student`, `User`, `ClassRoom`.
+ * 4. Verbatim User Instruction: "mục điểm thi ols lỗi không thấy dữ liệu và phần quản lý hớp học lỗi không tìm thấy lớp"
+ */
+
 import { prisma } from "@/lib/prisma";
 import {
   InterventionStatus,
@@ -256,9 +264,10 @@ export async function listCampusInterventions({
   status?: InterventionStatus;
   limit?: number;
 }) {
+  const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
   const whereClause: Prisma.InterventionRecordWhereInput = {
     schoolId,
-    ...(campusId ? { campusId } : {}),
+    ...(cleanCampusId ? { campusId: cleanCampusId } : {}),
     ...(status ? { status } : {}),
   };
 

@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: `src/lib/student-journey/index.ts`, `src/app/admin/journey-overview/actions.ts`, `src/app/admin/journey-config/actions.ts`, `src/app/admin/journey-import/actions.ts`, `src/app/teacher/students/[id]/journey/actions.ts`, `src/app/student/journey/actions.ts`.
+ * 2. Affected APIs: `getCampusJourneyOverview`, `batchComputeJourneyForCampus`.
+ * 3. Schemas: Prisma models `StudentJourneySnapshot`, `Student`, `StudentScore`, `ExamPeriod`, `InterventionRecord`, `EarlyWarning`.
+ * 4. Verbatim User Instruction: "mục điểm thi ols lỗi không thấy dữ liệu và phần quản lý hớp học lỗi không tìm thấy lớp"
+ */
+
 import { prisma } from "@/lib/prisma";
 import {
   TrendLabel,
@@ -365,10 +373,11 @@ export async function batchComputeJourneyForCampus(
   stableCount: number;
   insufficientCount: number;
 }> {
+  const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
   const whereStudent: Prisma.StudentWhereInput = {
     classRoom: {
       schoolId,
-      ...(campusId ? { campusId } : {}),
+      ...(cleanCampusId ? { campusId: cleanCampusId } : {}),
     },
   };
 
@@ -554,13 +563,14 @@ export async function getCampusJourneyOverview(
   schoolId: string,
   campusId?: string
 ) {
+  const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
   const whereBase: Prisma.StudentJourneySnapshotWhereInput = {
     schoolId,
-    ...(campusId ? { campusId } : {}),
+    ...(cleanCampusId ? { campusId: cleanCampusId } : {}),
   };
 
   // Get distinct latest snapshots per student
-  const latestSnapshots = await prisma.studentJourneySnapshot.findMany({
+  let latestSnapshots = await prisma.studentJourneySnapshot.findMany({
     where: whereBase,
     distinct: ["studentId"],
     orderBy: [{ studentId: "asc" }, { computedAt: "desc" }],
@@ -576,6 +586,31 @@ export async function getCampusJourneyOverview(
       examPeriod: { select: { name: true, orderIndex: true } },
     },
   });
+
+  // Tự động kích hoạt tính toán hồi quy OLS khi chưa có snapshot trong DB
+  if (latestSnapshots.length === 0) {
+    try {
+      await batchComputeJourneyForCampus(schoolId, cleanCampusId);
+      latestSnapshots = await prisma.studentJourneySnapshot.findMany({
+        where: whereBase,
+        distinct: ["studentId"],
+        orderBy: [{ studentId: "asc" }, { computedAt: "desc" }],
+        include: {
+          student: {
+            select: {
+              id: true,
+              studentCode: true,
+              user: { select: { name: true } },
+              classRoom: { select: { name: true, gradeLevel: true } },
+            },
+          },
+          examPeriod: { select: { name: true, orderIndex: true } },
+        },
+      });
+    } catch (err) {
+      console.error("Auto batchComputeJourneyForCampus error:", err);
+    }
+  }
 
   const summary = {
     total: latestSnapshots.length,
