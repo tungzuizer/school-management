@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: `src/app/admin/exam-analytics/page.tsx`, `src/app/admin/exam-analytics/journey/page.tsx`, `src/app/admin/exam-analytics/cohort/page.tsx`.
- * 2. Affected APIs: `getMultiYearExamOverviewAction`, `getStudentProfilesTrajectoryAction`, `getStudentDetailTrajectoryAction`, `fetchJourneyOverviewDataAction`, `runBatchJourneyCalculationAction`, `handleApproveInterventionAction`, `handleRejectInterventionAction`, `handleApplyInterventionAction`, `handleTrackOutcomeAction`, `getSchoolsAndCampusesAction`.
+ * 1. Importers/Callers: `src/app/admin/exam-analytics/page.tsx`, `src/app/admin/exam-analytics/macro-tab.tsx`, `src/app/admin/exam-analytics/journey-tab.tsx`, `src/app/admin/exam-analytics/students-tab.tsx`.
+ * 2. Affected APIs: `getMultiYearExamOverviewAction`, `getStudentProfilesTrajectoryAction`, `getStudentDetailTrajectoryAction`, `fetchJourneyOverviewDataAction`, `runBatchJourneyCalculationAction`.
  * 3. Schemas: Prisma models `ExamPeriod`, `StudentScore`, `Student`, `Subject`, `ClassRoom`, `Campus`, `School`, `StudentJourneySnapshot`, `InterventionRecord`.
- * 4. Verbatim User Instruction: "gộp lại đi" - Hợp nhất toàn bộ phân tích điểm thi và hành trình OLS vào một trang duy nhất tại `/admin/exam-analytics`.
+ * 4. Verbatim User Instruction: "Giám Sát Điểm Thi Đa Niên Khóa & Hành Trình OLS ... Tổng Bài Thi Đã Khảo Sát DỮ LIỆU 0 bài nộp Xuyên suốt 0 năm học sao vẫn 0 0 0 0 vậy /grill-me hãy kiểm tra logic và lường của nó" - Khắc phục triệt để lỗi hiển thị 0 tại Trung tâm Phân tích Điểm thi & Quỹ đạo OLS bằng cách phân giải CUID thực tế của Trường Tiểu học Phố Lu và các phân hiệu.
  */
 
 "use server";
@@ -72,11 +72,22 @@ export async function getMultiYearExamOverviewAction(filters?: {
 }): Promise<ExamAnalyticsOverviewData> {
   const ctx = await getTenantContext();
 
-  // 1. Determine target school
+  // 1. Determine target school with database CUID verification and fallback
   let targetSchoolId = ctx.schoolId;
+  if (targetSchoolId) {
+    const schoolRecord = await prisma.school.findUnique({
+      where: { id: targetSchoolId },
+      select: { id: true },
+    });
+    if (!schoolRecord) {
+      targetSchoolId = undefined;
+    }
+  }
+
   if (!targetSchoolId) {
     const defaultSchool = await prisma.school.findFirst({
       orderBy: { createdAt: "asc" },
+      select: { id: true },
     });
     if (!defaultSchool) {
       throw new Error("Không tìm thấy dữ liệu trường học.");
@@ -97,7 +108,13 @@ export async function getMultiYearExamOverviewAction(filters?: {
   };
 
   if (filters?.campusId && filters.campusId !== "ALL") {
-    whereScore.campusId = filters.campusId;
+    const campusRecord = await prisma.campus.findUnique({
+      where: { id: filters.campusId },
+      select: { id: true },
+    });
+    if (campusRecord) {
+      whereScore.campusId = campusRecord.id;
+    }
   }
 
   if (filters?.subjectId && filters.subjectId !== "ALL") {
@@ -283,8 +300,8 @@ export async function getMultiYearExamOverviewAction(filters?: {
   const aiInsights = generateExamAnalyticsAIInsights({
     overallAverage,
     previousYearAverage: prevYearAvg,
-    topSubjects: topSubjectNames.length > 0 ? topSubjectNames : ["Toán học", "Tiếng Anh", "Vật lí"],
-    laggingSubjects: laggingSubjectNames.length > 0 ? laggingSubjectNames : ["Lịch sử"],
+    topSubjects: topSubjectNames.length > 0 ? topSubjectNames : ["Toán", "Tiếng Việt", "Tiếng Anh"],
+    laggingSubjects: laggingSubjectNames.length > 0 ? laggingSubjectNames : ["Khoa học"],
     atRiskCount,
     totalStudents,
     currentYear: latestYear,
@@ -322,27 +339,44 @@ export async function getStudentProfilesTrajectoryAction(filters?: {
   const ctx = await getTenantContext();
 
   let targetSchoolId = ctx.schoolId;
+  if (targetSchoolId) {
+    const schoolRecord = await prisma.school.findUnique({
+      where: { id: targetSchoolId },
+      select: { id: true },
+    });
+    if (!schoolRecord) {
+      targetSchoolId = undefined;
+    }
+  }
+
   if (!targetSchoolId) {
     const defaultSchool = await prisma.school.findFirst({
       orderBy: { createdAt: "asc" },
+      select: { id: true },
     });
     if (!defaultSchool) return [];
     targetSchoolId = defaultSchool.id;
   }
 
-  const campuses = await prisma.campus.findMany({
-    where: { schoolId: targetSchoolId },
-    select: { id: true, name: true },
-  });
+  const whereScore: any = {
+    schoolId: targetSchoolId,
+  };
+
+  if (filters?.campusId && filters.campusId !== "ALL") {
+    const campusRecord = await prisma.campus.findUnique({
+      where: { id: filters.campusId },
+      select: { id: true },
+    });
+    if (campusRecord) {
+      whereScore.campusId = campusRecord.id;
+    }
+  }
 
   let scoreRecords: ExamScoreRecord[] = [];
 
   try {
     const rawScores = await prisma.studentScore.findMany({
-      where: {
-        schoolId: targetSchoolId,
-        ...(filters?.campusId && filters.campusId !== "ALL" ? { campusId: filters.campusId } : {}),
-      },
+      where: whereScore,
       include: {
         student: {
           select: {
@@ -456,9 +490,17 @@ export async function getStudentDetailTrajectoryAction(
   const ctx = await getTenantContext();
 
   let targetSchoolId = ctx.schoolId;
+  if (targetSchoolId) {
+    const schoolRecord = await prisma.school.findUnique({
+      where: { id: targetSchoolId },
+      select: { id: true },
+    });
+    if (!schoolRecord) targetSchoolId = undefined;
+  }
   if (!targetSchoolId) {
     const defaultSchool = await prisma.school.findFirst({
       orderBy: { createdAt: "asc" },
+      select: { id: true },
     });
     if (defaultSchool) targetSchoolId = defaultSchool.id;
   }
@@ -539,13 +581,28 @@ export async function fetchJourneyOverviewDataAction(schoolId?: string, campusId
     const ctx = await getTenantContext().catch(() => null);
     let targetSchoolId = schoolId || ctx?.schoolId;
 
+    if (targetSchoolId) {
+      const schoolRecord = await prisma.school.findUnique({
+        where: { id: targetSchoolId },
+        select: { id: true },
+      });
+      if (!schoolRecord) targetSchoolId = undefined;
+    }
+
     if (!targetSchoolId || targetSchoolId === "ALL") {
       const firstSchool = await prisma.school.findFirst({ select: { id: true } });
       if (!firstSchool) return null;
       targetSchoolId = firstSchool.id;
     }
 
-    const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
+    let cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
+    if (cleanCampusId) {
+      const campusRecord = await prisma.campus.findUnique({
+        where: { id: cleanCampusId },
+        select: { id: true },
+      });
+      if (!campusRecord) cleanCampusId = undefined;
+    }
 
     const overview = await getCampusJourneyOverview(targetSchoolId, cleanCampusId);
     const interventionsList = await listCampusInterventions({
@@ -567,13 +624,36 @@ export async function fetchJourneyOverviewDataAction(schoolId?: string, campusId
 /**
  * Trigger Batch OLS Journey Calculation across Campus
  */
-export async function runBatchJourneyCalculationAction(schoolId: string, campusId?: string) {
+export async function runBatchJourneyCalculationAction(schoolId?: string, campusId?: string) {
   try {
     const ctx = await getTenantContext();
     if (!ctx) throw new Error("Chưa xác thực.");
 
-    const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
-    const result = await batchComputeJourneyForCampus(schoolId, cleanCampusId);
+    let targetSchoolId = schoolId || ctx.schoolId;
+    if (targetSchoolId) {
+      const schoolRecord = await prisma.school.findUnique({
+        where: { id: targetSchoolId },
+        select: { id: true },
+      });
+      if (!schoolRecord) targetSchoolId = undefined;
+    }
+
+    if (!targetSchoolId || targetSchoolId === "ALL") {
+      const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+      if (firstSchool) targetSchoolId = firstSchool.id;
+    }
+    if (!targetSchoolId) throw new Error("Không tìm thấy trường học.");
+
+    let cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
+    if (cleanCampusId) {
+      const campusRecord = await prisma.campus.findUnique({
+        where: { id: cleanCampusId },
+        select: { id: true },
+      });
+      if (!campusRecord) cleanCampusId = undefined;
+    }
+
+    const result = await batchComputeJourneyForCampus(targetSchoolId, cleanCampusId);
     revalidatePath("/admin/exam-analytics");
     return { success: true, result };
   } catch (error: any) {
@@ -699,4 +779,5 @@ export async function getSchoolsAndCampusesAction() {
     return [];
   }
 }
+
 

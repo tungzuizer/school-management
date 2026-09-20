@@ -168,10 +168,12 @@ function ExamAnalyticsContent() {
             onChange={(e) => setSelectedGrade(Number(e.target.value))}
             className="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-slate-800 focus:outline-none"
           >
-            <option value={0}>Tất cả các khối lớp</option>
-            <option value={10}>Khối 10</option>
-            <option value={11}>Khối 11</option>
-            <option value={12}>Khối 12</option>
+            <option value={0}>Tất cả các khối lớp (Khối 1 - 5)</option>
+            <option value={1}>Khối 1</option>
+            <option value={2}>Khối 2</option>
+            <option value={3}>Khối 3</option>
+            <option value={4}>Khối 4</option>
+            <option value={5}>Khối 5</option>
           </select>
         </div>
 

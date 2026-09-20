@@ -181,7 +181,7 @@ export default function StudentsTab({
                   </td>
                   <td className="px-4 py-3.5">
                     <span className="font-medium text-slate-800">{st.className || "—"}</span>
-                    <span className="text-xs text-slate-500 block">Khối {st.gradeLevel || 12}</span>
+                    <span className="text-xs text-slate-500 block">Khối {st.gradeLevel || 1}</span>
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     <span className="text-base font-bold text-slate-900">
