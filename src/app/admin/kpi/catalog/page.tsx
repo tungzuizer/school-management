@@ -264,7 +264,7 @@ export default function KpiCatalogPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-7 h-7 text-indigo-600" />
+            <BarChart3 className="w-7 h-7 text-blue-700" />
             <h1 className="text-2xl font-bold text-slate-800">Danh Mục Chỉ Số KPI Toàn Trường</h1>
           </div>
           <p className="text-sm text-slate-500">
@@ -292,7 +292,7 @@ export default function KpiCatalogPage() {
           <button
             onClick={handleOpenAdd}
             disabled={submitting}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 shadow-sm transition text-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white font-medium rounded-xl hover:bg-blue-800 shadow-sm transition text-sm disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             Thêm KPI Mới
@@ -338,10 +338,10 @@ export default function KpiCatalogPage() {
           <div className="text-xs text-slate-500 mt-1">Sẵn sàng đưa vào đánh giá</div>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tổng trọng số KPI</span>
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng trọng số KPI</span>
           <div
             className={`text-2xl font-extrabold mt-1 ${
-              Math.abs(totalWeight - 100) < 0.1 ? "text-indigo-600" : "text-amber-600"
+              Math.abs(totalWeight - 100) < 0.1 ? "text-blue-700" : "text-amber-600"
             }`}
           >
             {totalWeight.toFixed(1)}%
@@ -354,7 +354,7 @@ export default function KpiCatalogPage() {
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Số nhóm KPI</span>
-          <div className="text-2xl font-extrabold text-indigo-900 mt-1">12 / 12</div>
+          <div className="text-2xl font-extrabold text-blue-900 mt-1">12 / 12</div>
           <div className="text-xs text-slate-500 mt-1">Danh mục tiêu chuẩn nhà trường</div>
         </div>
       </div>
@@ -368,7 +368,7 @@ export default function KpiCatalogPage() {
             placeholder="Tìm theo mã, tên KPI, người chịu trách nhiệm..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -377,7 +377,7 @@ export default function KpiCatalogPage() {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full md:w-72 p-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="w-full md:w-72 p-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="ALL">-- Tất cả 12 Nhóm Chỉ Số --</option>
             {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
@@ -398,7 +398,7 @@ export default function KpiCatalogPage() {
             <p className="text-slate-500 font-medium">Chưa có chỉ số KPI nào được tìm thấy.</p>
             <button
               onClick={handleSeedDefaults}
-              className="px-4 py-2 bg-indigo-50 text-indigo-600 font-semibold rounded-xl text-sm hover:bg-indigo-100 transition"
+              className="px-4 py-2 bg-blue-50 text-blue-700 font-semibold rounded-xl text-sm hover:bg-blue-100 transition"
             >
               Nạp bộ 12 chỉ số KPI mẫu
             </button>
@@ -423,7 +423,7 @@ export default function KpiCatalogPage() {
               <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                 {catalogs.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-mono font-semibold text-indigo-600 text-xs align-top">
+                    <td className="py-3.5 px-4 font-mono font-semibold text-blue-700 text-xs align-top">
                       {item.code}
                     </td>
                     <td className="py-3.5 px-4 max-w-sm align-top">
@@ -467,7 +467,7 @@ export default function KpiCatalogPage() {
                         {DIRECTION_LABELS[item.direction as MeasurementDirection]}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-center font-semibold text-indigo-700 align-top">
+                    <td className="py-3.5 px-4 text-center font-semibold text-blue-800 align-top">
                       {item.weight}%
                     </td>
                     <td className="py-3.5 px-4 text-center font-medium align-top">
@@ -494,7 +494,7 @@ export default function KpiCatalogPage() {
                         <button
                           onClick={() => handleDuplicate(item.id)}
                           title="Sao chép"
-                          className="p-1.5 text-indigo-700 bg-indigo-50/60 hover:bg-indigo-100 rounded-lg transition"
+                          className="p-1.5 text-blue-700 bg-blue-50/60 hover:bg-blue-100 rounded-lg transition"
                         >
                           <Copy className="w-4 h-4" />
                         </button>
@@ -534,7 +534,7 @@ export default function KpiCatalogPage() {
                     disabled={!!editingItem}
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100"
                     required
                   />
                 </div>
@@ -546,7 +546,7 @@ export default function KpiCatalogPage() {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as KpiCategory })}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {Object.entries(CATEGORY_LABELS).map(([k, label]) => (
                       <option key={k} value={k}>
@@ -566,7 +566,7 @@ export default function KpiCatalogPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="VD: Tỷ lệ học sinh đạt học lực Giỏi/Tốt"
-                  className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -579,7 +579,7 @@ export default function KpiCatalogPage() {
                     value={formData.purpose}
                     onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
                     placeholder="VD: Nâng cao chất lượng đào tạo toàn trường"
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -590,7 +590,7 @@ export default function KpiCatalogPage() {
                     value={formData.formula}
                     onChange={(e) => setFormData({ ...formData, formula: e.target.value })}
                     placeholder="VD: (Số HS Giỏi / Tổng HS) * 100"
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -603,7 +603,7 @@ export default function KpiCatalogPage() {
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                     placeholder="%, điểm, lượt, vụ..."
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -614,7 +614,7 @@ export default function KpiCatalogPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, direction: e.target.value as MeasurementDirection })
                     }
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {Object.entries(DIRECTION_LABELS).map(([k, label]) => (
                       <option key={k} value={k}>
@@ -631,7 +631,7 @@ export default function KpiCatalogPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, frequency: e.target.value as ReportingFrequency })
                     }
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {Object.entries(FREQUENCY_LABELS).map(([k, label]) => (
                       <option key={k} value={k}>
@@ -654,7 +654,7 @@ export default function KpiCatalogPage() {
                     max="100"
                     value={formData.weight}
                     onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 bg-white font-bold text-indigo-600"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white font-bold text-blue-700"
                     required
                   />
                 </div>
@@ -668,7 +668,7 @@ export default function KpiCatalogPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, baselineValue: parseFloat(e.target.value) || 0 })
                     }
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white"
                   />
                 </div>
 
@@ -681,7 +681,7 @@ export default function KpiCatalogPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, targetValue: parseFloat(e.target.value) || 0 })
                     }
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 bg-white font-bold text-emerald-600"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white font-bold text-emerald-600"
                   />
                 </div>
               </div>
@@ -694,7 +694,7 @@ export default function KpiCatalogPage() {
                     value={formData.responsiblePerson}
                     onChange={(e) => setFormData({ ...formData, responsiblePerson: e.target.value })}
                     placeholder="VD: Phó Hiệu trưởng Chuyên môn"
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -705,7 +705,7 @@ export default function KpiCatalogPage() {
                     value={formData.dataSource}
                     onChange={(e) => setFormData({ ...formData, dataSource: e.target.value })}
                     placeholder="VD: Sổ điểm điện tử / Phòng CNTT"
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -721,7 +721,7 @@ export default function KpiCatalogPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm hover:bg-indigo-700 shadow-sm transition disabled:opacity-50"
+                  className="px-5 py-2 bg-blue-700 text-white font-semibold rounded-xl text-sm hover:bg-blue-800 shadow-sm transition disabled:opacity-50"
                 >
                   {submitting ? "Đang lưu..." : editingItem ? "Lưu Cập Nhật" : "Thêm KPI"}
                 </button>
