@@ -5,7 +5,8 @@ import { useState, useEffect, Suspense } from "react";
 import KpiCatalogPage from "./catalog/page";
 import KpiEntryPage from "./entry/page";
 import KpiApprovalPage from "./approval/page";
-import { Settings, FileBarChart, UserCheck, Target } from "lucide-react";
+import PrincipalKpiDashboard from "./principal-dashboard/page";
+import { Settings, FileBarChart, UserCheck, Target, Compass } from "lucide-react";
 
 function KpiTabContent() {
   const searchParams = useSearchParams();
@@ -78,6 +79,18 @@ function KpiTabContent() {
             <UserCheck className="w-4 h-4" />
             3. Phê Duyệt & Thẩm Định (4 Cấp)
           </button>
+
+          <button
+            onClick={() => handleTabChange("principal_dashboard")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+              activeTab === "principal_dashboard"
+                ? "bg-white text-[#1a237e] shadow-md scale-[1.02]"
+                : "bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            4. Giám Sát KPI Hiệu Trưởng
+          </button>
         </div>
       </div>
 
@@ -86,6 +99,7 @@ function KpiTabContent() {
         {activeTab === "catalog" && <KpiCatalogPage />}
         {activeTab === "entry" && <KpiEntryPage />}
         {activeTab === "approval" && <KpiApprovalPage />}
+        {activeTab === "principal_dashboard" && <PrincipalKpiDashboard />}
       </div>
     </div>
   );

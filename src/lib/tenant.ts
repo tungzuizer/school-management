@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Callers: Server actions across admin, teacher, ward, department, and student modules
+ * 2. Affected API: isSuperAdmin(ctx) - eliminating insecure email substring checks
+ * 3. Data Schemas: TenantContext object
+ * 4. Verbatim User Instruction: "tiếp tục đi"
+ */
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 
@@ -15,20 +23,11 @@ export interface TenantContext {
 
 /**
  * Checks if context or session represents a Super Admin account.
+ * Enforces strict role check to prevent privilege escalation.
  */
 export function isSuperAdmin(ctx: { userRole?: string; role?: string; userEmail?: string; email?: string }): boolean {
   const role = ctx.userRole || ctx.role;
-  if (role === "SUPER_ADMIN") return true;
-  const email = (ctx.userEmail || ctx.email || "").toLowerCase().trim();
-  const superAdminEmails = [
-    "superadmin@gmail.com",
-    "superadmin.vietnam@gmail.com",
-    "superadmin.ninhbinh@gmail.com",
-    "superadmin.demo@gmail.com",
-    "superadmin@school.com",
-    "sysadmin@so-gddt.gov.vn",
-  ];
-  return superAdminEmails.includes(email) || email.includes("superadmin");
+  return role === "SUPER_ADMIN";
 }
 
 export async function getTenantContext(): Promise<TenantContext> {
@@ -187,7 +186,12 @@ export async function getWardAllowedCampusIds(
  * System Admin sees only aggregate/infrastructure data, not individual records.
  */
 export function assertNotSuperAdminOnAcademicDetail(ctx: TenantContext): void {
-  if (isSuperAdmin(ctx)) {
+  if (
+    isSuperAdmin(ctx) ||
+    ctx.userRole === "SUPER_ADMIN" ||
+    ctx.userEmail === "superadmin@school.com" ||
+    ctx.userEmail === "sysadmin@so-gddt.gov.vn"
+  ) {
     throw new Error("Quan tri vien he thong khong duoc xem du lieu hoc vu chi tiet. (403)");
   }
 }

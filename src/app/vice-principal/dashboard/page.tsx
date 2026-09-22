@@ -1,7 +1,16 @@
 "use client";
 
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: App Router (/vice-principal/dashboard)
+ * 2. Public functions affected: VPDashboardPage
+ * 3. Data structures: KpiSummary, Stats, CampusInfo
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn"
+ */
+
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import {
   Users,
   School,
@@ -9,6 +18,13 @@ import {
   MapPin,
   Building2,
   Info,
+  Target,
+  Award,
+  TrendingUp,
+  CheckCircle2,
+  ChevronRight,
+  Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 import {
   getVPDashboardStats,
@@ -18,7 +34,9 @@ import {
   getVPRecentIncidents,
   getVPTodaySummary,
   getVPCampusInfo,
+  getVPKpiSummary,
 } from "./actions";
+import { submitCampusKpiForReview } from "@/app/admin/kpi/principal-actions";
 import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
 import {
   BarChart,
@@ -41,6 +59,7 @@ type ClassAttendance = Awaited<ReturnType<typeof getVPClassAttendanceRanking>>;
 type IncidentData = Awaited<ReturnType<typeof getVPRecentIncidents>>;
 type TodaySummary = Awaited<ReturnType<typeof getVPTodaySummary>>;
 type CampusInfo = Awaited<ReturnType<typeof getVPCampusInfo>>;
+type KpiSummary = Awaited<ReturnType<typeof getVPKpiSummary>>;
 
 const COLORS = ["#0d9488", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
@@ -56,12 +75,39 @@ export default function VPDashboardPage() {
   const [incidents, setIncidents] = useState<IncidentData>([]);
   const [today, setToday] = useState<TodaySummary | null>(null);
   const [campusInfo, setCampusInfo] = useState<CampusInfo | null>(null);
+  const [kpiSummary, setKpiSummary] = useState<KpiSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSubmittingKpi, setIsSubmittingKpi] = useState(false);
+  const [kpiFeedback, setKpiFeedback] = useState<string | null>(null);
+
+  const handleSubmitKpiReport = async () => {
+    if (!kpiSummary?.campusId) return;
+    setIsSubmittingKpi(true);
+    setKpiFeedback(null);
+    try {
+      const res = await submitCampusKpiForReview({
+        campusId: kpiSummary.campusId,
+        compositeScore: kpiSummary.compositeScore,
+      });
+      if (res.success) {
+        setKpiFeedback(res.message || "Đã trình duyệt báo cáo KPI thành công!");
+        // Refresh summary
+        const updated = await getVPKpiSummary(campusId);
+        setKpiSummary(updated);
+      } else {
+        setKpiFeedback(res.error || "Lỗi khi trình duyệt báo cáo");
+      }
+    } catch (err: any) {
+      setKpiFeedback(err.message || "Lỗi không xác định khi trình duyệt");
+    } finally {
+      setIsSubmittingKpi(false);
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [s, w, g, a, i, t, c] = await Promise.all([
+        const [s, w, g, a, i, t, c, k] = await Promise.all([
           getVPDashboardStats(campusId),
           getVPAttendanceByWeek(campusId),
           getVPGradesByClass(campusId),
@@ -69,6 +115,7 @@ export default function VPDashboardPage() {
           getVPRecentIncidents(campusId),
           getVPTodaySummary(campusId),
           getVPCampusInfo(campusId),
+          getVPKpiSummary(campusId),
         ]);
         setStats(s);
         setWeekData(w);
@@ -77,6 +124,7 @@ export default function VPDashboardPage() {
         setIncidents(i);
         setToday(t);
         setCampusInfo(c);
+        setKpiSummary(k);
       } catch (err) {
         console.error("Failed to load VP dashboard data:", err);
       } finally {
@@ -90,7 +138,7 @@ export default function VPDashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-700 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-teal-700 border-t-transparent mx-auto mb-4"></div>
           <p className="text-gray-500">Dang tai du lieu...</p>
         </div>
       </div>
@@ -201,6 +249,85 @@ export default function VPDashboardPage() {
                 </p>
               ))}
           </div>
+        </div>
+      )}
+
+      {/* KPI Performance Banner for Vice Principal */}
+      {kpiSummary && (
+        <div className="bg-gradient-to-r from-[#1a237e] to-[#283593] rounded-2xl p-5 text-white shadow-sm flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white">
+                  📍 {kpiSummary.campusName}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-950">
+                  Xếp hạng #{kpiSummary.rank} / {kpiSummary.totalEntities}
+                </span>
+                {kpiSummary.periodStatus === "APPROVED" ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                    Đã Khóa Sổ & Duyệt
+                  </span>
+                ) : kpiSummary.periodStatus === "SUBMITTED" ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/30 text-sky-200 border border-sky-400/40 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-300" />
+                    Đã Trình Duyệt BGH
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/30 text-amber-200 border border-amber-400/40">
+                    Dự Báo Tự Động
+                  </span>
+                )}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Target className="w-5 h-5 text-amber-300" />
+                  Chỉ Số Đánh Giá KPI Phân Hiệu: {kpiSummary.compositeScore}/100
+                </h3>
+                <p className="text-xs text-blue-200">
+                  Đánh giá toàn diện 4 trụ cột chiến lược • {kpiSummary.tierLabel}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
+              {kpiSummary.pillars.map((pil, idx) => (
+                <div key={idx} className="bg-white/10 rounded-xl p-2.5 border border-white/15 text-center">
+                  <p className="text-[10px] text-blue-200 truncate">{pil.name.split("&")[0]}</p>
+                  <p className="text-base font-extrabold text-white mt-0.5">{pil.score}%</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+              {kpiSummary.periodStatus !== "APPROVED" && (
+                <button
+                  type="button"
+                  onClick={handleSubmitKpiReport}
+                  disabled={isSubmittingKpi}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold rounded-xl text-xs transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{isSubmittingKpi ? "Đang gửi..." : "Trình Duyệt BGH"}</span>
+                </button>
+              )}
+              <Link
+                href="/admin/kpi/principal-dashboard"
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white text-blue-900 hover:bg-blue-50 rounded-xl text-xs font-bold shrink-0 transition-colors shadow-xs"
+              >
+                <span>Báo cáo chi tiết</span>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {kpiFeedback && (
+            <div className="bg-white/10 border border-white/20 rounded-xl px-3.5 py-2 text-xs text-amber-200 flex items-center gap-2">
+              <Info className="w-4 h-4 text-amber-300 shrink-0" />
+              <span>{kpiFeedback}</span>
+            </div>
+          )}
         </div>
       )}
 

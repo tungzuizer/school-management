@@ -38,6 +38,7 @@ next-env.d.ts
 *.pem
 .vscode/
 .idea/
+~$*
 
 # AI Tools, Skills & Agent Submodules (Local Only)
 .claude/
