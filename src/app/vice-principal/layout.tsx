@@ -64,6 +64,7 @@ const menuGroups: MenuGroup[] = [
     icon: Home,
     items: [
       { label: "Bảng điều khiển", href: "/vice-principal/dashboard", icon: LayoutDashboard, description: "Tổng quan hoạt động cơ sở" },
+      { label: "Báo cáo & Trình duyệt KPI", href: "/vice-principal/dashboard", icon: Target, badge: "KPI", description: "Báo cáo KPI cơ sở & Trình duyệt BGH" },
     ],
   },
   {
