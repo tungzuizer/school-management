@@ -762,13 +762,13 @@ ${formattedList}
 
 YÊU CẦU:
 Với tư cách là Cố vấn Chiến lược Quản lý Giáo dục cho Hiệu trưởng, hãy phân tích chuyên sâu báo cáo KPI trên và đề xuất phương án chỉ đạo điều hành tối ưu:
-1. 🎯 **Đánh giá Toàn cảnh & Chênh lệch**: Nhận định sự phân hóa giữa các điểm trường trung tâm và điểm trường vệ tinh/vùng khó khăn.
-2. 🔍 **Chẩn đoán Nguyên nhân Gốc rễ**: Phân tích vì sao các đơn vị xếp cuối bảng lại tụt điểm (chuyên cần, giáo án hay cơ sở vật chất).
-3. 📋 **Kế hoạch Chỉ đạo 3 Phương án Hành động Cụ thể**:
+1. **Đánh giá Toàn cảnh & Chênh lệch**: Nhận định sự phân hóa giữa các điểm trường trung tâm và điểm trường vệ tinh/vùng khó khăn.
+2. **Chẩn đoán Nguyên nhân Gốc rễ**: Phân tích vì sao các đơn vị xếp cuối bảng lại tụt điểm (chuyên cần, giáo án hay cơ sở vật chất).
+3. **Kế hoạch Chỉ đạo 3 Phương án Hành động Cụ thể**:
    - Phương án 1: Điều chuyển, luân phiên phân công chuyên môn giáo viên.
    - Phương án 2: Tăng cường chuyển đổi số & phòng học thông minh liên điểm trường.
    - Phương án 3: Kế hoạch phối hợp với chính quyền địa phương & phụ huynh về nề nếp chuyên cần.
-4. ⏱️ **Lộ trình Giám sát 30 Ngày**: Các mốc kiểm tra tiến độ tiếp theo của Ban Giám hiệu.
+4. **Lộ trình Giám sát 30 Ngày**: Các mốc kiểm tra tiến độ tiếp theo của Ban Giám hiệu.
 `.trim();
 
     // PII Scrubbing
@@ -1018,7 +1018,7 @@ export async function triggerPrincipalKpiEarlyWarnings(params: {
         data: {
           senderId: ctx.userId,
           receiverId: null, // Broadcast to all admins / principals
-          title: `⚠️ Cảnh báo KPI Điểm trường: ${entityName}`,
+          title: `[Cảnh báo KPI] Điểm trường: ${entityName}`,
           content: `Hệ thống vừa tự động kích hoạt ${createdWarnings.length} cảnh báo sớm cho ${entityName} do chỉ số KPI hoặc an toàn dưới ngưỡng chuẩn.`,
         },
       });
@@ -1330,7 +1330,7 @@ export async function submitCampusKpiForReview(params: {
       data: {
         senderId: ctx.userId,
         receiverId: null,
-        title: `📋 Trình duyệt KPI: ${campus.name}`,
+        title: `[Trình duyệt KPI] ${campus.name}`,
         content: `Phó Hiệu trưởng đã nộp báo cáo đánh giá KPI cho ${campus.name} (Năm ${year}, Điểm: ${score}/100). Chờ Hiệu trưởng ký duyệt và chốt sổ.`,
       },
     });
@@ -1437,7 +1437,7 @@ export async function approveCampusKpiSnapshot(params: {
       data: {
         senderId: ctx.userId,
         receiverId: null,
-        title: `✅ Đã phê duyệt KPI: ${campusTitle}`,
+        title: `[Phê duyệt KPI] ${campusTitle}`,
         content: `Hiệu trưởng đã chính thức phê duyệt và khóa sổ báo cáo KPI của ${campusTitle} (Kỳ ${period.title}).`,
       },
     });

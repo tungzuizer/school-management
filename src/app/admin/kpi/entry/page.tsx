@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: App Router page component src/app/admin/kpi/entry/page.tsx
+ * 2. Affected API: KpiEntryPage
+ * 3. Data schemas: KpiPeriod, KpiTarget, KpiEvidence
+ * 4. Verbatim User Instruction: "bỏ các icon màu mè đi dùng icon đơn giản" - "theo khuyến nghị của bạn"
+ */
+
 import { useEffect, useState } from "react";
 import {
   getKpiPeriods,
@@ -24,6 +32,7 @@ import {
   Lock,
   Unlock,
   AlertTriangle,
+  AlertCircle,
   CheckCircle2,
   FileText,
   Paperclip,
@@ -451,8 +460,18 @@ export default function KpiEntryPage() {
               >
                 {weightInfo?.totalWeight ?? 0}%
               </div>
-              <div className="text-xs text-slate-500 mt-1">
-                {weightInfo?.isValid ? "✓ Đạt yêu cầu 100%" : "⚠️ Phải bằng đúng 100%"}
+              <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                {weightInfo?.isValid ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline shrink-0" />
+                    <span>Đạt yêu cầu 100%</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 inline shrink-0" />
+                    <span>Phải bằng đúng 100%</span>
+                  </>
+                )}
               </div>
             </div>
 
