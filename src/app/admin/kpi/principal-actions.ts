@@ -36,6 +36,14 @@ export interface PrincipalKpiCategoryScore {
   kpiCount: number;
 }
 
+export interface PillarComponentBreakdown {
+  name: string;
+  value: string;
+  score: number;
+  dbSource: string;
+  detail: string;
+}
+
 export interface PrincipalKpiPillarScore {
   code: string;
   name: string;
@@ -43,6 +51,7 @@ export interface PrincipalKpiPillarScore {
   target: number;
   weight: number;
   status: "EXCELLENT" | "GOOD" | "AVERAGE" | "CRITICAL";
+  components?: PillarComponentBreakdown[];
 }
 
 export interface PrincipalKpiEntityComparison {
@@ -84,6 +93,9 @@ export interface PrincipalKpiOverviewPayload {
     name: string;
     code: string;
     averageScore: number;
+    target?: number;
+    weight?: number;
+    components?: PillarComponentBreakdown[];
   }[];
   entities: PrincipalKpiEntityComparison[];
   benchmarkRadar: { dimension: string; avgScore: number; maxScore: number; minScore: number }[];
@@ -265,7 +277,7 @@ export async function getPrincipalKpiComparisonData(params?: {
       });
 
       // Tổng hợp các chỉ số thực tế 100% từ CSDL (Tuyệt đối không dùng dữ liệu giả/ước lượng)
-      // 1. Chuyên cần
+      // 1. Chuyên cần & Đúng giờ
       const totalAttendance = await prisma.attendance.count({
         where: classIds.length > 0 ? { classId: { in: classIds } } : undefined,
       });
@@ -275,7 +287,22 @@ export async function getPrincipalKpiComparisonData(params?: {
           status: "PRESENT",
         },
       });
+      const lateAttendance = await prisma.attendance.count({
+        where: {
+          ...(classIds.length > 0 ? { classId: { in: classIds } } : {}),
+          status: "LATE",
+        },
+      });
+      const absentUnexcusedAttendance = await prisma.attendance.count({
+        where: {
+          ...(classIds.length > 0 ? { classId: { in: classIds } } : {}),
+          status: "ABSENT_UNEXCUSED",
+        },
+      });
       const attendanceRate = totalAttendance > 0 ? Number(((presentAttendance / totalAttendance) * 100).toFixed(1)) : 0.0;
+      const punctualityRate = totalAttendance > 0
+        ? Math.max(0, Number((((totalAttendance - (lateAttendance * 0.5 + absentUnexcusedAttendance * 1.0)) / totalAttendance) * 100).toFixed(1)))
+        : 100.0;
 
       // 2. Kỷ luật / Sự cố
       const incidentCount = await prisma.incident.count({
@@ -409,6 +436,88 @@ export async function getPrincipalKpiComparisonData(params?: {
       const { tier, label: tierLabel } = resolveTier(compositeScore);
 
       // Compute 4 Core Strategic Pillars
+      const pillar1Components: PillarComponentBreakdown[] = [
+        {
+          name: "Chất lượng học tập (Đạt chuẩn TT 27)",
+          value: `${academicRate}% (${passedGrades}/${totalGrades} bài đánh giá ≥ 5.0)`,
+          score: academicRate,
+          dbSource: "Bảng Grade (Điểm số & Đánh giá định kỳ)",
+          detail: "Tỷ lệ các bài kiểm tra/đánh giá định kỳ đạt điểm từ 5.0 trở lên theo chuẩn Thông tư 27.",
+        },
+        {
+          name: "Tỷ lệ chuyên cần học sinh đến lớp",
+          value: `${attendanceRate}% (${presentAttendance}/${totalAttendance} lượt có mặt)`,
+          score: attendanceRate,
+          dbSource: "Bảng Attendance (Sổ điểm danh lớp học)",
+          detail: "Tỷ lệ học sinh hiện diện đầy đủ các buổi học trong kỳ.",
+        },
+      ];
+
+      const pillar2Components: PillarComponentBreakdown[] = [
+        {
+          name: "Duyệt kế hoạch bài dạy / Giáo án điện tử",
+          value: `${lessonPlanRate}% (${approvedLessonPlans}/${totalLessonPlans} giáo án đã duyệt)`,
+          score: lessonPlanRate,
+          dbSource: "Bảng LessonPlan (Kế hoạch bài dạy)",
+          detail: "Tỷ lệ giáo án được Ban Giám hiệu / Tổ chuyên môn phê duyệt đúng hạn trước khi lên lớp.",
+        },
+        {
+          name: "Định biên & Đội ngũ giáo viên",
+          value: `${staffRate}% (${teacherCount} giáo viên giảng dạy)`,
+          score: staffRate,
+          dbSource: "Bảng Teacher (Hồ sơ nhân sự)",
+          detail: "Mức độ đáp ứng định biên giáo viên và chất lượng giảng dạy theo phân công.",
+        },
+      ];
+
+      const pillar3Components: PillarComponentBreakdown[] = [
+        {
+          name: "An toàn học đường & Kỷ luật học sinh",
+          value: `${schoolSafetyRate}% (${incidentCount} vụ việc sự cố/kỷ luật)`,
+          score: schoolSafetyRate,
+          dbSource: "Bảng Incident (Sổ ghi nhận nề nếp & sự cố)",
+          detail: "Chỉ số an toàn học đường, khấu trừ điểm theo số lượng sự cố vi phạm nề nếp trên tổng sĩ số.",
+        },
+        {
+          name: "Nề nếp đúng giờ & Thi đua đầu giờ",
+          value: `${punctualityRate}% (${lateAttendance} lượt muộn, ${absentUnexcusedAttendance} vắng K.Phép)`,
+          score: punctualityRate,
+          dbSource: "Bảng Attendance (Bản ghi đi muộn & vắng mặt)",
+          detail: "Mức độ chấp hành giờ giấc chào cờ, xếp hàng vào lớp và không đi học muộn.",
+        },
+        {
+          name: "Tương tác & Xử lý ý kiến Phụ huynh",
+          value: `${parentRate}% (${respondedFeedbacks}/${totalFeedbacks} phản ánh đã phản hồi)`,
+          score: parentRate,
+          dbSource: "Bảng ParentFeedback (Ý kiến phụ huynh)",
+          detail: "Tỷ lệ nhà trường và giáo viên chủ nhiệm tiếp nhận, xử lý kịp thời các phản ánh từ phụ huynh.",
+        },
+      ];
+
+      const pillar4Components: PillarComponentBreakdown[] = [
+        {
+          name: "Trang thiết bị dạy học đạt chuẩn",
+          value: `${equipmentRate}% (${goodEquip}/${totalEquip} thiết bị hoạt động tốt)`,
+          score: equipmentRate,
+          dbSource: "Bảng Equipment (Quản lý tài sản & Thiết bị)",
+          detail: "Tỷ lệ thiết bị, đồ dùng dạy học, phòng tin học/ngoại ngữ hoạt động tốt.",
+        },
+        {
+          name: "Mục tiêu chiến lược & Chuyển đổi số quản trị",
+          value: `${strategicRate}% (${achievedObjs}/${qualityObjs.length} mục tiêu đạt)`,
+          score: strategicRate,
+          dbSource: "Bảng QualityObjective (Mục tiêu chất lượng)",
+          detail: "Tiến độ thực hiện các mục tiêu số hóa hồ sơ sổ sách và đổi mới quản lý giáo dục.",
+        },
+        {
+          name: "Đổi mới sáng tạo & Khen thưởng thi đua",
+          value: `${innovationRate}% (${commendationsCount} lượt tuyên dương/khen thưởng)`,
+          score: innovationRate,
+          dbSource: "Bảng Incident (Loại COMMENDATION)",
+          detail: "Ghi nhận các gương người tốt việc tốt, sáng kiến kinh nghiệm và thành tích thi đua.",
+        },
+      ];
+
       const pillar1Rate = Number(
         (
           (categoryScores[KpiCategory.EDUCATIONAL_QUALITY].completionRate +
@@ -426,8 +535,9 @@ export async function getPrincipalKpiComparisonData(params?: {
       const pillar3Rate = Number(
         (
           (categoryScores[KpiCategory.SCHOOL_SAFETY].completionRate +
+            punctualityRate +
             categoryScores[KpiCategory.SCHOOL_RELATIONS].completionRate) /
-          2
+          3
         ).toFixed(1)
       );
       const pillar4Rate = Number(
@@ -448,6 +558,7 @@ export async function getPrincipalKpiComparisonData(params?: {
           target: 90,
           weight: 35,
           status: resolveStatusFromRate(pillar1Rate),
+          components: pillar1Components,
         },
         {
           code: "PIL-02",
@@ -456,6 +567,7 @@ export async function getPrincipalKpiComparisonData(params?: {
           target: 92,
           weight: 25,
           status: resolveStatusFromRate(pillar2Rate),
+          components: pillar2Components,
         },
         {
           code: "PIL-03",
@@ -464,6 +576,7 @@ export async function getPrincipalKpiComparisonData(params?: {
           target: 95,
           weight: 20,
           status: resolveStatusFromRate(pillar3Rate),
+          components: pillar3Components,
         },
         {
           code: "PIL-04",
@@ -472,6 +585,7 @@ export async function getPrincipalKpiComparisonData(params?: {
           target: 88,
           weight: 20,
           status: resolveStatusFromRate(pillar4Rate),
+          components: pillar4Components,
         },
       ];
 
@@ -542,6 +656,9 @@ export async function getPrincipalKpiComparisonData(params?: {
         averageScore: totalEntities > 0
           ? Number((entityResults.reduce((s, e) => s + e.pillars[0].score, 0) / totalEntities).toFixed(1))
           : 0,
+        target: 90,
+        weight: 35,
+        components: entityResults[0]?.pillars[0]?.components,
       },
       {
         code: "PIL-02",
@@ -549,6 +666,9 @@ export async function getPrincipalKpiComparisonData(params?: {
         averageScore: totalEntities > 0
           ? Number((entityResults.reduce((s, e) => s + e.pillars[1].score, 0) / totalEntities).toFixed(1))
           : 0,
+        target: 92,
+        weight: 25,
+        components: entityResults[0]?.pillars[1]?.components,
       },
       {
         code: "PIL-03",
@@ -556,6 +676,9 @@ export async function getPrincipalKpiComparisonData(params?: {
         averageScore: totalEntities > 0
           ? Number((entityResults.reduce((s, e) => s + e.pillars[2].score, 0) / totalEntities).toFixed(1))
           : 0,
+        target: 95,
+        weight: 20,
+        components: entityResults[0]?.pillars[2]?.components,
       },
       {
         code: "PIL-04",
@@ -563,6 +686,9 @@ export async function getPrincipalKpiComparisonData(params?: {
         averageScore: totalEntities > 0
           ? Number((entityResults.reduce((s, e) => s + e.pillars[3].score, 0) / totalEntities).toFixed(1))
           : 0,
+        target: 88,
+        weight: 20,
+        components: entityResults[0]?.pillars[3]?.components,
       },
     ];
 

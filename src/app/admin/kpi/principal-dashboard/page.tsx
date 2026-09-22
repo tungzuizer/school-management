@@ -22,6 +22,7 @@ import {
   approveCampusKpiSnapshot,
   PrincipalKpiOverviewPayload,
   PrincipalKpiEntityComparison,
+  PillarComponentBreakdown,
 } from "../principal-actions";
 import { ReportingFrequency, KpiCategory } from "@prisma/client";
 import { CATEGORY_LABELS } from "../kpi-labels";
@@ -96,6 +97,15 @@ export default function PrincipalKpiDashboard() {
 
   // Detailed Modal / Drawer State
   const [selectedEntity, setSelectedEntity] = useState<PrincipalKpiEntityComparison | null>(null);
+  const [selectedPillarForDrilldown, setSelectedPillarForDrilldown] = useState<{
+    name: string;
+    code?: string;
+    score: number;
+    target?: number;
+    weight?: number;
+    components?: PillarComponentBreakdown[];
+    entityName?: string;
+  } | null>(null);
   const [snapshotLoading, setSnapshotLoading] = useState(false);
   const [snapshotFeedback, setSnapshotFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -482,7 +492,11 @@ export default function PrincipalKpiDashboard() {
           </div>
           <button
             onClick={() => setBatchScanFeedback(null)}
-            className="text-slate-400 hover:text-slate-600 p-1"
+            className={`p-1 rounded-md transition-colors ${
+              batchScanFeedback.type === "success"
+                ? "text-emerald-700 hover:text-emerald-950 hover:bg-emerald-100/60"
+                : "text-rose-700 hover:text-rose-950 hover:bg-rose-100/60"
+            }`}
           >
             <X className="w-4 h-4" />
           </button>
@@ -497,11 +511,11 @@ export default function PrincipalKpiDashboard() {
             Phạm vi:
           </div>
 
-          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1">
             <button
               onClick={() => setScopeType("CAMPUS")}
               className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${
-                scopeType === "CAMPUS" ? "bg-blue-700 text-white shadow-xs" : "text-slate-700 hover:bg-white hover:text-slate-900"
+                scopeType === "CAMPUS" ? "bg-blue-700 text-white shadow-xs" : "text-slate-800 hover:bg-white hover:text-blue-900"
               }`}
             >
               📍 Theo Điểm Trường / Phân Hiệu
@@ -509,7 +523,7 @@ export default function PrincipalKpiDashboard() {
             <button
               onClick={() => setScopeType("SCHOOL")}
               className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${
-                scopeType === "SCHOOL" ? "bg-blue-700 text-white shadow-xs" : "text-slate-700 hover:bg-white hover:text-slate-900"
+                scopeType === "SCHOOL" ? "bg-blue-700 text-white shadow-xs" : "text-slate-800 hover:bg-white hover:text-blue-900"
               }`}
             >
               🏫 Theo Trường Học (Cụm)
@@ -630,10 +644,25 @@ export default function PrincipalKpiDashboard() {
             </div>
 
             {/* Pillar 1 */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div
+              onClick={() =>
+                setSelectedPillarForDrilldown({
+                  code: data.pillarAverages[0]?.code,
+                  name: data.pillarAverages[0]?.name,
+                  score: data.pillarAverages[0]?.averageScore,
+                  target: data.pillarAverages[0]?.target || 90,
+                  weight: data.pillarAverages[0]?.weight || 35,
+                  components: data.pillarAverages[0]?.components,
+                  entityName: "Toàn Mạng Lưới Trường Học",
+                })
+              }
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer group relative"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase">Chất Lượng Đào Tạo</span>
-                <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-emerald-700 transition-colors">
+                  Chất Lượng Đào Tạo
+                </span>
+                <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors">
                   <GraduationCap className="w-4 h-4" />
                 </div>
               </div>
@@ -647,17 +676,35 @@ export default function PrincipalKpiDashboard() {
                   style={{ width: `${Math.min(100, data.pillarAverages[0]?.averageScore || 0)}%` }}
                 />
               </div>
-              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-                <Database className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="truncate">Căn cứ: Điểm số TT 27 (Grade) & Học tập</span>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                <span className="flex items-center gap-1.5 truncate">
+                  <Database className="w-3 h-3 text-slate-400 shrink-0" />
+                  Căn cứ: Điểm số TT 27 & Học tập
+                </span>
+                <span className="text-emerald-600 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
               </div>
             </div>
 
             {/* Pillar 2 */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div
+              onClick={() =>
+                setSelectedPillarForDrilldown({
+                  code: data.pillarAverages[1]?.code,
+                  name: data.pillarAverages[1]?.name,
+                  score: data.pillarAverages[1]?.averageScore,
+                  target: data.pillarAverages[1]?.target || 92,
+                  weight: data.pillarAverages[1]?.weight || 25,
+                  components: data.pillarAverages[1]?.components,
+                  entityName: "Toàn Mạng Lưới Trường Học",
+                })
+              }
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group relative"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase">Chuyên Môn Giáo Viên</span>
-                <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-blue-700 transition-colors">
+                  Chuyên Môn Giáo Viên
+                </span>
+                <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
                   <Users className="w-4 h-4" />
                 </div>
               </div>
@@ -671,17 +718,35 @@ export default function PrincipalKpiDashboard() {
                   style={{ width: `${Math.min(100, data.pillarAverages[1]?.averageScore || 0)}%` }}
                 />
               </div>
-              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-                <Database className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="truncate">Căn cứ: Giáo án (LessonPlan) & Bồi dưỡng GV</span>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                <span className="flex items-center gap-1.5 truncate">
+                  <Database className="w-3 h-3 text-slate-400 shrink-0" />
+                  Căn cứ: Giáo án (LessonPlan)
+                </span>
+                <span className="text-blue-600 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
               </div>
             </div>
 
             {/* Pillar 3 */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div
+              onClick={() =>
+                setSelectedPillarForDrilldown({
+                  code: data.pillarAverages[2]?.code,
+                  name: data.pillarAverages[2]?.name,
+                  score: data.pillarAverages[2]?.averageScore,
+                  target: data.pillarAverages[2]?.target || 95,
+                  weight: data.pillarAverages[2]?.weight || 20,
+                  components: data.pillarAverages[2]?.components,
+                  entityName: "Toàn Mạng Lưới Trường Học",
+                })
+              }
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer group relative"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase">Nề Nếp & An Toàn</span>
-                <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-amber-700 transition-colors">
+                  Nề Nếp & An Toàn
+                </span>
+                <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-100 transition-colors">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
               </div>
@@ -695,17 +760,35 @@ export default function PrincipalKpiDashboard() {
                   style={{ width: `${Math.min(100, data.pillarAverages[2]?.averageScore || 0)}%` }}
                 />
               </div>
-              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-                <Database className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="truncate">Căn cứ: Điểm danh (Attendance) & Sự cố (Incident)</span>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                <span className="flex items-center gap-1.5 truncate">
+                  <Database className="w-3 h-3 text-slate-400 shrink-0" />
+                  Căn cứ: Điểm danh & Đi muộn
+                </span>
+                <span className="text-amber-600 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
               </div>
             </div>
 
             {/* Pillar 4 */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div
+              onClick={() =>
+                setSelectedPillarForDrilldown({
+                  code: data.pillarAverages[3]?.code,
+                  name: data.pillarAverages[3]?.name,
+                  score: data.pillarAverages[3]?.averageScore,
+                  target: data.pillarAverages[3]?.target || 88,
+                  weight: data.pillarAverages[3]?.weight || 20,
+                  components: data.pillarAverages[3]?.components,
+                  entityName: "Toàn Mạng Lưới Trường Học",
+                })
+              }
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-sky-400 hover:shadow-md transition-all cursor-pointer group relative"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase">Cơ Sở & Số Hóa</span>
-                <div className="p-1.5 bg-sky-50 text-sky-700 rounded-lg">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-sky-700 transition-colors">
+                  Cơ Sở & Số Hóa
+                </span>
+                <div className="p-1.5 bg-sky-50 text-sky-700 rounded-lg group-hover:bg-sky-100 transition-colors">
                   <Zap className="w-4 h-4" />
                 </div>
               </div>
@@ -719,9 +802,12 @@ export default function PrincipalKpiDashboard() {
                   style={{ width: `${Math.min(100, data.pillarAverages[3]?.averageScore || 0)}%` }}
                 />
               </div>
-              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-                <Database className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="truncate">Căn cứ: Thiết bị (Equipment) & Phản hồi PH</span>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                <span className="flex items-center gap-1.5 truncate">
+                  <Database className="w-3 h-3 text-slate-400 shrink-0" />
+                  Căn cứ: Thiết bị & Mục tiêu CL
+                </span>
+                <span className="text-sky-600 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
               </div>
             </div>
           </div>
@@ -1211,9 +1297,25 @@ export default function PrincipalKpiDashboard() {
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {selectedEntity.pillars.map((pil, idx) => (
-                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                    <div
+                      key={idx}
+                      onClick={() =>
+                        setSelectedPillarForDrilldown({
+                          code: pil.code,
+                          name: pil.name,
+                          score: pil.score,
+                          target: pil.target,
+                          weight: pil.weight,
+                          components: pil.components,
+                          entityName: selectedEntity.name,
+                        })
+                      }
+                      className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 hover:border-blue-400 hover:bg-blue-50/40 hover:shadow-xs transition-all cursor-pointer group"
+                    >
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-700">{pil.name}</span>
+                        <span className="font-semibold text-slate-700 group-hover:text-blue-800 transition-colors">
+                          {pil.name}
+                        </span>
                         <span className="font-bold text-blue-800">{pil.score}%</span>
                       </div>
                       <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
@@ -1222,17 +1324,20 @@ export default function PrincipalKpiDashboard() {
                           style={{ width: `${Math.min(100, pil.score)}%` }}
                         />
                       </div>
-                      <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                        <Database className="w-2.5 h-2.5 text-slate-400 shrink-0" />
-                        <span className="truncate">
-                          {idx === 0
-                            ? "Căn cứ: Điểm số TT 27 (Grade) & Học tập"
-                            : idx === 1
-                            ? "Căn cứ: Giáo án (LessonPlan) & Bồi dưỡng GV"
-                            : idx === 2
-                            ? "Căn cứ: Điểm danh (Attendance) & Sự cố (Incident)"
-                            : "Căn cứ: Thiết bị (Equipment) & Phản hồi PH"}
+                      <div className="text-[10px] text-slate-500 flex items-center justify-between">
+                        <span className="flex items-center gap-1 truncate">
+                          <Database className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                          <span className="truncate">
+                            {idx === 0
+                              ? "Căn cứ: Điểm số TT 27 (Grade) & Học tập"
+                              : idx === 1
+                              ? "Căn cứ: Giáo án (LessonPlan) & GV"
+                              : idx === 2
+                              ? "Căn cứ: Điểm danh (Attendance) & Nề nếp"
+                              : "Căn cứ: Thiết bị & Mục tiêu CL"}
+                          </span>
                         </span>
+                        <span className="text-blue-600 font-bold group-hover:underline shrink-0">Tra cứu →</span>
                       </div>
                     </div>
                   ))}
@@ -1458,9 +1563,125 @@ export default function PrincipalKpiDashboard() {
               </span>
               <button
                 onClick={() => setAiModalOpen(false)}
-                className="px-5 py-2 bg-blue-800 hover:bg-blue-900 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors"
+                className="px-5 py-2 bg-blue-800 hover:bg-blue-900 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
               >
                 Hoàn Tất
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Pillar Database Lineage & Component Drill-down Inspector */}
+      {selectedPillarForDrilldown && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="p-6 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white/15 rounded-xl">
+                  <Database className="w-6 h-6 text-cyan-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-cyan-400/20 text-cyan-200 rounded text-[10px] font-bold font-mono">
+                      {selectedPillarForDrilldown.code || "KPI-PILLAR"}
+                    </span>
+                    <h3 className="text-base font-extrabold">{selectedPillarForDrilldown.name}</h3>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Đơn vị: {selectedPillarForDrilldown.entityName || "Toàn trường"} • Trọng số: {selectedPillarForDrilldown.weight}% • Chuẩn: ≥{selectedPillarForDrilldown.target}%
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPillarForDrilldown(null)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5 overflow-y-auto">
+              {/* Score summary banner */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-slate-500">Điểm đánh giá thực tế:</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-extrabold text-blue-950">{selectedPillarForDrilldown.score}%</span>
+                    <span className="text-xs text-slate-400">/ 100%</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-slate-500 font-medium">Tiêu chuẩn ngành:</span>
+                  <p className="text-sm font-bold text-emerald-700">≥{selectedPillarForDrilldown.target}%</p>
+                </div>
+              </div>
+
+              {/* Components Lineage */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-blue-700" />
+                    Cấu Thành Chỉ Số & Nguồn Gốc Dữ Liệu Thực Tế
+                  </h4>
+                  <span className="text-[11px] text-slate-400 font-medium">100% CSDL xác thực</span>
+                </div>
+
+                {selectedPillarForDrilldown.components && selectedPillarForDrilldown.components.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedPillarForDrilldown.components.map((comp, cIdx) => (
+                      <div
+                        key={cIdx}
+                        className="p-4 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 shadow-xs space-y-2.5 transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                              <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold flex items-center justify-center">
+                                {cIdx + 1}
+                              </span>
+                              {comp.name}
+                            </span>
+                          </div>
+                          <span className="px-2.5 py-1 bg-blue-50 text-blue-900 border border-blue-200 rounded-lg text-xs font-extrabold shrink-0">
+                            {comp.value}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed">{comp.detail}</p>
+
+                        <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-indigo-700 font-semibold bg-indigo-50/50 p-2 rounded-lg">
+                          <Database className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                          <span>Nguồn CSDL: {comp.dbSource}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-slate-50 rounded-xl text-xs text-slate-500 text-center">
+                    Dữ liệu chi tiết trụ cột đang được đồng bộ trực tiếp từ hệ thống.
+                  </div>
+                )}
+              </div>
+
+              {/* Data Integrity Guarantee Notice */}
+              <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-900">
+                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  <span className="font-bold">Cam kết minh bạch dữ liệu:</span> Toàn bộ các chỉ số KPI được kết xuất tự động từ các bảng nghiệp vụ thực tế của nhà trường (Điểm danh hằng ngày, Sổ điểm TT27, Giáo án điện tử, Quản lý sự cố). Tuyệt đối không sử dụng số liệu ước lượng hoặc giả lập.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end">
+              <button
+                onClick={() => setSelectedPillarForDrilldown(null)}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                Đóng Tra Cứu
               </button>
             </div>
           </div>
