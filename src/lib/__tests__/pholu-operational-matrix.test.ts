@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Vitest test runner (`vitest.config.ts`, `npm test`, `npx vitest run`).
- * 2. Search Verification: Searched `src/lib/__tests__/*.test.ts`. No existing file tests the multi-campus operational matrix for Trường Tiểu học Phố Lu & 5 Phân hiệu.
- * 3. Data Schemas: `TenantContext` (`userId`, `userName`, `userRole`, `schoolId`, `campusId`), `CAMPUS_SPECS` (`key`, `name`, `vpName`, `vpEmail`, `classCount`), `build62ClassesSpec` (`campusKey`, `name`, `gradeLevel`, `studentCount`).
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - "kiểm tra logic vận hành và dữ liệu".
+ * 2. Search Verification: Multi-campus operational matrix tests matching 6 real campuses & 62 real classes for Trường Tiểu học Phố Lu.
+ * 3. Data Schemas: `TenantContext`, `CAMPUS_SPECS`, `build62ClassesSpec`.
+ * 4. Verbatim User Instruction: "hãy xóa hết dữ liệu của TRƯỜNG TIỂU HỌC PHỐ LU và hãy cập nhập và lấy dữ liệu ở đây C:\Users\tungh\Desktop\school-management\docs\dulieu"
  */
 
 import { describe, it, expect } from "vitest";
@@ -35,41 +35,39 @@ describe("Trường Tiểu học Phố Lu & 5 Phân hiệu — Operational Matri
   describe("1. Cấu trúc Phân hiệu & Điểm trường trực thuộc", () => {
     it("định nghĩa đúng 6 điểm trường/phân hiệu theo mô hình sáp nhập vùng cao", () => {
       expect(CAMPUS_SPECS.length).toBe(6);
-      const keys = CAMPUS_SPECS.map((c) => c.key);
+      const keys = CAMPUS_SPECS.map((c: any) => c.key);
       expect(keys).toEqual([
         "TRUNG_TAM",
         "SON_HA_1",
         "SON_HA_2",
         "SON_HAI",
-        "PHO_LU_3",
         "AN_TIEN",
+        "TAN_THANH",
       ]);
     });
 
-    it("phân bổ đủ 62 lớp học trên 6 cơ sở/phân hiệu", () => {
+    it("phân bổ đủ 62 lớp học trên các cơ sở/phân hiệu thực tế", () => {
       const classes = build62ClassesSpec();
       expect(classes.length).toBe(62);
 
-      const trungTamClasses = classes.filter((c) => c.campusKey === "TRUNG_TAM");
-      const sonHa1Classes = classes.filter((c) => c.campusKey === "SON_HA_1");
-      const sonHa2Classes = classes.filter((c) => c.campusKey === "SON_HA_2");
-      const sonHaiClasses = classes.filter((c) => c.campusKey === "SON_HAI");
-      const phoLu3Classes = classes.filter((c) => c.campusKey === "PHO_LU_3");
-      const anTienClasses = classes.filter((c) => c.campusKey === "AN_TIEN");
+      const trungTamClasses = classes.filter((c: any) => c.campusKey === "TRUNG_TAM");
+      const sonHa1Classes = classes.filter((c: any) => c.campusKey === "SON_HA_1");
+      const sonHa2Classes = classes.filter((c: any) => c.campusKey === "SON_HA_2");
+      const sonHaiClasses = classes.filter((c: any) => c.campusKey === "SON_HAI");
+      const anTienClasses = classes.filter((c: any) => c.campusKey === "AN_TIEN");
 
-      expect(trungTamClasses.length).toBe(20);
-      expect(sonHa1Classes.length).toBe(12);
-      expect(sonHa2Classes.length).toBe(10);
-      expect(sonHaiClasses.length).toBe(10);
-      expect(phoLu3Classes.length).toBe(8);
-      expect(anTienClasses.length).toBe(2);
+      expect(trungTamClasses.length).toBe(35);
+      expect(sonHa1Classes.length).toBe(10);
+      expect(sonHa2Classes.length).toBe(5);
+      expect(sonHaiClasses.length).toBe(7);
+      expect(anTienClasses.length).toBe(5);
     });
 
-    it("điểm trường An Tiến có đúng 2 lớp vùng cao (Lớp 1 và Lớp 2)", () => {
+    it("điểm trường An Tiến có đúng 5 lớp phân bổ theo khối 1-5", () => {
       const classes = build62ClassesSpec();
-      const anTien = classes.filter((c) => c.campusKey === "AN_TIEN");
-      expect(anTien.map((c) => c.name)).toEqual(["1A_AT", "2A_AT"]);
-      expect(anTien.every((c) => c.gradeLevel <= 2)).toBe(true);
+      const anTien = classes.filter((c: any) => c.campusKey === "AN_TIEN");
+      expect(anTien.map((c: any) => c.name)).toEqual(["1C3", "2C2", "3C2", "4C3", "5C2"]);
+      expect(anTien.length).toBe(5);
     });
   });
 
