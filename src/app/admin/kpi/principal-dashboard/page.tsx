@@ -515,7 +515,7 @@ export default function PrincipalKpiDashboard() {
             <button
               onClick={() => setScopeType("CAMPUS")}
               className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${
-                scopeType === "CAMPUS" ? "bg-blue-700 text-white shadow-xs" : "text-slate-800 hover:bg-white hover:text-blue-900"
+                scopeType === "CAMPUS" ? "bg-blue-700 text-white shadow-xs" : "text-blue-950 hover:bg-white hover:text-blue-700"
               }`}
             >
               📍 Theo Điểm Trường / Phân Hiệu
@@ -523,7 +523,7 @@ export default function PrincipalKpiDashboard() {
             <button
               onClick={() => setScopeType("SCHOOL")}
               className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${
-                scopeType === "SCHOOL" ? "bg-blue-700 text-white shadow-xs" : "text-slate-800 hover:bg-white hover:text-blue-900"
+                scopeType === "SCHOOL" ? "bg-blue-700 text-white shadow-xs" : "text-blue-950 hover:bg-white hover:text-blue-700"
               }`}
             >
               🏫 Theo Trường Học (Cụm)
