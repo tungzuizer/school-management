@@ -5,7 +5,7 @@
  * 1. Importers/Callers: App Router route /admin/kpi/catalog
  * 2. Public functions affected: KpiCatalogPage (Default Export Component)
  * 3. Data schemas: KpiCatalog, KpiCategory
- * 4. Verbatim User Instruction: "bỏ các icon màu mè đi dùng icon đơn giản" - "theo khuyến nghị của bạn"
+ * 4. Verbatim User Instruction: "cần 1 chút màu để cảnh báo kpi" -> "theo khuyến nghị của bạn" -> "thực hiện đi" (Bổ sung màu sắc cảnh báo ngữ nghĩa Traffic Light 3 cấp độ: Rose <50%, Amber 50-79%, Emerald >=80%)
  */
 
 import { useEffect, useState, useRef } from "react";
@@ -345,11 +345,13 @@ export default function KpiCatalogPage() {
           </div>
           <div className="text-xs text-slate-500 mt-1">Sẵn sàng đưa vào đánh giá</div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className={`p-5 rounded-2xl border shadow-sm ${
+          Math.abs(totalWeight - 100) < 0.1 ? "bg-white border-slate-200" : "bg-amber-50/60 border-amber-300"
+        }`}>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng trọng số KPI</span>
           <div
             className={`text-2xl font-extrabold mt-1 ${
-              Math.abs(totalWeight - 100) < 0.1 ? "text-slate-900" : "text-amber-600"
+              Math.abs(totalWeight - 100) < 0.1 ? "text-slate-900" : "text-amber-700"
             }`}
           >
             {totalWeight.toFixed(1)}%
@@ -358,12 +360,12 @@ export default function KpiCatalogPage() {
             {Math.abs(totalWeight - 100) < 0.1 ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline shrink-0" />
-                <span>Đạt tiêu chuẩn 100%</span>
+                <span className="text-emerald-700 font-medium">Đạt tiêu chuẩn 100%</span>
               </>
             ) : (
               <>
                 <AlertCircle className="w-3.5 h-3.5 text-amber-600 inline shrink-0" />
-                <span>Cần điều chỉnh đạt 100%</span>
+                <span className="text-amber-700 font-medium">Cần điều chỉnh đạt 100%</span>
               </>
             )}
           </div>
@@ -487,13 +489,13 @@ export default function KpiCatalogPage() {
                     <td className="py-3.5 px-4 text-center align-top">
                       <button
                         onClick={() => handleToggleStatus(item.id)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors border ${
                           item.isActive
-                            ? "bg-slate-900 text-white hover:bg-slate-800"
-                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 border-slate-200"
                         }`}
                       >
-                        <Power className="w-3 h-3" />
+                        <Power className={`w-3 h-3 ${item.isActive ? "text-emerald-600" : "text-slate-400"}`} />
                         {item.isActive ? "Hoạt động" : "Tạm dừng"}
                       </button>
                     </td>

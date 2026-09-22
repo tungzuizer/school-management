@@ -5,7 +5,7 @@
  * 1. Importers/Callers: App Router page component src/app/admin/kpi/approval/page.tsx
  * 2. Affected API: KpiApprovalPage (Client Component)
  * 3. Data structures: Campus, KpiPeriod, KpiPeriodStatus, KpiReviewerLog, KpiUnlockLog.
- * 4. Verbatim User Instruction: "bỏ các icon màu mè đi dùng icon đơn giản" -> "theo khuyến nghị của bạn" (Chuẩn hóa toàn diện đơn sắc Monochrome/Slate)
+ * 4. Verbatim User Instruction: "cần 1 chút màu để cảnh báo kpi" -> "theo khuyến nghị của bạn" -> "thực hiện đi" (Bổ sung màu sắc cảnh báo ngữ nghĩa Traffic Light 3 cấp độ: Rose <50%, Amber 50-79%, Emerald >=80%)
  */
 
 import { useEffect, useState } from "react";
@@ -192,17 +192,21 @@ export default function KpiApprovalPage() {
         <div
           className={`p-4 rounded-xl flex items-center justify-between text-sm border ${
             message.type === "success"
-              ? "bg-slate-50 text-slate-800 border-slate-300"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
               : message.type === "warning"
-              ? "bg-slate-50 text-slate-800 border-slate-300"
-              : "bg-slate-50 text-slate-900 border-slate-300"
+              ? "bg-amber-50 text-amber-800 border-amber-200"
+              : "bg-rose-50 text-rose-800 border-rose-200"
           }`}
         >
           <div className="flex items-center gap-2">
-            <Info className="w-5 h-5 text-slate-700" />
+            {message.type === "success" ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className={`w-5 h-5 shrink-0 ${message.type === "warning" ? "text-amber-600" : "text-rose-600"}`} />
+            )}
             <span className="font-medium">{message.text}</span>
           </div>
-          <button onClick={() => setMessage(null)} className="text-xs text-slate-600 underline font-semibold cursor-pointer">
+          <button onClick={() => setMessage(null)} className="text-xs underline font-semibold cursor-pointer">
             Đóng
           </button>
         </div>
@@ -325,7 +329,7 @@ export default function KpiApprovalPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-500">CẤP 1</span>
                 {currentStatus !== "DRAFT" ? (
-                  <CheckCircle2 className="w-5 h-5 text-slate-800" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 ) : (
                   <Clock className="w-5 h-5 text-slate-400" />
                 )}
@@ -337,7 +341,7 @@ export default function KpiApprovalPage() {
                   <span className="text-xs font-semibold text-slate-600">Đang chờ nhập số liệu</span>
                 ) : (
                   <span className="text-xs font-semibold text-slate-900 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>Đã gửi dữ liệu</span>
                   </span>
                 )}
@@ -350,14 +354,14 @@ export default function KpiApprovalPage() {
                 ["CAMPUS_CHECKED", "VP_REVIEWED", "APPROVED"].includes(currentStatus)
                   ? "bg-slate-50 border-slate-300"
                   : currentStatus === "SUBMITTED"
-                  ? "bg-white border-slate-800 ring-2 ring-slate-800/10"
+                  ? "bg-white border-blue-600 ring-2 ring-blue-500/20"
                   : "bg-slate-50/50 border-slate-200"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-500">CẤP 2</span>
                 {["CAMPUS_CHECKED", "VP_REVIEWED", "APPROVED"].includes(currentStatus) ? (
-                  <CheckCircle2 className="w-5 h-5 text-slate-800" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 ) : (
                   <Clock className="w-5 h-5 text-slate-400" />
                 )}
@@ -369,13 +373,13 @@ export default function KpiApprovalPage() {
                   <button
                     disabled={processing}
                     onClick={() => handleOpenApproveModal("CAMPUS")}
-                    className="w-full py-2 bg-slate-900 text-white font-medium rounded-xl text-xs hover:bg-slate-800 transition cursor-pointer"
+                    className="w-full py-2 bg-slate-900 text-white font-medium rounded-xl text-xs hover:bg-slate-800 transition cursor-pointer shadow-xs"
                   >
                     Thẩm định Phân hiệu
                   </button>
                 ) : ["CAMPUS_CHECKED", "VP_REVIEWED", "APPROVED"].includes(currentStatus) ? (
                   <span className="text-xs font-semibold text-slate-900 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>Phân hiệu đã duyệt</span>
                   </span>
                 ) : (
@@ -390,14 +394,14 @@ export default function KpiApprovalPage() {
                 ["VP_REVIEWED", "APPROVED"].includes(currentStatus)
                   ? "bg-slate-50 border-slate-300"
                   : currentStatus === "CAMPUS_CHECKED"
-                  ? "bg-white border-slate-800 ring-2 ring-slate-800/10"
+                  ? "bg-white border-amber-600 ring-2 ring-amber-500/20"
                   : "bg-slate-50/50 border-slate-200"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-500">CẤP 3</span>
                 {["VP_REVIEWED", "APPROVED"].includes(currentStatus) ? (
-                  <CheckCircle2 className="w-5 h-5 text-slate-800" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 ) : (
                   <Clock className="w-5 h-5 text-slate-400" />
                 )}
@@ -409,13 +413,13 @@ export default function KpiApprovalPage() {
                   <button
                     disabled={processing}
                     onClick={() => handleOpenApproveModal("VP")}
-                    className="w-full py-2 bg-slate-900 text-white font-medium rounded-xl text-xs hover:bg-slate-800 transition cursor-pointer"
+                    className="w-full py-2 bg-slate-900 text-white font-medium rounded-xl text-xs hover:bg-slate-800 transition cursor-pointer shadow-xs"
                   >
                     Phó Hiệu trưởng duyệt
                   </button>
                 ) : ["VP_REVIEWED", "APPROVED"].includes(currentStatus) ? (
                   <span className="text-xs font-semibold text-slate-900 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>BGH đã thông qua</span>
                   </span>
                 ) : (
@@ -430,14 +434,14 @@ export default function KpiApprovalPage() {
                 currentStatus === "APPROVED"
                   ? "bg-slate-900 text-white border-slate-800"
                   : currentStatus === "VP_REVIEWED"
-                  ? "bg-white border-slate-800 ring-2 ring-slate-800/10"
+                  ? "bg-white border-emerald-600 ring-2 ring-emerald-500/20"
                   : "bg-slate-50/50 border-slate-200"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className={`text-xs font-bold ${currentStatus === "APPROVED" ? "text-slate-400" : "text-slate-500"}`}>CẤP 4</span>
                 {currentStatus === "APPROVED" ? (
-                  <Award className="w-5 h-5 text-slate-200" />
+                  <Award className="w-5 h-5 text-amber-300" />
                 ) : (
                   <Lock className="w-5 h-5 text-slate-400" />
                 )}
@@ -455,7 +459,7 @@ export default function KpiApprovalPage() {
                   </button>
                 ) : currentStatus === "APPROVED" ? (
                   <span className="text-xs font-bold text-slate-200 flex items-center gap-1">
-                    <Lock className="w-3.5 h-3.5" /> ĐÃ KHÓA SỔ CHÍNH THỨC
+                    <Lock className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ KHÓA SỔ CHÍNH THỨC
                   </span>
                 ) : (
                   <span className="text-xs text-slate-400">Chưa đến lượt</span>
@@ -466,8 +470,8 @@ export default function KpiApprovalPage() {
 
           {/* Weight Check Rule Notice */}
           {weightInfo && !weightInfo.isValid && (
-            <div className="p-4 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-slate-600 shrink-0" />
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
               <span>
                 <strong>Cảnh báo trọng số:</strong> {weightInfo.message} (Hiện tại: {weightInfo.totalWeight}%). Tổng trọng số phải đúng 100% mới được phê duyệt hoàn tất.
               </span>
@@ -505,12 +509,13 @@ export default function KpiApprovalPage() {
                     <td className="py-3 px-4 text-xs text-slate-600 max-w-md">{log.reason}</td>
                     <td className="py-3 px-4 text-center">
                       <span
-                        className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
                           log.status === "APPROVED"
-                            ? "bg-slate-900 text-white"
-                            : "bg-slate-100 text-slate-700 border border-slate-200"
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                            : "bg-amber-50 text-amber-800 border-amber-200"
                         }`}
                       >
+                        <span className={`w-1.5 h-1.5 rounded-full ${log.status === "APPROVED" ? "bg-emerald-500" : "bg-amber-500"}`} />
                         {log.status === "APPROVED" ? "Đã chấp thuận mở" : "Chờ Hiệu trưởng duyệt"}
                       </span>
                     </td>

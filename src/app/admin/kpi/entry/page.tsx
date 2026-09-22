@@ -5,7 +5,7 @@
  * 1. Importers/Callers: App Router page component src/app/admin/kpi/entry/page.tsx
  * 2. Affected API: KpiEntryPage (Client Component)
  * 3. Data schemas: KpiPeriod, KpiTarget, KpiEvidence, KpiPeriodStatus, ReportingFrequency, MeasurementDirection, KpiCategory
- * 4. Verbatim User Instruction: "bỏ các icon màu mè đi dùng icon đơn giản" -> "theo khuyến nghị của bạn" (Chuẩn hóa toàn diện đơn sắc Monochrome/Slate)
+ * 4. Verbatim User Instruction: "cần 1 chút màu để cảnh báo kpi" -> "theo khuyến nghị của bạn" -> "thực hiện đi" (Bổ sung màu sắc cảnh báo ngữ nghĩa Traffic Light 3 cấp độ: Rose <50%, Amber 50-79%, Emerald >=80%)
  */
 
 import { useEffect, useState } from "react";
@@ -329,17 +329,23 @@ export default function KpiEntryPage() {
         <div
           className={`p-4 rounded-xl flex items-center justify-between text-sm border ${
             message.type === "success"
-              ? "bg-slate-50 text-slate-800 border-slate-300"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
               : message.type === "warning"
-              ? "bg-slate-50 text-slate-800 border-slate-300"
-              : "bg-slate-50 text-slate-900 border-slate-300"
+              ? "bg-amber-50 text-amber-800 border-amber-200"
+              : "bg-rose-50 text-rose-900 border-rose-200"
           }`}
         >
           <div className="flex items-center gap-2">
-            <Info className="w-5 h-5 text-slate-700" />
+            {message.type === "success" ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            ) : message.type === "warning" ? (
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            )}
             <span className="font-medium">{message.text}</span>
           </div>
-          <button onClick={() => setMessage(null)} className="text-xs text-slate-600 underline font-semibold cursor-pointer">
+          <button onClick={() => setMessage(null)} className="text-xs underline font-semibold cursor-pointer">
             Đóng
           </button>
         </div>
@@ -452,21 +458,25 @@ export default function KpiEntryPage() {
               <div className="text-xs text-slate-400 mt-1">Tính theo tỷ lệ trọng số 100%</div>
             </div>
 
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+            <div className={`p-5 rounded-2xl border ${
+              weightInfo?.isValid
+                ? "bg-slate-50 border-slate-200"
+                : "bg-amber-50/70 border-amber-300"
+            }`}>
               <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng Trọng Số Đã Gán</div>
-              <div className="text-2xl font-mono font-extrabold text-slate-900 mt-1">
+              <div className={`text-2xl font-mono font-extrabold mt-1 ${weightInfo?.isValid ? "text-slate-900" : "text-amber-700"}`}>
                 {weightInfo?.totalWeight ?? 0}%
               </div>
-              <div className="text-xs text-slate-600 mt-1 flex items-center gap-1.5">
+              <div className="text-xs mt-1 flex items-center gap-1.5">
                 {weightInfo?.isValid ? (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-700 inline shrink-0" />
-                    <span>Đạt yêu cầu chuẩn 100%</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline shrink-0" />
+                    <span className="text-emerald-700 font-medium">Đạt yêu cầu chuẩn 100%</span>
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="w-3.5 h-3.5 text-slate-600 inline shrink-0" />
-                    <span>Chưa đúng 100%</span>
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 inline shrink-0" />
+                    <span className="text-amber-700 font-medium">Chưa đúng 100%</span>
                   </>
                 )}
               </div>
@@ -580,7 +590,15 @@ export default function KpiEntryPage() {
                       </td>
 
                       <td className="py-3.5 px-4 text-center font-bold font-mono text-sm">
-                        <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200">
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-lg border font-bold ${
+                            score.completionRate >= 80
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : score.completionRate >= 50
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-rose-50 text-rose-700 border-rose-200"
+                          }`}
+                        >
                           {score.completionRate}%
                         </span>
                       </td>
