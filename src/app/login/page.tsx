@@ -224,7 +224,7 @@ function LoginFormContent() {
       case "DEPARTMENT_ADMIN":
         return "/department/dashboard";
       case "DISTRICT_ADMIN":
-        return "/district/dashboard";
+        return "/ward/dashboard";
       case "WARD_ADMIN":
         return "/ward/dashboard";
       case "ADMIN":
@@ -232,7 +232,7 @@ function LoginFormContent() {
       case "VICE_PRINCIPAL":
         return "/vice-principal/dashboard";
       case "SUBJECT_HEAD":
-        return "/subject-head/dashboard";
+        return "/teacher/subject-head";
       case "TEACHER":
         return "/teacher/dashboard";
       case "STUDENT":
@@ -266,8 +266,8 @@ function LoginFormContent() {
         targetPath = "/admin/dashboard";
       } else if (checkEmail.includes("department") || checkEmail.includes("sogd")) {
         targetPath = "/department/dashboard";
-      } else if (checkEmail.includes("district") || checkEmail.includes("phonggd")) {
-        targetPath = "/district/dashboard";
+      } else if (checkEmail.includes("district") || checkEmail.includes("phonggd") || checkEmail.includes("gd.baothang")) {
+        targetPath = "/ward/dashboard";
       } else if (checkEmail.includes("ward") || checkEmail.includes("diaphuong") || checkEmail.includes("ubnd")) {
         targetPath = "/ward/dashboard";
       } else if (
@@ -281,7 +281,7 @@ function LoginFormContent() {
       } else if (checkEmail.includes("vp") || checkEmail.includes("pht")) {
         targetPath = "/vice-principal/dashboard";
       } else if (checkEmail.includes("ttcm") || checkEmail.includes("subjecthead") || checkEmail.includes("to.")) {
-        targetPath = "/subject-head/dashboard";
+        targetPath = "/teacher/subject-head";
       } else if (checkEmail.includes("teacher") || checkEmail.includes("gv") || checkEmail.includes("giao-vien") || checkEmail.includes("giaovien")) {
         targetPath = "/teacher/dashboard";
       } else if (checkEmail.includes("student") || checkEmail.includes("hs") || checkEmail.includes("hocsinh")) {

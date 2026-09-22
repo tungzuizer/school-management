@@ -41,8 +41,8 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // /ward: UBND Xa/Phuong only
-    if (path.startsWith("/ward") && role !== "WARD_ADMIN") {
+    // /ward: UBND Xa/Phuong and Phong GD&DT (District)
+    if (path.startsWith("/ward") && role !== "WARD_ADMIN" && role !== "DISTRICT_ADMIN") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 

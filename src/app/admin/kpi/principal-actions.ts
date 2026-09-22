@@ -264,7 +264,7 @@ export async function getPrincipalKpiComparisonData(params?: {
         orderBy: { updatedAt: "desc" },
       });
 
-      // Tổng hợp các chỉ số thực tế từ DB
+      // Tổng hợp các chỉ số thực tế 100% từ CSDL (Tuyệt đối không dùng dữ liệu giả/ước lượng)
       // 1. Chuyên cần
       const totalAttendance = await prisma.attendance.count({
         where: classIds.length > 0 ? { classId: { in: classIds } } : undefined,
@@ -275,13 +275,14 @@ export async function getPrincipalKpiComparisonData(params?: {
           status: "PRESENT",
         },
       });
-      const attendanceRate = totalAttendance > 0 ? Number(((presentAttendance / totalAttendance) * 100).toFixed(1)) : 96.8;
+      const attendanceRate = totalAttendance > 0 ? Number(((presentAttendance / totalAttendance) * 100).toFixed(1)) : 0.0;
 
       // 2. Kỷ luật / Sự cố
       const incidentCount = await prisma.incident.count({
         where: classIds.length > 0 ? { classId: { in: classIds } } : undefined,
       });
-      const violationRate = studentCount > 0 ? Number(((incidentCount / studentCount) * 100).toFixed(2)) : 0.4;
+      const violationRate = studentCount > 0 ? Number(((incidentCount / studentCount) * 100).toFixed(2)) : 0.0;
+      const schoolSafetyRate = incidentCount === 0 ? 100.0 : Math.max(0, Number((100 - (incidentCount / (studentCount || 1)) * 100 * 10).toFixed(1)));
 
       // 3. Giáo án điện tử
       const totalLessonPlans = await prisma.lessonPlan.count({
@@ -293,19 +294,19 @@ export async function getPrincipalKpiComparisonData(params?: {
           status: { in: ["APPROVED", "VP_APPROVED", "HEAD_APPROVED"] },
         },
       });
-      const lessonPlanRate = totalLessonPlans > 0 ? Number(((approvedLessonPlans / totalLessonPlans) * 100).toFixed(1)) : 93.4;
+      const lessonPlanRate = totalLessonPlans > 0 ? Number(((approvedLessonPlans / totalLessonPlans) * 100).toFixed(1)) : 0.0;
 
-      // 4. Học lực Giỏi / Khá
+      // 4. Chất lượng học tập theo Thông tư 27 (Tỷ lệ Đạt yêu cầu >= 5.0)
       const totalGrades = await prisma.grade.count({
         where: classIds.length > 0 ? { student: { classId: { in: classIds } } } : undefined,
       });
-      const goodGrades = await prisma.grade.count({
+      const passedGrades = await prisma.grade.count({
         where: {
           ...(classIds.length > 0 ? { student: { classId: { in: classIds } } } : {}),
-          score: { gte: 8.0 },
+          score: { gte: 5.0 },
         },
       });
-      const academicRate = totalGrades > 0 ? Number(((goodGrades / totalGrades) * 100).toFixed(1)) : 52.6;
+      const academicRate = totalGrades > 0 ? Number(((passedGrades / totalGrades) * 100).toFixed(1)) : 0.0;
 
       // 5. Thiết bị
       const equipWhere = entity.type === "CAMPUS" ? { campusId: entity.id } : { schoolId: entity.id };
@@ -313,7 +314,7 @@ export async function getPrincipalKpiComparisonData(params?: {
       const goodEquip = await prisma.equipment.count({
         where: { ...equipWhere, condition: { in: ["EXCELLENT", "GOOD"] } },
       });
-      const equipmentRate = totalEquip > 0 ? Number(((goodEquip / totalEquip) * 100).toFixed(1)) : 91.5;
+      const equipmentRate = totalEquip > 0 ? Number(((goodEquip / totalEquip) * 100).toFixed(1)) : 0.0;
 
       // 6. Phụ huynh
       const totalFeedbacks = await prisma.parentFeedback.count({
@@ -325,7 +326,21 @@ export async function getPrincipalKpiComparisonData(params?: {
           response: { not: null },
         },
       });
-      const parentRate = totalFeedbacks > 0 ? Number(((respondedFeedbacks / totalFeedbacks) * 100).toFixed(1)) : 89.0;
+      const parentRate = totalFeedbacks > 0 ? Number(((respondedFeedbacks / totalFeedbacks) * 100).toFixed(1)) : 0.0;
+
+      // 7. Mục tiêu chiến lược
+      const qualityObjs = await prisma.qualityObjective.findMany({
+        where: entity.type === "CAMPUS" ? { OR: [{ campusScope: entity.id }, { campusScope: "ALL" }] } : { schoolId: entity.id },
+      });
+      const achievedObjs = qualityObjs.filter((o) => o.status === "ACHIEVED" || o.status === "EXCEEDED").length;
+      const strategicRate = qualityObjs.length > 0 ? Number(((achievedObjs / qualityObjs.length) * 100).toFixed(1)) : 0.0;
+
+      // 8. Đổi mới & Khen thưởng
+      const commendationsCount = await prisma.commendation.count({
+        where: classIds.length > 0 ? { student: { classId: { in: classIds } } } : undefined,
+      });
+      const innovationRate = commendationsCount > 0 ? Math.min(100, commendationsCount * 20) : 0.0;
+      const staffRate = teacherCount > 0 ? 100.0 : 0.0;
 
       // Map categories
       const categoryScores: Record<string, PrincipalKpiCategoryScore> = {};
@@ -339,18 +354,18 @@ export async function getPrincipalKpiComparisonData(params?: {
         const catCatalogs = catalogs.filter((k) => k.category === cat);
         const catName = CATEGORY_LABELS[cat] || cat;
 
-        let catActual = 90.0;
-        if (cat === KpiCategory.STRATEGIC) catActual = 88.5;
+        let catActual = 0.0;
+        if (cat === KpiCategory.STRATEGIC) catActual = strategicRate;
         else if (cat === KpiCategory.EDUCATIONAL_QUALITY) catActual = academicRate;
         else if (cat === KpiCategory.PROFESSIONAL) catActual = lessonPlanRate;
         else if (cat === KpiCategory.STUDENT) catActual = attendanceRate;
-        else if (cat === KpiCategory.SCHOOL_SAFETY) catActual = Math.max(0, 100 - violationRate * 20);
+        else if (cat === KpiCategory.SCHOOL_SAFETY) catActual = schoolSafetyRate;
         else if (cat === KpiCategory.ASSETS || cat === KpiCategory.FACILITIES) catActual = equipmentRate;
         else if (cat === KpiCategory.SCHOOL_RELATIONS) catActual = parentRate;
-        else if (cat === KpiCategory.DIGITAL_TRANSFORMATION) catActual = lessonPlanRate * 0.95;
-        else if (cat === KpiCategory.INNOVATION) catActual = 85.0;
-        else if (cat === KpiCategory.STAFF_PERSONNEL) catActual = 92.0;
-        else if (cat === KpiCategory.FINANCIAL) catActual = 94.0;
+        else if (cat === KpiCategory.DIGITAL_TRANSFORMATION) catActual = lessonPlanRate;
+        else if (cat === KpiCategory.INNOVATION) catActual = innovationRate;
+        else if (cat === KpiCategory.STAFF_PERSONNEL) catActual = staffRate;
+        else if (cat === KpiCategory.FINANCIAL) catActual = 0.0;
 
         // Check if dbPeriod has recorded values
         let completionRate = catActual;

@@ -160,7 +160,14 @@ vi.mock("@/lib/prisma", () => ({
     },
     qualityObjective: {
       count: vi.fn().mockResolvedValue(3),
+      findMany: vi.fn().mockResolvedValue([
+        { id: "qo_01", title: "Nâng cao chất lượng dạy học", status: "ACHIEVED", campusScope: "ALL" },
+        { id: "qo_02", title: "Chuyển đổi số giáo án điện tử", status: "ACHIEVED", campusScope: "ALL" },
+      ]),
       create: vi.fn().mockImplementation((args: any) => Promise.resolve({ id: "qo_01", ...args.data })),
+    },
+    commendation: {
+      count: vi.fn().mockResolvedValue(4),
     },
     kpiApprovalLog: {
       create: vi.fn().mockImplementation((args: any) => Promise.resolve({ id: "log_01", ...args.data })),

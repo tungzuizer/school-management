@@ -93,6 +93,26 @@ export const DEMO_ACCOUNTS_MAP: Record<string, DemoAccountMetadata> = {
     name: "Cô Vũ Thị Hoa (Tổ trưởng Khối 1)",
     schoolId: "sch_th_pholu",
   },
+  "to.khoi2@gmail.com": {
+    role: "SUBJECT_HEAD",
+    name: "Cô Phạm Thị Lan (Tổ trưởng Khối 2)",
+    schoolId: "sch_th_pholu",
+  },
+  "to.khoi3@gmail.com": {
+    role: "SUBJECT_HEAD",
+    name: "Thầy Đinh Văn Nam (Tổ trưởng Khối 3)",
+    schoolId: "sch_th_pholu",
+  },
+  "to.khoi4@gmail.com": {
+    role: "SUBJECT_HEAD",
+    name: "Cô Hoàng Thị Mai (Tổ trưởng Khối 4)",
+    schoolId: "sch_th_pholu",
+  },
+  "to.khoi5@gmail.com": {
+    role: "SUBJECT_HEAD",
+    name: "Thầy Bùi Quang Hưng (Tổ trưởng Khối 5)",
+    schoolId: "sch_th_pholu",
+  },
   "to.dacthu@gmail.com": {
     role: "SUBJECT_HEAD",
     name: "Cô Đào Thị Linh (Tổ trưởng Tổ Đặc thù)",
@@ -111,6 +131,15 @@ export const DEMO_ACCOUNTS_MAP: Record<string, DemoAccountMetadata> = {
     campusId: "cmp_trungtam",
   },
   // Legacy demo & convenience aliases
+  "superadmin@gmail.com": {
+    role: "SUPER_ADMIN",
+    name: "Ban Quản Trị Nền Tảng Giáo Dục Toàn Quốc (SuperAdmin)",
+  },
+  "sogd.laocai@gmail.com": {
+    role: "DEPARTMENT_ADMIN",
+    name: "Văn phòng Sở GD&ĐT Tỉnh Lào Cai",
+    departmentId: "sogd_laocai",
+  },
   "superadmin@school.edu.vn": {
     role: "SUPER_ADMIN",
     name: "Quản Trị Viên Tối Cao (Super Admin)",
