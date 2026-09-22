@@ -5,7 +5,7 @@
  * 1. Importers/Callers: src/app/admin/kpi/page.tsx:21
  * 2. Public functions affected: PrincipalKpiDashboard (Default Export Component)
  * 3. Data structures: PrincipalKpiOverviewPayload, PrincipalKpiEntityComparison, PrincipalKpiPillarScore
- * 4. Verbatim User Instruction: "bỏ các icon màu mè đi dùng icon đơn giản" - "theo khuyến nghị của bạn"
+ * 4. Verbatim User Instruction: "sao vẫn còn icon màu mè vậy ?" -> "theo khuyến nghị của bạn" (Chuẩn hóa toàn diện phong cách tối giản đơn sắc Monochrome/Slate)
  */
 
 import { useState, useEffect } from "react";
@@ -407,10 +407,10 @@ export default function PrincipalKpiDashboard() {
   };
 
   const getHeatmapColor = (rate: number) => {
-    if (rate >= 90) return "bg-emerald-600 text-white font-semibold";
-    if (rate >= 75) return "bg-blue-600 text-white font-medium";
-    if (rate >= 60) return "bg-amber-400 text-amber-950 font-bold";
-    return "bg-rose-600 text-white font-bold animate-pulse";
+    if (rate >= 90) return "bg-slate-900 text-white font-semibold";
+    if (rate >= 75) return "bg-slate-700 text-white font-medium";
+    if (rate >= 60) return "bg-slate-300 text-slate-900 font-medium";
+    return "bg-slate-100 text-slate-800 font-bold border border-slate-300";
   };
 
   // Bar Chart formatting
@@ -431,11 +431,11 @@ export default function PrincipalKpiDashboard() {
       {/* 1. Header Toolbar & Filters */}
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl">
-            <Compass className="w-6 h-6" />
+          <div className="p-2.5 bg-slate-100 text-slate-700 rounded-xl border border-slate-200">
+            <Compass className="w-6 h-6 text-slate-700" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               Bảng Giám Sát KPI Hiệu Trưởng (Liên Trường & Điểm Trường)
             </h2>
             <p className="text-xs text-slate-500">
@@ -448,42 +448,42 @@ export default function PrincipalKpiDashboard() {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/admin/emulation"
-            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white rounded-xl text-sm font-bold shadow-sm transition-all"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-medium border border-slate-300 shadow-xs transition-colors"
             title="Xem Bảng Vàng Thi Đua & Giám Sát Chuyên Cần Đi Muộn Real-time"
           >
-            <Trophy className="w-4 h-4 text-amber-300" />
+            <Trophy className="w-4 h-4 text-slate-600" />
             <span>Bảng Vàng Thi Đua</span>
           </Link>
 
           <button
             onClick={handleBatchScan}
             disabled={batchScanLoading}
-            className="flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-amber-950 rounded-xl text-sm font-bold shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-700 rounded-xl text-sm font-medium border border-slate-300 shadow-xs transition-colors cursor-pointer"
             title="Quét toàn bộ điểm trường và tự động kích hoạt cảnh báo sớm nếu phát hiện nguy cơ"
           >
-            <BellRing className={`w-4 h-4 ${batchScanLoading ? "animate-spin" : ""}`} />
+            <BellRing className={`w-4 h-4 text-slate-600 ${batchScanLoading ? "animate-spin" : ""}`} />
             <span>{batchScanLoading ? "Đang quét..." : "Quét Cảnh Báo Sớm"}</span>
           </button>
 
           <button
             onClick={handleGenerateAiInsights}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-sm font-semibold shadow-md transition-all scale-[1.01]"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-amber-300" />
+            <Sparkles className="w-4 h-4 text-slate-300" />
             AI Phân Tích & Đề Xuất
           </button>
 
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-semibold shadow-xs transition-colors"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-medium border border-slate-300 shadow-xs transition-colors cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+            <FileSpreadsheet className="w-4 h-4 text-slate-600" />
             Xuất Excel (.csv)
           </button>
 
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium border border-slate-300 transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-medium border border-slate-300 shadow-xs transition-colors cursor-pointer"
           >
             <Printer className="w-4 h-4 text-slate-600" />
             In Báo Cáo
@@ -491,10 +491,10 @@ export default function PrincipalKpiDashboard() {
 
           <button
             onClick={fetchData}
-            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-300 transition-colors cursor-pointer"
+            className="p-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-300 shadow-xs transition-colors cursor-pointer"
             title="Làm mới dữ liệu"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`} />
+            <RefreshCw className={`w-4 h-4 text-slate-600 ${loading ? "animate-spin text-slate-900" : ""}`} />
           </button>
         </div>
       </div>
@@ -533,15 +533,15 @@ export default function PrincipalKpiDashboard() {
       <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-            <SlidersHorizontal className="w-4 h-4 text-blue-700" />
+            <SlidersHorizontal className="w-4 h-4 text-slate-600" />
             Phạm vi:
           </div>
 
           <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1">
             <button
               onClick={() => setScopeType("CAMPUS")}
-              className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all flex items-center gap-1.5 ${
-                scopeType === "CAMPUS" ? "bg-blue-700 text-white shadow-xs" : "text-blue-950 hover:bg-white hover:text-blue-700"
+              className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                scopeType === "CAMPUS" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:bg-white hover:text-slate-900"
               }`}
             >
               <MapPin className="w-3.5 h-3.5 shrink-0" />
@@ -549,8 +549,8 @@ export default function PrincipalKpiDashboard() {
             </button>
             <button
               onClick={() => setScopeType("SCHOOL")}
-              className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all flex items-center gap-1.5 ${
-                scopeType === "SCHOOL" ? "bg-blue-700 text-white shadow-xs" : "text-blue-950 hover:bg-white hover:text-blue-700"
+              className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                scopeType === "SCHOOL" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:bg-white hover:text-slate-900"
               }`}
             >
               <Building2 className="w-3.5 h-3.5 shrink-0" />
@@ -562,7 +562,7 @@ export default function PrincipalKpiDashboard() {
             <select
               value={selectedSchoolId}
               onChange={(e) => setSelectedSchoolId(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
             >
               <option value="ALL">-- Tất cả trường học --</option>
               {schools.map((s) => (
@@ -576,7 +576,7 @@ export default function PrincipalKpiDashboard() {
           <select
             value={periodType}
             onChange={(e) => setPeriodType(e.target.value as ReportingFrequency)}
-            className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
           >
             <option value="MONTHLY">Định kỳ Hàng Tháng</option>
             <option value="QUARTERLY">Định kỳ Hàng Quý</option>
@@ -587,7 +587,7 @@ export default function PrincipalKpiDashboard() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
           >
             <option value={2026}>Năm học 2025 - 2026</option>
             <option value={2025}>Năm học 2024 - 2025</option>
@@ -599,10 +599,10 @@ export default function PrincipalKpiDashboard() {
         <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-300">
           <button
             onClick={() => setActiveSubView("LEADERBOARD")}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubView === "LEADERBOARD"
-                ? "bg-blue-800 text-white shadow-xs"
-                : "text-slate-900 hover:bg-slate-100"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5 shrink-0" />
@@ -610,10 +610,10 @@ export default function PrincipalKpiDashboard() {
           </button>
           <button
             onClick={() => setActiveSubView("RADAR")}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubView === "RADAR"
-                ? "bg-blue-800 text-white shadow-xs"
-                : "text-slate-900 hover:bg-slate-100"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
             <Compass className="w-3.5 h-3.5 shrink-0" />
@@ -621,10 +621,10 @@ export default function PrincipalKpiDashboard() {
           </button>
           <button
             onClick={() => setActiveSubView("TREND")}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubView === "TREND"
-                ? "bg-blue-800 text-white shadow-xs"
-                : "text-slate-900 hover:bg-slate-100"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5 shrink-0" />
@@ -632,10 +632,10 @@ export default function PrincipalKpiDashboard() {
           </button>
           <button
             onClick={() => setActiveSubView("HEATMAP")}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubView === "HEATMAP"
-                ? "bg-blue-800 text-white shadow-xs"
-                : "text-slate-900 hover:bg-slate-100"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
             <Flame className="w-3.5 h-3.5 shrink-0" />
@@ -646,7 +646,7 @@ export default function PrincipalKpiDashboard() {
 
       {loading ? (
         <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
-          <div className="w-8 h-8 border-4 border-blue-700 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-4 border-slate-800 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-medium text-slate-600">Đang tổng hợp dữ liệu KPI toàn hệ thống...</p>
         </div>
       ) : !data || data.entities.length === 0 ? (
@@ -660,16 +660,16 @@ export default function PrincipalKpiDashboard() {
           {/* 3. Top Executive Metric Cards (4 Strategic Pillars + Distribution) */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             {/* Card 1: Điểm Trung Bình Toàn Mạng Lưới */}
-            <div className="bg-gradient-to-br from-[#1a237e] to-[#283593] text-white p-5 rounded-2xl shadow-md space-y-3">
+            <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-sm border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Tổng Điểm Mạng Lưới</span>
-                <Award className="w-5 h-5 text-amber-300" />
+                <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Tổng Điểm Mạng Lưới</span>
+                <Award className="w-5 h-5 text-slate-300" />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold tracking-tight">{data.averageScore}</span>
-                <span className="text-xs text-blue-200">/ 100 điểm</span>
+                <span className="text-xs text-slate-400">/ 100 điểm</span>
               </div>
-              <div className="pt-2 border-t border-white/15 text-xs text-blue-100 flex items-center justify-between">
+              <div className="pt-2 border-t border-white/10 text-xs text-slate-300 flex items-center justify-between">
                 <span>Tổng số đơn vị:</span>
                 <span className="font-bold text-white">{data.totalEntities} đơn vị</span>
               </div>
@@ -688,13 +688,13 @@ export default function PrincipalKpiDashboard() {
                   entityName: "Toàn Mạng Lưới Trường Học",
                 })
               }
-              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer group relative"
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group relative"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-emerald-700 transition-colors">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors">
                   Chất Lượng Đào Tạo
                 </span>
-                <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg group-hover:bg-slate-200 transition-colors border border-slate-200">
                   <GraduationCap className="w-4 h-4" />
                 </div>
               </div>
@@ -704,7 +704,7 @@ export default function PrincipalKpiDashboard() {
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-emerald-500 h-full rounded-full"
+                  className="bg-slate-800 h-full rounded-full"
                   style={{ width: `${Math.min(100, data.pillarAverages[0]?.averageScore || 0)}%` }}
                 />
               </div>
@@ -713,7 +713,7 @@ export default function PrincipalKpiDashboard() {
                   <Database className="w-3 h-3 text-slate-400 shrink-0" />
                   Căn cứ: Điểm số TT 27 & Học tập
                 </span>
-                <span className="text-emerald-600 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
+                <span className="text-slate-700 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
               </div>
             </div>
 
@@ -730,13 +730,13 @@ export default function PrincipalKpiDashboard() {
                   entityName: "Toàn Mạng Lưới Trường Học",
                 })
               }
-              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group relative"
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group relative"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-blue-700 transition-colors">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors">
                   Chuyên Môn Giáo Viên
                 </span>
-                <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+                <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg group-hover:bg-slate-200 transition-colors border border-slate-200">
                   <Users className="w-4 h-4" />
                 </div>
               </div>
@@ -746,7 +746,7 @@ export default function PrincipalKpiDashboard() {
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-blue-500 h-full rounded-full"
+                  className="bg-slate-800 h-full rounded-full"
                   style={{ width: `${Math.min(100, data.pillarAverages[1]?.averageScore || 0)}%` }}
                 />
               </div>
@@ -755,7 +755,7 @@ export default function PrincipalKpiDashboard() {
                   <Database className="w-3 h-3 text-slate-400 shrink-0" />
                   Căn cứ: Giáo án (LessonPlan)
                 </span>
-                <span className="text-blue-600 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
+                <span className="text-slate-700 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
               </div>
             </div>
 
@@ -772,13 +772,13 @@ export default function PrincipalKpiDashboard() {
                   entityName: "Toàn Mạng Lưới Trường Học",
                 })
               }
-              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer group relative"
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group relative"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-amber-700 transition-colors">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors">
                   Nề Nếp & An Toàn
                 </span>
-                <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-100 transition-colors">
+                <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg group-hover:bg-slate-200 transition-colors border border-slate-200">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
               </div>
@@ -788,7 +788,7 @@ export default function PrincipalKpiDashboard() {
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-amber-500 h-full rounded-full"
+                  className="bg-slate-800 h-full rounded-full"
                   style={{ width: `${Math.min(100, data.pillarAverages[2]?.averageScore || 0)}%` }}
                 />
               </div>
@@ -797,7 +797,7 @@ export default function PrincipalKpiDashboard() {
                   <Database className="w-3 h-3 text-slate-400 shrink-0" />
                   Căn cứ: Điểm danh & Đi muộn
                 </span>
-                <span className="text-amber-600 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
+                <span className="text-slate-700 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
               </div>
             </div>
 
@@ -814,13 +814,13 @@ export default function PrincipalKpiDashboard() {
                   entityName: "Toàn Mạng Lưới Trường Học",
                 })
               }
-              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-sky-400 hover:shadow-md transition-all cursor-pointer group relative"
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group relative"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-sky-700 transition-colors">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors">
                   Cơ Sở & Số Hóa
                 </span>
-                <div className="p-1.5 bg-sky-50 text-sky-700 rounded-lg group-hover:bg-sky-100 transition-colors">
+                <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg group-hover:bg-slate-200 transition-colors border border-slate-200">
                   <Zap className="w-4 h-4" />
                 </div>
               </div>
@@ -830,7 +830,7 @@ export default function PrincipalKpiDashboard() {
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-sky-600 h-full rounded-full"
+                  className="bg-slate-800 h-full rounded-full"
                   style={{ width: `${Math.min(100, data.pillarAverages[3]?.averageScore || 0)}%` }}
                 />
               </div>
@@ -839,7 +839,7 @@ export default function PrincipalKpiDashboard() {
                   <Database className="w-3 h-3 text-slate-400 shrink-0" />
                   Căn cứ: Thiết bị & Mục tiêu CL
                 </span>
-                <span className="text-sky-600 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
+                <span className="text-slate-700 text-[10px] font-bold group-hover:underline">Chi tiết →</span>
               </div>
             </div>
           </div>
@@ -847,23 +847,23 @@ export default function PrincipalKpiDashboard() {
           {/* Tier Distribution Bar */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4 text-xs font-semibold">
             <div className="flex items-center gap-2 text-slate-700">
-              <Layers className="w-4 h-4 text-blue-700" />
+              <Layers className="w-4 h-4 text-slate-600" />
               <span>Phân Bổ Xếp Hạng ({data.totalEntities} Đơn Vị):</span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-emerald-700 border border-slate-200 rounded-lg">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 Xuất sắc: {data.tierDistribution.xuatSac}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-blue-700 border border-slate-200 rounded-lg">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-500" />
                 Khá/Tốt: {data.tierDistribution.tot}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-amber-700 border border-slate-200 rounded-lg">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-medium">
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
                 Đạt chuẩn: {data.tierDistribution.dat}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-rose-700 border border-slate-200 rounded-lg">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-medium">
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
                 Cần can thiệp: {data.tierDistribution.canCanThiep}
               </span>
@@ -879,7 +879,7 @@ export default function PrincipalKpiDashboard() {
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-blue-700" />
+                    <TrendingUp className="w-4 h-4 text-slate-700" />
                     Biểu Đồ Xếp Hạng Điểm Tổng Hợp & Phân Rã 4 Trụ Cột
                   </h3>
                   <span className="text-xs text-slate-400">Đơn vị: Điểm KPI (0 - 100)</span>
@@ -901,10 +901,10 @@ export default function PrincipalKpiDashboard() {
                         }}
                       />
                       <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-                      <Bar dataKey="score" fill="#1e40af" name="Điểm Tổng Hợp" radius={[6, 6, 0, 0]} barSize={28} />
-                      <Bar dataKey="Chất lượng đào tạo" fill="#10b981" radius={[4, 4, 0, 0]} barSize={12} />
-                      <Bar dataKey="Chuyên môn GV" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={12} />
-                      <Bar dataKey="Nề nếp & An toàn" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={12} />
+                      <Bar dataKey="score" fill="#1e293b" name="Điểm Tổng Hợp" radius={[6, 6, 0, 0]} barSize={28} />
+                      <Bar dataKey="Chất lượng đào tạo" fill="#475569" radius={[4, 4, 0, 0]} barSize={12} />
+                      <Bar dataKey="Chuyên môn GV" fill="#64748b" radius={[4, 4, 0, 0]} barSize={12} />
+                      <Bar dataKey="Nề nếp & An toàn" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={12} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -916,7 +916,7 @@ export default function PrincipalKpiDashboard() {
                   <div
                     key={entity.id}
                     onClick={() => setSelectedEntity(entity)}
-                    className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer space-y-4 relative group"
+                    className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer space-y-4 relative group"
                   >
                     {/* Top row */}
                     <div className="flex items-start justify-between gap-2">
@@ -924,23 +924,23 @@ export default function PrincipalKpiDashboard() {
                         <div
                           className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm ${
                             entity.rank === 1
-                              ? "bg-amber-100 text-amber-800 border border-amber-300 shadow-sm"
+                              ? "bg-slate-900 text-white font-mono shadow-xs"
                               : entity.rank === 2
-                              ? "bg-slate-200 text-slate-800 border border-slate-300"
+                              ? "bg-slate-700 text-white font-mono"
                               : entity.rank === 3
-                              ? "bg-amber-50 text-amber-700 border border-amber-200"
-                              : "bg-slate-100 text-slate-600"
+                              ? "bg-slate-200 text-slate-800 font-mono"
+                              : "bg-slate-100 text-slate-600 font-mono"
                           }`}
                         >
                           #{entity.rank}
                         </div>
                         <div>
-                          <h4 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                          <h4 className="font-bold text-slate-900 group-hover:text-slate-700 transition-colors">
                             {entity.name}
                           </h4>
                           {entity.schoolName && (
                             <p className="text-xs text-slate-500 flex items-center gap-1">
-                              <Building2 className="w-3 h-3" />
+                              <Building2 className="w-3 h-3 text-slate-400" />
                               {entity.schoolName}
                             </p>
                           )}
@@ -950,12 +950,12 @@ export default function PrincipalKpiDashboard() {
                       <div className="flex flex-col items-end gap-1">
                         {getTierBadge(entity.tier)}
                         {entity.periodStatus === "APPROVED" ? (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3" /> Đã Khóa Sổ
+                          <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-slate-600" /> Đã Khóa Sổ
                           </span>
                         ) : entity.periodStatus === "SUBMITTED" ? (
-                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 animate-pulse flex items-center gap-1">
-                            <Target className="w-3 h-3" /> Chờ BGH Duyệt
+                          <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-300 animate-pulse flex items-center gap-1">
+                            <Target className="w-3 h-3 text-slate-600" /> Chờ BGH Duyệt
                           </span>
                         ) : (
                           <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
@@ -969,19 +969,11 @@ export default function PrincipalKpiDashboard() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-semibold text-slate-600">Điểm tổng hợp:</span>
-                        <span className="font-extrabold text-blue-800 text-sm">{entity.compositeScore} / 100</span>
+                        <span className="font-extrabold text-slate-900 text-sm">{entity.compositeScore} / 100</span>
                       </div>
                       <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${
-                            entity.compositeScore >= 90
-                              ? "bg-emerald-500"
-                              : entity.compositeScore >= 75
-                              ? "bg-blue-500"
-                              : entity.compositeScore >= 60
-                              ? "bg-amber-400"
-                              : "bg-rose-500"
-                          }`}
+                          className="h-full rounded-full bg-slate-800"
                           style={{ width: `${Math.min(100, entity.compositeScore)}%` }}
                         />
                       </div>
@@ -1005,21 +997,21 @@ export default function PrincipalKpiDashboard() {
 
                     {/* Top Strengths & Bottlenecks */}
                     <div className="space-y-1.5 text-xs">
-                      <div className="flex items-start gap-1.5 text-emerald-700 font-medium">
+                      <div className="flex items-start gap-1.5 text-slate-700 font-medium">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                         <span className="line-clamp-1">{entity.topStrengths[0] || "Đồng đều các chỉ số"}</span>
                       </div>
                       {entity.bottlenecks.length > 0 && (
-                        <div className="flex items-start gap-1.5 text-rose-600 font-medium">
+                        <div className="flex items-start gap-1.5 text-slate-700 font-medium">
                           <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
                           <span className="line-clamp-1">{entity.bottlenecks[0]}</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-blue-700 font-semibold group-hover:translate-x-0.5 transition-transform">
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-700 font-semibold group-hover:translate-x-0.5 transition-transform">
                       <span>Xem chi tiết chỉ số & minh chứng</span>
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-4 h-4 text-slate-500" />
                     </div>
                   </div>
                 ))}
@@ -1034,7 +1026,7 @@ export default function PrincipalKpiDashboard() {
               <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <Compass className="w-4 h-4 text-blue-700" />
+                    <Compass className="w-4 h-4 text-slate-700" />
                     Biểu Đồ Radar So Sánh 6 Trục Chất Lượng Với Chuẩn Mạng Lưới
                   </h3>
                   <span className="text-xs text-slate-400">Đơn vị: Tỷ lệ hoàn thành %</span>
@@ -1049,22 +1041,22 @@ export default function PrincipalKpiDashboard() {
                       <Radar
                         name="Điểm Chuẩn Trung Bình"
                         dataKey="avgScore"
-                        stroke="#1e40af"
-                        fill="#1e40af"
+                        stroke="#1e293b"
+                        fill="#1e293b"
                         fillOpacity={0.25}
                       />
                       <Radar
                         name="Mức Cao Nhất (Max)"
                         dataKey="maxScore"
-                        stroke="#10b981"
-                        fill="#10b981"
+                        stroke="#475569"
+                        fill="#475569"
                         fillOpacity={0.15}
                       />
                       <Radar
                         name="Mức Thấp Nhất (Min)"
                         dataKey="minScore"
-                        stroke="#ef4444"
-                        fill="#ef4444"
+                        stroke="#94a3b8"
+                        fill="#94a3b8"
                         fillOpacity={0.15}
                       />
                       <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }} />
@@ -1077,7 +1069,7 @@ export default function PrincipalKpiDashboard() {
               {/* Dimension Analysis Card */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                  <Target className="w-4 h-4 text-blue-700" />
+                  <Target className="w-4 h-4 text-slate-700" />
                   Đánh Giá 6 Trục Trọng Tâm
                 </h4>
 
@@ -1086,16 +1078,16 @@ export default function PrincipalKpiDashboard() {
                     <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-bold text-slate-800">{dim.dimension}</span>
-                        <span className="font-extrabold text-blue-800">{dim.avgScore}%</span>
+                        <span className="font-extrabold text-slate-900">{dim.avgScore}%</span>
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-500">
                         <span>Cao nhất: {dim.maxScore}%</span>
-                        <span className="text-rose-600">Thấp nhất: {dim.minScore}%</span>
+                        <span className="text-slate-600">Thấp nhất: {dim.minScore}%</span>
                         <span>Độ lệch: {(dim.maxScore - dim.minScore).toFixed(1)}%</span>
                       </div>
                       <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                         <div
-                          className="bg-blue-700 h-full rounded-full"
+                          className="bg-slate-800 h-full rounded-full"
                           style={{ width: `${Math.min(100, dim.avgScore)}%` }}
                         />
                       </div>
@@ -1112,7 +1104,7 @@ export default function PrincipalKpiDashboard() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                 <div>
                   <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-blue-700" />
+                    <Layers className="w-4 h-4 text-slate-700" />
                     Ma Trận Cảnh Báo Nhiệt 12 Nhóm KPI Giữa Các Trường / Điểm Trường
                   </h3>
                   <p className="text-xs text-slate-500">
@@ -1144,7 +1136,7 @@ export default function PrincipalKpiDashboard() {
                           </div>
                         </td>
                         <td className="p-2 text-center">
-                          <span className="px-2 py-1 rounded-md font-extrabold bg-slate-100 text-blue-800">
+                          <span className="px-2 py-1 rounded-md font-extrabold bg-slate-100 text-slate-900 border border-slate-200">
                             {entity.compositeScore}
                           </span>
                         </td>
@@ -1179,7 +1171,7 @@ export default function PrincipalKpiDashboard() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                   <div>
                     <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-blue-700" />
+                      <TrendingUp className="w-4 h-4 text-slate-700" />
                       Biểu Đồ Xu Hướng & Lịch Sử Tiến Bộ KPI Qua Các Kỳ ({year})
                     </h3>
                     <p className="text-xs text-slate-500">
@@ -1189,7 +1181,7 @@ export default function PrincipalKpiDashboard() {
                   <button
                     onClick={fetchTrendData}
                     disabled={trendLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors self-start md:self-auto"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 border border-slate-300 rounded-lg transition-colors self-start md:self-auto cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${trendLoading ? "animate-spin" : ""}`} />
                     Làm mới xu hướng
@@ -1198,7 +1190,7 @@ export default function PrincipalKpiDashboard() {
 
                 {trendLoading ? (
                   <div className="h-72 flex items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : trendData.length === 0 ? (
                   <div className="h-72 flex flex-col items-center justify-center text-slate-400 space-y-2">
@@ -1243,7 +1235,7 @@ export default function PrincipalKpiDashboard() {
               {/* Entity Growth Table */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                 <h4 className="font-bold text-slate-800 text-xs flex items-center gap-2">
-                  <Compass className="w-4 h-4 text-blue-700" />
+                  <Compass className="w-4 h-4 text-slate-700" />
                   Bảng Tổng Hợp Độ Tăng Trưởng & Đánh Giá Nhịp Độ Phát Triển
                 </h4>
                 <div className="overflow-x-auto">
@@ -1261,15 +1253,15 @@ export default function PrincipalKpiDashboard() {
                       {data.entities.map((e) => (
                         <tr key={e.id} className="hover:bg-slate-50/60">
                           <td className="p-3 font-bold text-slate-800">{e.name}</td>
-                          <td className="p-3 text-center font-extrabold text-blue-900">{e.compositeScore}</td>
+                          <td className="p-3 text-center font-extrabold text-slate-900">{e.compositeScore}</td>
                           <td className="p-3 text-center">
-                            <span className="font-mono px-2 py-0.5 bg-slate-100 rounded text-slate-700">#{e.rank}</span>
+                            <span className="font-mono px-2 py-0.5 bg-slate-100 rounded text-slate-700 border border-slate-200">#{e.rank}</span>
                           </td>
                           <td className="p-3 text-center">{getTierBadge(e.tier)}</td>
                           <td className="p-3 text-right">
                             <button
                               onClick={() => setSelectedEntity(e)}
-                              className="px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors"
+                              className="px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 border border-slate-300 rounded-lg transition-colors cursor-pointer"
                             >
                               Xem & Cải tiến →
                             </button>
@@ -1290,22 +1282,22 @@ export default function PrincipalKpiDashboard() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             {/* Modal Header */}
-            <div className="p-6 bg-gradient-to-r from-[#1a237e] to-[#283593] text-white flex items-center justify-between">
+            <div className="p-6 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 bg-white/20 text-white rounded-md text-xs font-bold font-mono">
+                  <span className="px-2 py-0.5 bg-slate-800 text-slate-200 border border-slate-700 rounded-md text-xs font-bold font-mono">
                     Hạng #{selectedEntity.rank}
                   </span>
                   <h3 className="text-xl font-extrabold">{selectedEntity.name}</h3>
                 </div>
-                <p className="text-xs text-blue-200">
+                <p className="text-xs text-slate-300">
                   {selectedEntity.schoolName ? `Trường: ${selectedEntity.schoolName} | ` : ""}
                   Sĩ số: {selectedEntity.studentCount} HS • {selectedEntity.teacherCount} GV • {selectedEntity.classCount} Lớp
                 </p>
               </div>
               <button
                 onClick={() => setSelectedEntity(null)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1318,7 +1310,7 @@ export default function PrincipalKpiDashboard() {
                 <div className="space-y-1">
                   <span className="text-xs text-slate-500 font-medium">Điểm Đánh Giá Tổng Hợp</span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-extrabold text-blue-900">{selectedEntity.compositeScore}</span>
+                    <span className="text-3xl font-extrabold text-slate-900">{selectedEntity.compositeScore}</span>
                     <span className="text-xs text-slate-400">/ 100 điểm</span>
                   </div>
                 </div>
@@ -1346,17 +1338,17 @@ export default function PrincipalKpiDashboard() {
                           entityName: selectedEntity.name,
                         })
                       }
-                      className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 hover:border-blue-400 hover:bg-blue-50/40 hover:shadow-xs transition-all cursor-pointer group"
+                      className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 hover:border-slate-400 hover:bg-slate-100/70 hover:shadow-xs transition-all cursor-pointer group"
                     >
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-700 group-hover:text-blue-800 transition-colors">
+                        <span className="font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">
                           {pil.name}
                         </span>
-                        <span className="font-bold text-blue-800">{pil.score}%</span>
+                        <span className="font-bold text-slate-900">{pil.score}%</span>
                       </div>
                       <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                         <div
-                          className="bg-blue-700 h-full rounded-full"
+                          className="bg-slate-800 h-full rounded-full"
                           style={{ width: `${Math.min(100, pil.score)}%` }}
                         />
                       </div>
@@ -1373,7 +1365,7 @@ export default function PrincipalKpiDashboard() {
                               : "Căn cứ: Thiết bị & Mục tiêu CL"}
                           </span>
                         </span>
-                        <span className="text-blue-600 font-bold group-hover:underline shrink-0">Tra cứu →</span>
+                        <span className="text-slate-700 font-bold group-hover:underline shrink-0">Tra cứu →</span>
                       </div>
                     </div>
                   ))}
@@ -1382,35 +1374,35 @@ export default function PrincipalKpiDashboard() {
 
               {/* Top Strengths and Bottlenecks */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-2">
-                  <h5 className="font-bold text-emerald-800 text-xs flex items-center gap-1.5">
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                  <h5 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     Thế Mạnh Nổi Bật
                   </h5>
-                  <ul className="text-xs text-emerald-900 space-y-1">
+                  <ul className="text-xs text-slate-700 space-y-1">
                     {selectedEntity.topStrengths.map((str, i) => (
                       <li key={i}>• {str}</li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="p-4 bg-rose-50/70 border border-rose-200 rounded-2xl space-y-3">
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between">
-                    <h5 className="font-bold text-rose-800 text-xs flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    <h5 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-500" />
                       Điểm Nghẽn & Khuyến Nghị
                     </h5>
                     {(selectedEntity.compositeScore < 70 || selectedEntity.tier === "CAN_CAN_THIEP") && (
                       <button
                         onClick={() => handleTriggerWarning(selectedEntity)}
                         disabled={warningLoading}
-                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-xs transition-colors"
+                        className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
                         title="Kích hoạt cảnh báo sớm và phát thông báo hệ thống"
                       >
                         {warningLoading ? (
                           <RefreshCw className="w-3 h-3 animate-spin" />
                         ) : (
-                          <BellRing className="w-3 h-3" />
+                          <BellRing className="w-3 h-3 text-slate-300" />
                         )}
                         Phát Cảnh Báo Sớm
                       </button>
@@ -1421,8 +1413,8 @@ export default function PrincipalKpiDashboard() {
                     <div
                       className={`text-xs font-semibold p-2 rounded-lg flex items-center gap-1.5 ${
                         warningFeedback.type === "success"
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                          : "bg-rose-100 text-rose-800 border border-rose-300"
+                          ? "bg-slate-100 text-slate-800 border border-slate-300"
+                          : "bg-rose-50 text-rose-800 border border-rose-200"
                       }`}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -1430,17 +1422,17 @@ export default function PrincipalKpiDashboard() {
                     </div>
                   )}
 
-                  <ul className="text-xs text-rose-900 space-y-2">
+                  <ul className="text-xs text-slate-700 space-y-2">
                     {selectedEntity.bottlenecks.length > 0 ? (
                       selectedEntity.bottlenecks.map((bot, i) => (
                         <li
                           key={i}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-white/70 rounded-xl border border-rose-100"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200"
                         >
                           <span className="font-medium">• {bot}</span>
                           <div className="flex items-center gap-1.5 shrink-0">
                             {goalFeedback?.bottleneck === bot ? (
-                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                              <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1">
                                 <Check className="w-3 h-3 text-emerald-600 shrink-0" />
                                 <span>Đã lập ({goalFeedback.code})</span>
                               </span>
@@ -1448,12 +1440,12 @@ export default function PrincipalKpiDashboard() {
                               <button
                                 onClick={() => handleCreateQualityGoal(selectedEntity, bot)}
                                 disabled={creatingGoal === bot}
-                                className="px-2 py-0.5 bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400 text-white rounded text-[10px] font-semibold flex items-center gap-1 transition-colors"
+                                className="px-2 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded text-[10px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
                               >
                                 {creatingGoal === bot ? (
                                   <RefreshCw className="w-2.5 h-2.5 animate-spin" />
                                 ) : (
-                                  <PlusCircle className="w-2.5 h-2.5" />
+                                  <PlusCircle className="w-2.5 h-2.5 text-slate-300" />
                                 )}
                                 Tạo Kế Hoạch Cải Tiến
                               </button>
@@ -1498,7 +1490,7 @@ export default function PrincipalKpiDashboard() {
                         </>
                       ) : selectedEntity.periodStatus === "SUBMITTED" ? (
                         <>
-                          <Clock className="w-3.5 h-3.5 text-blue-600 inline shrink-0" />
+                          <Clock className="w-3.5 h-3.5 text-slate-700 inline shrink-0" />
                           <span>Đang trình duyệt BGH (Phó HT đã gửi)</span>
                         </>
                       ) : (
@@ -1520,13 +1512,13 @@ export default function PrincipalKpiDashboard() {
                   <button
                     onClick={() => handleApproveSnapshot(selectedEntity)}
                     disabled={approveLoading}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-700 hover:bg-indigo-800 disabled:bg-indigo-400 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
                     title="Ký duyệt chính thức và đóng băng số liệu KPI kỳ này"
                   >
                     {approveLoading ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <ShieldCheck className="w-3.5 h-3.5 text-indigo-200" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-slate-300" />
                     )}
                     {approveLoading ? "Đang ký duyệt..." : "Ký Duyệt & Khóa Sổ"}
                   </button>
@@ -1535,12 +1527,12 @@ export default function PrincipalKpiDashboard() {
                 <button
                   onClick={() => handleSaveSnapshot(selectedEntity)}
                   disabled={snapshotLoading}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                 >
                   {snapshotLoading ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <BookmarkCheck className="w-3.5 h-3.5 text-emerald-200" />
+                    <BookmarkCheck className="w-3.5 h-3.5 text-slate-600" />
                   )}
                   {snapshotLoading ? "Đang lưu..." : "Lưu Snapshot"}
                 </button>
@@ -1550,7 +1542,7 @@ export default function PrincipalKpiDashboard() {
                     setSelectedEntity(null);
                     setSnapshotFeedback(null);
                   }}
-                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-slate-200"
                 >
                   Đóng
                 </button>
@@ -1565,21 +1557,21 @@ export default function PrincipalKpiDashboard() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             {/* Header */}
-            <div className="p-6 bg-gradient-to-r from-[#1a237e] to-[#283593] text-white flex items-center justify-between">
+            <div className="p-6 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-white/15 rounded-xl">
-                  <Sparkles className="w-6 h-6 text-amber-300" />
+                <div className="p-2.5 bg-slate-800 rounded-xl border border-slate-700 text-slate-300">
+                  <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold">Cố Vấn Chiến Lược AI — Đề Xuất Chỉ Đạo Hiệu Trưởng</h3>
-                  <p className="text-xs text-blue-200">
+                  <p className="text-xs text-slate-300">
                     Tự động chẩn đoán nguyên nhân và xây dựng phương án hành động liên trường
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setAiModalOpen(false)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1589,7 +1581,7 @@ export default function PrincipalKpiDashboard() {
             <div className="p-6 space-y-4 overflow-y-auto text-sm text-slate-700 leading-relaxed">
               {aiLoading ? (
                 <div className="py-16 text-center space-y-4">
-                  <div className="w-10 h-10 border-4 border-blue-700 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <div className="w-10 h-10 border-4 border-slate-800 border-t-transparent rounded-full animate-spin mx-auto" />
                   <div className="space-y-1">
                     <p className="font-bold text-slate-800 text-sm">Trợ lý AI đang đọc toàn bộ số liệu KPI...</p>
                     <p className="text-xs text-slate-400">
@@ -1607,12 +1599,12 @@ export default function PrincipalKpiDashboard() {
             {/* Footer */}
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
               <span className="text-xs text-slate-500 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Dữ liệu đã được khử trùng PII và tuân thủ Quy tắc toàn vẹn AI (Rule 0).</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                <span>Dữ liệu đã được khử trùng PII và tuân thủ Quy tắc toàn vẹn AI.</span>
               </span>
               <button
                 onClick={() => setAiModalOpen(false)}
-                className="px-5 py-2 bg-blue-800 hover:bg-blue-900 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
               >
                 Hoàn Tất
               </button>
@@ -1626,14 +1618,14 @@ export default function PrincipalKpiDashboard() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             {/* Header */}
-            <div className="p-6 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex items-center justify-between">
+            <div className="p-6 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-white/15 rounded-xl">
-                  <Database className="w-6 h-6 text-cyan-300" />
+                <div className="p-2.5 bg-slate-800 rounded-xl border border-slate-700 text-slate-300">
+                  <Database className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 bg-cyan-400/20 text-cyan-200 rounded text-[10px] font-bold font-mono">
+                    <span className="px-2 py-0.5 bg-slate-800 text-slate-200 border border-slate-700 rounded text-[10px] font-bold font-mono">
                       {selectedPillarForDrilldown.code || "KPI-PILLAR"}
                     </span>
                     <h3 className="text-base font-extrabold">{selectedPillarForDrilldown.name}</h3>
@@ -1645,7 +1637,7 @@ export default function PrincipalKpiDashboard() {
               </div>
               <button
                 onClick={() => setSelectedPillarForDrilldown(null)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1658,7 +1650,7 @@ export default function PrincipalKpiDashboard() {
                 <div className="space-y-0.5">
                   <span className="text-xs font-semibold text-slate-500">Điểm đánh giá thực tế:</span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-extrabold text-blue-950">{selectedPillarForDrilldown.score}%</span>
+                    <span className="text-3xl font-extrabold text-slate-900">{selectedPillarForDrilldown.score}%</span>
                     <span className="text-xs text-slate-400">/ 100%</span>
                   </div>
                 </div>
@@ -1672,7 +1664,7 @@ export default function PrincipalKpiDashboard() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-blue-700" />
+                    <Layers className="w-4 h-4 text-slate-700" />
                     Cấu Thành Chỉ Số & Nguồn Gốc Dữ Liệu Thực Tế
                   </h4>
                   <span className="text-[11px] text-slate-400 font-medium">100% CSDL xác thực</span>
@@ -1683,26 +1675,26 @@ export default function PrincipalKpiDashboard() {
                     {selectedPillarForDrilldown.components.map((comp, cIdx) => (
                       <div
                         key={cIdx}
-                        className="p-4 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 shadow-xs space-y-2.5 transition-all"
+                        className="p-4 bg-white rounded-2xl border border-slate-200 hover:border-slate-400 shadow-xs space-y-2.5 transition-all"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="space-y-0.5">
                             <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                              <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold flex items-center justify-center">
+                              <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-bold flex items-center justify-center border border-slate-200">
                                 {cIdx + 1}
                               </span>
                               {comp.name}
                             </span>
                           </div>
-                          <span className="px-2.5 py-1 bg-blue-50 text-blue-900 border border-blue-200 rounded-lg text-xs font-extrabold shrink-0">
+                          <span className="px-2.5 py-1 bg-slate-100 text-slate-900 border border-slate-200 rounded-lg text-xs font-extrabold shrink-0">
                             {comp.value}
                           </span>
                         </div>
 
                         <p className="text-xs text-slate-600 leading-relaxed">{comp.detail}</p>
 
-                        <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-indigo-700 font-semibold bg-indigo-50/50 p-2 rounded-lg">
-                          <Database className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-700 font-semibold bg-slate-50 p-2 rounded-lg border border-slate-100">
+                          <Database className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                           <span>Nguồn CSDL: {comp.dbSource}</span>
                         </div>
                       </div>
@@ -1716,10 +1708,10 @@ export default function PrincipalKpiDashboard() {
               </div>
 
               {/* Data Integrity Guarantee Notice */}
-              <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-900">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-start gap-2.5 text-xs text-slate-700">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <p className="leading-relaxed">
-                  <span className="font-bold">Cam kết minh bạch dữ liệu:</span> Toàn bộ các chỉ số KPI được kết xuất tự động từ các bảng nghiệp vụ thực tế của nhà trường (Điểm danh hằng ngày, Sổ điểm TT27, Giáo án điện tử, Quản lý sự cố). Tuyệt đối không sử dụng số liệu ước lượng hoặc giả lập.
+                  <span className="font-bold text-slate-900">Cam kết minh bạch dữ liệu:</span> Toàn bộ các chỉ số KPI được kết xuất tự động từ các bảng nghiệp vụ thực tế của nhà trường (Điểm danh hằng ngày, Sổ điểm TT27, Giáo án điện tử, Quản lý sự cố). Tuyệt đối không sử dụng số liệu ước lượng hoặc giả lập.
                 </p>
               </div>
             </div>
@@ -1728,7 +1720,7 @@ export default function PrincipalKpiDashboard() {
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end">
               <button
                 onClick={() => setSelectedPillarForDrilldown(null)}
-                className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 Đóng Tra Cứu
               </button>
