@@ -27,6 +27,7 @@ import {
   ChevronDown,
   ChevronRight,
   Target,
+  Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -65,6 +66,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { label: "Bảng điều khiển", href: "/vice-principal/dashboard", icon: LayoutDashboard, description: "Tổng quan hoạt động cơ sở" },
       { label: "Báo cáo & Trình duyệt KPI", href: "/vice-principal/dashboard", icon: Target, badge: "KPI", description: "Báo cáo KPI cơ sở & Trình duyệt BGH" },
+      { label: "Bảng vàng Thi đua", href: "/admin/emulation", icon: Trophy, badge: "Thi Đua", description: "Bảng vàng thi đua nề nếp toàn trường & phân hiệu" },
     ],
   },
   {

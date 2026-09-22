@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   getPrincipalKpiComparisonData,
   getPrincipalKpiSchoolOptions,
@@ -52,6 +53,7 @@ import {
   History,
   ExternalLink,
   Database,
+  Trophy,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -408,6 +410,15 @@ export default function PrincipalKpiDashboard() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/emulation"
+            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white rounded-xl text-sm font-bold shadow-sm transition-all"
+            title="Xem Bảng Vàng Thi Đua & Giám Sát Chuyên Cần Đi Muộn Real-time"
+          >
+            <Trophy className="w-4 h-4 text-amber-300" />
+            <span>Bảng Vàng Thi Đua</span>
+          </Link>
+
           <button
             onClick={handleBatchScan}
             disabled={batchScanLoading}
@@ -486,11 +497,11 @@ export default function PrincipalKpiDashboard() {
             Phạm vi:
           </div>
 
-          <div className="inline-flex rounded-lg border border-slate-300 bg-slate-100 p-1">
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
             <button
               onClick={() => setScopeType("CAMPUS")}
               className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${
-                scopeType === "CAMPUS" ? "bg-blue-800 text-white shadow-xs" : "text-slate-800 hover:bg-white hover:text-blue-900"
+                scopeType === "CAMPUS" ? "bg-blue-700 text-white shadow-xs" : "text-slate-700 hover:bg-white hover:text-slate-900"
               }`}
             >
               📍 Theo Điểm Trường / Phân Hiệu
@@ -498,7 +509,7 @@ export default function PrincipalKpiDashboard() {
             <button
               onClick={() => setScopeType("SCHOOL")}
               className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${
-                scopeType === "SCHOOL" ? "bg-blue-800 text-white shadow-xs" : "text-slate-800 hover:bg-white hover:text-blue-900"
+                scopeType === "SCHOOL" ? "bg-blue-700 text-white shadow-xs" : "text-slate-700 hover:bg-white hover:text-slate-900"
               }`}
             >
               🏫 Theo Trường Học (Cụm)

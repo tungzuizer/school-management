@@ -41,6 +41,7 @@ import {
   ShieldCheck,
   Activity,
   Globe,
+  Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getCurrentAdminProfile, AdminProfile } from "./actions";
@@ -80,6 +81,7 @@ const superAdminMenuGroups: MenuGroup[] = [
     items: [
       { label: "Bảng chỉ huy Toàn nền tảng", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "Giám sát KPI Toàn Mạng Lưới", href: "/admin/kpi/principal-dashboard", icon: Target, badge: "KPI" },
+      { label: "Bảng vàng Thi đua Nề nếp", href: "/admin/emulation", icon: Trophy, badge: "Thi Đua" },
       { label: "Radar cảnh báo rủi ro AI", href: "/admin/early-warnings", icon: AlertCircle, badge: "AI" },
       { label: "Điểm thi & Hành trình OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "AI OLS" },
       { label: "Báo cáo điều hành tổng hợp", href: "/admin/daily-reports", icon: FileText },
@@ -152,6 +154,7 @@ const principalMenuGroups: MenuGroup[] = [
     items: [
       { label: "Tổng quan BGH", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "Giám sát KPI Điểm Trường", href: "/admin/kpi/principal-dashboard", icon: Target, badge: "KPI" },
+      { label: "Bảng vàng Thi đua Nề nếp", href: "/admin/emulation", icon: Trophy, badge: "Thi Đua" },
       { label: "Điểm thi & Hành trình OLS", href: "/admin/exam-analytics", icon: BarChart2, badge: "AI OLS" },
       { label: "Radar cảnh báo", href: "/admin/early-warnings", icon: AlertCircle },
       { label: "Báo cáo ngày", href: "/admin/daily-reports", icon: FileText },
