@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: Next.js App Router (route /admin/kpi)
+ * 2. Public functions affected: UnifiedKpiPage (Default Export Component)
+ * 3. Data schemas: Next.js searchParams
+ * 4. Verbatim User Instruction: "sao vẫn còn icon màu mè vậy ?" -> "theo khuyến nghị của bạn" (Chuẩn hóa toàn diện tối giản đơn sắc Monochrome/Slate)
+ */
+
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import KpiCatalogPage from "./catalog/page";
@@ -29,27 +37,27 @@ function KpiTabContent() {
   return (
     <div className="space-y-6">
       {/* Top Header & Tab Navigation Bar */}
-      <div className="bg-gradient-to-r from-[#1a237e] to-[#283593] text-white p-6 rounded-2xl shadow-lg">
+      <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-sm border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Target className="w-8 h-8 text-blue-300" />
+              <Target className="w-7 h-7 text-slate-300" />
               <h1 className="text-2xl font-extrabold tracking-tight">Quản Lý KPI Toàn Trường</h1>
             </div>
-            <p className="text-sm text-blue-100 max-w-2xl">
+            <p className="text-sm text-slate-300 max-w-2xl">
               Hệ thống quản lý chỉ số hiệu suất KPI tập trung: Khởi tạo danh mục 12 nhóm chỉ số, nhập kết quả thực tế và thẩm định phê duyệt 4 cấp.
             </p>
           </div>
         </div>
 
         {/* Tab Navigation Controls */}
-        <div className="flex flex-wrap gap-2 border-t border-white/15 pt-4">
+        <div className="flex flex-wrap gap-2 border-t border-slate-800 pt-4">
           <button
             onClick={() => handleTabChange("catalog")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
               activeTab === "catalog"
-                ? "bg-white text-[#1a237e] shadow-md scale-[1.02]"
-                : "bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -58,10 +66,10 @@ function KpiTabContent() {
 
           <button
             onClick={() => handleTabChange("entry")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
               activeTab === "entry"
-                ? "bg-white text-[#1a237e] shadow-md scale-[1.02]"
-                : "bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
             }`}
           >
             <FileBarChart className="w-4 h-4" />
@@ -70,10 +78,10 @@ function KpiTabContent() {
 
           <button
             onClick={() => handleTabChange("approval")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
               activeTab === "approval"
-                ? "bg-white text-[#1a237e] shadow-md scale-[1.02]"
-                : "bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
             }`}
           >
             <UserCheck className="w-4 h-4" />
@@ -82,10 +90,10 @@ function KpiTabContent() {
 
           <button
             onClick={() => handleTabChange("principal_dashboard")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
               activeTab === "principal_dashboard"
-                ? "bg-white text-[#1a237e] shadow-md scale-[1.02]"
-                : "bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
             }`}
           >
             <Compass className="w-4 h-4" />
