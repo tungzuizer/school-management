@@ -193,82 +193,80 @@ export async function seedDefaultKpiCatalog() {
         code: "KPI-STR-01",
         name: "Tỷ lệ thực hiện kế hoạch chiến lược năm",
         category: KpiCategory.STRATEGIC,
-        purpose: "Đánh giá mức độ hoàn thành nhiệm vụ trọng tâm chiến lược nhà trường",
-        formula: "(Số nhiệm vụ hoàn thành / Tổng số nhiệm vụ giao) * 100",
+        purpose: "Đánh giá mức độ hoàn thành các mục tiêu chiến lược nhà trường giao cho phân hiệu",
+        formula: "(Số mục tiêu đạt chuẩn / Tổng số mục tiêu giao) * 100",
         unit: "%",
         direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Ban Giám hiệu",
+        dataSource: "CSDL Mục tiêu chiến lược (QualityObjective)",
         frequency: ReportingFrequency.SEMESTER,
         weight: 10,
         baselineValue: 80,
         targetValue: 95,
-        responsiblePerson: "Hiệu trưởng",
+        responsiblePerson: "Hiệu trưởng / Ban Giám hiệu",
         scope: "ALL",
       },
       {
         code: "KPI-EDU-01",
-        name: "Tỷ lệ học sinh đạt học lực Giỏi/Tốt",
+        name: "Tỷ lệ học sinh đạt chuẩn học tập theo Thông tư 27 (Điểm số ≥ 5.0)",
         category: KpiCategory.EDUCATIONAL_QUALITY,
-        purpose: "Nâng cao chất lượng học tập toàn trường",
-        formula: "(Số HS Giỏi / Tổng số HS toàn trường) * 100",
+        purpose: "Nâng cao chất lượng học tập toàn trường theo quy chế đánh giá học sinh tiểu học (TT 27/2020/TT-BGDĐT)",
+        formula: "(Số bài kiểm tra định kỳ có điểm ≥ 5.0 / Tổng số bài kiểm tra) * 100",
         unit: "%",
         direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Sổ điểm điện tử",
+        dataSource: "CSDL Điểm số & Học bạ điện tử (Grade)",
         frequency: ReportingFrequency.SEMESTER,
         weight: 15,
         baselineValue: 35,
-        targetValue: 45,
+        targetValue: 95,
         responsiblePerson: "Phó Hiệu trưởng Chuyên môn",
         scope: "ALL",
       },
       {
         code: "KPI-PRO-01",
-        name: "Tỷ lệ tiết dạy đạt chuẩn ứng dụng CNTT",
+        name: "Tỷ lệ giáo án điện tử được phê duyệt đúng hạn",
         category: KpiCategory.PROFESSIONAL,
-        purpose: "Thúc đẩy đổi mới phương pháp giảng dạy",
-        formula: "(Số tiết ứng dụng CNTT / Tổng số tiết dự giờ) * 100",
+        purpose: "Thúc đẩy đổi mới phương pháp giảng dạy và đảm bảo kỷ cương soạn giảng",
+        formula: "(Số giáo án được Tổ trưởng/BGH phê duyệt đúng hạn / Tổng số giáo án đã nộp) * 100",
         unit: "%",
         direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Tổ chuyên môn",
+        dataSource: "CSDL Giáo án điện tử (LessonPlan)",
         frequency: ReportingFrequency.MONTHLY,
         weight: 10,
         baselineValue: 70,
-        targetValue: 90,
+        targetValue: 95,
         responsiblePerson: "Tổ trưởng Chuyên môn",
         scope: "ALL",
       },
       {
         code: "KPI-STA-01",
-        name: "Tỷ lệ giáo viên tham gia bồi dưỡng thường xuyên",
+        name: "Tỷ lệ giáo viên tham gia bồi dưỡng chuyên môn thường xuyên",
         category: KpiCategory.STAFF_PERSONNEL,
-        purpose: "Nâng cao trình độ đội ngũ nhà giáo",
-        formula: "(Số GV hoàn thành bồi dưỡng / Tổng GV) * 100",
+        purpose: "Nâng cao trình độ đội ngũ nhà giáo và năng lực sư phạm",
+        formula: "(Số giáo viên hoàn thành bồi dưỡng / Tổng số giáo viên) * 100",
         unit: "%",
         direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Bộ phận Nhân sự",
+        dataSource: "CSDL Hồ sơ giáo viên & Nhân sự (Teacher)",
         frequency: ReportingFrequency.QUARTERLY,
         weight: 8,
         baselineValue: 85,
         targetValue: 100,
-        responsiblePerson: "Phó Hiệu trưởng Nhân sự",
+        responsiblePerson: "Phó Hiệu trưởng Phụ trách",
         scope: "ALL",
       },
       {
         code: "KPI-STU-01",
-        name: "Tỷ lệ học sinh vi phạm nội quy",
+        name: "Tỷ lệ chuyên cần của học sinh",
         category: KpiCategory.STUDENT,
-        purpose: "Duy trì kỷ nếp và đạo đức học sinh",
-        formula: "(Số vụ vi phạm kỷ luật / Tổng số HS) * 100",
+        purpose: "Đảm bảo duy trì sĩ số và chuyên cần đến lớp hàng ngày của học sinh",
+        formula: "(Số lượt học sinh có mặt / Tổng số lượt điểm danh) * 100",
         unit: "%",
-        direction: MeasurementDirection.LOWER_BETTER,
-        dataSource: "Tổng phụ trách / Giám thị",
+        direction: MeasurementDirection.HIGHER_BETTER,
+        dataSource: "CSDL Điểm danh điện tử (Attendance)",
         frequency: ReportingFrequency.MONTHLY,
         weight: 8,
-        baselineValue: 3,
-        targetValue: 1,
-        warningThreshold: 2,
-        criticalThreshold: 5,
-        responsiblePerson: "Tổng phụ trách Đội",
+        baselineValue: 90,
+        targetValue: 98,
+        responsiblePerson: "Giáo viên Chủ nhiệm & Tổng phụ trách",
         scope: "ALL",
       },
       {
@@ -276,10 +274,10 @@ export async function seedDefaultKpiCatalog() {
         name: "Mức độ hoàn thiện cơ sở dữ liệu ngành & Sổ sách điện tử",
         category: KpiCategory.DIGITAL_TRANSFORMATION,
         purpose: "Đảm bảo 100% học bạ, giáo án, sổ điểm số hóa đúng hạn",
-        formula: "(Số hồ sơ số hóa / Tổng hồ sơ) * 100",
+        formula: "(Số hồ sơ số hóa được duyệt / Tổng hồ sơ) * 100",
         unit: "%",
         direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Tổ CNTT",
+        dataSource: "CSDL Hồ sơ số hóa (LessonPlan & Digital Records)",
         frequency: ReportingFrequency.MONTHLY,
         weight: 8,
         baselineValue: 80,
@@ -291,11 +289,11 @@ export async function seedDefaultKpiCatalog() {
         code: "KPI-FIN-01",
         name: "Tỷ lệ giải ngân ngân sách giáo dục",
         category: KpiCategory.FINANCIAL,
-        purpose: "Sử dụng hiệu quả nguồn vốn được giao",
-        formula: "(Kinh phí giải ngân / Kinh phí dự toán) * 100",
+        purpose: "Sử dụng hiệu quả nguồn vốn được giao theo đúng quy định tài chính",
+        formula: "(Kinh phí giải ngân thực tế / Kinh phí dự toán được giao) * 100",
         unit: "%",
         direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Bộ phận Kế toán",
+        dataSource: "Sổ sách Dự toán & Giải ngân tài chính (Budget/Accounting)",
         frequency: ReportingFrequency.QUARTERLY,
         weight: 8,
         baselineValue: 85,
@@ -307,11 +305,11 @@ export async function seedDefaultKpiCatalog() {
         code: "KPI-AST-01",
         name: "Tỷ lệ thiết bị dạy học được bảo dưỡng & sử dụng tốt",
         category: KpiCategory.ASSETS,
-        purpose: "Quản lý và khai thác hiệu quả tài sản phòng học",
-        formula: "(Số thiết bị hoạt động tốt / Tổng thiết bị) * 100",
+        purpose: "Quản lý và khai thác hiệu quả tài sản phòng học và trang thiết bị",
+        formula: "(Số thiết bị hoạt động Tốt/Khá / Tổng số thiết bị kiểm kê) * 100",
         unit: "%",
         direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Bộ phận Thiết bị",
+        dataSource: "CSDL Kiểm kê thiết bị dạy học (Equipment)",
         frequency: ReportingFrequency.MONTHLY,
         weight: 6,
         baselineValue: 88,
@@ -327,7 +325,7 @@ export async function seedDefaultKpiCatalog() {
         formula: "Đánh giá đạt / không đạt (1 = Đạt, 0 = Không)",
         unit: "Điểm",
         direction: MeasurementDirection.PASS_FAIL,
-        dataSource: "Ban Kiểm tra",
+        dataSource: "CSDL Cơ sở vật chất & Phòng học (Equipment/Facilities)",
         frequency: ReportingFrequency.MONTHLY,
         weight: 5,
         baselineValue: 1,
@@ -337,26 +335,54 @@ export async function seedDefaultKpiCatalog() {
       },
       {
         code: "KPI-SAF-01",
-        name: "Số sự cố an toàn trường học & PCCC",
+        name: "Số sự cố an toàn trường học, PCCC & Vi phạm kỷ luật",
         category: KpiCategory.SCHOOL_SAFETY,
-        purpose: "Đảm bảo tuyệt đối an toàn cho GV & Học sinh",
-        formula: "Tổng số vụ việc mất an toàn xảy ra",
+        purpose: "Đảm bảo tuyệt đối an toàn cho GV & Học sinh (Chỉ tiêu không xảy ra sự cố)",
+        formula: "Tổng số vụ việc mất an toàn hoặc vi phạm kỷ luật xảy ra (0 vụ = 100%)",
         unit: "vụ",
         direction: MeasurementDirection.LOWER_BETTER,
-        dataSource: "Bộ phận Bảo vệ / An ninh",
+        dataSource: "CSDL Nhật ký Kỷ luật & Sự cố an toàn (Incident)",
         frequency: ReportingFrequency.MONTHLY,
         weight: 7,
-        baselineValue: 1,
+        baselineValue: 0,
         targetValue: 0,
         warningThreshold: 1,
         criticalThreshold: 2,
-        responsiblePerson: "Trưởng ban An ninh",
+        responsiblePerson: "Trưởng ban An ninh & Giám thị",
         scope: "ALL",
       },
       {
         code: "KPI-REL-01",
-        name: "Tỷ lệ phụ huynh tham gia họp & tương tác qua hệ thống",
+        name: "Tỷ lệ giải quyết ý kiến & phản hồi của phụ huynh",
         category: KpiCategory.SCHOOL_RELATIONS,
+        purpose: "Tăng cường gắn kết giữa gia đình và nhà trường, giải quyết kịp thời kiến nghị",
+        formula: "(Số ý kiến phụ huynh đã được phản hồi / Tổng số ý kiến tiếp nhận) * 100",
+        unit: "%",
+        direction: MeasurementDirection.HIGHER_BETTER,
+        dataSource: "CSDL Ý kiến & Phản hồi phụ huynh (ParentFeedback)",
+        frequency: ReportingFrequency.MONTHLY,
+        weight: 8,
+        baselineValue: 80,
+        targetValue: 95,
+        responsiblePerson: "Ban Giám hiệu & GVCN",
+        scope: "ALL",
+      },
+      {
+        code: "KPI-INN-01",
+        name: "Số lượng sáng kiến kinh nghiệm & Khen thưởng thi đua",
+        category: KpiCategory.INNOVATION,
+        purpose: "Khuyến khích nghiên cứu khoa học sư phạm ứng dụng và thi đua dạy tốt",
+        formula: "Tổng số đề tài SKKN và quyết định khen thưởng được công nhận",
+        unit: "đề tài",
+        direction: MeasurementDirection.HIGHER_BETTER,
+        dataSource: "CSDL Khen thưởng & SKKN (Commendation)",
+        frequency: ReportingFrequency.YEARLY,
+        weight: 5,
+        baselineValue: 2,
+        targetValue: 5,
+        responsiblePerson: "Hội đồng Thi đua Khen thưởng",
+        scope: "ALL",
+      },
         purpose: "Tăng cường liên lạc giữa Nhà trường và Gia đình",
         formula: "(Số PH tương tác / Tổng số PH) * 100",
         unit: "%",
@@ -651,7 +677,7 @@ export async function autoCalculateActualKpiValues(periodId: string) {
         status: "PRESENT",
       },
     });
-    const attendanceRate = totalAttendance > 0 ? Number(((presentAttendance / totalAttendance) * 100).toFixed(1)) : 97.2;
+    const attendanceRate = totalAttendance > 0 ? Number(((presentAttendance / totalAttendance) * 100).toFixed(1)) : 0.0;
 
     // 2. Tỷ lệ học sinh vi phạm kỷ luật / sự cố an toàn
     const totalStudents = await prisma.student.count({
@@ -660,7 +686,7 @@ export async function autoCalculateActualKpiValues(periodId: string) {
     const incidentCount = await prisma.incident.count({
       where: classIds.length > 0 ? { classId: { in: classIds } } : undefined,
     });
-    const violationRate = totalStudents > 0 ? Number(((incidentCount / totalStudents) * 100).toFixed(2)) : 0.5;
+    const violationRate = totalStudents > 0 ? Number(((incidentCount / totalStudents) * 100).toFixed(2)) : 0.0;
 
     // 3. Tỷ lệ giáo án điện tử được phê duyệt đúng hạn (Chuyên môn)
     const totalLessonPlans = await prisma.lessonPlan.count({
@@ -672,11 +698,17 @@ export async function autoCalculateActualKpiValues(periodId: string) {
         status: { in: ["APPROVED", "VP_APPROVED", "HEAD_APPROVED"] },
       },
     });
-    const lessonPlanRate = totalLessonPlans > 0 ? Number(((approvedLessonPlans / totalLessonPlans) * 100).toFixed(1)) : 92.5;
+    const lessonPlanRate = totalLessonPlans > 0 ? Number(((approvedLessonPlans / totalLessonPlans) * 100).toFixed(1)) : 0.0;
 
-    // 4. Chất lượng học tập / Điểm số
+    // 4. Chất lượng học tập / Điểm số theo chuẩn Thông tư 27 (Tỷ lệ Đạt yêu cầu >= 5.0)
     const totalGrades = await prisma.grade.count({
       where: classIds.length > 0 ? { student: { classId: { in: classIds } } } : undefined,
+    });
+    const passedGrades = await prisma.grade.count({
+      where: {
+        ...(classIds.length > 0 ? { student: { classId: { in: classIds } } } : {}),
+        score: { gte: 5.0 },
+      },
     });
     const goodGrades = await prisma.grade.count({
       where: {
@@ -684,7 +716,7 @@ export async function autoCalculateActualKpiValues(periodId: string) {
         score: { gte: 8.0 },
       },
     });
-    const academicRate = totalGrades > 0 ? Number(((goodGrades / totalGrades) * 100).toFixed(1)) : 46.8;
+    const academicRate = totalGrades > 0 ? Number(((passedGrades / totalGrades) * 100).toFixed(1)) : 0.0;
 
     // 5. Thiết bị & Cơ sở vật chất phòng học
     const totalEquip = await prisma.equipment.count({
@@ -696,7 +728,7 @@ export async function autoCalculateActualKpiValues(periodId: string) {
         condition: { in: ["EXCELLENT", "GOOD", "FAIR"] },
       },
     });
-    const equipmentRate = totalEquip > 0 ? Number(((availEquip / totalEquip) * 100).toFixed(1)) : 95.0;
+    const equipmentRate = totalEquip > 0 ? Number(((availEquip / totalEquip) * 100).toFixed(1)) : 0.0;
 
     // 6. Tương tác phụ huynh
     const totalFeedbacks = await prisma.parentFeedback.count({
@@ -708,41 +740,82 @@ export async function autoCalculateActualKpiValues(periodId: string) {
         response: { not: null },
       },
     });
-    const parentRate = totalFeedbacks > 0 ? Number(((respondedFeedbacks / totalFeedbacks) * 100).toFixed(1)) : 91.0;
+    const parentRate = totalFeedbacks > 0 ? Number(((respondedFeedbacks / totalFeedbacks) * 100).toFixed(1)) : 0.0;
 
     // 7. Mục tiêu chiến lược hoàn thành
     const qualityObjs = await prisma.qualityObjective.findMany({
       where: campusId ? { OR: [{ campusScope: campusId }, { campusScope: "ALL" }] } : undefined,
     });
     const achievedObjs = qualityObjs.filter((o) => o.status === "ACHIEVED" || o.status === "EXCEEDED").length;
-    const strategicRate = qualityObjs.length > 0 ? Number(((achievedObjs / qualityObjs.length) * 100).toFixed(1)) : 90.0;
+    const strategicRate = qualityObjs.length > 0 ? Number(((achievedObjs / qualityObjs.length) * 100).toFixed(1)) : 0.0;
+
+    // 8. Đổi mới sáng tạo & Khen thưởng
+    const commendationsCount = await prisma.commendation.count({
+      where: classIds.length > 0 ? { student: { classId: { in: classIds } } } : undefined,
+    });
 
     let overallScoreSum = 0;
     let updatedCount = 0;
 
     for (const target of period.targets) {
       const kpi = target.kpi;
-      let calculatedVal = target.targetValue;
+      let calculatedVal = 0;
+      let calculationNote = "";
 
-      // Map according to KPI Code or Category
+      // Map according to KPI Code or Category with 100% truthful data
       if (kpi.code === "KPI-STR-01" || kpi.category === KpiCategory.STRATEGIC) {
         calculatedVal = strategicRate;
+        calculationNote = qualityObjs.length > 0
+          ? `Mục tiêu chiến lược hoàn thành: ${achievedObjs}/${qualityObjs.length} mục tiêu`
+          : "[Chưa có dữ liệu gốc] Chưa gán mục tiêu chiến lược cho phân hiệu";
       } else if (kpi.code === "KPI-EDU-01" || kpi.category === KpiCategory.EDUCATIONAL_QUALITY) {
         calculatedVal = academicRate;
+        calculationNote = totalGrades > 0
+          ? `Chất lượng GD (TT27): Đạt yêu cầu (>=5.0) ${passedGrades}/${totalGrades} điểm (${academicRate}%), Khá/Giỏi: ${goodGrades}/${totalGrades}`
+          : "[Chưa có dữ liệu gốc] Chưa có kỳ kiểm tra định kỳ trong khoảng thời gian này";
       } else if (kpi.code === "KPI-PRO-01" || kpi.category === KpiCategory.PROFESSIONAL) {
         calculatedVal = lessonPlanRate;
+        calculationNote = totalLessonPlans > 0
+          ? `Duyệt giáo án điện tử: ${approvedLessonPlans}/${totalLessonPlans} giáo án đúng hạn`
+          : "[Chưa có dữ liệu gốc] 0/0 giáo án nộp trong kỳ đánh giá";
       } else if (kpi.code === "KPI-STU-01") {
         calculatedVal = violationRate;
+        calculationNote = totalStudents > 0
+          ? `Vi phạm kỷ luật: ${incidentCount} vụ / ${totalStudents} học sinh (${violationRate}%)`
+          : "[Chưa có dữ liệu gốc] Chưa có danh sách học sinh";
       } else if (kpi.category === KpiCategory.STUDENT) {
         calculatedVal = attendanceRate;
+        calculationNote = totalAttendance > 0
+          ? `Chuyên cần học sinh: ${presentAttendance}/${totalAttendance} lượt có mặt (${attendanceRate}%)`
+          : "[Chưa có dữ liệu gốc] Chưa thực hiện điểm danh điện tử trong kỳ";
       } else if (kpi.code === "KPI-SAF-01" || kpi.category === KpiCategory.SCHOOL_SAFETY) {
         calculatedVal = incidentCount;
-      } else if (kpi.code === "KPI-AST-01" || kpi.category === KpiCategory.ASSETS || kpi.category === KpiCategory.DIGITAL_TRANSFORMATION) {
+        calculationNote = incidentCount === 0
+          ? "Đạt chuẩn an toàn tuyệt đối: 0 sự cố an toàn & PCCC"
+          : `Ghi nhận ${incidentCount} sự cố an toàn & PCCC cần xử lý`;
+      } else if (kpi.code === "KPI-AST-01" || kpi.category === KpiCategory.ASSETS || kpi.category === KpiCategory.FACILITIES) {
         calculatedVal = equipmentRate;
+        calculationNote = totalEquip > 0
+          ? `Thiết bị & CSVC hoạt động tốt: ${availEquip}/${totalEquip} thiết bị (${equipmentRate}%)`
+          : "[Chưa có dữ liệu gốc] Chưa có dữ liệu kiểm kê tài sản phòng học";
+      } else if (kpi.code === "KPI-DIG-01" || kpi.category === KpiCategory.DIGITAL_TRANSFORMATION) {
+        calculatedVal = lessonPlanRate;
+        calculationNote = totalLessonPlans > 0
+          ? `Số hóa hồ sơ giáo án: ${approvedLessonPlans}/${totalLessonPlans} hồ sơ số hóa`
+          : "[Chưa có dữ liệu gốc] Chưa nộp hồ sơ số hóa";
       } else if (kpi.code === "KPI-REL-01" || kpi.category === KpiCategory.SCHOOL_RELATIONS) {
         calculatedVal = parentRate;
+        calculationNote = totalFeedbacks > 0
+          ? `Tương tác phụ huynh: ${respondedFeedbacks}/${totalFeedbacks} ý kiến đã phản hồi (${parentRate}%)`
+          : "[Chưa có dữ liệu gốc] Chưa có ý kiến phụ huynh gửi đến phân hiệu";
+      } else if (kpi.code === "KPI-INN-01" || kpi.category === KpiCategory.INNOVATION) {
+        calculatedVal = commendationsCount;
+        calculationNote = commendationsCount > 0
+          ? `Ghi nhận ${commendationsCount} phong trào thi đua / khen thưởng`
+          : "[Chưa có dữ liệu gốc] Chưa cập nhật đề tài SKKN hoặc khen thưởng";
       } else {
-        calculatedVal = kpi.targetValue ? Number((kpi.targetValue * 0.95).toFixed(1)) : 90.0;
+        calculatedVal = 0.0;
+        calculationNote = "[Chỉ số đặc thù] Cần cập nhật số liệu và nộp minh chứng thực tế từ bộ phận chuyên trách";
       }
 
       const { completionRate, weightedScore } = calculateKpiScore(

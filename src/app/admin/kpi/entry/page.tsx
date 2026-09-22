@@ -521,12 +521,23 @@ export default function KpiEntryPage() {
 
                   return (
                     <tr key={t.id} className="hover:bg-slate-50 transition">
-                      <td className="py-3.5 px-4 max-w-xs">
+                      <td className="py-3.5 px-4 max-w-sm align-top">
                         <div className="font-mono text-xs font-semibold text-indigo-600">{t.kpi.code}</div>
                         <div className="font-bold text-slate-800 text-sm">{t.kpi.name}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">
+                        <div className="text-xs text-slate-500 mt-0.5">
                           {DIRECTION_LABELS[t.kpi.direction as MeasurementDirection]}
                         </div>
+                        {t.kpi.dataSource && (
+                          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 bg-sky-50 text-sky-700 border border-sky-200 rounded text-[11px] font-medium">
+                            <Building2 className="w-3 h-3 text-sky-600 shrink-0" />
+                            <span>Căn cứ: {t.kpi.dataSource}</span>
+                          </div>
+                        )}
+                        {t.kpi.formula && (
+                          <div className="mt-1 text-[10px] font-mono text-slate-500 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded truncate" title={t.kpi.formula}>
+                            CT: {t.kpi.formula}
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-3.5 px-4 text-xs font-medium text-slate-600">

@@ -51,6 +51,7 @@ import {
   PlusCircle,
   History,
   ExternalLink,
+  Database,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -489,7 +490,7 @@ export default function PrincipalKpiDashboard() {
             <button
               onClick={() => setScopeType("CAMPUS")}
               className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${
-                scopeType === "CAMPUS" ? "bg-blue-800 text-white shadow-xs" : "text-slate-700 hover:bg-slate-200 hover:text-slate-950"
+                scopeType === "CAMPUS" ? "bg-blue-800 text-white shadow-xs" : "text-slate-800 hover:bg-white hover:text-blue-900"
               }`}
             >
               📍 Theo Điểm Trường / Phân Hiệu
@@ -497,7 +498,7 @@ export default function PrincipalKpiDashboard() {
             <button
               onClick={() => setScopeType("SCHOOL")}
               className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${
-                scopeType === "SCHOOL" ? "bg-blue-800 text-white shadow-xs" : "text-slate-700 hover:bg-slate-200 hover:text-slate-950"
+                scopeType === "SCHOOL" ? "bg-blue-800 text-white shadow-xs" : "text-slate-800 hover:bg-white hover:text-blue-900"
               }`}
             >
               🏫 Theo Trường Học (Cụm)
@@ -635,6 +636,10 @@ export default function PrincipalKpiDashboard() {
                   style={{ width: `${Math.min(100, data.pillarAverages[0]?.averageScore || 0)}%` }}
                 />
               </div>
+              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                <Database className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="truncate">Căn cứ: Điểm số TT 27 (Grade) & Học tập</span>
+              </div>
             </div>
 
             {/* Pillar 2 */}
@@ -654,6 +659,10 @@ export default function PrincipalKpiDashboard() {
                   className="bg-blue-500 h-full rounded-full"
                   style={{ width: `${Math.min(100, data.pillarAverages[1]?.averageScore || 0)}%` }}
                 />
+              </div>
+              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                <Database className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="truncate">Căn cứ: Giáo án (LessonPlan) & Bồi dưỡng GV</span>
               </div>
             </div>
 
@@ -675,6 +684,10 @@ export default function PrincipalKpiDashboard() {
                   style={{ width: `${Math.min(100, data.pillarAverages[2]?.averageScore || 0)}%` }}
                 />
               </div>
+              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                <Database className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="truncate">Căn cứ: Điểm danh (Attendance) & Sự cố (Incident)</span>
+              </div>
             </div>
 
             {/* Pillar 4 */}
@@ -694,6 +707,10 @@ export default function PrincipalKpiDashboard() {
                   className="bg-sky-600 h-full rounded-full"
                   style={{ width: `${Math.min(100, data.pillarAverages[3]?.averageScore || 0)}%` }}
                 />
+              </div>
+              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                <Database className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="truncate">Căn cứ: Thiết bị (Equipment) & Phản hồi PH</span>
               </div>
             </div>
           </div>
@@ -1177,12 +1194,13 @@ export default function PrincipalKpiDashboard() {
 
               {/* 4 Pillars Breakdown */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Kết Quả 4 Trụ Cột Chiến Lược
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                  <span>Kết Quả 4 Trụ Cột Chiến Lược</span>
+                  <span className="text-[10px] text-slate-400 font-normal lowercase">(căn cứ csdl thời gian thực)</span>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {selectedEntity.pillars.map((pil, idx) => (
-                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-semibold text-slate-700">{pil.name}</span>
                         <span className="font-bold text-blue-800">{pil.score}%</span>
@@ -1192,6 +1210,18 @@ export default function PrincipalKpiDashboard() {
                           className="bg-blue-700 h-full rounded-full"
                           style={{ width: `${Math.min(100, pil.score)}%` }}
                         />
+                      </div>
+                      <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                        <Database className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                        <span className="truncate">
+                          {idx === 0
+                            ? "Căn cứ: Điểm số TT 27 (Grade) & Học tập"
+                            : idx === 1
+                            ? "Căn cứ: Giáo án (LessonPlan) & Bồi dưỡng GV"
+                            : idx === 2
+                            ? "Căn cứ: Điểm danh (Attendance) & Sự cố (Incident)"
+                            : "Căn cứ: Thiết bị (Equipment) & Phản hồi PH"}
+                        </span>
                       </div>
                     </div>
                   ))}

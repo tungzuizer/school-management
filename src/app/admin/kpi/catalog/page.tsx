@@ -353,8 +353,8 @@ export default function KpiCatalogPage() {
           </div>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Số nhóm KPI</span>
-          <div className="text-2xl font-extrabold text-purple-600 mt-1">12 / 12</div>
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Số nhóm KPI</span>
+          <div className="text-2xl font-extrabold text-indigo-900 mt-1">12 / 12</div>
           <div className="text-xs text-slate-500 mt-1">Danh mục tiêu chuẩn nhà trường</div>
         </div>
       </div>
@@ -409,8 +409,9 @@ export default function KpiCatalogPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   <th className="py-3 px-4">Mã KPI</th>
-                  <th className="py-3 px-4">Tên Chỉ Số & Mục Tiêu</th>
+                  <th className="py-3 px-4">Tên Chỉ Số & Căn Cứ CSDL</th>
                   <th className="py-3 px-4">Nhóm Chỉ Số</th>
+                  <th className="py-3 px-4">Công Thức Tính Toán</th>
                   <th className="py-3 px-4 text-center">Chiều đo</th>
                   <th className="py-3 px-4 text-center">Trọng số</th>
                   <th className="py-3 px-4 text-center">Chỉ tiêu</th>
@@ -422,23 +423,38 @@ export default function KpiCatalogPage() {
               <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                 {catalogs.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-mono font-semibold text-indigo-600 text-xs">
+                    <td className="py-3.5 px-4 font-mono font-semibold text-indigo-600 text-xs align-top">
                       {item.code}
                     </td>
-                    <td className="py-3.5 px-4 max-w-xs">
+                    <td className="py-3.5 px-4 max-w-sm align-top">
                       <div className="font-semibold text-slate-800">{item.name}</div>
                       {item.purpose && (
-                        <div className="text-xs text-slate-400 truncate mt-0.5" title={item.purpose}>
+                        <div className="text-xs text-slate-500 mt-0.5" title={item.purpose}>
                           {item.purpose}
                         </div>
                       )}
+                      {item.dataSource && (
+                        <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 bg-sky-50 text-sky-700 border border-sky-200 rounded text-[11px] font-medium">
+                          <Database className="w-3 h-3 text-sky-600 shrink-0" />
+                          <span>Nguồn: {item.dataSource}</span>
+                        </div>
+                      )}
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 align-top">
                       <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium">
                         {CATEGORY_LABELS[item.category as KpiCategory] || item.category}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-center text-xs">
+                    <td className="py-3.5 px-4 max-w-xs align-top">
+                      {item.formula ? (
+                        <div className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-mono text-slate-700 break-words">
+                          {item.formula}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">Chưa xác lập</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 text-center text-xs align-top">
                       <span
                         className={`inline-block px-2 py-0.5 rounded ${
                           item.direction === "HIGHER_BETTER"
@@ -451,16 +467,16 @@ export default function KpiCatalogPage() {
                         {DIRECTION_LABELS[item.direction as MeasurementDirection]}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-center font-semibold text-indigo-700">
+                    <td className="py-3.5 px-4 text-center font-semibold text-indigo-700 align-top">
                       {item.weight}%
                     </td>
-                    <td className="py-3.5 px-4 text-center font-medium">
+                    <td className="py-3.5 px-4 text-center font-medium align-top">
                       {item.targetValue} {item.unit}
                     </td>
-                    <td className="py-3.5 px-4 text-xs font-medium text-slate-600">
+                    <td className="py-3.5 px-4 text-xs font-medium text-slate-600 align-top">
                       {item.responsiblePerson || "---"}
                     </td>
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-3.5 px-4 text-center align-top">
                       <button
                         onClick={() => handleToggleStatus(item.id)}
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
@@ -473,19 +489,19 @@ export default function KpiCatalogPage() {
                         {item.isActive ? "Hoạt động" : "Tạm dừng"}
                       </button>
                     </td>
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-3.5 px-4 text-right align-top">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleDuplicate(item.id)}
                           title="Sao chép"
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          className="p-1.5 text-indigo-700 bg-indigo-50/60 hover:bg-indigo-100 rounded-lg transition"
                         >
                           <Copy className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleOpenEdit(item)}
                           title="Chỉnh sửa"
-                          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                          className="p-1.5 text-amber-800 bg-amber-50/60 hover:bg-amber-100 rounded-lg transition"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
