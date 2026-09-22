@@ -1,12 +1,35 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Vitest test runner (`vitest.config.ts`, `npm test`, `npx vitest run`).
- * 2. Affected APIs: `src/lib/auth.ts`, `authOptions.providers[0].authorize`, `DEMO_ACCOUNTS_MAP`, `DEMO_EXEMPT_EMAILS`, `DEMO_ACCEPTED_PASSWORDS`.
+ * 2. Affected APIs: `src/lib/auth.ts`, `authOptions.providers[0].authorize`, `DEMO_ACCOUNTS_MAP`, `DEMO_EXEMPT_EMAILS`, `DEMO_ACCEPTED_PASSWORDS`, `src/lib/prisma.ts`.
  * 3. Data Schemas: NextAuth `authorize` return type (`id`, `email`, `name`, `role`, `isApproved`, `mustChangePassword`, `departmentId`, `districtWardId`, `schoolId`, `campusId`).
- * 4. Verbatim User Instruction: "2. Danh mục 16 Tài khoản Demo chuẩn hóa (Mật khẩu mặc định: 123456) ... --- sao lại sai mk" - Kiểm tra 100% tài khoản demo đăng nhập thành công với mật khẩu 123456.
+ * 4. Verbatim User Instruction: "2. Danh mục 16 Tài khoản Demo chuẩn hóa (Mật khẩu mặc định: 123456) ... --- sao lại sai mk" - Mock Prisma in demo auth unit tests to ensure fast offline execution without network timeout.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("../prisma", () => ({
+  default: {
+    user: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockImplementation(async ({ data }: any) => ({
+        id: "mock-user-id",
+        ...data,
+      })),
+      findFirst: vi.fn().mockResolvedValue(null),
+      update: vi.fn().mockResolvedValue(null),
+    },
+    classRoom: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
+    student: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue(null),
+      update: vi.fn().mockResolvedValue(null),
+    },
+  },
+}));
+
 import {
   DEMO_ACCOUNTS_MAP,
   DEMO_EXEMPT_EMAILS,

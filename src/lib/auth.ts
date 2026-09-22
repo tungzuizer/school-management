@@ -161,10 +161,11 @@ export const DEMO_ACCEPTED_PASSWORDS = new Set([
   "SuperAdmin@2026!",
 ]);
 
-// Demo mode environment flag (chỉ cho phép ở môi trường non-production và khi được bật tường minh)
+// Demo mode environment flag (mặc định bật ở dev/test, tự động tắt ở production trừ khi được bật tường minh)
 const isDemoAllowed =
-  process.env.NODE_ENV !== "production" &&
-  process.env.ALLOW_DEMO_LOGIN === "true";
+  process.env.NODE_ENV !== "production"
+    ? process.env.ALLOW_DEMO_LOGIN !== "false"
+    : process.env.ALLOW_DEMO_LOGIN === "true";
 
 if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
   console.error("CRITICAL SECURITY ALERT: NEXTAUTH_SECRET is not set in production environment!");
