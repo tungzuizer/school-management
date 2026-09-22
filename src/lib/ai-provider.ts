@@ -1,5 +1,13 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Callers: AI Assistant actions, Teacher advice, Principal decision support
+ * 2. Affected API: aiChatCompletion - adding PII scrubbing & data integrity injection
+ * 3. Data Schemas: AIChatParams & AIChatResult
+ * 4. Verbatim User Instruction: "tiếp tục đi"
+ */
+
 import prisma from "@/lib/prisma";
-import { AI_DATA_INTEGRITY_SYSTEM_PROMPT } from "@/lib/ai/data-integrity";
+import { AI_DATA_INTEGRITY_SYSTEM_PROMPT, anonymizePIIForAI } from "@/lib/ai/data-integrity";
 
 export interface AIChatParams {
   prompt?: string;
@@ -97,22 +105,31 @@ export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResu
     };
   }
 
-  // Ensure AI Data Integrity Policy is injected into system messages
+  // Ensure AI Data Integrity Policy is injected into system messages & PII is scrubbed from user input
   const hasSystemPrompt = messages.some((m) => m.role === "system");
   if (!hasSystemPrompt) {
     messages = [
       { role: "system", content: AI_DATA_INTEGRITY_SYSTEM_PROMPT },
-      ...messages,
+      ...messages.map((m) => ({
+        ...m,
+        content: m.role !== "system" ? anonymizePIIForAI(m.content) : m.content,
+      })),
     ];
   } else {
     messages = messages.map((m) => {
-      if (m.role === "system" && !m.content.includes("AI DATA INTEGRITY POLICY")) {
-        return {
-          ...m,
-          content: `${AI_DATA_INTEGRITY_SYSTEM_PROMPT}\n\n${m.content}`,
-        };
+      if (m.role === "system") {
+        if (!m.content.includes("AI DATA INTEGRITY POLICY")) {
+          return {
+            ...m,
+            content: `${AI_DATA_INTEGRITY_SYSTEM_PROMPT}\n\n${m.content}`,
+          };
+        }
+        return m;
       }
-      return m;
+      return {
+        ...m,
+        content: anonymizePIIForAI(m.content),
+      };
     });
   }
 

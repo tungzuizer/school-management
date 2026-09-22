@@ -1,7 +1,16 @@
 "use server";
 
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: src/app/vice-principal/dashboard/page.tsx
+ * 2. Public functions affected: getVPKpiSummary, getVPDashboardStats, getVPCampusInfo
+ * 3. Data schemas: VP KPI summary payload, Campus KPI Score
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn"
+ */
+
 import { prisma } from "@/lib/prisma";
 import { AttendanceStatus, StudentStatus, ReportStatus } from "@prisma/client";
+import { getPrincipalKpiComparisonData } from "@/app/admin/kpi/principal-actions";
 
 // All queries are campus-scoped: only return data for classes belonging to the VP's campus
 
@@ -423,6 +432,48 @@ export async function getVPCampusInfo(campusId: string) {
     return campus;
   } catch (err) {
     console.error("getVPCampusInfo error:", err);
+    return null;
+  }
+}
+
+/**
+ * Lấy tóm tắt chỉ số KPI của Điểm trường / Phân hiệu dành cho Phó Hiệu Trưởng
+ */
+export async function getVPKpiSummary(campusId: string) {
+  try {
+    let effectiveCampusId = campusId;
+    if (!effectiveCampusId || effectiveCampusId.startsWith("demo")) {
+      const firstCampus = await prisma.campus.findFirst({ select: { id: true } });
+      if (firstCampus) effectiveCampusId = firstCampus.id;
+    }
+
+    const res = await getPrincipalKpiComparisonData({
+      scopeType: "CAMPUS",
+      year: new Date().getFullYear(),
+    });
+
+    if (res.success && res.data) {
+      const entity = res.data.entities.find((e) => e.id === effectiveCampusId) || res.data.entities[0];
+      if (entity) {
+        return {
+          campusId: entity.id,
+          campusName: entity.name,
+          compositeScore: entity.compositeScore,
+          tier: entity.tier,
+          tierLabel: entity.tierLabel,
+          rank: entity.rank,
+          totalEntities: res.data.totalEntities,
+          periodStatus: entity.periodStatus,
+          periodId: entity.periodId,
+          pillars: entity.pillars,
+          topStrengths: entity.topStrengths,
+          bottlenecks: entity.bottlenecks,
+        };
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("getVPKpiSummary error:", err);
     return null;
   }
 }

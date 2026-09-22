@@ -1,6 +1,31 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Callers: Next.js CLI & Build toolchain (next build, next dev)
+ * 2. Affected API: Global HTTP response headers across all routes
+ * 3. Data Schemas: NextConfig headers array (Content-Security-Policy, HSTS, X-Frame-Options, etc.)
+ * 4. Verbatim User Instruction: "tiếp tục đi"
+ */
+
 import type { NextConfig } from "next";
 
+const cspHeader = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com data:;
+  img-src 'self' data: blob: https://*.supabase.co;
+  connect-src 'self' https://*.supabase.co https://api.openai.com;
+  frame-ancestors 'none';
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+`.replace(/\s{2,}/g, " ").trim();
+
 const securityHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: cspHeader,
+  },
   {
     key: "X-DNS-Prefetch-Control",
     value: "on",

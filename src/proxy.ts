@@ -1,25 +1,28 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Callers: Next.js Edge Runtime / App Router Proxy automatically mounts and invokes `src/proxy.ts`
+ * 2. Purpose: Edge-level route protection and multi-tier RBAC enforcement across 8 educational tiers.
+ * 3. Data Schemas: NextAuth JWT token inspection (role, isApproved).
+ * 4. Verbatim User Instruction: "theo khuyến nghị của bạn"
+ */
+
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
 export default withAuth(
-  function proxy(req) {
+  function middleware(req) {
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
     const role = token?.role as string;
-    const email = token?.email as string;
 
-    const isSuperAdmin =
-      role === "SUPER_ADMIN" ||
-      email === "superadmin@school.com" ||
-      email === "sysadmin@so-gddt.gov.vn" ||
-      (email && email.toLowerCase().includes("superadmin"));
+    const isSuperAdmin = role === "SUPER_ADMIN";
 
     // Block unapproved accounts from accessing protected portal routes
     if (token?.isApproved === false) {
       return NextResponse.redirect(new URL("/unauthorized?reason=pending_approval", req.url));
     }
 
-    // SUPER_ADMIN: infra only — blocked from academic data routes
+    // SUPER_ADMIN: infra & system management only — blocked from direct academic classroom data routes
     if (isSuperAdmin) {
       const academicPaths = ["/teacher", "/student", "/vice-principal"];
       if (academicPaths.some((p) => path.startsWith(p))) {
@@ -38,7 +41,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    // /ward: UBND Xa commune only
+    // /ward: UBND Xa/Phuong only
     if (path.startsWith("/ward") && role !== "WARD_ADMIN") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
@@ -74,9 +77,9 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token }) => Boolean(token),
     },
-    secret: process.env.NEXTAUTH_SECRET || "school_management_production_secret_key_2026",
+    secret: process.env.NEXTAUTH_SECRET,
   }
 );
 
@@ -92,3 +95,4 @@ export const config = {
     "/student/:path*",
   ],
 };
+

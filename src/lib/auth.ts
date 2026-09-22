@@ -161,9 +161,10 @@ export const DEMO_ACCEPTED_PASSWORDS = new Set([
   "SuperAdmin@2026!",
 ]);
 
-// Demo mode environment flag (hỗ trợ thêm cho các tài khoản test tự do ngoài danh mục)
+// Demo mode environment flag (chỉ cho phép ở môi trường non-production và khi được bật tường minh)
 const isDemoAllowed =
-  process.env.ALLOW_DEMO_LOGIN !== "false";
+  process.env.NODE_ENV !== "production" &&
+  process.env.ALLOW_DEMO_LOGIN === "true";
 
 if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
   console.error("CRITICAL SECURITY ALERT: NEXTAUTH_SECRET is not set in production environment!");
@@ -468,10 +469,10 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days (Security Baseline recommendation)
   },
   jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
-  secret: process.env.NEXTAUTH_SECRET || "school_management_production_secret_key_2026",
+  secret: process.env.NEXTAUTH_SECRET,
 };

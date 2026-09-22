@@ -1,3 +1,11 @@
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Callers: src/lib/ai-provider.ts, src/lib/ai-assistant/*, src/app/actions/ai-*
+ * 2. Affected API: anonymizePIIForAI(text), AI Data Integrity Policy & verification helpers
+ * 3. Data Schemas: PII string scrubbing patterns (phones, CCCD, personal emails)
+ * 4. Verbatim User Instruction: "tiếp tục đi"
+ */
+
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -425,4 +433,26 @@ export function assertAIGrounded(response: AIGroundedResponse): void {
       `[AI_DATA_INTEGRITY_VIOLATION]: Phát hiện ${response.unverifiedRecordIds.length} bản ghi bịa đặt hoặc không có quyền truy cập: ${response.unverifiedRecordIds.join(", ")}`
     );
   }
+}
+
+/**
+ * PII Scrubbing & Anonymization Engine (Security Baseline Item 21):
+ * Strips or masks minor students' sensitive personal identifying information (CCCD, phone numbers, exact personal emails)
+ * before transmission to external AI model APIs.
+ */
+export function anonymizePIIForAI(text: string): string {
+  if (!text) return "";
+
+  let cleaned = text;
+
+  // 1. Mask Vietnamese Phone numbers first (03x, 05x, 07x, 08x, 09x - 10 to 11 digits)
+  cleaned = cleaned.replace(/\b(0[35789]\d)\d{4}(\d{3})\b/g, "$1****$2");
+
+  // 2. Mask Vietnamese National ID / CCCD (12 digits) or CMND (9 digits)
+  cleaned = cleaned.replace(/\b(\d{3})\d{6}(\d{3})\b/g, "$1******$2");
+
+  // 3. Mask personal email addresses (keep domain, mask local part)
+  cleaned = cleaned.replace(/\b([a-zA-Z0-9._%+-]{2})[a-zA-Z0-9._%+-]+(@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g, "$1***$2");
+
+  return cleaned;
 }
