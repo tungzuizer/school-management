@@ -1,9 +1,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Calling files: `prisma/seed.ts` (lines 60-90), `src/app/api/db-seed/route.ts` (lines 55-85).
- * 2. Search Verification: No existing file serves this purpose; defines Trường Tiểu học Phố Lu and its 5 sub-campuses + central point.
- * 3. Schema Structure: `School` (departmentId, districtWardId, branchType, schoolType, name, address, phone, email), `Campus` (schoolId, name, address), `SchoolPoint` (campusId, name, address, managerName, phone, distanceKm), `CampusWardMap` (campusId, wardId).
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - "Nhà trường có 4 phân hiệu: Phân hiệu Sơn Hà 1, Sơn Hà 2, Sơn Hải, Phố Lu 3, 01 điểm trường: điểm trường An Tiến. đây mà 5 trường đây mà".
+ * 1. Calling files: `prisma/seed.ts` (lines 17, 31), `src/app/api/db-seed/route.ts`.
+ * 2. Search Verification: Standardizes Trường Tiểu học Phố Lu and its 6 campuses/points according to real QĐ 01/QĐ-THPL.
+ * 3. Schema Structure: `School`, `Campus`, `SchoolPoint`, `CampusWardMap`.
+ * 4. Verbatim User Instruction: "hãy xóa hết dữ liệu của TRƯỜNG TIỂU HỌC PHỐ LU và hãy cập nhập và lấy dữ liệu ở đây C:\Users\tungh\Desktop\school-management\docs\dulieu"
  */
 
 import { PrismaClient, ManagementBranch, SchoolType } from "@prisma/client";
@@ -29,63 +29,63 @@ export const CAMPUS_SPECS: CampusStructureItem[] = [
     managerName: "ThS. Trần Thị Thanh Hà (Hiệu trưởng)",
     distanceKm: 0,
     vpEmail: "pht.trungtam@gmail.com",
-    vpName: "ThS. Nguyễn Văn Trung (Phó Hiệu trưởng Trung tâm)",
-    classCount: 20,
+    vpName: "Nguyễn Thị Tình (Phó Hiệu trưởng phụ trách Trung tâm)",
+    classCount: 35,
   },
   {
     key: "SON_HA_1",
     name: "Phân hiệu Sơn Hà 1",
     address: "Thôn Sơn Hà 1, Xã Bảo Thắng, Tỉnh Lào Cai",
     pointName: "Khu Lớp học & Nhà đa năng Phân hiệu Sơn Hà 1",
-    managerName: "Thầy Nguyễn Văn Sơn",
+    managerName: "Phạm Văn Đức (Phó Hiệu trưởng)",
     distanceKm: 3.5,
     vpEmail: "pht.sonha1@gmail.com",
-    vpName: "Thầy Nguyễn Văn Sơn (Phó Hiệu trưởng phụ trách Sơn Hà 1)",
-    classCount: 12,
+    vpName: "Phạm Văn Đức (Phó Hiệu trưởng phụ trách Sơn Hà 1)",
+    classCount: 10,
   },
   {
     key: "SON_HA_2",
     name: "Phân hiệu Sơn Hà 2",
     address: "Thôn Sơn Hà 2, Xã Bảo Thắng, Tỉnh Lào Cai",
     pointName: "Khu Lớp học & Thư viện xanh Phân hiệu Sơn Hà 2",
-    managerName: "Cô Hoàng Thị Hà",
+    managerName: "Vũ Quang Hữu (Phó Hiệu trưởng)",
     distanceKm: 5.2,
     vpEmail: "pht.sonha2@gmail.com",
-    vpName: "Cô Hoàng Thị Hà (Phó Hiệu trưởng phụ trách Sơn Hà 2)",
-    classCount: 10,
+    vpName: "Vũ Quang Hữu (Phó Hiệu trưởng phụ trách Sơn Hà 2)",
+    classCount: 5,
   },
   {
     key: "SON_HAI",
     name: "Phân hiệu Sơn Hải",
     address: "Thôn Sơn Hải, Xã Bảo Thắng, Tỉnh Lào Cai",
     pointName: "Khu Giảng đường & Sân chơi trải nghiệm Phân hiệu Sơn Hải",
-    managerName: "Thầy Lê Văn Hải",
+    managerName: "Vương Thị Lý (Phó Hiệu trưởng)",
     distanceKm: 6.8,
     vpEmail: "pht.sonhai@gmail.com",
-    vpName: "Thầy Lê Văn Hải (Phó Hiệu trưởng phụ trách Sơn Hải)",
-    classCount: 10,
-  },
-  {
-    key: "PHO_LU_3",
-    name: "Phân hiệu Phố Lu 3",
-    address: "Khu Phố Lu 3, Xã Bảo Thắng, Tỉnh Lào Cai",
-    pointName: "Khu Lớp học & Không gian STEM Phân hiệu Phố Lu 3",
-    managerName: "Cô Đặng Thị Lu",
-    distanceKm: 4.1,
-    vpEmail: "pht.pholu3@gmail.com",
-    vpName: "Cô Đặng Thị Lu (Phó Hiệu trưởng phụ trách Phố Lu 3)",
-    classCount: 8,
+    vpName: "Vương Thị Lý (Phó Hiệu trưởng phụ trách Sơn Hải)",
+    classCount: 7,
   },
   {
     key: "AN_TIEN",
     name: "Điểm trường An Tiến",
     address: "Thôn An Tiến, Xã Bảo Thắng, Tỉnh Lào Cai",
     pointName: "Điểm trường lẻ vùng cao An Tiến",
-    managerName: "Thầy Phạm Văn Tiến",
+    managerName: "Vương Thị Lý (Phó Hiệu trưởng)",
     distanceKm: 8.5,
     vpEmail: "pht.antien@gmail.com",
-    vpName: "Thầy Phạm Văn Tiến (Phó Hiệu trưởng phụ trách Điểm An Tiến)",
-    classCount: 2,
+    vpName: "Vương Thị Lý (Phó Hiệu trưởng phụ trách Điểm An Tiến)",
+    classCount: 5,
+  },
+  {
+    key: "TAN_THANH",
+    name: "Phân hiệu Tân Thành",
+    address: "Thôn Tân Thành, Xã Bảo Thắng, Tỉnh Lào Cai",
+    pointName: "Khu Lớp học & Thư viện mở Phân hiệu Tân Thành",
+    managerName: "Nguyễn Thị Nga (Phó Hiệu trưởng)",
+    distanceKm: 4.5,
+    vpEmail: "pht.tanthanh@gmail.com",
+    vpName: "Nguyễn Thị Nga (Phó Hiệu trưởng phụ trách Tân Thành)",
+    classCount: 0,
   },
 ];
 

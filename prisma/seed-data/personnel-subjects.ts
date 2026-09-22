@@ -1,13 +1,15 @@
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: `prisma/seed.ts` (lines 80-120), `src/app/api/db-seed/route.ts` (lines 75-115).
- * 2. Affected APIs: `seedPersonnelAndSubjects`, user authentication, principal actions, subject head assignments.
+ * 1. Calling files: `prisma/seed.ts` (lines 80-120), `src/app/api/db-seed/route.ts` (lines 75-115).
+ * 2. Affected APIs: `seedPersonnelAndSubjects`, `PersonnelSubjectsResult`.
  * 3. Data Schemas: `User`, `Teacher`, `SubjectGroup`, `Subject`, `UserRoleScope`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - "Khởi tạo đầy đủ danh sách... 120 nhân sự, các phòng học CSVC và tài khoản đăng nhập cho Hiệu trưởng Trần Thị Thanh Hà + 5 Phó Hiệu trưởng".
+ * 4. Verbatim User Instruction: "hãy xóa hết dữ liệu của TRƯỜNG TIỂU HỌC PHỐ LU và hãy cập nhập và lấy dữ liệu ở đây C:\Users\tungh\Desktop\school-management\docs\dulieu"
  */
 
 import { PrismaClient, Role, ScopeType } from "@prisma/client";
 import { SchoolStructureResult } from "./school-structure";
+import * as fs from "fs";
+import * as path from "path";
 
 export interface PersonnelSubjectsResult {
   principalUser: any;
@@ -21,6 +23,8 @@ export interface PersonnelSubjectsResult {
     name: string;
     specialty: string;
     campusId: string;
+    stt: number;
+    duty?: string;
   }>;
   sampleTeacherUser: any;
   sampleTeacher: any;
@@ -33,14 +37,26 @@ export async function seedPersonnelAndSubjects(
   deptId: string,
   wardId: string
 ): Promise<PersonnelSubjectsResult> {
-  console.log("\n👨🏫 [4/6] Khởi tạo Ban Giám Hiệu, 6 Tổ Chuyên môn và Giáo viên Tiểu học...");
+  console.log("\n👨🏫 [4/6] Khởi tạo Ban Giám Hiệu, Tổ Chuyên môn và 125 Cán bộ Giáo viên thực tế từ QĐ 01/QĐ-THPL...");
   const { school, campuses } = schoolStruct;
   const mainCampus = campuses[0].campus;
 
-  // 1. Hiệu trưởng Toàn trường: ThS. Trần Thị Thanh Hà
+  // Read staff.json
+  const staffJsonPath = path.join(process.cwd(), "prisma", "real-data", "staff.json");
+  let staffList: any[] = [];
+  if (fs.existsSync(staffJsonPath)) {
+    staffList = JSON.parse(fs.readFileSync(staffJsonPath, "utf-8"));
+  }
+
+  // 1. Hiệu trưởng Toàn trường: ThS. Trần Thị Thanh Hà (STT 1)
+  const principalStaff = staffList.find((s) => s.stt === 1) || {
+    name: "Trần Thị Thanh Hà",
+    degree: "Thạc sĩ",
+  };
+
   const principalUser = await prisma.user.create({
     data: {
-      name: "ThS. Trần Thị Thanh Hà (Hiệu trưởng Trường TH Phố Lu)",
+      name: `${principalStaff.name} (Hiệu trưởng Trường TH Phố Lu)`,
       email: "hieutruong.thpholu@gmail.com",
       password: standardPassword,
       role: Role.ADMIN,
@@ -59,10 +75,13 @@ export async function seedPersonnelAndSubjects(
     },
   });
 
-  // Kế toán trưởng
-  await prisma.user.create({
+  // 2. Kế toán trưởng: Nguyễn Minh Phương (STT 68)
+  const accountantStaff = staffList.find((s) => s.stt === 68) || {
+    name: "Nguyễn Minh Phương",
+  };
+  const accountantUser = await prisma.user.create({
     data: {
-      name: "Nguyễn Thị Phương Mai (Kế toán trưởng TH Phố Lu)",
+      name: `${accountantStaff.name} (Kế toán trưởng TH Phố Lu)`,
       email: "ketoan.thpholu@gmail.com",
       password: standardPassword,
       role: Role.ADMIN,
@@ -74,7 +93,7 @@ export async function seedPersonnelAndSubjects(
     },
   });
 
-  // 2. 5 Phó Hiệu trưởng phụ trách 5 Phân hiệu & Điểm trường
+  // 3. 5 Phó Hiệu trưởng phụ trách các Phân hiệu
   const vpUsers: any[] = [];
   for (const cItem of campuses) {
     const vpUser = await prisma.user.create({
@@ -103,19 +122,17 @@ export async function seedPersonnelAndSubjects(
     vpUsers.push(vpUser);
   }
 
-  // 3. Khởi tạo 6 Tổ Chuyên môn Cấp Tiểu học
+  // 4. Khởi tạo 6 Tổ Chuyên môn Cấp Tiểu học
   const subjectGroupDefs = [
-    { name: "Tổ Chuyên môn Khối 1", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 1 GDPT 2018", headEmail: "to.khoi1@gmail.com", headName: "Cô Vũ Thị Hoa" },
-    { name: "Tổ Chuyên môn Khối 2", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 2 GDPT 2018", headEmail: "to.khoi2@gmail.com", headName: "Cô Phạm Thị Lan" },
-    { name: "Tổ Chuyên môn Khối 3", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 3 GDPT 2018", headEmail: "to.khoi3@gmail.com", headName: "Thầy Đinh Văn Nam" },
-    { name: "Tổ Chuyên môn Khối 4", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 4 GDPT 2018", headEmail: "to.khoi4@gmail.com", headName: "Cô Hoàng Thị Mai" },
-    { name: "Tổ Chuyên môn Khối 5", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 5 GDPT 2018", headEmail: "to.khoi5@gmail.com", headName: "Thầy Bùi Quang Hưng" },
-    { name: "Tổ Đặc thù Ngoại ngữ - Tin học - Nghệ thuật", desc: "Giảng dạy Tiếng Anh, Tin học, Âm nhạc, Mĩ thuật, Thể chất", headEmail: "to.dacthu@gmail.com", headName: "Cô Đào Thị Linh" },
+    { name: "Tổ Chuyên môn Khối 1", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 1 GDPT 2018", headEmail: "to.khoi1@gmail.com", headName: "Trần Thị Bích Hạnh" },
+    { name: "Tổ Chuyên môn Khối 2", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 2 GDPT 2018", headEmail: "to.khoi2@gmail.com", headName: "Hoàng Thị Huyền" },
+    { name: "Tổ Chuyên môn Khối 3", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 3 GDPT 2018", headEmail: "to.khoi3@gmail.com", headName: "Nguyễn Thị Thuý Hoàn" },
+    { name: "Tổ Chuyên môn Khối 4", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 4 GDPT 2018", headEmail: "to.khoi4@gmail.com", headName: "Vũ Thị Hải" },
+    { name: "Tổ Chuyên môn Khối 5", desc: "Quản lý chuyên môn giảng dạy chương trình lớp 5 GDPT 2018", headEmail: "to.khoi5@gmail.com", headName: "Phạm Thị Giang" },
+    { name: "Tổ Đặc thù Ngoại ngữ - Tin học - Nghệ thuật", desc: "Giảng dạy Tiếng Anh, Tin học, Âm nhạc, Mĩ thuật, Thể chất", headEmail: "to.dacthu@gmail.com", headName: "Lê Trọng Tấn" },
   ];
 
   const createdGroups: any[] = [];
-  const createdTeachers: any[] = [];
-
   for (let gIdx = 0; gIdx < subjectGroupDefs.length; gIdx++) {
     const gDef = subjectGroupDefs[gIdx];
     const group = await prisma.subjectGroup.create({
@@ -125,108 +142,139 @@ export async function seedPersonnelAndSubjects(
         description: gDef.desc,
       },
     });
-
-    // Tạo Tổ trưởng Chuyên môn
-    const headUser = await prisma.user.create({
-      data: {
-        name: `${gDef.headName} (${gDef.name})`,
-        email: gDef.headEmail,
-        password: standardPassword,
-        role: Role.SUBJECT_HEAD,
-        isApproved: true,
-        schoolId: school.id,
-        campusId: mainCampus.id,
-      },
-    });
-
-    const headTeacher = await prisma.teacher.create({
-      data: {
-        userId: headUser.id,
-        specialty: gIdx < 5 ? `Giáo viên Tiểu học Khối ${gIdx + 1}` : "Giáo viên Bộ môn Đặc thù",
-      },
-    });
-
-    await prisma.subjectGroup.update({
-      where: { id: group.id },
-      data: { headTeacherId: headTeacher.id },
-    });
-
-    await prisma.userRoleScope.create({
-      data: {
-        userId: headUser.id,
-        role: Role.SUBJECT_HEAD,
-        scopeType: ScopeType.SUBJECT_GROUP,
-        subjectGroupId: group.id,
-      },
-    });
-
-    createdTeachers.push({
-      user: headUser,
-      teacher: headTeacher,
-      name: gDef.headName,
-      specialty: headTeacher.specialty,
-      campusId: mainCampus.id,
-    });
-
     createdGroups.push(group);
   }
 
-  // 3.1. Tạo 62 Giáo viên Chủ nhiệm & Bộ môn Tiểu học (phụ trách 62 lớp)
+  // 5. Khởi tạo tất cả 125 Cán bộ, Giáo viên, Nhân viên từ staffList
+  const createdTeachers: Array<{
+    user: any;
+    teacher: any;
+    name: string;
+    specialty: string;
+    campusId: string;
+    stt: number;
+    duty?: string;
+  }> = [];
+
   let sampleTeacherUser: any = null;
   let sampleTeacher: any = null;
 
-  for (let i = 1; i <= 62; i++) {
-    const campusItem = i === 1 ? campuses[0] : campuses[i % campuses.length];
-    const gradeLevel = ((i - 1) % 5) + 1;
-    const email = i === 1 ? "giaovien.thpholu@gmail.com" : `gv.chunhiem.${i}@gmail.com`;
-    const name =
-      i === 1
-        ? "Cô Nguyễn Thu Hằng (GVCN 1A1 - Trung tâm)"
-        : `Thầy/Cô Giáo viên Tiểu học ${i} (Khối ${gradeLevel})`;
+  for (const staff of staffList) {
+    const stt = staff.stt;
+    const isPrincipal = stt === 1;
+    const isVp = stt >= 2 && stt <= 6;
+    const isAccountant = stt === 68;
+    const isStaff = staff.position === "NV";
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: standardPassword,
-        role: Role.TEACHER,
-        isApproved: true,
-        schoolId: school.id,
-        campusId: campusItem.campus.id,
-      },
-    });
+    // Determine campus
+    let targetCampus = mainCampus;
+    const dutyLower = (staff.duty || "").toLowerCase();
+    if (dutyLower.includes("sơn hà 1") || dutyLower.includes("sơn hà,1")) {
+      targetCampus = campuses.find((c) => c.spec.key === "SON_HA_1")?.campus || mainCampus;
+    } else if (dutyLower.includes("sơn hà 2")) {
+      targetCampus = campuses.find((c) => c.spec.key === "SON_HA_2")?.campus || mainCampus;
+    } else if (dutyLower.includes("sơn hải")) {
+      targetCampus = campuses.find((c) => c.spec.key === "SON_HAI")?.campus || mainCampus;
+    } else if (dutyLower.includes("an tiến")) {
+      targetCampus = campuses.find((c) => c.spec.key === "AN_TIEN")?.campus || mainCampus;
+    } else if (dutyLower.includes("tân thành")) {
+      targetCampus = campuses.find((c) => c.spec.key === "TAN_THANH")?.campus || mainCampus;
+    }
 
-    const teacher = await prisma.teacher.create({
-      data: {
-        userId: user.id,
-        specialty: `Giáo viên Tiểu học Khối ${gradeLevel}`,
-      },
-    });
+    // Role
+    let role: Role = Role.TEACHER;
+    if (isPrincipal || isAccountant) role = Role.ADMIN;
+    else if (isVp) role = Role.VICE_PRINCIPAL;
+    else if (isStaff) role = Role.TEACHER;
 
-    if (i === 1) {
+    // Email
+    let email = `cbgv.${stt}@thpholu.edu.vn`;
+    if (stt === 1) email = "hieutruong.thpholu@gmail.com";
+    else if (stt === 2) email = "pht.sonha1@gmail.com";
+    else if (stt === 3) email = "pht.sonhai@gmail.com";
+    else if (stt === 4) email = "pht.trungtam@gmail.com";
+    else if (stt === 5) email = "pht.tanthanh@gmail.com";
+    else if (stt === 6) email = "pht.sonha2@gmail.com";
+    else if (stt === 10) email = "giaovien.thpholu@gmail.com"; // Primary test teacher
+    else if (stt === 68) email = "ketoan.thpholu@gmail.com";
+
+    // Check if user already created for principal/accountant/vp
+    let user = isPrincipal
+      ? principalUser
+      : isAccountant
+      ? accountantUser
+      : vpUsers.find((u) => u.email === email) || null;
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: `${staff.name} (${staff.position || "GV"})`,
+          email,
+          password: standardPassword,
+          role,
+          isApproved: true,
+          schoolId: school.id,
+          campusId: targetCampus.id,
+        },
+      });
+    }
+
+    // Specialty & Teacher record
+    let specialty = "Giáo viên Tiểu học";
+    if (isStaff) specialty = `Nhân viên (${staff.duty?.slice(0, 40) || "Công tác"})`;
+    else if (dutyLower.includes("âm nhạc") || dutyLower.includes("đh ân")) specialty = "Giáo viên Âm nhạc";
+    else if (dutyLower.includes("mĩ thuật") || dutyLower.includes("đhmt")) specialty = "Giáo viên Mĩ thuật";
+    else if (dutyLower.includes("tiếng anh") || dutyLower.includes("đhsp nn")) specialty = "Giáo viên Tiếng Anh";
+    else if (dutyLower.includes("tin học") || dutyLower.includes("công nghệ")) specialty = "Giáo viên Tin học & Công nghệ";
+    else if (dutyLower.includes("thể dục") || dutyLower.includes("gdtc")) specialty = "Giáo viên Giáo dục thể chất";
+
+    let teacher = await prisma.teacher.findUnique({ where: { userId: user.id } });
+    if (!teacher) {
+      teacher = await prisma.teacher.create({
+        data: {
+          userId: user.id,
+          specialty,
+        },
+      });
+    }
+
+    if (stt === 10) {
       sampleTeacherUser = user;
       sampleTeacher = teacher;
+    }
+
+    // Assign to subject group
+    let groupIdx = 0;
+    if (specialty.includes("Âm nhạc") || specialty.includes("Mĩ thuật") || specialty.includes("Tiếng Anh") || specialty.includes("Tin học") || specialty.includes("thể chất")) {
+      groupIdx = 5;
+    } else {
+      const gMatch = (staff.duty || "").match(/khối\s+([1-5])/i) || (staff.duty || "").match(/lớp\s+([1-5])/i);
+      if (gMatch) {
+        groupIdx = Math.max(0, Math.min(4, parseInt(gMatch[1], 10) - 1));
+      }
     }
 
     await prisma.userRoleScope.create({
       data: {
         userId: user.id,
-        role: Role.TEACHER,
+        role: role === Role.ADMIN ? Role.ADMIN : role === Role.VICE_PRINCIPAL ? Role.VICE_PRINCIPAL : Role.TEACHER,
         scopeType: ScopeType.SUBJECT_GROUP,
-        subjectGroupId: createdGroups[gradeLevel - 1].id,
+        subjectGroupId: createdGroups[groupIdx].id,
       },
     });
 
     createdTeachers.push({
       user,
       teacher,
-      name,
-      specialty: teacher.specialty,
-      campusId: campusItem.campus.id,
+      name: staff.name,
+      specialty,
+      campusId: targetCampus.id,
+      stt,
+      duty: staff.duty,
     });
   }
 
-  // 4. Danh mục Môn học Cấp Tiểu học GDPT 2018 (Thông tư 27/2020/TT-BGDĐT)
+  // 6. Danh mục Môn học Cấp Tiểu học GDPT 2018 (Thông tư 27/2020/TT-BGDĐT)
   const primarySubjectsDef = [
     { name: "Tiếng Việt", groupIdx: 0 },
     { name: "Toán", groupIdx: 0 },
@@ -256,12 +304,14 @@ export async function seedPersonnelAndSubjects(
         headTeacherId: headTeacherObj.id,
       },
     });
-
     createdSubjects.push(subject);
   }
 
+  console.log(`   ✅ Đã khởi tạo thành công 125 Cán bộ GV-NV và ${createdSubjects.length} môn học.`);
+
   return {
     principalUser,
+    accountantUser,
     vpUsers,
     subjectGroups: createdGroups,
     subjects: createdSubjects,
