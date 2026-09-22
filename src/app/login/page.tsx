@@ -268,13 +268,19 @@ function LoginFormContent() {
         targetPath = "/department/dashboard";
       } else if (checkEmail.includes("district") || checkEmail.includes("phonggd")) {
         targetPath = "/district/dashboard";
-      } else if (checkEmail.includes("ward") || checkEmail.includes("diaphuong")) {
+      } else if (checkEmail.includes("ward") || checkEmail.includes("diaphuong") || checkEmail.includes("ubnd")) {
         targetPath = "/ward/dashboard";
-      } else if (checkEmail.includes("admin")) {
+      } else if (
+        checkEmail.includes("admin") ||
+        checkEmail.includes("hieutruong") ||
+        checkEmail.includes("principal") ||
+        checkEmail.includes("ketoan") ||
+        checkEmail.includes("ht.")
+      ) {
         targetPath = "/admin/dashboard";
       } else if (checkEmail.includes("vp") || checkEmail.includes("pht")) {
         targetPath = "/vice-principal/dashboard";
-      } else if (checkEmail.includes("ttcm")) {
+      } else if (checkEmail.includes("ttcm") || checkEmail.includes("subjecthead") || checkEmail.includes("to.")) {
         targetPath = "/subject-head/dashboard";
       } else if (checkEmail.includes("teacher") || checkEmail.includes("gv") || checkEmail.includes("giao-vien") || checkEmail.includes("giaovien")) {
         targetPath = "/teacher/dashboard";
