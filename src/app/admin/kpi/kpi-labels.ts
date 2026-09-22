@@ -3,7 +3,7 @@
  * 1. Importers/Callers: KPI admin pages (catalog, entry, approval, principal-dashboard)
  * 2. Affected API: CATEGORY_LABELS, DIRECTION_LABELS, FREQUENCY_LABELS, STATUS_LABELS
  * 3. Data schemas: KpiPeriodStatus, KpiCategory, MeasurementDirection, ReportingFrequency
- * 4. Verbatim User Instruction: "bỏ các icon màu mè đi dùng icon đơn giản" -> "theo khuyến nghị của bạn" (Chuẩn hóa toàn diện đơn sắc Monochrome/Slate)
+ * 4. Verbatim User Instruction: "cần 1 chút màu để cảnh báo kpi" -> "theo khuyến nghị của bạn" -> "thực hiện đi" (Chuẩn hóa màu cảnh báo ngữ nghĩa Traffic Light trên nền tảng Slate)
  */
 
 import type { KpiCategory, MeasurementDirection, ReportingFrequency, KpiPeriodStatus } from "@prisma/client";
@@ -38,9 +38,9 @@ export const FREQUENCY_LABELS: Record<ReportingFrequency, string> = {
 
 export const STATUS_LABELS: Record<KpiPeriodStatus, { label: string; class: string }> = {
   DRAFT: { label: "Bản nháp", class: "bg-slate-100 text-slate-700 border-slate-200" },
-  SUBMITTED: { label: "Đã gửi duyệt (Cấp Phân hiệu)", class: "bg-slate-100 text-slate-800 border-slate-300" },
-  CAMPUS_CHECKED: { label: "Đã thẩm định Phân hiệu", class: "bg-slate-100 text-slate-800 border-slate-300" },
-  VP_REVIEWED: { label: "Hiệu phó đã thông qua", class: "bg-slate-100 text-slate-800 border-slate-300" },
-  APPROVED: { label: "Hiệu trưởng đã phê duyệt (Đã khóa)", class: "bg-slate-900 text-white border-slate-800" },
-  UNLOCK_REQUESTED: { label: "Đang chờ mở khóa", class: "bg-slate-100 text-slate-800 border-slate-300" },
+  SUBMITTED: { label: "Đã gửi duyệt (Cấp Phân hiệu)", class: "bg-blue-50 text-blue-800 border-blue-200" },
+  CAMPUS_CHECKED: { label: "Đã thẩm định Phân hiệu", class: "bg-indigo-50 text-indigo-800 border-indigo-200" },
+  VP_REVIEWED: { label: "Hiệu phó đã thông qua", class: "bg-amber-50 text-amber-800 border-amber-200" },
+  APPROVED: { label: "Hiệu trưởng đã phê duyệt (Đã khóa)", class: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+  UNLOCK_REQUESTED: { label: "Đang chờ mở khóa", class: "bg-rose-50 text-rose-800 border-rose-200" },
 };

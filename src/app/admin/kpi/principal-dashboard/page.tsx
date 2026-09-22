@@ -5,7 +5,7 @@
  * 1. Importers/Callers: src/app/admin/kpi/page.tsx:21
  * 2. Public functions affected: PrincipalKpiDashboard (Default Export Component)
  * 3. Data structures: PrincipalKpiOverviewPayload, PrincipalKpiEntityComparison, PrincipalKpiPillarScore
- * 4. Verbatim User Instruction: "sao vẫn còn icon màu mè vậy ?" -> "theo khuyến nghị của bạn" (Chuẩn hóa toàn diện phong cách tối giản đơn sắc Monochrome/Slate)
+ * 4. Verbatim User Instruction: "cần 1 chút màu để cảnh báo kpi" -> "theo khuyến nghị của bạn" -> "thực hiện đi" (Chuẩn hóa màu sắc cảnh báo ngữ nghĩa Traffic Light trên nền tảng Slate)
  */
 
 import { useState, useEffect } from "react";
@@ -407,10 +407,10 @@ export default function PrincipalKpiDashboard() {
   };
 
   const getHeatmapColor = (rate: number) => {
-    if (rate >= 90) return "bg-slate-900 text-white font-semibold";
-    if (rate >= 75) return "bg-slate-700 text-white font-medium";
-    if (rate >= 60) return "bg-slate-300 text-slate-900 font-medium";
-    return "bg-slate-100 text-slate-800 font-bold border border-slate-300";
+    if (rate >= 90) return "bg-emerald-600 text-white font-semibold";
+    if (rate >= 75) return "bg-blue-600 text-white font-medium";
+    if (rate >= 50) return "bg-amber-500 text-white font-medium";
+    return "bg-rose-600 text-white font-bold animate-pulse";
   };
 
   // Bar Chart formatting
@@ -691,7 +691,16 @@ export default function PrincipalKpiDashboard() {
               className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group relative"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors flex items-center gap-1.5">
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      (data.pillarAverages[0]?.averageScore || 0) >= 80
+                        ? "bg-emerald-500"
+                        : (data.pillarAverages[0]?.averageScore || 0) >= 50
+                        ? "bg-amber-500"
+                        : "bg-rose-500"
+                    }`}
+                  />
                   Chất Lượng Đào Tạo
                 </span>
                 <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg group-hover:bg-slate-200 transition-colors border border-slate-200">
@@ -704,7 +713,13 @@ export default function PrincipalKpiDashboard() {
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-slate-800 h-full rounded-full"
+                  className={`h-full rounded-full ${
+                    (data.pillarAverages[0]?.averageScore || 0) >= 80
+                      ? "bg-emerald-600"
+                      : (data.pillarAverages[0]?.averageScore || 0) >= 50
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+                  }`}
                   style={{ width: `${Math.min(100, data.pillarAverages[0]?.averageScore || 0)}%` }}
                 />
               </div>
@@ -733,7 +748,16 @@ export default function PrincipalKpiDashboard() {
               className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group relative"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors flex items-center gap-1.5">
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      (data.pillarAverages[1]?.averageScore || 0) >= 80
+                        ? "bg-emerald-500"
+                        : (data.pillarAverages[1]?.averageScore || 0) >= 50
+                        ? "bg-amber-500"
+                        : "bg-rose-500"
+                    }`}
+                  />
                   Chuyên Môn Giáo Viên
                 </span>
                 <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg group-hover:bg-slate-200 transition-colors border border-slate-200">
@@ -746,7 +770,13 @@ export default function PrincipalKpiDashboard() {
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-slate-800 h-full rounded-full"
+                  className={`h-full rounded-full ${
+                    (data.pillarAverages[1]?.averageScore || 0) >= 80
+                      ? "bg-emerald-600"
+                      : (data.pillarAverages[1]?.averageScore || 0) >= 50
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+                  }`}
                   style={{ width: `${Math.min(100, data.pillarAverages[1]?.averageScore || 0)}%` }}
                 />
               </div>
@@ -775,7 +805,16 @@ export default function PrincipalKpiDashboard() {
               className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group relative"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors flex items-center gap-1.5">
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      (data.pillarAverages[2]?.averageScore || 0) >= 80
+                        ? "bg-emerald-500"
+                        : (data.pillarAverages[2]?.averageScore || 0) >= 50
+                        ? "bg-amber-500"
+                        : "bg-rose-500"
+                    }`}
+                  />
                   Nề Nếp & An Toàn
                 </span>
                 <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg group-hover:bg-slate-200 transition-colors border border-slate-200">
@@ -788,7 +827,13 @@ export default function PrincipalKpiDashboard() {
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-slate-800 h-full rounded-full"
+                  className={`h-full rounded-full ${
+                    (data.pillarAverages[2]?.averageScore || 0) >= 80
+                      ? "bg-emerald-600"
+                      : (data.pillarAverages[2]?.averageScore || 0) >= 50
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+                  }`}
                   style={{ width: `${Math.min(100, data.pillarAverages[2]?.averageScore || 0)}%` }}
                 />
               </div>
@@ -817,7 +862,16 @@ export default function PrincipalKpiDashboard() {
               className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group relative"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors">
+                <span className="text-xs font-semibold text-slate-500 uppercase group-hover:text-slate-800 transition-colors flex items-center gap-1.5">
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      (data.pillarAverages[3]?.averageScore || 0) >= 80
+                        ? "bg-emerald-500"
+                        : (data.pillarAverages[3]?.averageScore || 0) >= 50
+                        ? "bg-amber-500"
+                        : "bg-rose-500"
+                    }`}
+                  />
                   Cơ Sở & Số Hóa
                 </span>
                 <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg group-hover:bg-slate-200 transition-colors border border-slate-200">
@@ -830,7 +884,13 @@ export default function PrincipalKpiDashboard() {
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-slate-800 h-full rounded-full"
+                  className={`h-full rounded-full ${
+                    (data.pillarAverages[3]?.averageScore || 0) >= 80
+                      ? "bg-emerald-600"
+                      : (data.pillarAverages[3]?.averageScore || 0) >= 50
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+                  }`}
                   style={{ width: `${Math.min(100, data.pillarAverages[3]?.averageScore || 0)}%` }}
                 />
               </div>
@@ -973,7 +1033,13 @@ export default function PrincipalKpiDashboard() {
                       </div>
                       <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-slate-800"
+                          className={`h-full rounded-full ${
+                            entity.compositeScore >= 80
+                              ? "bg-emerald-600"
+                              : entity.compositeScore >= 50
+                              ? "bg-amber-500"
+                              : "bg-rose-500"
+                          }`}
                           style={{ width: `${Math.min(100, entity.compositeScore)}%` }}
                         />
                       </div>
@@ -1108,7 +1174,7 @@ export default function PrincipalKpiDashboard() {
                     Ma Trận Cảnh Báo Nhiệt 12 Nhóm KPI Giữa Các Trường / Điểm Trường
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Màu Xanh: Tốt (≥90%) | Xanh dương: Khá (75-89%) | Vàng: Đạt (60-74%) | Đỏ: Cảnh báo sụt giảm (&lt;60%)
+                    Màu Xanh lá: Tốt (≥90%) | Xanh dương: Khá (75-89%) | Vàng: Cảnh báo (50-74%) | Đỏ: Nguy cơ sụt giảm (&lt;50%)
                   </p>
                 </div>
               </div>
@@ -1253,7 +1319,19 @@ export default function PrincipalKpiDashboard() {
                       {data.entities.map((e) => (
                         <tr key={e.id} className="hover:bg-slate-50/60">
                           <td className="p-3 font-bold text-slate-800">{e.name}</td>
-                          <td className="p-3 text-center font-extrabold text-slate-900">{e.compositeScore}</td>
+                          <td className="p-3 text-center font-extrabold">
+                            <span
+                              className={`font-mono px-2.5 py-1 rounded-lg border text-xs font-bold ${
+                                e.compositeScore >= 80
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : e.compositeScore >= 50
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-rose-50 text-rose-700 border-rose-200"
+                              }`}
+                            >
+                              {e.compositeScore}
+                            </span>
+                          </td>
                           <td className="p-3 text-center">
                             <span className="font-mono px-2 py-0.5 bg-slate-100 rounded text-slate-700 border border-slate-200">#{e.rank}</span>
                           </td>
@@ -1348,7 +1426,9 @@ export default function PrincipalKpiDashboard() {
                       </div>
                       <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                         <div
-                          className="bg-slate-800 h-full rounded-full"
+                          className={`h-full rounded-full ${
+                            pil.score >= 80 ? "bg-emerald-600" : pil.score >= 50 ? "bg-amber-500" : "bg-rose-500"
+                          }`}
                           style={{ width: `${Math.min(100, pil.score)}%` }}
                         />
                       </div>
