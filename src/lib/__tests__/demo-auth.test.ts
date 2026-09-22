@@ -126,4 +126,60 @@ describe("16 Demo Accounts Authentication & Password Verification", () => {
 
     expect(user).toBeNull();
   });
+
+  it("đảm bảo tài khoản Hiệu trưởng có role ADMIN và tên Hiệu trưởng chuẩn", async () => {
+    const authorize = credentialsProvider?.options?.authorize || credentialsProvider?.authorize;
+    const principalEmails = [
+      "hieutruong.thpholu@gmail.com",
+      "hieutruong@school.edu.vn",
+      "hieutruong@gmail.com",
+      "principal@school.edu.vn",
+      "principal.thpholu@gmail.com",
+    ];
+
+    for (const email of principalEmails) {
+      const user = await authorize({
+        email,
+        password: "123456",
+      });
+
+      expect(user).not.toBeNull();
+      expect(user?.role).toBe("ADMIN");
+      expect(user?.name).toContain("Hiệu trưởng");
+    }
+  });
+
+  it("tự động tự sửa lỗi (Self-Healing) khi tài khoản Hiệu trưởng trong DB bị lưu nhầm là STUDENT", async () => {
+    const prisma = (await import("../prisma")).default;
+    // Giả lập DB có user hiệu trưởng bị lỗi role: "STUDENT"
+    (prisma.user.findUnique as any).mockResolvedValueOnce({
+      id: "corrupted-principal-id",
+      email: "hieutruong.thpholu@gmail.com",
+      password: "$2a$10$invaliddummypasswordhash",
+      name: "ThS. Trần Thị Thanh Hà (Hiệu trưởng)",
+      role: "STUDENT", // Bị lỗi lưu nhầm
+      isApproved: true,
+      mustChangePassword: false,
+    });
+
+    const authorize = credentialsProvider?.options?.authorize || credentialsProvider?.authorize;
+    const user = await authorize({
+      email: "hieutruong.thpholu@gmail.com",
+      password: "123456",
+    });
+
+    expect(user).not.toBeNull();
+    // Role trả về trong session phải được tự sửa về ADMIN
+    expect(user?.role).toBe("ADMIN");
+    expect(user?.name).toBe("ThS. Trần Thị Thanh Hà (Hiệu trưởng)");
+    // Kiểm tra DB đã được gọi cập nhật role: ADMIN
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "corrupted-principal-id" },
+        data: expect.objectContaining({
+          role: "ADMIN",
+        }),
+      })
+    );
+  });
 });
