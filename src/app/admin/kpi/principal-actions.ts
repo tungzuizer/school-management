@@ -330,14 +330,17 @@ export async function getPrincipalKpiComparisonData(params?: {
 
       // 7. Mục tiêu chiến lược
       const qualityObjs = await prisma.qualityObjective.findMany({
-        where: entity.type === "CAMPUS" ? { OR: [{ campusScope: entity.id }, { campusScope: "ALL" }] } : { schoolId: entity.id },
+        where: entity.type === "CAMPUS" ? { OR: [{ campusScope: entity.id }, { campusScope: "ALL" }] } : undefined,
       });
       const achievedObjs = qualityObjs.filter((o) => o.status === "ACHIEVED" || o.status === "EXCEEDED").length;
       const strategicRate = qualityObjs.length > 0 ? Number(((achievedObjs / qualityObjs.length) * 100).toFixed(1)) : 0.0;
 
       // 8. Đổi mới & Khen thưởng
-      const commendationsCount = await prisma.commendation.count({
-        where: classIds.length > 0 ? { student: { classId: { in: classIds } } } : undefined,
+      const commendationsCount = await prisma.incident.count({
+        where: {
+          type: "COMMENDATION",
+          ...(classIds.length > 0 ? { classId: { in: classIds } } : {}),
+        },
       });
       const innovationRate = commendationsCount > 0 ? Math.min(100, commendationsCount * 20) : 0.0;
       const staffRate = teacherCount > 0 ? 100.0 : 0.0;

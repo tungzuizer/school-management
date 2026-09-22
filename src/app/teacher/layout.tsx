@@ -30,6 +30,7 @@ import {
   FileCheck,
   ChevronDown,
   ChevronRight,
+  Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { checkIsSubjectHead } from "./subject-head/actions";
@@ -144,6 +145,7 @@ function TeacherLayoutInner({ children }: { children: React.ReactNode }) {
       items: [
         { label: "Sổ chủ nhiệm", href: "/teacher/homeroom", icon: NotebookPen, description: "Quản lý nếp sống & tổ lớp" },
         { label: "Điểm danh sĩ số", href: "/teacher/attendance", icon: ClipboardCheck, description: "Báo cáo sĩ số hằng ngày" },
+        { label: "Bảng vàng Thi đua", href: "/admin/emulation", icon: Trophy, badge: "Thi Đua", description: "Bảng vàng thi đua nề nếp toàn trường & lớp" },
         { label: "Học bạ điện tử", href: "/teacher/transcript", icon: GraduationCap, description: "Tổng kết & nộp học bạ" },
         { label: "Báo cáo ngày BGH", href: "/teacher/daily-report", icon: FileCheck, description: "Nộp tổng kết ngày" },
       ],

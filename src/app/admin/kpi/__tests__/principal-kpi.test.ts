@@ -318,12 +318,11 @@ describe("Principal KPI Multi-School & Multi-Campus System", () => {
         categoryScores: {
           STUDENT: {
             category: "STUDENT" as any,
-            label: "Chất lượng dạy học",
-            rawScore: 90,
+            categoryName: "Chất lượng dạy học",
             completionRate: 95,
             weightedScore: 7.6,
-            weight: 0.08,
-            indicators: [],
+            status: "EXCELLENT",
+            kpiCount: 1,
           },
         },
       });

@@ -383,34 +383,6 @@ export async function seedDefaultKpiCatalog() {
         responsiblePerson: "Hội đồng Thi đua Khen thưởng",
         scope: "ALL",
       },
-        purpose: "Tăng cường liên lạc giữa Nhà trường và Gia đình",
-        formula: "(Số PH tương tác / Tổng số PH) * 100",
-        unit: "%",
-        direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Cổng thông tin phụ huynh",
-        frequency: ReportingFrequency.MONTHLY,
-        weight: 4,
-        baselineValue: 75,
-        targetValue: 92,
-        responsiblePerson: "Trưởng ban Truyền thông",
-        scope: "ALL",
-      },
-      {
-        code: "KPI-INN-01",
-        name: "Số đề tài sáng kiến kinh nghiệm được cấp trên công nhận",
-        category: KpiCategory.INNOVATION,
-        purpose: "Thúc đẩy phong trào thi đua và đổi mới sáng tạo",
-        formula: "Tổng số đề tài SKKN đạt giải",
-        unit: "đề tài",
-        direction: MeasurementDirection.HIGHER_BETTER,
-        dataSource: "Hội đồng Thi đua",
-        frequency: ReportingFrequency.YEARLY,
-        weight: 4,
-        baselineValue: 3,
-        targetValue: 8,
-        responsiblePerson: "Chủ tịch Hội đồng Thi đua",
-        scope: "ALL",
-      },
     ];
 
     await prisma.kpiCatalog.createMany({
@@ -750,8 +722,11 @@ export async function autoCalculateActualKpiValues(periodId: string) {
     const strategicRate = qualityObjs.length > 0 ? Number(((achievedObjs / qualityObjs.length) * 100).toFixed(1)) : 0.0;
 
     // 8. Đổi mới sáng tạo & Khen thưởng
-    const commendationsCount = await prisma.commendation.count({
-      where: classIds.length > 0 ? { student: { classId: { in: classIds } } } : undefined,
+    const commendationsCount = await prisma.incident.count({
+      where: {
+        type: "COMMENDATION",
+        ...(classIds.length > 0 ? { classId: { in: classIds } } : {}),
+      },
     });
 
     let overallScoreSum = 0;
