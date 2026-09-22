@@ -458,4 +458,51 @@ describe("Principal KPI Multi-School & Multi-Campus System", () => {
       expect(approveRes.message).toContain("thành công");
     });
   });
+
+  describe("10. 4-Pillar Database Lineage & Punctuality Breakdown Engine", () => {
+    it("should provide transparent component breakdowns with exact database sources for all 4 pillars", async () => {
+      const res = await getPrincipalKpiComparisonData({
+        year: 2026,
+        periodType: ReportingFrequency.MONTHLY,
+        scopeType: "CAMPUS",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.data).toBeDefined();
+      if (!res.data) return;
+
+      const entity = res.data.entities[0];
+      expect(entity.pillars.length).toBe(4);
+
+      // Verify Pillar 1: Chất lượng đào tạo & Học sinh (Grade & Attendance)
+      const pillar1 = entity.pillars[0];
+      expect(pillar1.code).toBe("PIL-01");
+      expect(pillar1.components).toBeDefined();
+      expect(pillar1.components!.length).toBeGreaterThan(0);
+      expect(pillar1.components!.some((c) => c.dbSource.includes("Grade"))).toBe(true);
+
+      // Verify Pillar 2: Chuyên môn & Đội ngũ giáo viên (LessonPlan & Teacher)
+      const pillar2 = entity.pillars[1];
+      expect(pillar2.code).toBe("PIL-02");
+      expect(pillar2.components).toBeDefined();
+      expect(pillar2.components!.length).toBeGreaterThan(0);
+      expect(pillar2.components!.some((c) => c.dbSource.includes("LessonPlan"))).toBe(true);
+
+      // Verify Pillar 3: Nề nếp, Chuyên cần & An toàn (Incident, Attendance & ParentFeedback)
+      const pillar3 = entity.pillars[2];
+      expect(pillar3.code).toBe("PIL-03");
+      expect(pillar3.components).toBeDefined();
+      expect(pillar3.components!.length).toBe(3);
+      expect(pillar3.components!.some((c) => c.dbSource.includes("Attendance"))).toBe(true);
+      expect(pillar3.components!.some((c) => c.name.includes("Nề nếp đúng giờ"))).toBe(true);
+
+      // Verify Pillar 4: Cơ sở vật chất & Chuyển đổi số (Equipment, QualityObjective & Commendations)
+      const pillar4 = entity.pillars[3];
+      expect(pillar4.code).toBe("PIL-04");
+      expect(pillar4.components).toBeDefined();
+      expect(pillar4.components!.length).toBe(3);
+      expect(pillar4.components!.some((c) => c.dbSource.includes("Equipment"))).toBe(true);
+      expect(pillar4.components!.some((c) => c.dbSource.includes("QualityObjective"))).toBe(true);
+    });
+  });
 });
