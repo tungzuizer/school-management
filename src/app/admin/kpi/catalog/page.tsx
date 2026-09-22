@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Importers/Callers: App Router route /admin/kpi/catalog
+ * 2. Public functions affected: KpiCatalogPage (Default Export Component)
+ * 3. Data schemas: KpiCatalog, KpiCategory
+ * 4. Verbatim User Instruction: "bỏ các icon màu mè đi dùng icon đơn giản" - "theo khuyến nghị của bạn"
+ */
+
 import { useEffect, useState, useRef } from "react";
 import {
   getKpiCatalogs,
@@ -346,10 +354,18 @@ export default function KpiCatalogPage() {
           >
             {totalWeight.toFixed(1)}%
           </div>
-          <div className="text-xs text-slate-500 mt-1">
-            {Math.abs(totalWeight - 100) < 0.1
-              ? "✓ Đạt tiêu chuẩn 100%"
-              : "⚠️ Cần điều chỉnh đạt 100%"}
+          <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+            {Math.abs(totalWeight - 100) < 0.1 ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline shrink-0" />
+                <span>Đạt tiêu chuẩn 100%</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600 inline shrink-0" />
+                <span>Cần điều chỉnh đạt 100%</span>
+              </>
+            )}
           </div>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">

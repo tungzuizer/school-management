@@ -2,10 +2,10 @@
 
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: Admin / Vice Principal / Principal KPI approval navigation.
- * 2. Public functions affected: KpiApprovalPage component, multi-tier status transitions.
+ * 1. Importers/Callers: App Router page component src/app/admin/kpi/approval/page.tsx
+ * 2. Affected API: KpiApprovalPage
  * 3. Data structures: Campus, KpiPeriod, KpiPeriodStatus, KpiReviewerLog, KpiUnlockLog.
- * 4. Verbatim User Instruction: "phần kpi tôi đang thấy nó làm cho có, tôi cần phải cần làm kỹ phần kpi rõ ràng phó hiệu trưởng đánh giá từng trường, hiệu trưởng đánh giá các trường ở trong phân hiệu của hiệu trưởng và phải làm thật sự chứ không phải làm cho có và dự trên Thông tư 15/2026/TT-BGDĐT".
+ * 4. Verbatim User Instruction: "bỏ các icon màu mè đi dùng icon đơn giản" - "theo khuyến nghị của bạn"
  */
 
 import { useEffect, useState } from "react";
@@ -337,7 +337,10 @@ export default function KpiApprovalPage() {
                 {currentStatus === "DRAFT" ? (
                   <span className="text-xs font-semibold text-amber-600">Đang chờ nhập số liệu</span>
                 ) : (
-                  <span className="text-xs font-semibold text-emerald-700">✓ Đã gửi dữ liệu</span>
+                  <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Đã gửi dữ liệu</span>
+                  </span>
                 )}
               </div>
             </div>
@@ -372,7 +375,10 @@ export default function KpiApprovalPage() {
                     Thẩm định Phân hiệu
                   </button>
                 ) : ["CAMPUS_CHECKED", "VP_REVIEWED", "APPROVED"].includes(currentStatus) ? (
-                  <span className="text-xs font-semibold text-emerald-700">✓ Phân hiệu đã duyệt</span>
+                  <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Phân hiệu đã duyệt</span>
+                  </span>
                 ) : (
                   <span className="text-xs text-slate-400">Chưa đến lượt</span>
                 )}
@@ -409,7 +415,10 @@ export default function KpiApprovalPage() {
                     Phó Hiệu trưởng duyệt
                   </button>
                 ) : ["VP_REVIEWED", "APPROVED"].includes(currentStatus) ? (
-                  <span className="text-xs font-semibold text-emerald-700">✓ BGH đã thông qua</span>
+                  <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>BGH đã thông qua</span>
+                  </span>
                 ) : (
                   <span className="text-xs text-slate-400">Chưa đến lượt</span>
                 )}
