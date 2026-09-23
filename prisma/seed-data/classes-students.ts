@@ -147,6 +147,17 @@ export async function seedClassesAndStudents(
     rawTimetable = JSON.parse(fs.readFileSync(timetableJsonPath, "utf-8"));
   }
 
+  // Index timetable by class
+  const timetableByClass = new Map<string, any[]>();
+  for (const item of rawTimetable) {
+    if (!timetableByClass.has(item.className)) {
+      timetableByClass.set(item.className, []);
+    }
+    timetableByClass.get(item.className)!.push(item);
+  }
+
+  const globalUsedTeacherSlots = new Set<string>();
+
   // 2. Group students by class
   const studentsByClass = new Map<string, any[]>();
   for (const st of rawStudents) {
@@ -318,44 +329,89 @@ export async function seedClassesAndStudents(
       await prisma.teachingAssignment.createMany({ data: assignments });
     }
 
-    // Schedules - Use homeroomTeacherObj for this class's exclusive schedule slots
+    // Schedules (Thứ 2 - Thứ 6, Sáng 1-4, Chiều 5-8)
+    const classTtEntries = timetableByClass.get(className) || [];
+    const classTtSlotMap = new Map<string, any>();
+    for (const entry of classTtEntries) {
+      classTtSlotMap.set(`${entry.dayOfWeek}_${entry.period}`, entry);
+    }
+
     const schedules = [];
     for (let day = 1; day <= 5; day++) {
-      for (let p = 1; p <= 4; p++) {
+      for (let p = 1; p <= 8; p++) {
+        const slotKey = `${day}_${p}`;
+        const explicitEntry = classTtSlotMap.get(slotKey);
+
+        let targetSubject = regularSubjects[(idx + day + p) % regularSubjects.length];
+        let targetTeacherId = homeroomTeacherObj.id;
+
         if (day === 1 && p === 1) {
-          schedules.push({
-            classId: classRoom.id,
-            subjectId: chaoCoSub.id,
-            teacherId: homeroomTeacherObj.id,
-            dayOfWeek: 1,
-            period: 1,
-            room: `Sân trường ${campusItem.spec.name}`,
-          });
-          continue;
+          targetSubject = chaoCoSub;
+          targetTeacherId = homeroomTeacherObj.id;
+        } else if (day === 5 && (p === 8 || p === 4)) {
+          targetSubject = sinhHoatSub;
+          targetTeacherId = homeroomTeacherObj.id;
+        } else if (explicitEntry) {
+          // Find matching subject
+          const matchedSub = subjects.find(
+            (s) =>
+              s.name.toLowerCase() === explicitEntry.subjectName.toLowerCase() ||
+              s.name.toLowerCase().includes(explicitEntry.subjectName.toLowerCase())
+          );
+          if (matchedSub) {
+            targetSubject = matchedSub;
+          }
+          // Find matching teacher
+          if (explicitEntry.teacherStt) {
+            const tObj = teachers.find((t) => t.stt === explicitEntry.teacherStt);
+            if (tObj) {
+              targetTeacherId = tObj.teacher.id;
+            }
+          }
+        } else {
+          // Fill morning vs afternoon
+          if (p <= 4) {
+            const morningSubs = ["Toán", "Tiếng Việt", "Tự nhiên và Xã hội", "Đạo đức", "Khoa học", "Lịch sử và Địa lí"];
+            const subName = morningSubs[(p + day + gradeLevel) % morningSubs.length];
+            targetSubject = subjects.find((s) => s.name === subName) || regularSubjects[0];
+            targetTeacherId = homeroomTeacherObj.id;
+          } else {
+            const afternoonSubs = ["Tiếng Anh", "Tin học và Công nghệ", "Giáo dục thể chất", "Âm nhạc", "Mĩ thuật", "Hoạt động trải nghiệm"];
+            const subName = afternoonSubs[(p + day + idx) % afternoonSubs.length];
+            targetSubject = subjects.find((s) => s.name === subName) || regularSubjects[0];
+            const specTeacher = teachers.find((t) => t.specialty.toLowerCase().includes(targetSubject.name.toLowerCase()));
+            if (specTeacher) {
+              targetTeacherId = specTeacher.teacher.id;
+            }
+          }
         }
 
-        if (day === 5 && p === 4) {
-          schedules.push({
-            classId: classRoom.id,
-            subjectId: sinhHoatSub.id,
-            teacherId: homeroomTeacherObj.id,
-            dayOfWeek: 5,
-            period: 4,
-            room: `Phòng ${className}`,
-          });
-          continue;
+        // Conflict check for (teacherId, dayOfWeek, period) unique constraint
+        let finalTeacherId = targetTeacherId;
+        if (globalUsedTeacherSlots.has(`${finalTeacherId}_${day}_${p}`)) {
+          // Fallback to homeroom teacher
+          if (!globalUsedTeacherSlots.has(`${homeroomTeacherObj.id}_${day}_${p}`)) {
+            finalTeacherId = homeroomTeacherObj.id;
+          } else {
+            // Find any teacher free at this time
+            const freeTeacher = teachers.find(
+              (t) => !globalUsedTeacherSlots.has(`${t.teacher.id}_${day}_${p}`)
+            );
+            if (freeTeacher) {
+              finalTeacherId = freeTeacher.teacher.id;
+            }
+          }
         }
 
-        const subIdx = (idx + day + p) % regularSubjects.length;
-        const sub = regularSubjects[subIdx];
+        globalUsedTeacherSlots.add(`${finalTeacherId}_${day}_${p}`);
 
         schedules.push({
           classId: classRoom.id,
-          subjectId: sub.id,
-          teacherId: homeroomTeacherObj.id,
+          subjectId: targetSubject.id,
+          teacherId: finalTeacherId,
           dayOfWeek: day,
           period: p,
-          room: `Phòng ${className}`,
+          room: p <= 4 ? `Phòng ${className}` : `Phòng chức năng ${campusItem.spec.name}`,
         });
       }
     }

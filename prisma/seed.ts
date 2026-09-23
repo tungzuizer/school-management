@@ -4,11 +4,11 @@
  * 2. Purpose: Complete database wipe and realistic seeding for Trường Tiểu học Phố Lu & 5 Phân hiệu (Lào Cai):
  *    - Đơn vị chủ quản: Sở GD&ĐT Lào Cai & UBND Xã Bảo Thắng
  *    - Trường pháp nhân: Trường Tiểu học Phố Lu (SchoolType.TIEU_HOC)
- *    - 5 Phân hiệu & Điểm trường: Trung tâm (20 lớp), Sơn Hà 1 (12 lớp), Sơn Hà 2 (10 lớp), Sơn Hải (10 lớp), Phố Lu 3 (8 lớp), Điểm An Tiến (2 lớp)
- *    - Quy mô: 62 lớp, 1.706 học sinh, 120 CB-GV-NV, 80 phòng học/chức năng
+ *    - 5 Phân hiệu & Điểm trường: Trung tâm (35 lớp), Sơn Hà 1 (10 lớp), Sơn Hà 2 (5 lớp), Sơn Hải (7 lớp), Điểm An Tiến (5 lớp)
+ *    - Quy mô: 62 lớp, 1.700 học sinh, 125 CB-GV-NV, 80 phòng học/chức năng, 40 tiết/tuần thời khóa biểu thực tế
  *    - Mật khẩu mặc định: 123456
  * 3. Schemas: Prisma models with multi-campus scoping, TT27 evaluation, timetable, attendance, equipment transfers, KPIs.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - "hãy xóa hết các dữ liệu cũ và thay bằng các dữ liệu mới của 5 phân hiệu này".
+ * 4. Verbatim User Instruction: "hãy xóa hết dữ liệu của TRƯỜNG TIỂU HỌC PHỐ LU và hãy cập nhập và lấy dữ liệu ở đây C:\Users\tungh\Desktop\school-management\docs\dulieu" / "cả thời khóa biểu nữa" / "theo khuyến nghị của bạn"
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -27,7 +27,13 @@ import { seedKpiOperations } from "./seed-data/kpi-operations";
 import { seedAiJourneyAnalytics } from "./seed-data/ai-journey-analytics";
 import { seedAccreditationAndSystemAdmin } from "./seed-data/accreditation-system-admin";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DIRECT_URL || process.env.DATABASE_URL,
+    },
+  },
+});
 
 async function cleanDatabase(prismaClient: PrismaClient) {
   console.log("🧹 [1/6] Đang xóa toàn bộ dữ liệu cũ trong cơ sở dữ liệu Supabase/PostgreSQL...");
@@ -48,88 +54,96 @@ async function cleanDatabase(prismaClient: PrismaClient) {
     console.warn("⚠️ TRUNCATE CASCADE không khả dụng, dọn dẹp qua Prisma deleteMany...");
   }
 
-  // Fallback delete in reverse dependency order
-  await Promise.allSettled([
-    prismaClient.transcriptUnlockRequest.deleteMany(),
-    prismaClient.tT15EvidenceFile.deleteMany(),
-    prismaClient.schoolPointEvaluationDetail.deleteMany(),
-    prismaClient.schoolPointEvaluation.deleteMany(),
-    prismaClient.tT15Indicator.deleteMany(),
-    prismaClient.fileAuditLog.deleteMany(),
-    prismaClient.systemEvidenceFile.deleteMany(),
-    prismaClient.studentImportMapping.deleteMany(),
-    prismaClient.studentImportStaging.deleteMany(),
-    prismaClient.studentImportBatch.deleteMany(),
-    prismaClient.interventionRecord.deleteMany(),
-    prismaClient.studentJourneySnapshot.deleteMany(),
-    prismaClient.journeyThresholdConfig.deleteMany(),
-    prismaClient.aiAnalysisLog.deleteMany(),
-    prismaClient.aiReportSummary.deleteMany(),
-    prismaClient.aiRecommendation.deleteMany(),
-    prismaClient.aiAlert.deleteMany(),
-    prismaClient.qualityObjectiveHistory.deleteMany(),
-    prismaClient.qualityObjectiveEvidence.deleteMany(),
-    prismaClient.kpiUnlockLog.deleteMany(),
-    prismaClient.kpiApprovalLog.deleteMany(),
-    prismaClient.kpiEvidence.deleteMany(),
-    prismaClient.kpiValue.deleteMany(),
-    prismaClient.kpiTarget.deleteMany(),
-    prismaClient.kpiAssignment.deleteMany(),
-    prismaClient.kpiPeriod.deleteMany(),
-    prismaClient.earlyWarning.deleteMany(),
-    prismaClient.decisionLog.deleteMany(),
-    prismaClient.weeklyActivity.deleteMany(),
-    prismaClient.monthlyPlan.deleteMany(),
-    prismaClient.academicCalendar.deleteMany(),
-    prismaClient.classJournalEntry.deleteMany(),
-    prismaClient.dailyReport.deleteMany(),
-    prismaClient.participationRecord.deleteMany(),
-    prismaClient.approvalComment.deleteMany(),
-    prismaClient.approvalWorkflow.deleteMany(),
-    prismaClient.substituteAssignment.deleteMany(),
-    prismaClient.teacherChangeRequest.deleteMany(),
-    prismaClient.lessonPlanReview.deleteMany(),
-    prismaClient.lessonPlan.deleteMany(),
-    prismaClient.lessonPlanPeriod.deleteMany(),
-    prismaClient.curriculum.deleteMany(),
-    prismaClient.transcriptSubjectGrade.deleteMany(),
-    prismaClient.academicTranscript.deleteMany(),
-    prismaClient.studentScore.deleteMany(),
-    prismaClient.examPeriod.deleteMany(),
-    prismaClient.officialDocument.deleteMany(),
-    prismaClient.equipmentTransfer.deleteMany(),
-    prismaClient.equipment.deleteMany(),
-    prismaClient.aiConfigThreshold.deleteMany(),
-    prismaClient.qualityObjective.deleteMany(),
-    prismaClient.kpiCatalog.deleteMany(),
-    prismaClient.seatingChart.deleteMany(),
-    prismaClient.parentFeedback.deleteMany(),
-    prismaClient.incident.deleteMany(),
-    prismaClient.conductRecord.deleteMany(),
-    prismaClient.grade.deleteMany(),
-    prismaClient.attendance.deleteMany(),
-    prismaClient.schedule.deleteMany(),
-    prismaClient.teachingAssignment.deleteMany(),
-    prismaClient.notification.deleteMany(),
-    prismaClient.student.deleteMany(),
-    prismaClient.group.deleteMany(),
-    prismaClient.classRoom.deleteMany(),
-    prismaClient.subject.deleteMany(),
-    prismaClient.subjectGroup.deleteMany(),
-    prismaClient.teacher.deleteMany(),
-    prismaClient.userRoleScope.deleteMany(),
-    prismaClient.user.deleteMany(),
-    prismaClient.campusWardMap.deleteMany(),
-    prismaClient.schoolPoint.deleteMany(),
-    prismaClient.campus.deleteMany(),
-    prismaClient.school.deleteMany(),
-    prismaClient.districtWard.deleteMany(),
-    prismaClient.educationDepartment.deleteMany(),
-    prismaClient.auditLog.deleteMany(),
-    prismaClient.dataLock.deleteMany(),
-    prismaClient.loginAttempt.deleteMany(),
-    prismaClient.systemSetting.deleteMany(),
-  ]);
+  // Fallback sequential delete in reverse dependency order
+  const deleteOps = [
+    () => prismaClient.transcriptUnlockRequest.deleteMany(),
+    () => prismaClient.tT15EvidenceFile.deleteMany(),
+    () => prismaClient.schoolPointEvaluationDetail.deleteMany(),
+    () => prismaClient.schoolPointEvaluation.deleteMany(),
+    () => prismaClient.tT15Indicator.deleteMany(),
+    () => prismaClient.fileAuditLog.deleteMany(),
+    () => prismaClient.systemEvidenceFile.deleteMany(),
+    () => prismaClient.studentImportMapping.deleteMany(),
+    () => prismaClient.studentImportStaging.deleteMany(),
+    () => prismaClient.studentImportBatch.deleteMany(),
+    () => prismaClient.interventionRecord.deleteMany(),
+    () => prismaClient.studentJourneySnapshot.deleteMany(),
+    () => prismaClient.journeyThresholdConfig.deleteMany(),
+    () => prismaClient.aiAnalysisLog.deleteMany(),
+    () => prismaClient.aiReportSummary.deleteMany(),
+    () => prismaClient.aiRecommendation.deleteMany(),
+    () => prismaClient.aiAlert.deleteMany(),
+    () => prismaClient.qualityObjectiveHistory.deleteMany(),
+    () => prismaClient.qualityObjectiveEvidence.deleteMany(),
+    () => prismaClient.kpiUnlockLog.deleteMany(),
+    () => prismaClient.kpiApprovalLog.deleteMany(),
+    () => prismaClient.kpiEvidence.deleteMany(),
+    () => prismaClient.kpiValue.deleteMany(),
+    () => prismaClient.kpiTarget.deleteMany(),
+    () => prismaClient.kpiAssignment.deleteMany(),
+    () => prismaClient.kpiPeriod.deleteMany(),
+    () => prismaClient.earlyWarning.deleteMany(),
+    () => prismaClient.decisionLog.deleteMany(),
+    () => prismaClient.weeklyActivity.deleteMany(),
+    () => prismaClient.monthlyPlan.deleteMany(),
+    () => prismaClient.academicCalendar.deleteMany(),
+    () => prismaClient.classJournalEntry.deleteMany(),
+    () => prismaClient.dailyReport.deleteMany(),
+    () => prismaClient.participationRecord.deleteMany(),
+    () => prismaClient.approvalComment.deleteMany(),
+    () => prismaClient.approvalWorkflow.deleteMany(),
+    () => prismaClient.substituteAssignment.deleteMany(),
+    () => prismaClient.teacherChangeRequest.deleteMany(),
+    () => prismaClient.lessonPlanReview.deleteMany(),
+    () => prismaClient.lessonPlan.deleteMany(),
+    () => prismaClient.lessonPlanPeriod.deleteMany(),
+    () => prismaClient.curriculum.deleteMany(),
+    () => prismaClient.transcriptSubjectGrade.deleteMany(),
+    () => prismaClient.academicTranscript.deleteMany(),
+    () => prismaClient.studentScore.deleteMany(),
+    () => prismaClient.examPeriod.deleteMany(),
+    () => prismaClient.officialDocument.deleteMany(),
+    () => prismaClient.equipmentTransfer.deleteMany(),
+    () => prismaClient.equipment.deleteMany(),
+    () => prismaClient.aiConfigThreshold.deleteMany(),
+    () => prismaClient.qualityObjective.deleteMany(),
+    () => prismaClient.kpiCatalog.deleteMany(),
+    () => prismaClient.seatingChart.deleteMany(),
+    () => prismaClient.parentFeedback.deleteMany(),
+    () => prismaClient.incident.deleteMany(),
+    () => prismaClient.conductRecord.deleteMany(),
+    () => prismaClient.grade.deleteMany(),
+    () => prismaClient.attendance.deleteMany(),
+    () => prismaClient.schedule.deleteMany(),
+    () => prismaClient.teachingAssignment.deleteMany(),
+    () => prismaClient.notification.deleteMany(),
+    () => prismaClient.student.deleteMany(),
+    () => prismaClient.group.deleteMany(),
+    () => prismaClient.classRoom.deleteMany(),
+    () => prismaClient.subject.deleteMany(),
+    () => prismaClient.subjectGroup.deleteMany(),
+    () => prismaClient.teacher.deleteMany(),
+    () => prismaClient.userRoleScope.deleteMany(),
+    () => prismaClient.user.deleteMany(),
+    () => prismaClient.campusWardMap.deleteMany(),
+    () => prismaClient.schoolPoint.deleteMany(),
+    () => prismaClient.campus.deleteMany(),
+    () => prismaClient.school.deleteMany(),
+    () => prismaClient.districtWard.deleteMany(),
+    () => prismaClient.educationDepartment.deleteMany(),
+    () => prismaClient.auditLog.deleteMany(),
+    () => prismaClient.dataLock.deleteMany(),
+    () => prismaClient.loginAttempt.deleteMany(),
+    () => prismaClient.systemSetting.deleteMany(),
+  ];
+
+  for (const op of deleteOps) {
+    try {
+      await op();
+    } catch (e) {
+      // ignore
+    }
+  }
   console.log("   ✅ Đã xóa toàn bộ dữ liệu qua Prisma deleteMany.");
 }
 
