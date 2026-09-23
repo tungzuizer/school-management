@@ -18,13 +18,16 @@ import {
 } from "@/lib/ai/data-integrity";
 import { getTenantContext } from "@/lib/tenant";
 
-export async function askPrincipalAI(query: string) {
+export async function askPrincipalAI(
+  query: string,
+  historyMessages?: { role: "user" | "assistant"; content: string }[]
+) {
   const dbContext = await getComprehensiveAIContext(query);
   const tenantCtx = await getTenantContext();
   const schoolId = tenantCtx?.schoolId || "";
   const campusId = tenantCtx?.campusId || undefined;
 
-  const prompt = `${AI_DATA_INTEGRITY_SYSTEM_PROMPT}
+  const systemPrompt = `${AI_DATA_INTEGRITY_SYSTEM_PROMPT}
 
 Bạn là Trợ lý AI Thông minh & Cố vấn Pháp lý - Quản lý Giáo dục cho Hiệu trưởng và Ban Giám hiệu theo Nghị quyết số 37/2026/NQ-CP và các quy định hiện hành.
 
@@ -42,9 +45,6 @@ CĂN CỨ PHÁP LÝ BẮT BUỘC:
 
 DỮ LIỆU THỰC TẾ TRÍCH XUẤT TỪ CƠ SỞ DỮ LIỆU HỆ THỐNG NGUYÊN BẢN (KÈM ID BẢN GHI):
 ${dbContext}
-
-CÂU HỎI / YÊU CẦU CỦA HIỆU TRƯỞNG:
-"${query}"
 
 QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
 1. Hãy trả lời ĐÚNG TRỌNG TÂM câu hỏi của Hiệu trưởng dựa trên dữ liệu thực tế ở trên và viện dẫn các điều khoản Nghị quyết 37/2026/NQ-CP khi liên quan.
@@ -68,7 +68,26 @@ NHƯỢC_ĐIỂM: [liệt kê, ngăn cách bằng |]
 CƠ_SỞ_PHÁP_LÝ: [Nghị quyết 37/2026/NQ-CP, Nghị định 178/2024/NĐ-CP, Nghị định 154/2025/NĐ-CP, Thông tư 32/2020/TT-BGDĐT]
 BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
 
-  const aiRes = await aiChatCompletion({ prompt, max_tokens: 2048 });
+  // BUG-10: Build multi-turn conversation messages
+  const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+    { role: "system", content: systemPrompt },
+  ];
+
+  // Inject recent conversation history (last 6 turns max) for multi-turn context
+  if (historyMessages && historyMessages.length > 0) {
+    const recentHistory = historyMessages.slice(-6);
+    for (const hMsg of recentHistory) {
+      messages.push({ role: hMsg.role, content: hMsg.content });
+    }
+  }
+
+  // Add the current user query
+  messages.push({
+    role: "user",
+    content: `CÂU HỎI / YÊU CẦU CỦA HIỆU TRƯỞNG:\n"${query}"`,
+  });
+
+  const aiRes = await aiChatCompletion({ messages, max_tokens: 2048 });
   if (!aiRes.success) {
     return { success: false, data: null, error: aiRes.error };
   }
@@ -120,18 +139,44 @@ BƯỚC_TRIỂN_KHAI: [các bước, ngăn cách bằng |]`;
 
   aiText = aiText.replace(/^TÓM_TẮT:\s*/i, "").replace(/^MỨC_RỦI_RO:\s*\w+\s*/im, "").trim();
 
+  // BUG-02 FIX: Generate fallback recommendation when AI returns free-form text
+  // so that the "Save to Decision Log" button is always available
+  let recommendation: {
+    summary: string;
+    riskLevel: "LOW" | "MEDIUM" | "HIGH";
+    options: Array<{ title: string; pros: string[]; cons: string[]; score: number }>;
+    policyNote?: string;
+    actionSteps: string[];
+  } | null = null;
+
+  if (hasOptions || actionSteps.length > 0) {
+    recommendation = {
+      summary: summary.replace(/^TÓM_TẮT:\s*/i, ""),
+      riskLevel: (["LOW", "MEDIUM", "HIGH"].includes(riskLevel) ? riskLevel : "LOW") as "LOW" | "MEDIUM" | "HIGH",
+      options,
+      policyNote,
+      actionSteps,
+    };
+  } else {
+    // Fallback: extract a summary + action steps from free-form AI text so the save button works
+    const fallbackSummary = aiText.length > 200 ? aiText.substring(0, 200) + "..." : aiText;
+    const sentences = aiText.split(/[.\n]/).map(s => s.trim()).filter(s => s.length > 10);
+    const fallbackSteps = sentences.slice(0, 4);
+    recommendation = {
+      summary: fallbackSummary,
+      riskLevel: "LOW",
+      options: [],
+      policyNote: policyNote || undefined,
+      actionSteps: fallbackSteps.length > 0 ? fallbackSteps : ["Xem xét và ra quyết định dựa trên phân tích của AI"],
+    };
+  }
+
   return {
     success: true,
     data: {
       text: aiText,
       grounded,
-      recommendation: hasOptions || actionSteps.length > 0 ? {
-        summary: summary.replace(/^TÓM_TẮT:\s*/i, ""),
-        riskLevel: (["LOW", "MEDIUM", "HIGH"].includes(riskLevel) ? riskLevel : "LOW") as "LOW" | "MEDIUM" | "HIGH",
-        options,
-        policyNote,
-        actionSteps,
-      } : null,
+      recommendation,
     },
     error: null,
   };
@@ -188,17 +233,33 @@ export async function getSchoolPointsContext() {
       classRooms: {
         include: {
           students: { where: { status: "STUDYING" } },
+          homeroomTeacher: true,
+          teachingAssignments: {
+            select: { teacherId: true },
+          },
         },
       },
     },
     orderBy: { distanceKm: "asc" },
   });
 
-  return points.map((p) => ({
-    name: p.name,
-    distanceKm: p.distanceKm ?? 0,
-    studentsCount: p.classRooms.reduce((sum, c) => sum + c.students.length, 0),
-    teacherCount: 0,
-    campusName: p.campus.name,
-  }));
+  return points.map((p) => {
+    // BUG-06 FIX: Count unique teachers from homeroomTeacher + teachingAssignments
+    const teacherIds = new Set<string>();
+    for (const c of p.classRooms) {
+      if (c.homeroomTeacher) {
+        teacherIds.add(c.homeroomTeacher.id);
+      }
+      for (const ta of c.teachingAssignments) {
+        teacherIds.add(ta.teacherId);
+      }
+    }
+    return {
+      name: p.name,
+      distanceKm: p.distanceKm ?? 0,
+      studentsCount: p.classRooms.reduce((sum, c) => sum + c.students.length, 0),
+      teacherCount: teacherIds.size,
+      campusName: p.campus.name,
+    };
+  });
 }

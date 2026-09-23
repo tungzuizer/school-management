@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import {
   Bot,
   Send,
@@ -30,6 +30,7 @@ import {
   Navigation,
   Loader2,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import {
   askPrincipalAI,
@@ -39,6 +40,212 @@ import {
 } from "./actions";
 import { GroundedResponseCard } from "@/components/ai/grounded-response-card";
 import type { AIGroundedResponse } from "@/lib/ai/data-integrity";
+
+// ─── BUG-03 FIX: Simple Markdown Renderer ───────────────────────────────────
+function FormattedMarkdown({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let key = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Heading lines (### ## #)
+    if (line.startsWith("### ")) {
+      elements.push(
+        <h4 key={key++} className="font-bold text-gray-900 text-sm mt-3 mb-1">
+          {renderInline(line.slice(4))}
+        </h4>
+      );
+    } else if (line.startsWith("## ")) {
+      elements.push(
+        <h3 key={key++} className="font-bold text-gray-900 text-base mt-3 mb-1">
+          {renderInline(line.slice(3))}
+        </h3>
+      );
+    } else if (line.startsWith("# ")) {
+      elements.push(
+        <h2 key={key++} className="font-bold text-gray-900 text-lg mt-3 mb-1">
+          {renderInline(line.slice(2))}
+        </h2>
+      );
+    }
+    // Numbered list items
+    else if (/^\d+[\.\)]\s/.test(line)) {
+      elements.push(
+        <div key={key++} className="flex items-start gap-2 ml-1 my-0.5">
+          <span className="text-blue-600 font-semibold shrink-0">
+            {line.match(/^\d+[\.\)]/)?.[0]}
+          </span>
+          <span>{renderInline(line.replace(/^\d+[\.\)]\s*/, ""))}</span>
+        </div>
+      );
+    }
+    // Bullet points (-, *, +)
+    else if (/^[\-\*\+]\s/.test(line)) {
+      elements.push(
+        <div key={key++} className="flex items-start gap-2 ml-2 my-0.5">
+          <span className="text-emerald-600 mt-1.5 shrink-0">•</span>
+          <span>{renderInline(line.replace(/^[\-\*\+]\s*/, ""))}</span>
+        </div>
+      );
+    }
+    // Indented sub-items
+    else if (/^\s{2,}[\-\*\+]\s/.test(line)) {
+      elements.push(
+        <div key={key++} className="flex items-start gap-2 ml-6 my-0.5">
+          <span className="text-gray-400 mt-1.5 shrink-0">◦</span>
+          <span>{renderInline(line.replace(/^\s+[\-\*\+]\s*/, ""))}</span>
+        </div>
+      );
+    }
+    // Empty line → spacer
+    else if (line.trim() === "") {
+      elements.push(<div key={key++} className="h-2" />);
+    }
+    // Regular paragraph
+    else {
+      elements.push(
+        <p key={key++} className="my-0.5 leading-relaxed">
+          {renderInline(line)}
+        </p>
+      );
+    }
+  }
+
+  return <div className="text-sm text-gray-800 space-y-0.5">{elements}</div>;
+}
+
+/** Render inline markdown: **bold**, *italic*, `code` */
+function renderInline(text: string): React.ReactNode {
+  // Process **bold**, *italic*, `code`
+  const parts: React.ReactNode[] = [];
+  // Use regex to split by **bold**, *italic*, and `code`
+  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let inlineKey = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Push text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+
+    const token = match[0];
+    if (token.startsWith("**") && token.endsWith("**")) {
+      parts.push(
+        <strong key={`b${inlineKey++}`} className="font-bold text-gray-900">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (token.startsWith("`") && token.endsWith("`")) {
+      parts.push(
+        <code
+          key={`c${inlineKey++}`}
+          className="px-1 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-mono"
+        >
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else if (token.startsWith("*") && token.endsWith("*")) {
+      parts.push(
+        <em key={`i${inlineKey++}`} className="italic">
+          {token.slice(1, -1)}
+        </em>
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Push remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length === 1 && typeof parts[0] === "string" ? parts[0] : <>{parts}</>;
+}
+
+// ─── BUG-08 FIX: Toast Notification Component ───────────────────────────────
+interface ToastData {
+  id: string;
+  message: string;
+  type: "success" | "error" | "info";
+}
+
+function ToastContainer({ toasts, onDismiss }: { toasts: ToastData[]; onDismiss: (id: string) => void }) {
+  return (
+    <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl border backdrop-blur-md text-sm font-medium animate-slideInRight ${
+            t.type === "success"
+              ? "bg-emerald-50/95 border-emerald-200 text-emerald-800"
+              : t.type === "error"
+              ? "bg-red-50/95 border-red-200 text-red-800"
+              : "bg-blue-50/95 border-blue-200 text-blue-800"
+          }`}
+        >
+          {t.type === "success" && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />}
+          {t.type === "error" && <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />}
+          {t.type === "info" && <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />}
+          <span>{t.message}</span>
+          <button onClick={() => onDismiss(t.id)} className="ml-2 text-gray-400 hover:text-gray-600">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── BUG-09 FIX: Confirmation Modal ─────────────────────────────────────────
+function ConfirmModal({
+  open,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 max-w-md w-full mx-4 space-y-4 animate-fadeIn">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+          </div>
+          <h3 className="font-bold text-gray-900 text-base">{title}</h3>
+        </div>
+        <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition"
+          >
+            Hủy bỏ
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-md transition"
+          >
+            Xác nhận làm mới
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Interfaces ──────────────────────────────────────────────────────────────
 
 interface Message {
   id: string;
@@ -76,6 +283,8 @@ interface SchoolPointInfo {
   campusName: string;
 }
 
+// ─── Main Component ─────────────────────────────────────────────────────────
+
 export default function PrincipalAIPage() {
   const [activeTab, setActiveTab] = useState<"chat" | "history">("chat");
   const [inputQuery, setInputQuery] = useState("");
@@ -93,6 +302,28 @@ export default function PrincipalAIPage() {
   const [schoolPoints, setSchoolPoints] = useState<SchoolPointInfo[]>([]);
   const [loadingDecisions, setLoadingDecisions] = useState(true);
   const [loadingPoints, setLoadingPoints] = useState(true);
+
+  // BUG-08: Toast state
+  const [toasts, setToasts] = useState<ToastData[]>([]);
+
+  // BUG-09: Modal state
+  const [showResetModal, setShowResetModal] = useState(false);
+
+  // Auto-scroll ref
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Toast helpers
+  const showToast = useCallback((message: string, type: ToastData["type"] = "success") => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   // Fetch decision logs on mount
   const fetchDecisions = useCallback(async () => {
@@ -125,6 +356,11 @@ export default function PrincipalAIPage() {
     fetchSchoolPoints();
   }, [fetchDecisions, fetchSchoolPoints]);
 
+  // Auto-scroll on new messages
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isAnalyzing]);
+
   const presetQueries = [
     "⚖️ Phương án sắp xếp Phó Hiệu trưởng dôi dư và bảo lưu phụ cấp theo NQ 37/2026 và NĐ 178/2024",
     "🎓 Lộ trình bồi dưỡng chuẩn hóa 36 tháng (đến 05/08/2029) cho nhân sự hỗ trợ chưa đạt chuẩn",
@@ -149,7 +385,15 @@ export default function PrincipalAIPage() {
     setIsAnalyzing(true);
 
     try {
-      const result = await askPrincipalAI(query);
+      // BUG-10: Build conversation history from existing messages
+      const historyMessages = messages
+        .filter((m) => m.id !== "1") // skip initial greeting
+        .map((m) => ({
+          role: m.sender === "user" ? ("user" as const) : ("assistant" as const),
+          content: m.text,
+        }));
+
+      const result = await askPrincipalAI(query, historyMessages);
 
       if (result.success && result.data) {
         const aiResponse: Message = {
@@ -183,30 +427,65 @@ export default function PrincipalAIPage() {
     }
   };
 
+  // BUG-02 FIX: handleSaveDecision now works for any AI message (with or without recommendation)
   const handleSaveDecision = async (msg: Message) => {
-    if (!msg.recommendation) return;
-
     try {
+      const recSummary = msg.recommendation?.summary || msg.text;
+      const decisionTitle =
+        msg.recommendation?.options
+          ?.sort((a, b) => b.score - a.score)?.[0]?.title || "Đang xem xét";
+
       const result = await saveDecision({
-        query: msg.text,
-        aiRecommendation: msg.recommendation.summary,
-        decisionTaken: msg.recommendation.options
-          .sort((a, b) => b.score - a.score)[0]?.title || "Đang xem xét",
+        query: messages.find(
+          (m) => m.sender === "user" && parseInt(m.id) < parseInt(msg.id)
+        )?.text || msg.text,
+        aiRecommendation: recSummary,
+        decisionTaken: decisionTitle,
       });
 
       if (result.success && result.data) {
         setSavedDecisions((prev) => [result.data!, ...prev]);
-        alert("✅ Đã lưu quyết định vào Nhật ký chỉ đạo thành công!");
+        showToast("Đã lưu quyết định vào Nhật ký chỉ đạo thành công!", "success");
       } else {
-        alert(`❌ Lỗi khi lưu: ${result.error}`);
+        showToast(`Lỗi khi lưu: ${result.error}`, "error");
       }
     } catch {
-      alert("❌ Đã xảy ra lỗi khi lưu quyết định.");
+      showToast("Đã xảy ra lỗi khi lưu quyết định.", "error");
     }
+  };
+
+  // BUG-09 FIX: Reset session handler with confirmation
+  const handleResetSession = () => {
+    setShowResetModal(true);
+  };
+
+  const confirmResetSession = () => {
+    setMessages([
+      {
+        id: "1",
+        sender: "ai",
+        text: "Xin chào Thầy/Cô Hiệu trưởng! Tôi là Trợ lý AI Tư vấn Ra Quyết định Ban Giám hiệu Đa Điểm Trường.",
+        timestamp: "08:00",
+      },
+    ]);
+    setShowResetModal(false);
+    showToast("Đã làm mới phiên tham vấn.", "info");
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Toast Notifications (BUG-08) */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* Confirmation Modal (BUG-09) */}
+      <ConfirmModal
+        open={showResetModal}
+        title="Xác nhận làm mới phiên"
+        message="Bạn có chắc chắn muốn xóa toàn bộ lịch sử tham vấn hiện tại? Hành động này không thể hoàn tác. Các quyết định đã lưu vào Nhật ký sẽ không bị ảnh hưởng."
+        onConfirm={confirmResetSession}
+        onCancel={() => setShowResetModal(false)}
+      />
+
       {/* ===== Header ===== */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -262,8 +541,40 @@ export default function PrincipalAIPage() {
       {/* ===== Main Content ===== */}
       {activeTab === "chat" ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Preset Prompts Sidebar */}
+          {/* Sidebar: School Points (BUG-05 FIX: moved UP) + Preset Prompts */}
           <div className="lg:col-span-1 space-y-4">
+            {/* BUG-05 FIX: School Points Context — now at TOP of sidebar for easy visibility */}
+            <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4 text-xs text-blue-900 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-blue-950">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                Tọa độ & Sĩ số các điểm trường
+              </div>
+              {loadingPoints ? (
+                <div className="flex items-center gap-2 text-gray-500 py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang tải dữ liệu...</span>
+                </div>
+              ) : schoolPoints.length > 0 ? (
+                <ul className="space-y-1.5 text-gray-700">
+                  {schoolPoints.map((sp, idx) => (
+                    <li key={idx} className="flex items-start gap-1.5">
+                      <MapPin className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
+                      <span>
+                        <strong className="text-blue-900">{sp.name}</strong> ({sp.distanceKm}km):{" "}
+                        {sp.studentsCount} HS
+                        {sp.teacherCount > 0 && (
+                          <span className="text-emerald-700 font-semibold"> · {sp.teacherCount} GV</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 italic">Chưa có dữ liệu điểm trường.</p>
+              )}
+            </div>
+
+            {/* Preset Prompts */}
             <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-gray-800 font-semibold">
                 <Sparkles className="w-5 h-5 text-amber-500" />
@@ -290,61 +601,29 @@ export default function PrincipalAIPage() {
                 ))}
               </div>
             </div>
-
-            {/* Satellite school points context badge - REAL DATA */}
-            <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4 text-xs text-blue-900 space-y-2">
-              <div className="flex items-center gap-2 font-bold text-blue-950">
-                <Building2 className="w-4 h-4 text-blue-600" />
-                Tọa độ & Sĩ số các điểm trường
-              </div>
-              {loadingPoints ? (
-                <div className="flex items-center gap-2 text-gray-500 py-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Đang tải dữ liệu...</span>
-                </div>
-              ) : schoolPoints.length > 0 ? (
-                <ul className="space-y-1 text-gray-600 list-disc list-inside">
-                  {schoolPoints.map((sp, idx) => (
-                    <li key={idx}>
-                      {sp.name} ({sp.distanceKm}km): {sp.studentsCount} HS
-                      {sp.teacherCount > 0 ? ` - ${sp.teacherCount} GV` : ""}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500 italic">Chưa có dữ liệu điểm trường.</p>
-              )}
-            </div>
           </div>
 
           {/* Chat Stream & Output Area */}
-          <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col h-[700px]">
+          {/* BUG-05 FIX: flex-1 with min-h to prevent dual scrollbars */}
+          <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col min-h-[650px] max-h-[85vh]">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 rounded-t-2xl">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 rounded-t-2xl shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-sm font-semibold text-gray-700">
                   AI Decision Engine - Dữ liệu thời gian thực
                 </span>
               </div>
+              {/* BUG-09 FIX: onClick now opens confirmation modal */}
               <button
-                onClick={() =>
-                  setMessages([
-                    {
-                      id: "1",
-                      sender: "ai",
-                      text: "Xin chào Thầy/Cô Hiệu trưởng! Tôi là Trợ lý AI Tư vấn Ra Quyết định Ban Giám hiệu Đa Điểm Trường.",
-                      timestamp: "08:00",
-                    },
-                  ])
-                }
+                onClick={handleResetSession}
                 className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Làm mới phiên
               </button>
             </div>
 
-            {/* Message Area */}
+            {/* Message Area — single scrollable container */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {messages.map((msg) => (
                 <div
@@ -374,8 +653,9 @@ export default function PrincipalAIPage() {
                         </span>
                       </div>
                     ) : (
-                      <div className="p-4 rounded-2xl text-sm bg-gray-100 text-gray-800 rounded-tl-none">
-                        <p className="whitespace-pre-line">{msg.text}</p>
+                      <div className="p-4 rounded-2xl text-sm bg-gray-50 text-gray-800 rounded-tl-none border border-gray-100">
+                        {/* BUG-03 FIX: Use FormattedMarkdown instead of raw whitespace-pre-line */}
+                        <FormattedMarkdown text={msg.text} />
                         <span className="text-[10px] block mt-1 text-gray-400">
                           {msg.timestamp}
                         </span>
@@ -502,6 +782,17 @@ export default function PrincipalAIPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* BUG-02 FIX: Show save button on AI messages without structured recommendation */}
+                    {msg.sender === "ai" && msg.id !== "1" && !msg.recommendation && (
+                      <button
+                        onClick={() => handleSaveDecision(msg)}
+                        className="mt-1 px-3 py-1.5 text-xs text-emerald-700 hover:text-white border border-emerald-200 hover:bg-emerald-600 font-medium rounded-lg flex items-center gap-1.5 transition"
+                      >
+                        <BookmarkPlus className="w-3.5 h-3.5" />
+                        Lưu vào Nhật ký chỉ đạo
+                      </button>
+                    )}
                   </div>
 
                   {msg.sender === "user" && (
@@ -520,10 +811,13 @@ export default function PrincipalAIPage() {
                   <span>AI đang phân tích dữ liệu thực tế từ hệ thống & tổng hợp khuyến nghị...</span>
                 </div>
               )}
+
+              {/* Auto-scroll anchor */}
+              <div ref={chatEndRef} />
             </div>
 
             {/* Input Box */}
-            <div className="p-4 border-t border-gray-200 bg-white rounded-b-2xl">
+            <div className="p-4 border-t border-gray-200 bg-white rounded-b-2xl shrink-0">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -617,6 +911,30 @@ export default function PrincipalAIPage() {
           )}
         </div>
       )}
+
+      {/* Custom CSS for animations */}
+      <style jsx global>{`
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-slideInRight {
+          animation: slideInRight 0.3s ease-out;
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
