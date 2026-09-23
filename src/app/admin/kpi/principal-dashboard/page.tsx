@@ -2,10 +2,10 @@
 
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: src/app/admin/kpi/page.tsx
+ * 1. Importers/Callers: src/app/admin/kpi/page.tsx, /admin/kpi/principal-dashboard
  * 2. Public functions affected: PrincipalKpiDashboard (Default Export Component)
  * 3. Data structures: PrincipalKpiOverviewPayload, PrincipalKpiEntityComparison, PrincipalKpiPillarScore
- * 4. Verbatim User Instruction: "sao phần kpi bị lỗi không hiển thị kiểm tra lỗi"
+ * 4. Verbatim User Instruction: "phần kpi vẫn lỗi Chưa có dữ liệu trường học phù hợp Vui lòng thay đổi bộ lọc trường hoặc năm đánh giá."
  */
 
 import { useState, useEffect } from "react";
@@ -567,7 +567,7 @@ export default function PrincipalKpiDashboard() {
             </button>
           </div>
 
-          {scopeType === "CAMPUS" && schools.length > 0 && (
+          {schools.length > 0 && (
             <select
               value={selectedSchoolId}
               onChange={(e) => setSelectedSchoolId(e.target.value)}
@@ -672,10 +672,36 @@ export default function PrincipalKpiDashboard() {
           </button>
         </div>
       ) : !data || data.entities.length === 0 ? (
-        <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
-          <Info className="w-10 h-10 text-slate-400 mx-auto" />
-          <h3 className="text-base font-bold text-slate-800">Chưa có dữ liệu trường học phù hợp</h3>
-          <p className="text-sm text-slate-500">Vui lòng thay đổi bộ lọc trường hoặc năm đánh giá.</p>
+        <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-4 max-w-lg mx-auto shadow-xs">
+          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-500 border border-slate-200">
+            <Info className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-slate-900">Chưa có dữ liệu trường học phù hợp</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Không tìm thấy trường học hoặc phân hiệu nào theo cấu hình lọc hiện tại ({scopeType === "CAMPUS" ? "Phân hiệu" : "Trường học"}, năm {year}).
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <button
+              onClick={() => {
+                setScopeType("CAMPUS");
+                setSelectedSchoolId("ALL");
+                setYear(new Date().getFullYear());
+                setPeriodType(ReportingFrequency.MONTHLY);
+              }}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Khôi phục bộ lọc mặc định
+            </button>
+            <button
+              onClick={fetchData}
+              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl text-xs font-medium shadow-xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            >
+              Làm mới dữ liệu
+            </button>
+          </div>
         </div>
       ) : (
         <>
