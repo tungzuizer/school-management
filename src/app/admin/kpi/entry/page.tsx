@@ -2,10 +2,10 @@
 
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: App Router page component src/app/admin/kpi/entry/page.tsx
+ * 1. Importers/Callers: App Router page component src/app/admin/kpi/entry/page.tsx, src/app/admin/kpi/page.tsx
  * 2. Affected API: KpiEntryPage (Client Component)
  * 3. Data schemas: KpiPeriod, KpiTarget, KpiEvidence, KpiPeriodStatus, ReportingFrequency, MeasurementDirection, KpiCategory
- * 4. Verbatim User Instruction: "cần 1 chút màu để cảnh báo kpi" -> "theo khuyến nghị của bạn" -> "thực hiện đi" (Bổ sung màu sắc cảnh báo ngữ nghĩa Traffic Light 3 cấp độ: Rose <50%, Amber 50-79%, Emerald >=80%)
+ * 4. Verbatim User Instruction: "sao phần kpi bị lỗi không hiển thị kiểm tra lỗi"
  */
 
 import { useEffect, useState } from "react";
@@ -20,6 +20,7 @@ import {
   requestUnlockKpiPeriod,
   getCampuses,
   autoCalculateActualKpiValues,
+  seedDefaultKpiCatalog,
 } from "../actions";
 import { calculateKpiScore } from "../utils";
 import { CATEGORY_LABELS, DIRECTION_LABELS, FREQUENCY_LABELS, STATUS_LABELS } from "../kpi-labels";
@@ -510,6 +511,35 @@ export default function KpiEntryPage() {
           </div>
         )}
       </div>
+
+      {/* Empty State Banner if no periods exist */}
+      {periods.length === 0 && !loading && (
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-slate-400 mx-auto" />
+          <h3 className="text-lg font-bold text-slate-800">Chưa có kỳ đánh giá KPI nào</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Hệ thống chưa tìm thấy kỳ đánh giá KPI nào trong cơ sở dữ liệu. Nhấn nút bên dưới để khởi tạo nhanh kỳ đánh giá KPI mẫu năm 2026.
+          </p>
+          <button
+            onClick={async () => {
+              setSaving(true);
+              await seedDefaultKpiCatalog();
+              const res = await createKpiPeriod("Kỳ Đánh Giá KPI Học Kỳ 1 (2025-2026)", 2026, ReportingFrequency.SEMESTER);
+              if (res.success) {
+                setMessage({ type: "success", text: "Đã tạo kỳ KPI mẫu thành công!" });
+                await loadPeriods();
+              } else {
+                setMessage({ type: "error", text: res.error || "Không thể tạo kỳ KPI." });
+              }
+              setSaving(false);
+            }}
+            disabled={saving}
+            className="px-5 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-50 transition shadow-sm cursor-pointer"
+          >
+            {saving ? "Đang khởi tạo..." : "Khởi tạo nhanh Kỳ KPI Mẫu 2026"}
+          </button>
+        </div>
+      )}
 
       {/* KPI Entry List Table */}
       {periodDetails && (
