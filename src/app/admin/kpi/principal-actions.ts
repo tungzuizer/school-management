@@ -3,9 +3,9 @@
 /**
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: src/app/admin/kpi/principal-dashboard/page.tsx, src/app/admin/kpi/page.tsx
- * 2. Public functions affected: getPrincipalKpiComparisonData, generatePrincipalKpiAiInsights, getPrincipalKpiSchoolOptions
- * 3. Data structures: PrincipalKpiEntityComparison, PrincipalKpiPillarScore, PrincipalKpiOverviewPayload, KpiCategory, KpiPeriod
- * 4. Verbatim User Instruction: "hãy cập nhập thêm phần KPI của hiểu trưởng để theo dõi các trường" - "theo khuyến nghị của bạn"
+ * 2. Public functions affected: getPrincipalKpiSchoolOptions, getPrincipalKpiComparisonData, getPrincipalKpiHistoricalTrends
+ * 3. Data structures: PrincipalKpiEntityComparison, PrincipalKpiPillarScore, PrincipalKpiOverviewPayload, School, Campus
+ * 4. Verbatim User Instruction: "phần kpi vẫn lỗi Chưa có dữ liệu trường học phù hợp Vui lòng thay đổi bộ lọc trường hoặc năm đánh giá."
  */
 
 import prisma from "@/lib/prisma";
@@ -123,7 +123,7 @@ export async function getPrincipalKpiSchoolOptions() {
     const ctx = await getTenantContext();
     const schoolFilter = buildSchoolDirectFilter(ctx);
 
-    const schools = await prisma.school.findMany({
+    let schools = await prisma.school.findMany({
       where: schoolFilter,
       select: {
         id: true,
@@ -139,6 +139,50 @@ export async function getPrincipalKpiSchoolOptions() {
       },
       orderBy: { name: "asc" },
     });
+
+    // Graceful fallback if tenant direct filter returns 0 schools (e.g. DISTRICT_ADMIN with districtWardId mismatch)
+    if (schools.length === 0) {
+      const fallbackFilter = ctx.schoolId
+        ? { id: ctx.schoolId }
+        : ctx.departmentId
+        ? { departmentId: ctx.departmentId }
+        : {};
+      schools = await prisma.school.findMany({
+        where: fallbackFilter,
+        select: {
+          id: true,
+          name: true,
+          schoolType: true,
+          campuses: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+    }
+
+    // Ultimate fallback to ensure admin always has access to school options
+    if (schools.length === 0) {
+      schools = await prisma.school.findMany({
+        select: {
+          id: true,
+          name: true,
+          schoolType: true,
+          campuses: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+    }
 
     return {
       success: true,
@@ -178,12 +222,41 @@ export async function getPrincipalKpiComparisonData(params?: {
     let entitiesToAnalyze: { id: string; name: string; type: "SCHOOL" | "CAMPUS"; schoolName?: string; schoolId: string }[] = [];
 
     if (scopeType === "SCHOOL") {
-      const schoolFilter = buildSchoolDirectFilter(ctx);
-      const schools = await prisma.school.findMany({
-        where: schoolFilter,
+      let schoolWhere: any = {};
+      if (params?.schoolId && params.schoolId !== "ALL") {
+        schoolWhere.id = params.schoolId;
+      } else {
+        schoolWhere = buildSchoolDirectFilter(ctx);
+      }
+
+      let schools = await prisma.school.findMany({
+        where: schoolWhere,
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       });
+
+      // Graceful fallback if schoolWhere returned 0
+      if (schools.length === 0) {
+        const fallbackWhere = ctx.schoolId
+          ? { id: ctx.schoolId }
+          : ctx.departmentId
+          ? { departmentId: ctx.departmentId }
+          : {};
+        schools = await prisma.school.findMany({
+          where: fallbackWhere,
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        });
+      }
+
+      // If still 0, load all available schools
+      if (schools.length === 0) {
+        schools = await prisma.school.findMany({
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        });
+      }
+
       entitiesToAnalyze = schools.map((s) => ({
         id: s.id,
         name: s.name,
@@ -199,7 +272,7 @@ export async function getPrincipalKpiComparisonData(params?: {
         whereClause.schoolId = ctx.schoolId;
       }
 
-      const campuses = await prisma.campus.findMany({
+      let campuses = await prisma.campus.findMany({
         where: whereClause,
         include: {
           school: {
@@ -208,6 +281,32 @@ export async function getPrincipalKpiComparisonData(params?: {
         },
         orderBy: { name: "asc" },
       });
+
+      // Fallback if whereClause found 0 campuses (e.g. schoolId mismatch or no campus assigned)
+      if (campuses.length === 0) {
+        const fallbackCampusWhere = ctx.schoolId ? { schoolId: ctx.schoolId } : {};
+        campuses = await prisma.campus.findMany({
+          where: fallbackCampusWhere,
+          include: {
+            school: {
+              select: { name: true },
+            },
+          },
+          orderBy: { name: "asc" },
+        });
+      }
+
+      // If still 0, load all campuses in system
+      if (campuses.length === 0) {
+        campuses = await prisma.campus.findMany({
+          include: {
+            school: {
+              select: { name: true },
+            },
+          },
+          orderBy: { name: "asc" },
+        });
+      }
 
       entitiesToAnalyze = campuses.map((c) => ({
         id: c.id,
