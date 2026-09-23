@@ -481,9 +481,16 @@ export async function createKpiPeriod(title: string, year: number, periodType: R
     });
 
     // Automatically clone active KPI catalog targets into this period
-    const activeCatalogs = await prisma.kpiCatalog.findMany({
+    let activeCatalogs = await prisma.kpiCatalog.findMany({
       where: { isActive: true },
     });
+
+    if (activeCatalogs.length === 0) {
+      await seedDefaultKpiCatalog();
+      activeCatalogs = await prisma.kpiCatalog.findMany({
+        where: { isActive: true },
+      });
+    }
 
     if (activeCatalogs.length > 0) {
       await prisma.kpiTarget.createMany({
@@ -753,12 +760,7 @@ export async function autoCalculateActualKpiValues(periodId: string) {
         calculationNote = totalLessonPlans > 0
           ? `Duyệt giáo án điện tử: ${approvedLessonPlans}/${totalLessonPlans} giáo án đúng hạn`
           : "[Chưa có dữ liệu gốc] 0/0 giáo án nộp trong kỳ đánh giá";
-      } else if (kpi.code === "KPI-STU-01") {
-        calculatedVal = violationRate;
-        calculationNote = totalStudents > 0
-          ? `Vi phạm kỷ luật: ${incidentCount} vụ / ${totalStudents} học sinh (${violationRate}%)`
-          : "[Chưa có dữ liệu gốc] Chưa có danh sách học sinh";
-      } else if (kpi.category === KpiCategory.STUDENT) {
+      } else if (kpi.code === "KPI-STU-01" || kpi.category === KpiCategory.STUDENT) {
         calculatedVal = attendanceRate;
         calculationNote = totalAttendance > 0
           ? `Chuyên cần học sinh: ${presentAttendance}/${totalAttendance} lượt có mặt (${attendanceRate}%)`
@@ -767,7 +769,7 @@ export async function autoCalculateActualKpiValues(periodId: string) {
         calculatedVal = incidentCount;
         calculationNote = incidentCount === 0
           ? "Đạt chuẩn an toàn tuyệt đối: 0 sự cố an toàn & PCCC"
-          : `Ghi nhận ${incidentCount} sự cố an toàn & PCCC cần xử lý`;
+          : `Ghi nhận ${incidentCount} sự cố an toàn & PCCC (tỷ lệ vi phạm ${violationRate}%)`;
       } else if (kpi.code === "KPI-AST-01" || kpi.category === KpiCategory.ASSETS || kpi.category === KpiCategory.FACILITIES) {
         calculatedVal = equipmentRate;
         calculationNote = totalEquip > 0

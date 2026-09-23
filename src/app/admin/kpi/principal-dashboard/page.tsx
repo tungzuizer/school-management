@@ -2,10 +2,10 @@
 
 /**
  * FACT-FORCING GATE CONTEXT:
- * 1. Importers/Callers: src/app/admin/kpi/page.tsx:21
+ * 1. Importers/Callers: src/app/admin/kpi/page.tsx
  * 2. Public functions affected: PrincipalKpiDashboard (Default Export Component)
  * 3. Data structures: PrincipalKpiOverviewPayload, PrincipalKpiEntityComparison, PrincipalKpiPillarScore
- * 4. Verbatim User Instruction: "cần 1 chút màu để cảnh báo kpi" -> "theo khuyến nghị của bạn" -> "thực hiện đi" (Chuẩn hóa màu sắc cảnh báo ngữ nghĩa Traffic Light trên nền tảng Slate)
+ * 4. Verbatim User Instruction: "sao phần kpi bị lỗi không hiển thị kiểm tra lỗi"
  */
 
 import { useState, useEffect } from "react";
@@ -93,6 +93,7 @@ const TREND_COLORS = [
 
 export default function PrincipalKpiDashboard() {
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [data, setData] = useState<PrincipalKpiOverviewPayload | null>(null);
   const [schools, setSchools] = useState<any[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>("ALL");
@@ -150,17 +151,25 @@ export default function PrincipalKpiDashboard() {
   // Fetch KPI Comparison Data
   const fetchData = async () => {
     setLoading(true);
-    const res = await getPrincipalKpiComparisonData({
-      year,
-      periodType,
-      scopeType,
-      schoolId: selectedSchoolId,
-    });
+    setFetchError(null);
+    try {
+      const res = await getPrincipalKpiComparisonData({
+        year,
+        periodType,
+        scopeType,
+        schoolId: selectedSchoolId,
+      });
 
-    if (res.success && res.data) {
-      setData(res.data);
+      if (res.success && res.data) {
+        setData(res.data);
+      } else if (res.error) {
+        setFetchError(res.error);
+      }
+    } catch (err: any) {
+      setFetchError(err.message || "Lỗi tải dữ liệu so sánh KPI");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Fetch Historical Trends Data
@@ -648,6 +657,19 @@ export default function PrincipalKpiDashboard() {
         <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
           <div className="w-8 h-8 border-4 border-slate-800 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-medium text-slate-600">Đang tổng hợp dữ liệu KPI toàn hệ thống...</p>
+        </div>
+      ) : fetchError ? (
+        <div className="bg-white p-12 rounded-2xl border border-rose-200 text-center space-y-3">
+          <AlertTriangle className="w-10 h-10 text-rose-500 mx-auto" />
+          <h3 className="text-base font-bold text-slate-800">Không thể tải dữ liệu KPI</h3>
+          <p className="text-sm text-rose-600 max-w-md mx-auto">{fetchError}</p>
+          <button
+            onClick={fetchData}
+            className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition shadow-sm cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Thử lại
+          </button>
         </div>
       ) : !data || data.entities.length === 0 ? (
         <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
