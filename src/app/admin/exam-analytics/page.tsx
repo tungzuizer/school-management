@@ -3,7 +3,7 @@
  * 1. Importers/Callers: Next.js App Router route `/admin/exam-analytics`, referenced in `src/app/admin/layout.tsx`.
  * 2. Target: `src/app/admin/exam-analytics/page.tsx`.
  * 3. Schemas: `ExamAnalyticsOverviewData`, `StudentProfileSummary`.
- * 4. Verbatim User Instruction: "gộp lại đi" - Hợp nhất toàn bộ phân tích điểm thi và hành trình OLS vào `/admin/exam-analytics`.
+ * 4. Verbatim User Instruction: "vấn đè của phần kpi bị lỗi không hiện thị các dữ liệu và phần điểm thi ols bị lỗi loading không vô được" - Xử lý tải song song overview và danh sách học sinh, kèm màn hình báo lỗi và cơ chế retry khi cần thiết.
  */
 
 "use client";
@@ -32,6 +32,7 @@ function ExamAnalyticsContent() {
   const [overviewData, setOverviewData] = useState<ExamAnalyticsOverviewData | null>(null);
   const [studentList, setStudentList] = useState<StudentProfileSummary[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Filters
   const [selectedCampusId, setSelectedCampusId] = useState<string>("ALL");
@@ -56,26 +57,31 @@ function ExamAnalyticsContent() {
     window.history.replaceState(null, "", `?${params.toString()}`);
   };
 
-  // Load Overview Data
+  // Load Overview Data in parallel with graceful error resilience
   async function loadData() {
     try {
       setLoading(true);
-      const res = await getMultiYearExamOverviewAction({
-        campusId: selectedCampusId !== "ALL" ? selectedCampusId : undefined,
-        gradeLevel: selectedGrade > 0 ? selectedGrade : undefined,
-      });
-      setOverviewData(res);
+      setErrorMsg(null);
 
-      const students = await getStudentProfilesTrajectoryAction({
-        campusId: selectedCampusId !== "ALL" ? selectedCampusId : undefined,
-        gradeLevel: selectedGrade > 0 ? selectedGrade : undefined,
-        search: searchQuery,
-        trendCategory: selectedCategoryFilter !== "ALL" ? selectedCategoryFilter : undefined,
-        onlyNeedIntervention: onlyInterventionFilter,
-      });
-      setStudentList(students);
-    } catch (err) {
+      const [overviewRes, studentsRes] = await Promise.all([
+        getMultiYearExamOverviewAction({
+          campusId: selectedCampusId !== "ALL" ? selectedCampusId : undefined,
+          gradeLevel: selectedGrade > 0 ? selectedGrade : undefined,
+        }),
+        getStudentProfilesTrajectoryAction({
+          campusId: selectedCampusId !== "ALL" ? selectedCampusId : undefined,
+          gradeLevel: selectedGrade > 0 ? selectedGrade : undefined,
+          search: searchQuery,
+          trendCategory: selectedCategoryFilter !== "ALL" ? selectedCategoryFilter : undefined,
+          onlyNeedIntervention: onlyInterventionFilter,
+        }),
+      ]);
+
+      setOverviewData(overviewRes);
+      setStudentList(studentsRes);
+    } catch (err: any) {
       console.error("Failed to load exam analytics:", err);
+      setErrorMsg(err?.message || "Không thể tải dữ liệu phân tích điểm thi. Vui lòng kiểm tra kết nối.");
     } finally {
       setLoading(false);
     }
@@ -98,6 +104,24 @@ function ExamAnalyticsContent() {
         <p className="text-slate-600 font-medium text-xs tracking-wide uppercase">
           Đang tính toán hồi quy thống kê OLS và phân tích dữ liệu điểm thi đa niên khóa...
         </p>
+      </div>
+    );
+  }
+
+  if (errorMsg && !overviewData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-white p-8 rounded-2xl border border-red-200">
+        <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl font-bold">
+          !
+        </div>
+        <h2 className="text-lg font-bold text-slate-800">Đã xảy ra sự cố khi tải dữ liệu</h2>
+        <p className="text-sm text-slate-500 text-center max-w-md">{errorMsg}</p>
+        <button
+          onClick={() => loadData()}
+          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition shadow-sm"
+        >
+          Thử lại
+        </button>
       </div>
     );
   }
