@@ -74,7 +74,7 @@ export async function getPrincipalsAndAdmins(filters?: {
       effectiveEmail === "superadmin.ninhbinh@gmail.com" ||
       effectiveEmail === "superadmin.demo@gmail.com" ||
       effectiveEmail === "superadmin@school.com" ||
-      effectiveEmail.includes("superadmin");
+      effectiveEmail === "superadmin@school.edu.vn";
 
     if (
       !isSuperAdmin &&

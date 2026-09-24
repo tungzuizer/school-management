@@ -266,7 +266,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     session?.user?.email === "superadmin.ninhbinh@gmail.com" ||
     session?.user?.email === "superadmin.demo@gmail.com" ||
     session?.user?.email === "superadmin@school.com" ||
-    session?.user?.email?.includes("superadmin") ||
+    session?.user?.email === "superadmin@school.edu.vn" ||
     (session?.user as { role?: string })?.role === "SUPER_ADMIN" ||
     (session?.user as { role?: string })?.role === "DEPARTMENT_ADMIN";
 
