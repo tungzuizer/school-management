@@ -183,7 +183,7 @@ export default function AdminDashboardPage() {
       {/* ========================================================================= */}
       {/* 1. REFINED EXECUTIVE HEADER                                              */}
       {/* ========================================================================= */}
-      <div className="bg-gradient-to-r from-white via-slate-50/60 to-sky-50/30 rounded-2xl p-5 sm:p-6 border border-slate-200/80 border-l-4 border-l-sky-600 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-white via-slate-50/70 to-sky-50/40 rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2.5 py-0.5 bg-sky-50 text-sky-700 text-xs font-semibold rounded-md border border-sky-200/80">
@@ -1139,11 +1139,11 @@ function MetricCard({
   subtext?: string;
 }) {
   const accentStyles = {
-    blue: "border-t-4 border-t-sky-600 bg-gradient-to-b from-sky-50/40 via-white to-white",
-    emerald: "border-t-4 border-t-emerald-600 bg-gradient-to-b from-emerald-50/40 via-white to-white",
-    indigo: "border-t-4 border-t-indigo-600 bg-gradient-to-b from-indigo-50/40 via-white to-white",
-    rose: "border-t-4 border-t-rose-600 bg-gradient-to-b from-rose-50/40 via-white to-white",
-    slate: "border-t-4 border-t-slate-800 bg-gradient-to-b from-slate-50/50 via-white to-white",
+    blue: "border-slate-200/90 bg-gradient-to-b from-sky-50/50 via-white to-white",
+    emerald: "border-slate-200/90 bg-gradient-to-b from-emerald-50/50 via-white to-white",
+    indigo: "border-slate-200/90 bg-gradient-to-b from-indigo-50/50 via-white to-white",
+    rose: "border-slate-200/90 bg-gradient-to-b from-rose-50/50 via-white to-white",
+    slate: "border-slate-200/90 bg-gradient-to-b from-slate-50/60 via-white to-white",
   };
 
   return (
