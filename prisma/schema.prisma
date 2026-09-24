@@ -306,6 +306,7 @@ model Campus {
   examPeriods             ExamPeriod[]
   studentScores           StudentScore[]
   schoolPointEvaluations  SchoolPointEvaluation[]
+  dailyKpiEvaluations     DailyKpiEvaluation[]
 
   @@index([schoolId])
   @@index([name])
@@ -1044,6 +1045,7 @@ enum MeasurementDirection {
 }
 
 enum ReportingFrequency {
+  DAILY
   MONTHLY
   QUARTERLY
   SEMESTER
@@ -1077,6 +1079,7 @@ model KpiCatalog {
   criticalThreshold Float?
   responsiblePerson String?
   scope             String?              @default("ALL")
+  isDailyTracked    Boolean              @default(false)
   isActive          Boolean              @default(true)
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
@@ -1085,6 +1088,7 @@ model KpiCatalog {
   assignments KpiAssignment[]
   targets     KpiTarget[]
   values      KpiValue[]
+  dailyItems  DailyKpiItem[]
 
   @@index([code])
   @@index([category])
@@ -1219,6 +1223,59 @@ model KpiUnlockLog {
 
   @@index([periodId])
   @@index([status])
+}
+
+// ==================== ĐÁNH GIÁ KPI HẰNG NGÀY (DAILY KPI EVALUATION) ====================
+
+enum DailyKpiStatus {
+  DRAFT
+  FINALIZED
+}
+
+model DailyKpiEvaluation {
+  id              String         @id @default(cuid())
+  date            DateTime       // Ngày đánh giá
+  campusId        String?        // Phân hiệu / Điểm trường (hoặc null nếu toàn trường)
+  overallScore    Float          @default(0.0) // Điểm tổng kết ngày (thang 100)
+  status          DailyKpiStatus @default(DRAFT)
+  evaluatedById   String?        // ID người lập / chốt đánh giá
+  evaluatedByName String?        // Tên người lập / chốt đánh giá
+  notes           String?        @db.Text // Nhận xét chung trong ngày
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  campus Campus?        @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  items  DailyKpiItem[]
+
+  @@unique([date, campusId])
+  @@index([date])
+  @@index([campusId])
+  @@index([status])
+}
+
+model DailyKpiItem {
+  id             String   @id @default(cuid())
+  evaluationId   String
+  kpiCatalogId   String
+  autoValue      Float    @default(0.0) // Giá trị tự động tính từ CSDL trong ngày
+  manualValue    Float?   // Điểm điều chỉnh / chấm định tính (nếu có)
+  actualValue    Float    @default(0.0) // Giá trị thực tế sử dụng để tính điểm
+  targetValue    Float    @default(100.0)
+  weight         Float    @default(0.0)
+  completionRate Float    @default(0.0)
+  weightedScore  Float    @default(0.0)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  evaluation DailyKpiEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  kpiCatalog KpiCatalog         @relation(fields: [kpiCatalogId], references: [id], onDelete: Cascade)
+
+  @@unique([evaluationId, kpiCatalogId])
+  @@index([evaluationId])
+  @@index([kpiCatalogId])
 }
 
 // ==================== MỤC TIÊU CHẤT LƯỢNG (QUALITY OBJECTIVES) ====================

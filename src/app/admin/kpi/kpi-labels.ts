@@ -30,6 +30,7 @@ export const DIRECTION_LABELS: Record<MeasurementDirection, string> = {
 };
 
 export const FREQUENCY_LABELS: Record<ReportingFrequency, string> = {
+  DAILY: "Hàng ngày",
   MONTHLY: "Hàng tháng",
   QUARTERLY: "Hàng quý",
   SEMESTER: "Theo học kỳ",

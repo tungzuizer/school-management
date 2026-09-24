@@ -14,6 +14,7 @@ import { useEasyMode } from "@/lib/useEasyMode";
 import { useSession } from "next-auth/react";
 import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
+import DailyKpiWidget from "@/components/dashboard/DailyKpiWidget";
 import UnapprovedBanner from "@/components/ui/UnapprovedBanner";
 import {
   getSchoolsList,
@@ -482,50 +483,58 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 6. REAL-TIME DAILY OPERATIONAL PULSE                                      */}
+      {/* 6. REAL-TIME DAILY OPERATIONAL PULSE & DAILY KPI WIDGET                    */}
       {/* ========================================================================= */}
-      {(activeCategory === "ALL" || activeCategory === "DISCIPLINE") && today && (
-        <div className="bg-[#090d16] text-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-blue-950 border border-blue-800 text-blue-300 text-[10px] font-bold uppercase tracking-wider rounded">
-                Tác Nghiệp
-              </span>
-              <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                Điểm danh & Sổ đầu bài hôm nay ({selectedSchoolId ? activeSchoolName : "Toàn hệ thống"})
-              </p>
-            </div>
-            <span className="text-xs text-slate-300 bg-slate-900 px-3 py-1 rounded-md font-medium border border-slate-700">
-              {todayStr}
-            </span>
+      {(activeCategory === "ALL" || activeCategory === "DISCIPLINE") && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-1">
+            <DailyKpiWidget campusId={selectedSchoolId} />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-              <p className="text-2xl sm:text-3xl font-black text-rose-400">{today.absentToday}</p>
-              <p className="text-xs text-slate-200 font-bold mt-1">Vắng mặt hôm nay</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Bao gồm có phép & không phép</p>
+          {today && (
+            <div className="lg:col-span-2 bg-[#090d16] text-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800 space-y-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 bg-blue-950 border border-blue-800 text-blue-300 text-[10px] font-bold uppercase tracking-wider rounded">
+                    Tác Nghiệp
+                  </span>
+                  <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    Điểm danh & Sổ đầu bài hôm nay ({selectedSchoolId ? activeSchoolName : "Toàn hệ thống"})
+                  </p>
+                </div>
+                <span className="text-xs text-slate-300 bg-slate-900 px-3 py-1 rounded-md font-medium border border-slate-700">
+                  {todayStr}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+                  <p className="text-2xl font-black text-rose-400">{today.absentToday}</p>
+                  <p className="text-xs text-slate-200 font-bold mt-1">Vắng hôm nay</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Có phép & không phép</p>
+                </div>
+                <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+                  <p className="text-2xl font-black text-slate-100">{today.lateToday}</p>
+                  <p className="text-xs text-slate-200 font-bold mt-1">Đi muộn</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Qua cổng điểm danh</p>
+                </div>
+                <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+                  <p className="text-2xl font-black text-blue-400">{today.incidentsToday}</p>
+                  <p className="text-xs text-slate-200 font-bold mt-1">Sự vụ nề nếp</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Cần theo dõi xử lý</p>
+                </div>
+                <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+                  <p className="text-2xl font-black text-emerald-400">
+                    {today.reportsSubmitted}/{today.totalClasses}
+                  </p>
+                  <p className="text-xs text-slate-200 font-bold mt-1">Sổ đầu bài</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Đã nộp {today.totalClasses > 0 ? Math.round((today.reportsSubmitted / today.totalClasses) * 100) : 100}%
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-              <p className="text-2xl sm:text-3xl font-black text-slate-100">{today.lateToday}</p>
-              <p className="text-xs text-slate-200 font-bold mt-1">Đi muộn hôm nay</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Ghi nhận qua cổng điểm danh</p>
-            </div>
-            <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-              <p className="text-2xl sm:text-3xl font-black text-blue-400">{today.incidentsToday}</p>
-              <p className="text-xs text-slate-200 font-bold mt-1">Sự vụ nề nếp / Kỷ luật</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Cần BGH theo dõi xử lý</p>
-            </div>
-            <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-              <p className="text-2xl sm:text-3xl font-black text-emerald-400">
-                {today.reportsSubmitted}/{today.totalClasses}
-              </p>
-              <p className="text-xs text-slate-200 font-bold mt-1">Báo cáo Sổ đầu bài</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Đã nộp {today.totalClasses > 0 ? Math.round((today.reportsSubmitted / today.totalClasses) * 100) : 100}% số lớp
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       )}
 

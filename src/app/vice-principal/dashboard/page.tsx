@@ -38,6 +38,7 @@ import {
 } from "./actions";
 import { submitCampusKpiForReview } from "@/app/admin/kpi/principal-actions";
 import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
+import DailyKpiWidget from "@/components/dashboard/DailyKpiWidget";
 import {
   BarChart,
   Bar,
@@ -330,6 +331,11 @@ export default function VPDashboardPage() {
           )}
         </div>
       )}
+
+      {/* Daily KPI Sensor Widget */}
+      <div className="w-full">
+        <DailyKpiWidget campusId={rawCampusId} />
+      </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
