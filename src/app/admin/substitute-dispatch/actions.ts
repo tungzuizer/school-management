@@ -43,7 +43,7 @@ export async function approveAssignment(id: string) {
     
     return { success: true };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Loi khong xac dinh";
+    const msg = error instanceof Error ? error.message : "Lỗi không xác định";
     return { success: false, error: msg };
   }
 }
@@ -90,7 +90,7 @@ export async function createAssignment(input: {
         subjectName: input.subjectName,
         date: new Date(input.date),
         period: input.period,
-        reason: input.reason || "Xin nghi dot xuat",
+        reason: input.reason || "Xin nghỉ đột xuất",
         aiRecommendation: aiResult.recommendation,
         status: "PENDING",
       },
@@ -99,7 +99,7 @@ export async function createAssignment(input: {
     
     return { success: true, data: assignment };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Loi khong xac dinh";
+    const msg = error instanceof Error ? error.message : "Lỗi không xác định";
     return { success: false, error: msg };
   }
 }
@@ -163,33 +163,33 @@ export async function autoDispatchAI() {
     });
 
     const existingContext = existingToday.length > 0
-      ? existingToday.map((a) => `- ${a.originalTeacher} nghi, ${a.substituteTeacher} day thay tai ${a.schoolPointName} tiet ${a.period}`).join("\n")
-      : "Chua co phan cong nao hom nay.";
+      ? existingToday.map((a) => `- ${a.originalTeacher} nghỉ, ${a.substituteTeacher} dạy thay tại ${a.schoolPointName} tiết ${a.period}`).join("\n")
+      : "Chưa có phân công nào hôm nay.";
 
-    const prompt = `Ban la tro ly AI dieu chuyen giao vien day thay cho truong pho thong co nhieu diem truong ve tinh.
+    const prompt = `Bạn là trợ lý AI điều chuyển giáo viên dạy thay cho trường phổ thông có nhiều phân hiệu/điểm trường vệ tinh.
 
-DANH SACH GIAO VIEN THUC TE TRONG HE THONG:
+DANH SÁCH GIÁO VIÊN THỰC TẾ TRONG HỆ THỐNG:
 ${teachersContext}
 
-HE THONG DIEM TRUONG:
+HỆ THỐNG ĐIỂM TRƯỜNG:
 ${schoolPointsContext}
 
-TINH HINH PHAN CONG HOM NAY (${today.toLocaleDateString("vi-VN")}):
+TÌNH HÌNH PHÂN CÔNG HÔM NAY (${today.toLocaleDateString("vi-VN")}):
 ${existingContext}
 
-Hay de xuat 1 phuong an dieu chuyen day thay moi dua tren tinh hinh thuc te. Phan tich:
-1. Giao vien nao co the trong tiet va gan nhat (tinh theo khoang cach km)
-2. Thoi gian di chuyen du kien
-3. Danh gia muc do toi uu (0-100)
+Hãy đề xuất 1 phương án điều chuyển dạy thay mới dựa trên tình hình thực tế. Phân tích:
+1. Giáo viên nào có thể trống tiết và gần nhất (tính theo khoảng cách km)
+2. Thời gian di chuyển dự kiến
+3. Đánh giá mức độ tối ưu (0-100)
 
-Tra loi bang tieng Viet, ngan gon. Format:
-GIAO_VIEN_NGHI: [ten]
-GIAO_VIEN_DAY_THAY: [ten]
-DIEM_TRUONG: [ten diem truong]
-MON_HOC: [mon]
-LOP: [lop]
-TIET: [so tiet]
-KHUYEN_NGHI: [phan tich chi tiet]`;
+Trả lời bằng tiếng Việt, ngắn gọn. Định dạng chính xác:
+GIAO_VIEN_NGHI: [Họ tên giáo viên nghỉ]
+GIAO_VIEN_DAY_THAY: [Họ tên giáo viên dạy thay đề xuất]
+DIEM_TRUONG: [Tên điểm trường]
+MON_HOC: [Tên môn học]
+LOP: [Tên lớp]
+TIET: [Số tiết]
+KHUYEN_NGHI: [Phân tích chi tiết phương án và lộ trình]`;
 
     const aiRes = await aiChatCompletion({ prompt, max_tokens: 1024 });
     if (!aiRes.success) {
@@ -205,11 +205,11 @@ KHUYEN_NGHI: [phan tich chi tiet]`;
       return line ? line.split(":").slice(1).join(":").trim() : "";
     };
 
-    const originalTeacher = getValue("GIAO_VIEN_NGHI") || "GV duoc AI phat hien vang";
-    const substituteTeacher = getValue("GIAO_VIEN_DAY_THAY") || "GV duoc AI de xuat";
+    const originalTeacher = getValue("GIAO_VIEN_NGHI") || "GV được AI phát hiện vắng";
+    const substituteTeacher = getValue("GIAO_VIEN_DAY_THAY") || "GV được AI đề xuất";
     const pointName = getValue("DIEM_TRUONG") || schoolPoints[0]?.name || "";
-    const subjectName = getValue("MON_HOC") || "Mon hoc";
-    const className = getValue("LOP") || "Lop";
+    const subjectName = getValue("MON_HOC") || "Môn học";
+    const className = getValue("LOP") || "Lớp";
     const period = parseInt(getValue("TIET")) || 3;
     const recommendation = getValue("KHUYEN_NGHI") || aiText;
 
@@ -226,7 +226,7 @@ KHUYEN_NGHI: [phan tich chi tiet]`;
         subjectName,
         date: today,
         period,
-        reason: "AI tu dong phat hien va dieu chuyen",
+        reason: "AI tự động phát hiện và điều chuyển",
         aiRecommendation: recommendation,
         status: "PENDING",
       },
@@ -252,7 +252,7 @@ KHUYEN_NGHI: [phan tich chi tiet]`;
       },
     };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Loi khong xac dinh";
+    const msg = error instanceof Error ? error.message : "Lỗi không xác định";
     return { success: false, error: msg };
   }
 }
@@ -307,30 +307,30 @@ async function findSubstituteAI(input: {
         .join("\n")
     : "Chưa có dữ liệu giáo viên.";
 
-  const prompt = `Ban la tro ly AI dieu chuyen giao vien day thay. Hay de xuat giao vien day thay tot nhat:
+  const prompt = `Bạn là trợ lý AI điều chuyển giáo viên dạy thay. Hãy đề xuất giáo viên dạy thay phù hợp nhất:
 
-DANH SACH GIAO VIEN THUC TE TRONG HE THONG:
+DANH SÁCH GIÁO VIÊN THỰC TẾ TRONG HỆ THỐNG:
 ${teachersContext}
 
-THONG TIN YEU CAU:
-- GV xin nghi: ${input.originalTeacher}
-- Diem truong: ${input.schoolPointName} (cach Trung Tam ${input.distanceKm}km)
-- Lop: ${input.className}
-- Mon: ${input.subjectName}
-- Ngay: ${input.date}
-- Tiet: ${input.period}
+THÔNG TIN YÊU CẦU:
+- GV xin nghỉ: ${input.originalTeacher}
+- Điểm trường: ${input.schoolPointName} (cách Trung Tâm ${input.distanceKm}km)
+- Lớp: ${input.className}
+- Môn: ${input.subjectName}
+- Ngày: ${input.date}
+- Tiết: ${input.period}
 
-HE THONG DIEM TRUONG:
+HỆ THỐNG ĐIỂM TRƯỜNG:
 ${schoolPoints.map((sp) => `- ${sp.name} (${sp.distanceKm ?? 0}km)`).join("\n")}
 
-Hay de xuat:
-1. Ten GV day thay phu hop nhat (gia dinh co GV cung chuyen mon o diem truong gan nhat)
-2. Khoang cach di chuyen va thoi gian du kien
-3. Danh gia muc do toi uu (0-100)
+Hãy đề xuất:
+1. Tên GV dạy thay phù hợp nhất (ưu tiên GV cùng chuyên môn ở điểm trường gần nhất)
+2. Khoảng cách di chuyển và thời gian dự kiến
+3. Đánh giá mức độ tối ưu (0-100)
 
-Tra loi ngan gon, chi 2-3 cau. Format:
-GV_DAY_THAY: [Ten GV] ([Chuyen mon] - [Diem truong])
-KHUYEN_NGHI: [Phan tich ngan gon]`;
+Trả lời ngắn gọn bằng tiếng Việt, chỉ 2-3 câu. Định dạng:
+GV_DAY_THAY: [Tên GV] ([Chuyên môn] - [Điểm trường])
+KHUYEN_NGHI: [Phân tích ngắn gọn]`;
 
   try {
     const aiRes = await aiChatCompletion({ prompt, max_tokens: 512 });
@@ -353,8 +353,8 @@ KHUYEN_NGHI: [Phan tich ngan gon]`;
     };
   } catch {
     return {
-      substituteTeacher: "Dang phan tich AI...",
-      recommendation: `AI dang quet lich day toan he thong de chon GV cung bo mon o ban kinh gan nhat (${input.distanceKm} km tu Trung Tam).`,
+      substituteTeacher: "Đang phân tích AI...",
+      recommendation: `AI đang quét lịch dạy toàn hệ thống để chọn GV cùng bộ môn ở bán kính gần nhất (${input.distanceKm} km từ Trung Tâm).`,
     };
   }
 }

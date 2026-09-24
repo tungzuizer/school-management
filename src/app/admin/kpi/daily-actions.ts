@@ -314,7 +314,9 @@ export async function getDailyKpiRealtime(
       existingEvaluation = null;
     }
 
-    const itemsMap = new Map(existingEvaluation?.items.map((i) => [i.kpiCatalogId, i]) || []);
+    const itemsMap = new Map<string, any>(
+      (existingEvaluation?.items || []).map((i: any) => [i.kpiCatalogId, i])
+    );
 
     // 4. Ghép nối và tính toán autoValue cho từng chỉ số
     let totalScore = 0;
