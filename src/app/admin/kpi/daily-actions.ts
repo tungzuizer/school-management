@@ -257,33 +257,62 @@ export async function getDailyKpiRealtime(
     const metrics = await calculateDailyRawMetrics(normalized, campusId);
 
     // 2. Lấy danh mục KPI đang hoạt động (ưu tiên các chỉ số có tần suất DAILY hoặc isDailyTracked = true)
-    let catalogs = await prisma.kpiCatalog.findMany({
-      where: {
-        isActive: true,
-        OR: [{ frequency: ReportingFrequency.DAILY }, { isDailyTracked: true }, { frequency: ReportingFrequency.MONTHLY }],
-      },
-      orderBy: [{ isDailyTracked: "desc" }, { category: "asc" }, { code: "asc" }],
-    });
+    let catalogs: any[] = [];
+    try {
+      catalogs = await prisma.kpiCatalog.findMany({
+        where: {
+          isActive: true,
+          OR: [{ frequency: ReportingFrequency.DAILY }, { isDailyTracked: true }, { frequency: ReportingFrequency.MONTHLY }],
+        },
+        orderBy: [{ isDailyTracked: "desc" }, { category: "asc" }, { code: "asc" }],
+      });
+    } catch {
+      // Defensive fallback nếu cột isDailyTracked chưa được migration trong database cũ
+      try {
+        catalogs = await prisma.kpiCatalog.findMany({
+          where: {
+            isActive: true,
+            OR: [{ frequency: ReportingFrequency.DAILY }, { frequency: ReportingFrequency.MONTHLY }],
+          },
+          orderBy: [{ category: "asc" }, { code: "asc" }],
+        });
+      } catch {
+        catalogs = await prisma.kpiCatalog.findMany({
+          where: { isActive: true },
+          orderBy: { code: "asc" },
+        });
+      }
+    }
 
     // Nếu chưa có danh mục, lấy toàn bộ danh mục KPI đang active
     if (catalogs.length === 0) {
-      catalogs = await prisma.kpiCatalog.findMany({
-        where: { isActive: true },
-        orderBy: { code: "asc" },
-      });
+      try {
+        catalogs = await prisma.kpiCatalog.findMany({
+          where: { isActive: true },
+          orderBy: { code: "asc" },
+        });
+      } catch {
+        catalogs = [];
+      }
     }
 
     // 3. Tìm bản ghi DailyKpiEvaluation đã lưu cho ngày và phân hiệu này (nếu có)
-    const existingEvaluation = await prisma.dailyKpiEvaluation.findFirst({
-      where: {
-        date: normalized,
-        campusId: campusId,
-      },
-      include: {
-        items: true,
-        campus: { select: { name: true } },
-      },
-    });
+    let existingEvaluation: any = null;
+    try {
+      existingEvaluation = await prisma.dailyKpiEvaluation.findFirst({
+        where: {
+          date: normalized,
+          campusId: campusId,
+        },
+        include: {
+          items: true,
+          campus: { select: { name: true } },
+        },
+      });
+    } catch {
+      // Fallback nếu bảng DailyKpiEvaluation chưa được tạo trên DB
+      existingEvaluation = null;
+    }
 
     const itemsMap = new Map(existingEvaluation?.items.map((i) => [i.kpiCatalogId, i]) || []);
 
@@ -577,21 +606,26 @@ export async function getDailyKpiHistory(
     startDate.setDate(startDate.getDate() - (daysLimit - 1));
     startDate.setHours(0, 0, 0, 0);
 
-    const evaluations = await prisma.dailyKpiEvaluation.findMany({
-      where: {
-        date: { gte: startDate, lte: endDate },
-        campusId: campusId,
-      },
-      orderBy: { date: "asc" },
-      include: {
-        items: {
-          include: {
-            kpiCatalog: { select: { code: true, name: true, category: true } },
-          },
+    let evaluations: any[] = [];
+    try {
+      evaluations = await prisma.dailyKpiEvaluation.findMany({
+        where: {
+          date: { gte: startDate, lte: endDate },
+          campusId: campusId,
         },
-        campus: { select: { name: true } },
-      },
-    });
+        orderBy: { date: "asc" },
+        include: {
+          items: {
+            include: {
+              kpiCatalog: { select: { code: true, name: true, category: true } },
+            },
+          },
+          campus: { select: { name: true } },
+        },
+      });
+    } catch {
+      evaluations = [];
+    }
 
     // Format output data for charts
     const historyList = [];
@@ -651,15 +685,23 @@ export async function syncDailyToMonthlyKpi(
     const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
     // 2. Tìm tất cả DailyKpiEvaluation trong tháng
-    const dailyEvals = await prisma.dailyKpiEvaluation.findMany({
-      where: {
-        date: { gte: startOfMonth, lte: endOfMonth },
-        campusId: campusId,
-      },
-      include: {
-        items: true,
-      },
-    });
+    let dailyEvals: any[] = [];
+    try {
+      dailyEvals = await prisma.dailyKpiEvaluation.findMany({
+        where: {
+          date: { gte: startOfMonth, lte: endOfMonth },
+          campusId: campusId,
+        },
+        include: {
+          items: true,
+        },
+      });
+    } catch {
+      return {
+        success: false,
+        error: "Chưa tìm thấy dữ liệu hoặc bảng DailyKpiEvaluation chưa được khởi tạo trong CSDL. Vui lòng áp dụng SQL migration.",
+      };
+    }
 
     if (dailyEvals.length === 0) {
       return {
