@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * FACT-FORCING GATE CONTEXT:
+ * 1. Route: /admin/daily-summary
+ * 2. Component: DailySummaryPage
+ * 3. Purpose: Báo cáo Điều hành Chu kỳ 3 Pha AI (Sáng - Trưa - Tối) cho Ban Giám hiệu & 5 Điểm trường
+ * 4. UI/UX: Executive Grade, Full Vietnamese Accents, Crisp Slate & Emerald Palette.
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import {
   Sparkles,
@@ -18,6 +26,10 @@ import {
   Clock,
   Moon,
   ChevronRight,
+  ShieldCheck,
+  Copy,
+  Check,
+  Award,
 } from "lucide-react";
 import { getDailySummaryStats, getSchoolPointStats, generateAIBriefing } from "./actions";
 
@@ -52,6 +64,7 @@ export default function DailySummaryPage() {
   >("EVENING");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   const [stats, setStats] = useState<SummaryStats>({
     date: "",
@@ -80,10 +93,9 @@ export default function DailySummaryPage() {
       ]);
       setStats(statsData);
       setSchoolPoints(pointsData);
-      // Reset briefings when date changes
       setBriefings({ MORNING: "", MIDDAY: "", EVENING: "" });
     } catch (err) {
-      console.error("Failed to fetch daily summary:", err);
+      console.error("Lỗi khi tải dữ liệu báo cáo điều hành:", err);
     } finally {
       setIsLoading(false);
     }
@@ -103,13 +115,22 @@ export default function DailySummaryPage() {
           [activeCyclePhase]: result.text!,
         }));
       } else {
-        alert("Loi tao bao cao AI: " + (result.error || "Khong xac dinh"));
+        alert("Lỗi tạo báo cáo AI: " + (result.error || "Không xác định"));
       }
     } catch (err) {
       console.error("AI briefing error:", err);
-      alert("Loi ket noi AI. Vui long thu lai.");
+      alert("Lỗi kết nối AI. Vui lòng thử lại.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = () => {
+    const text = briefings[activeCyclePhase];
+    if (text) {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -118,198 +139,260 @@ export default function DailySummaryPage() {
     : "100.0";
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-700 rounded-2xl p-6 text-white shadow-lg">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold mb-3 border border-white/20">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+    <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4 py-2">
+      {/* 1. Executive Header Banner */}
+      <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-sm border border-slate-800 relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold border border-emerald-500/30">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               <span>Multi-Point 3-Phase Daily AI Summary</span>
             </div>
-            <h1 className="text-2xl font-bold">Bao Cao Dieu Hanh Chu Ky 3 Pha AI Hieu Truong</h1>
-            <p className="text-emerald-100 text-sm mt-1 max-w-2xl">
-              Tong hop tu dong thong tin van hanh 3 thoi diem trong ngay (Dau ca Sang - Giua ngay - Cuoi ngay) tu cac diem truong phan tan.
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Building2 className="w-6 h-6 text-emerald-400" />
+              Báo Cáo Điều Hành Chu Kỳ 3 Pha AI Hiệu Trưởng
+            </h1>
+            <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
+              Tổng hợp tự động thông tin vận hành 3 thời điểm trong ngày (Đầu ca Sáng – Giữa ngày – Cuối ngày) từ tất cả 5 phân hiệu & điểm trường trực thuộc.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleGenerateAI}
               disabled={isGenerating}
-              className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold rounded-xl text-sm transition shadow flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-xs flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 text-gray-900 ${isGenerating ? "animate-spin" : ""}`} />
-              {isGenerating ? "AI dang gom du lieu diem truong..." : "Tong hop bao cao ngay"}
+              <RefreshCw className={`w-4 h-4 text-white ${isGenerating ? "animate-spin" : ""}`} />
+              {isGenerating ? "AI đang gom dữ liệu..." : "Tổng hợp báo cáo AI"}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Date Picker & 3-Phase Navigation Controls */}
-      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* 2. Date Picker & 3-Phase Cycle Selector */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Calendar className="w-5 h-5 text-emerald-600" />
-          <span className="text-sm font-semibold text-gray-700">Ngay bao cao:</span>
+          <Calendar className="w-5 h-5 text-slate-600" />
+          <span className="text-xs sm:text-sm font-bold text-slate-700">Ngày báo cáo:</span>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-500"
+            className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none"
           />
         </div>
 
-        {/* 3-Phase Selector */}
-        <div className="flex items-center bg-gray-100 p-1 rounded-xl gap-1">
+        {/* 3-Phase Selector Buttons */}
+        <div className="flex flex-wrap items-center bg-slate-100 p-1 rounded-xl gap-1">
           <button
             onClick={() => setActiveCyclePhase("MORNING")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               activeCyclePhase === "MORNING"
-                ? "bg-amber-500 text-white shadow"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-amber-600 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Sun className="w-3.5 h-3.5" />
-            Pha 1: Sang (Diem danh & Day thay)
+            Pha 1: Sáng (Điểm danh & Dạy thay)
           </button>
           <button
             onClick={() => setActiveCyclePhase("MIDDAY")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               activeCyclePhase === "MIDDAY"
-                ? "bg-blue-600 text-white shadow"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
-            Pha 2: Trua (Tien do & So dau bai)
+            Pha 2: Trưa (Tiến độ & Sổ đầu bài)
           </button>
           <button
             onClick={() => setActiveCyclePhase("EVENING")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               activeCyclePhase === "EVENING"
-                ? "bg-emerald-700 text-white shadow"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Moon className="w-3.5 h-3.5" />
-            Pha 3: Tom tat Cuoi ngay BGH
+            Pha 3: Tối (Tóm tắt Cuối ngày BGH)
           </button>
         </div>
 
+        {/* Actions */}
         <div className="flex items-center gap-2">
-          <button className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
-            <Download className="w-4 h-4" />
-            Xuat PDF
-          </button>
-          <button className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
-            <Share2 className="w-4 h-4" />
-            Gui BGH & PGD
+          <button
+            onClick={() => window.print()}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            In / Xuất PDF
           </button>
         </div>
       </div>
 
-      {/* Quick Metrics */}
+      {/* 3. Quick Metrics Overview */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-10">
-          <RefreshCw className="w-6 h-6 text-emerald-500 animate-spin" />
-          <span className="ml-3 text-gray-500 text-sm">Dang tai du lieu...</span>
+        <div className="flex items-center justify-center py-12 bg-white rounded-2xl border border-slate-200">
+          <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin" />
+          <span className="ml-3 text-slate-600 text-sm font-medium">Đang tổng hợp dữ liệu thời gian thực...</span>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-500">Tong hoc sinh</span>
-                <Users className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng học sinh</span>
+                <Users className="w-4 h-4 text-blue-600" />
               </div>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalStudents}</p>
-              <p className="text-xs text-emerald-600 font-medium mt-1">{presentRate}% Hien dien toan he thong</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-500">Hoc sinh vang mat</span>
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-              </div>
-              <p className="text-2xl font-bold text-amber-600 mt-1">{stats.totalAbsent}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {stats.absentWithReason} co phep / {stats.absentNoReason} chua phep
+              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">{stats.totalStudents}</p>
+              <p className="text-xs text-emerald-700 font-bold mt-1.5 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                {presentRate}% Hiện diện toàn trường
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-500">GV vang & Lenh day thay</span>
-                <Users className="w-4 h-4 text-purple-500" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Học sinh vắng</span>
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
               </div>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.teacherAbsences}</p>
-              <p className="text-xs text-emerald-600 font-medium mt-1">Dieu chuyen AI: {stats.substituteFulfilled}</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-amber-700 mt-2">{stats.totalAbsent}</p>
+              <p className="text-xs text-slate-500 font-medium mt-1.5">
+                <span className="text-slate-700 font-bold">{stats.absentWithReason}</span> có phép / <span className="text-rose-600 font-bold">{stats.absentNoReason}</span> chưa phép
+              </p>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-500">Diem truong dong bo</span>
-                <Building2 className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">GV Vắng & Dạy thay</span>
+                <Users className="w-4 h-4 text-purple-600" />
               </div>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">{schoolPoints.length}/{schoolPoints.length} diem truong</p>
-              <p className="text-xs text-gray-500 mt-1">Hoan tat chu ky 3 pha</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">{stats.teacherAbsences}</p>
+              <p className="text-xs text-emerald-700 font-semibold mt-1.5">
+                Điều phối: <span className="font-bold">{stats.substituteFulfilled}</span>
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phân hiệu đồng bộ</span>
+                <Building2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-2">{schoolPoints.length}/{schoolPoints.length}</p>
+              <p className="text-xs text-slate-500 font-medium mt-1.5 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                100% Điểm trường online
+              </p>
             </div>
           </div>
 
-          {/* Satellite School Points Breakdown Cards */}
+          {/* 4. Satellite School Points Breakdown Cards */}
           {schoolPoints.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {schoolPoints.map((pt, idx) => (
-                <div key={idx} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-1.5">
-                      <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="truncate">{pt.name}</span>
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 shrink-0">
-                      {pt.presentRate}
-                    </span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  Hiện trạng Chi tiết 5 Phân hiệu & Điểm trường
+                </h2>
+                <span className="text-xs text-slate-500">Cập nhật lúc: {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {schoolPoints.map((pt, idx) => (
+                  <div key={idx} className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3 hover:border-emerald-300 transition">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">{pt.name}</h3>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {pt.distanceKm === 0 ? "Phân hiệu Trung tâm" : `Cách ${pt.distanceKm} km`}
+                        </span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                        {pt.presentRate}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-600 space-y-1.5 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Phụ trách:</span>
+                        <strong className="text-slate-800">{pt.manager}</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Sĩ số:</span>
+                        <strong className="text-slate-900">{pt.studentsCount} HS</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Thời tiết:</span>
+                        <span className="text-slate-700 font-medium">{pt.weatherStatus}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Dạy thay:</span>
+                        <span className="text-blue-700 font-semibold">{pt.substituteNote}</span>
+                      </div>
+                    </div>
+
+                    {pt.note && (
+                      <p className="text-[11px] text-slate-500 pt-2 border-t border-slate-100 italic">
+                        {pt.note}
+                      </p>
+                    )}
                   </div>
-                  <div className="text-xs text-gray-600 space-y-1.5">
-                    <p>Khoang cach: <strong>{pt.distanceKm === 0 ? "Trung Tam (0km)" : `${pt.distanceKm} km`}</strong></p>
-                    <p>Quan ly: <strong>{pt.manager}</strong></p>
-                    <p>Si so: <strong>{pt.studentsCount} hoc sinh</strong></p>
-                    <p className="text-amber-700 font-medium">Thoi tiet/Dia hinh: <em>{pt.weatherStatus}</em></p>
-                    <p className="text-blue-700 font-medium">Day thay AI: <em>{pt.substituteNote}</em></p>
-                    <p className="text-gray-500 pt-1.5 border-t border-gray-100">{pt.note}</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </>
       )}
 
-      {/* AI Executive Briefing Section depending on selected cycle phase */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+      {/* 5. AI Executive Briefing Section */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-yellow-400" />
-            <h2 className="font-bold text-base">
-              Ban Tom Tat AI Executive Briefing -{" "}
+            <Sparkles className="w-5 h-5 text-emerald-400" />
+            <h2 className="font-bold text-sm sm:text-base text-white">
+              Bản Tóm Tắt AI Executive Briefing –{" "}
               {activeCyclePhase === "MORNING"
-                ? "Pha 1: Sang (Chuyen Can & Day Thay)"
+                ? "Pha 1: Sáng (Chuyên Cần & Dạy Thay)"
                 : activeCyclePhase === "MIDDAY"
-                ? "Pha 2: Giua Ngay (Tien Do Bai Hoc)"
-                : "Pha 3: Bao Cao Dieu Hanh Cuoi Ngay"}
+                ? "Pha 2: Trưa (Tiến Độ Giảng Dạy & Sổ Đầu Bài)"
+                : "Pha 3: Tối (Báo Cáo Tổng Hợp Điều Hành Cuối Ngày)"}
             </h2>
           </div>
-          <span className="text-xs text-slate-300">Tong hop tu dong cac diem truong</span>
+          {briefings[activeCyclePhase] && (
+            <button
+              onClick={handleCopy}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700 cursor-pointer"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? "Đã sao chép" : "Sao chép"}
+            </button>
+          )}
         </div>
 
         <div className="p-6">
           {briefings[activeCyclePhase] ? (
-            <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed bg-slate-50 p-6 rounded-xl border border-slate-200/80">
+            <div className="bg-slate-50 p-5 sm:p-6 rounded-xl border border-slate-200 text-slate-800 text-sm leading-relaxed whitespace-pre-wrap font-sans">
               {briefings[activeCyclePhase]}
-            </pre>
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <Sparkles className="w-10 h-10 mb-3 opacity-30" />
-              <p className="text-sm">Nhan nut &quot;Tong hop bao cao ngay&quot; de AI tao bao cao cho pha nay.</p>
+            <div className="text-center py-10 space-y-3">
+              <Sparkles className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="text-sm font-semibold text-slate-700">
+                Chưa có bản tóm tắt AI cho pha này ({activeCyclePhase})
+              </p>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Nhấn nút &quot;Tổng hợp báo cáo AI&quot; ở trên để trợ lý AI tự động gom số liệu từ 5 phân hiệu và tổng hợp nhận định cho Ban Giám hiệu.
+              </p>
+              <button
+                onClick={handleGenerateAI}
+                disabled={isGenerating}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
+                {isGenerating ? "Đang xử lý..." : "Khởi tạo Tóm tắt Ngay"}
+              </button>
             </div>
           )}
         </div>
