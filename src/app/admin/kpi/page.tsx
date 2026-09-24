@@ -14,7 +14,8 @@ import KpiCatalogPage from "./catalog/page";
 import KpiEntryPage from "./entry/page";
 import KpiApprovalPage from "./approval/page";
 import PrincipalKpiDashboard from "./principal-dashboard/page";
-import { Settings, FileBarChart, UserCheck, Target, Compass } from "lucide-react";
+import DailyKpiConsole from "./daily/DailyKpiConsole";
+import { Settings, FileBarChart, UserCheck, Target, Compass, ShieldCheck } from "lucide-react";
 
 function KpiTabContent() {
   const searchParams = useSearchParams();
@@ -99,6 +100,18 @@ function KpiTabContent() {
             <Compass className="w-4 h-4" />
             4. Giám Sát KPI Hiệu Trưởng
           </button>
+
+          <button
+            onClick={() => handleTabChange("daily")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
+              activeTab === "daily"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            5. Đánh Giá Hằng Ngày (Daily KPI)
+          </button>
         </div>
       </div>
 
@@ -108,6 +121,7 @@ function KpiTabContent() {
         {activeTab === "entry" && <KpiEntryPage />}
         {activeTab === "approval" && <KpiApprovalPage />}
         {activeTab === "principal_dashboard" && <PrincipalKpiDashboard />}
+        {activeTab === "daily" && <DailyKpiConsole />}
       </div>
     </div>
   );

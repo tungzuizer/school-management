@@ -17,8 +17,11 @@ export function calculateKpiScore(
     }
   } else if (direction === MeasurementDirection.LOWER_BETTER) {
     if (actual === 0) {
-      // Perfect performance
-      rate = target >= 0 ? 200 : 100;
+      // Perfect performance (0 incidents / 0 violations)
+      rate = 100;
+    } else if (target === 0) {
+      // When target is 0 but actual > 0 (e.g. 1 incident when 0 expected)
+      rate = Math.max(0, 100 - actual * 20);
     } else {
       rate = (target / actual) * 100;
     }
