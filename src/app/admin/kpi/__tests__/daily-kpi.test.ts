@@ -3,7 +3,7 @@
  * 1. Callers: Vitest test runner executing Daily KPI System Verification Suite
  * 2. Affected API: calculateDailyRawMetrics, getDailyKpiRealtime, saveDailyKpiEvaluation, getDailyKpiHistory, syncDailyToMonthlyKpi, getDailyKpiOverviewForWidget
  * 3. Data Schemas: DailyKpiEvaluation, DailyKpiItem, DailyKpiPayload
- * 4. Verbatim User Instruction: "Kpi tôi muốn có thêm phần đánh giá hằng ngày" -> "đồng ý" (Kiểm thử tự động toàn diện hệ thống Daily KPI)
+ * 4. Verbatim User Instruction: "Kpi tôi muốn có thêm phần đánh giá hằng ngày" -> "thực hiện Viết kiểm thử và xác minh hệ thống Daily KPI"
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -15,6 +15,9 @@ import {
   syncDailyToMonthlyKpi,
   getDailyKpiOverviewForWidget,
 } from "../daily-actions";
+import { calculateKpiScore } from "../utils";
+import { MeasurementDirection } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
 // Mock next-auth
 vi.mock("next-auth", () => ({
@@ -249,9 +252,77 @@ vi.mock("@/lib/prisma", () => ({
 describe("Daily KPI System Verification Suite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (prisma.student.count as any).mockResolvedValue(200);
+    (prisma.attendance.count as any).mockImplementation((args: any) => {
+      if (args?.where?.status === "PRESENT") return Promise.resolve(190);
+      return Promise.resolve(200);
+    });
+    (prisma.classJournalEntry.count as any).mockImplementation((args: any) => {
+      if (args?.where?.isConfirmed === true) return Promise.resolve(8);
+      return Promise.resolve(10);
+    });
+    (prisma.equipment.count as any).mockImplementation((args: any) => {
+      if (args?.where?.condition?.in) return Promise.resolve(48);
+      return Promise.resolve(50);
+    });
+    (prisma.parentFeedback.count as any).mockImplementation((args: any) => {
+      if (args?.where?.response?.not === null) return Promise.resolve(5);
+      return Promise.resolve(5);
+    });
   });
 
-  describe("1. Real-time Metrics Calculation (calculateDailyRawMetrics)", () => {
+  describe("1. Scoring Engine Logic (calculateKpiScore)", () => {
+    it("should handle HIGHER_BETTER direction correctly", () => {
+      // 100% target met
+      const res1 = calculateKpiScore(95, 95, 40, MeasurementDirection.HIGHER_BETTER);
+      expect(res1.completionRate).toBe(100);
+      expect(res1.weightedScore).toBe(40);
+
+      // Overachieved (110 / 100) = 110%
+      const res2 = calculateKpiScore(110, 100, 20, MeasurementDirection.HIGHER_BETTER);
+      expect(res2.completionRate).toBe(110);
+      expect(res2.weightedScore).toBe(22);
+
+      // Underachieved (50 / 100) = 50%
+      const res3 = calculateKpiScore(50, 100, 30, MeasurementDirection.HIGHER_BETTER);
+      expect(res3.completionRate).toBe(50);
+      expect(res3.weightedScore).toBe(15);
+    });
+
+    it("should handle LOWER_BETTER direction and zero incident targets", () => {
+      // Zero incidents when target is 0 => 100% perfect score
+      const resZero = calculateKpiScore(0, 0, 30, MeasurementDirection.LOWER_BETTER);
+      expect(resZero.completionRate).toBe(100);
+      expect(resZero.weightedScore).toBe(30);
+
+      // 1 incident when target is 0 => penalized to 80%
+      const res1Inc = calculateKpiScore(1, 0, 30, MeasurementDirection.LOWER_BETTER);
+      expect(res1Inc.completionRate).toBe(80);
+      expect(res1Inc.weightedScore).toBe(24);
+
+      // 5 incidents when target is 0 => rate drops to 0%
+      const res5Inc = calculateKpiScore(5, 0, 30, MeasurementDirection.LOWER_BETTER);
+      expect(res5Inc.completionRate).toBe(0);
+      expect(res5Inc.weightedScore).toBe(0);
+    });
+
+    it("should handle PASS_FAIL direction and cap completion rate at 200%", () => {
+      const pass = calculateKpiScore(1, 1, 10, MeasurementDirection.PASS_FAIL);
+      expect(pass.completionRate).toBe(100);
+      expect(pass.weightedScore).toBe(10);
+
+      const fail = calculateKpiScore(0, 1, 10, MeasurementDirection.PASS_FAIL);
+      expect(fail.completionRate).toBe(0);
+      expect(fail.weightedScore).toBe(0);
+
+      // Extreme overachievement capped at 200%
+      const extreme = calculateKpiScore(500, 100, 20, MeasurementDirection.HIGHER_BETTER);
+      expect(extreme.completionRate).toBe(200);
+      expect(extreme.weightedScore).toBe(40);
+    });
+  });
+
+  describe("2. Real-time Metrics Calculation (calculateDailyRawMetrics)", () => {
     it("should aggregate student attendance, incidents, and journal rates correctly", async () => {
       const today = new Date("2026-09-24");
       const metrics = await calculateDailyRawMetrics(today, "cmp_main");
@@ -267,9 +338,23 @@ describe("Daily KPI System Verification Suite", () => {
       // 5 responded / 5 total = 100%
       expect(metrics.parentFeedbackRate).toBe(100);
     });
+
+    it("should gracefully handle zero-data conditions on holidays/weekends without NaN", async () => {
+      (prisma.student.count as any).mockResolvedValueOnce(0);
+      (prisma.attendance.count as any).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+      (prisma.classJournalEntry.count as any).mockResolvedValueOnce(0);
+
+      const today = new Date("2026-09-27");
+      const metrics = await calculateDailyRawMetrics(today, "cmp_main");
+
+      expect(metrics.attendanceRate).toBe(0);
+      expect(metrics.journalCompletionRate).toBe(100);
+      expect(Number.isNaN(metrics.attendanceRate)).toBe(false);
+      expect(Number.isNaN(metrics.journalCompletionRate)).toBe(false);
+    });
   });
 
-  describe("2. Realtime Daily KPI Scorecard Evaluation (getDailyKpiRealtime)", () => {
+  describe("3. Realtime Daily KPI Scorecard Evaluation (getDailyKpiRealtime)", () => {
     it("should calculate weighted scores and completion rates across indicators", async () => {
       const res = await getDailyKpiRealtime("2026-09-24", "cmp_main");
 
@@ -298,7 +383,7 @@ describe("Daily KPI System Verification Suite", () => {
     });
   });
 
-  describe("3. Save Daily KPI Evaluation & Warning Radar (saveDailyKpiEvaluation)", () => {
+  describe("4. Save Daily KPI Evaluation & Warning Radar (saveDailyKpiEvaluation)", () => {
     it("should save draft evaluation successfully", async () => {
       const saveRes = await saveDailyKpiEvaluation({
         date: "2026-09-24",
@@ -361,9 +446,41 @@ describe("Daily KPI System Verification Suite", () => {
       expect(saveRes.data?.overallScore).toBe(100);
       expect(saveRes.data?.status).toBe("FINALIZED");
     });
+
+    it("should trigger EarlyWarning when daily score drops below 70 threshold", async () => {
+      const earlyWarningSpy = vi.spyOn(prisma.earlyWarning, "create");
+
+      const saveRes = await saveDailyKpiEvaluation({
+        date: "2026-09-24",
+        campusId: "cmp_main",
+        status: "FINALIZED" as any,
+        notes: "Ngày vận hành có nhiều sự cố nghiêm trọng",
+        items: [
+          {
+            kpiCatalogId: "kpi_att",
+            autoValue: 50, // 50% attendance -> 52.6% completion -> 21.05 score
+            manualValue: 50,
+          },
+          {
+            kpiCatalogId: "kpi_inc",
+            autoValue: 5, // 5 incidents -> 0% completion -> 0 score
+            manualValue: 5,
+          },
+          {
+            kpiCatalogId: "kpi_jou",
+            autoValue: 50, // 50% journal -> 50% completion -> 15 score
+            manualValue: 50,
+          },
+        ],
+      });
+
+      expect(saveRes.success).toBe(true);
+      expect(saveRes.data?.overallScore).toBeLessThan(70);
+      expect(earlyWarningSpy).toHaveBeenCalled();
+    });
   });
 
-  describe("4. 7-Day Trendline History (getDailyKpiHistory)", () => {
+  describe("5. 7-Day Trendline History (getDailyKpiHistory)", () => {
     it("should fetch historical evaluation records", async () => {
       const historyRes = await getDailyKpiHistory("cmp_main", 7);
 
@@ -375,7 +492,7 @@ describe("Daily KPI System Verification Suite", () => {
     });
   });
 
-  describe("5. Monthly KPI Rollup Synchronization (syncDailyToMonthlyKpi)", () => {
+  describe("6. Monthly KPI Rollup Synchronization (syncDailyToMonthlyKpi)", () => {
     it("should aggregate daily scores and sync to monthly KpiPeriod", async () => {
       const syncRes = await syncDailyToMonthlyKpi(9, 2026, "cmp_main");
 
@@ -384,7 +501,7 @@ describe("Daily KPI System Verification Suite", () => {
     });
   });
 
-  describe("6. Daily KPI Dashboard Widget (getDailyKpiOverviewForWidget)", () => {
+  describe("7. Daily KPI Dashboard Widget (getDailyKpiOverviewForWidget)", () => {
     it("should return compact widget summary with operational metrics", async () => {
       const widgetRes = await getDailyKpiOverviewForWidget("cmp_main");
 
