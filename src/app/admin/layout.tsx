@@ -231,10 +231,10 @@ const codeBadgeStyles = {
 
 // Card border highlight per accent - Rich layered multi-tone tinted glass (Not plain white!)
 const cardAccentStyles = {
-  blue: "border-sky-300/60 hover:border-sky-400/90 bg-gradient-to-r from-sky-100/70 via-blue-50/60 to-cyan-50/60 hover:from-sky-200/80 hover:to-blue-100/80 backdrop-blur-md shadow-xs shadow-sky-500/5",
-  emerald: "border-teal-300/60 hover:border-teal-400/90 bg-gradient-to-r from-teal-100/70 via-emerald-50/60 to-cyan-50/60 hover:from-teal-200/80 hover:to-emerald-100/80 backdrop-blur-md shadow-xs shadow-teal-500/5",
-  indigo: "border-blue-300/60 hover:border-blue-400/90 bg-gradient-to-r from-blue-100/70 via-sky-50/60 to-cyan-50/60 hover:from-blue-200/80 hover:to-sky-100/80 backdrop-blur-md shadow-xs shadow-blue-500/5",
-  sky: "border-cyan-300/60 hover:border-cyan-400/90 bg-gradient-to-r from-cyan-100/70 via-sky-50/60 to-blue-50/60 hover:from-cyan-200/80 hover:to-sky-100/80 backdrop-blur-md shadow-xs shadow-cyan-500/5",
+  blue: "border-sky-300/80 hover:border-sky-400 bg-gradient-to-r from-sky-100/80 via-blue-50/70 to-cyan-50/70 hover:from-sky-200/90 hover:to-blue-100/90 backdrop-blur-md shadow-xs shadow-sky-500/5",
+  emerald: "border-teal-300/80 hover:border-teal-400 bg-gradient-to-r from-teal-100/80 via-emerald-50/70 to-cyan-50/70 hover:from-teal-200/90 hover:to-emerald-100/90 backdrop-blur-md shadow-xs shadow-teal-500/5",
+  indigo: "border-blue-300/80 hover:border-blue-400 bg-gradient-to-r from-blue-100/80 via-sky-50/70 to-cyan-50/70 hover:from-blue-200/90 hover:to-sky-100/90 backdrop-blur-md shadow-xs shadow-blue-500/5",
+  sky: "border-cyan-300/80 hover:border-cyan-400 bg-gradient-to-r from-cyan-100/80 via-sky-50/70 to-blue-50/70 hover:from-cyan-200/90 hover:to-sky-100/90 backdrop-blur-md shadow-xs shadow-cyan-500/5",
 };
 
 // Mini badge accent dot
@@ -361,7 +361,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 className={
                   isCollapsed
                     ? "space-y-1 py-1"
-                    : `rounded-2xl p-2 border transition-all duration-200 ${cardAccentStyles[group.accent]}`
+                    : `rounded-2xl p-2 border transition-[background-color,border-color,box-shadow] duration-200 ${cardAccentStyles[group.accent]}`
                 }
               >
                 {/* Domain Section Header (Clickable Accordion Trigger) */}
@@ -379,7 +379,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                     aria-expanded={isExpanded}
                     aria-controls={`group-items-${group.id}`}
                     aria-label={`Thu gọn/mở rộng ${group.title}`}
-                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-white/80 transition-colors text-left group/hdr cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-white/80 active:scale-[0.99] transition-[background-color,transform] duration-150 text-left group/hdr cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {/* Code Prefix Symbol (01, 02, etc.) */}
@@ -423,14 +423,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                               href={item.href}
                               prefetch={true}
                               aria-label={item.label}
-                              className={`flex items-center justify-center h-10 w-full rounded-xl text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
+                              className={`flex items-center justify-center h-10 w-full rounded-xl text-xs font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
                                 isActive
                                   ? "bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white shadow-md shadow-sky-600/30 ring-1 ring-white/40 font-bold"
                                   : "text-sky-900 hover:bg-gradient-to-r hover:from-sky-200/80 hover:to-blue-100/80 hover:text-sky-950"
                               }`}
                             >
                               <Icon
-                                className={`w-4 h-4 shrink-0 transition-transform ${
+                                className={`w-4 h-4 shrink-0 transition-transform duration-150 ${
                                   isActive ? "scale-110 text-white" : "text-sky-700 group-hover:scale-110 group-hover:text-sky-950"
                                 }`}
                               />
@@ -451,10 +451,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                           key={item.href}
                           href={item.href}
                           prefetch={true}
-                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.98] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
                             isActive
                               ? "bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-sky-600/30 ring-1 ring-white/40"
-                              : "text-sky-950 hover:bg-gradient-to-r hover:from-sky-200/80 hover:to-blue-100/80 hover:text-sky-950 font-semibold"
+                              : "text-sky-950 hover:bg-sky-200/90 hover:text-slate-950 font-semibold"
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -495,7 +495,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 type="button"
                 onClick={() => handleClientSignOut("/login")}
                 aria-label="Đăng xuất"
-                className="w-full flex items-center justify-center h-10 text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-xl transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                className="w-full flex items-center justify-center h-10 text-rose-600 hover:bg-rose-100/80 hover:text-rose-700 rounded-xl transition-all duration-150 active:scale-[0.95] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -505,8 +505,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => handleClientSignOut("/login")}
-              className="w-full flex items-center justify-center px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 border border-rose-200/60 hover:border-rose-300 bg-white/70 rounded-xl transition font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 shadow-2xs"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs text-rose-700 hover:bg-rose-100/90 hover:text-rose-800 border border-rose-300/80 hover:border-rose-400 bg-white/90 rounded-xl transition-[background-color,border-color,transform] duration-150 active:scale-[0.98] font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 shadow-2xs"
             >
+              <LogOut className="w-4 h-4 text-rose-600" />
               <span>Đăng xuất tài khoản</span>
             </button>
           )}

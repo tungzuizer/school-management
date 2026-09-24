@@ -75,7 +75,7 @@ export default function DailyKpiWidget({ campusId }: { campusId?: string }) {
         </div>
         <button
           onClick={loadWidgetData}
-          className="text-slate-400 hover:text-slate-600 transition cursor-pointer p-1"
+          className="text-slate-400 hover:text-slate-600 transition-colors duration-150 cursor-pointer p-1.5 rounded-lg hover:bg-slate-100 active:scale-[0.95]"
           title="Làm mới"
         >
           <RotateCw className="w-3.5 h-3.5" />
@@ -86,7 +86,7 @@ export default function DailyKpiWidget({ campusId }: { campusId?: string }) {
       <div className="my-4 flex items-baseline justify-between">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black tracking-tight text-slate-900">
+            <span className="text-3xl font-black tracking-tight text-slate-900 tabular-nums">
               {data.todayScore}
             </span>
             <span className="text-xs text-slate-500 font-medium">/ 100 điểm</span>
@@ -111,17 +111,17 @@ export default function DailyKpiWidget({ campusId }: { campusId?: string }) {
       <div className="grid grid-cols-3 gap-2 py-2 border-t border-b border-slate-100 text-center">
         <div className="p-1.5 bg-slate-50 rounded-lg">
           <div className="text-[10px] text-slate-500 font-semibold uppercase">Chuyên cần</div>
-          <div className="text-xs font-bold text-slate-900 mt-0.5">{data.attendanceRate}%</div>
+          <div className="text-xs font-bold text-slate-900 mt-0.5 tabular-nums">{data.attendanceRate}%</div>
         </div>
         <div className="p-1.5 bg-slate-50 rounded-lg">
           <div className="text-[10px] text-slate-500 font-semibold uppercase">Sự cố an ninh</div>
-          <div className={`text-xs font-bold mt-0.5 ${data.incidentCount > 0 ? "text-rose-600" : "text-emerald-700"}`}>
+          <div className={`text-xs font-bold mt-0.5 tabular-nums ${data.incidentCount > 0 ? "text-rose-600" : "text-emerald-700"}`}>
             {data.incidentCount} vụ
           </div>
         </div>
         <div className="p-1.5 bg-slate-50 rounded-lg">
           <div className="text-[10px] text-slate-500 font-semibold uppercase">Sổ đầu bài</div>
-          <div className="text-xs font-bold text-slate-900 mt-0.5">{data.journalRate}%</div>
+          <div className="text-xs font-bold text-slate-900 mt-0.5 tabular-nums">{data.journalRate}%</div>
         </div>
       </div>
 
@@ -139,7 +139,7 @@ export default function DailyKpiWidget({ campusId }: { campusId?: string }) {
         </span>
         <Link
           href="/admin/kpi?tab=daily"
-          className="text-xs font-bold text-slate-900 hover:text-slate-700 flex items-center gap-1 transition"
+          className="text-xs font-bold text-slate-900 hover:text-slate-700 flex items-center gap-1 transition-[color,transform] duration-150 active:scale-[0.98]"
         >
           Chi tiết & Chốt KPI <ArrowRight className="w-3.5 h-3.5" />
         </Link>

@@ -450,11 +450,11 @@ function LoginFormContent() {
         </div>
 
         {/* ── RIGHT PANEL: Main Porcelain Form (Full width on mobile, 7 cols on desktop) ── */}
-        <div className="lg:col-span-7 p-6 sm:p-8 lg:p-12 flex flex-col justify-center bg-white/90 backdrop-blur-md relative z-20">
+        <div className="lg:col-span-7 p-6 sm:p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-white via-white/95 to-sky-50/40 backdrop-blur-xl relative z-20">
 
           {/* Mobile Header (Shown on small screens) */}
           <div className="lg:hidden flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-            <div className="w-9.5 h-9.5 rounded-2xl bg-gradient-to-br from-sky-600 to-sky-700 flex items-center justify-center flex-shrink-0 shadow-md shadow-sky-600/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-600 to-sky-700 flex items-center justify-center flex-shrink-0 shadow-md shadow-sky-600/20">
               <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain filter brightness-0 invert" />
             </div>
             <div className="flex-1 min-w-0">

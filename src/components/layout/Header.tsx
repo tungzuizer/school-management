@@ -90,7 +90,7 @@ export default function Header({
 
   return (
     <>
-      <header className="h-14 flex items-center justify-between px-3 sm:px-4 md:px-6 shrink-0 z-30 sticky top-0 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+      <header className="h-14 flex items-center justify-between px-3 sm:px-4 md:px-6 shrink-0 z-30 sticky top-0 border-b border-slate-200/80 bg-white/90 backdrop-blur-md shadow-2xs">
         {/* Left: Desktop Collapse Toggle, Mobile Menu Trigger & Logo */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Desktop Sidebar Collapse Toggle */}
@@ -99,7 +99,7 @@ export default function Header({
               onClick={onToggleCollapse}
               aria-label={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
               title={isCollapsed ? "Mở rộng menu (Ctrl + B)" : "Thu gọn menu (Ctrl + B)"}
-              className="hidden lg:flex items-center justify-center p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="hidden lg:flex items-center justify-center p-2 min-h-[40px] min-w-[40px] rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:scale-[0.96] transition-[background-color,color,transform] duration-150 cursor-pointer"
             >
               {isCollapsed ? (
                 <PanelLeft className="w-4 h-4 text-blue-600" aria-hidden="true" />
@@ -114,7 +114,7 @@ export default function Header({
             <button
               onClick={onMobileMenuToggle}
               aria-label="Mở menu điều hướng"
-              className="lg:hidden px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+              className="lg:hidden px-2.5 py-1.5 min-h-[40px] rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 active:scale-[0.96] transition-[background-color,transform] duration-150 cursor-pointer flex items-center gap-1.5 text-xs font-medium"
             >
               <Menu className="w-4 h-4" aria-hidden="true" />
               <span className="hidden xs:inline">Menu</span>
@@ -141,11 +141,11 @@ export default function Header({
           <button
             onClick={() => setCommandPaletteOpen(true)}
             aria-label="Tìm kiếm nhanh (Ctrl K)"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 min-h-[38px] rounded-xl border border-slate-200/90 bg-slate-100/70 text-slate-700 text-xs hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 transition-[background-color,border-color,transform,box-shadow] duration-150 active:scale-[0.98] shadow-2xs cursor-pointer"
           >
             <Search className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
             <span className="hidden md:inline font-medium">Tìm nhanh...</span>
-            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-500 bg-white rounded border border-slate-200">
+            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-500 bg-white rounded border border-slate-200/90 shadow-2xs">
               Ctrl K
             </kbd>
           </button>
@@ -153,7 +153,7 @@ export default function Header({
           {/* Notification Bell */}
           <button
             aria-label={`Thông báo ${notificationCount > 0 ? `(${notificationCount} mới)` : ""}`}
-            className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer flex items-center justify-center"
+            className="relative p-2 min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.96] transition-[background-color,color,transform] duration-150 cursor-pointer flex items-center justify-center"
             title="Thông báo"
           >
             <Bell className="w-4 h-4" aria-hidden="true" />
@@ -170,16 +170,16 @@ export default function Header({
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
               aria-label={`Tài khoản: ${userName}`}
               aria-expanded={userDropdownOpen}
-              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              className="flex items-center gap-2 p-1.5 sm:p-1 min-h-[40px] sm:min-h-[44px] rounded-xl hover:bg-slate-100/80 active:scale-[0.98] transition-[background-color,transform] duration-150 cursor-pointer"
             >
               {session?.user?.image ? (
                 <img
                   src={session.user.image}
                   alt={userName}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-1 ring-slate-200"
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200/80 shadow-2xs"
                 />
               ) : (
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs ring-2 ring-slate-200/80 shadow-2xs">
                   {userName.charAt(0).toUpperCase()}
                 </div>
               )}

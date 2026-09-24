@@ -79,6 +79,7 @@ cleanup-*.ps1
 screenshot*.png
 
 # Media Toolkit, Temporary Frames & Raw Video/Audio Assets
+/screenshots/
 public/videos/
 public/audio/
 public/screenshots/

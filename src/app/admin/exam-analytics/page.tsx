@@ -207,36 +207,36 @@ function ExamAnalyticsContent() {
         </div>
 
         {/* 3-Tab Switcher */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
           <button
             onClick={() => handleTabChange("macro")}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] cursor-pointer ${
               activeTab === "macro"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white text-slate-900 shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
             }`}
           >
             Phổ Điểm & Đối Sánh Phân Hiệu
           </button>
           <button
             onClick={() => handleTabChange("journey")}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] cursor-pointer ${
               activeTab === "journey"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white text-slate-900 shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
             }`}
           >
             Hành Trình OLS & Can Thiệp Sư Phạm
           </button>
           <button
             onClick={() => handleTabChange("students")}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] cursor-pointer ${
               activeTab === "students"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-white text-slate-900 shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
             }`}
           >
-            Quỹ Đạo Học Sinh ({overviewData?.totalStudents || 0})
+            Quỹ Đạo Học Sinh ({overviewData?.totalStudents ? overviewData.totalStudents.toLocaleString("vi-VN") : 0})
           </button>
         </div>
       </div>
@@ -244,13 +244,13 @@ function ExamAnalyticsContent() {
       {/* 3. Top Executive KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* KPI 1: Overall Average Score */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
             <span>Điểm TB Toàn Trường</span>
-            <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono">10.0</span>
+            <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-mono">10.0</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-slate-900">
+            <span className="text-3xl font-black text-slate-900 tabular-nums">
               {overviewData?.overallAverage.toFixed(2)}
             </span>
             <span className="text-xs text-slate-500 font-normal">/ 10.0</span>
@@ -259,31 +259,31 @@ function ExamAnalyticsContent() {
         </div>
 
         {/* KPI 2: Good & Excellent Rate */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
             <span>Tỷ Lệ Giỏi / Tốt (TT22)</span>
-            <span className="text-[10px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold">CHUẨN</span>
+            <span className="text-[10px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md font-mono font-bold">CHUẨN</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-slate-900">
+            <span className="text-3xl font-black text-slate-900 tabular-nums">
               {overviewData?.tt22Classification.goodPercent}%
             </span>
-            <span className="text-xs text-slate-500 font-normal">
-              ({overviewData?.tt22Classification.goodCount} HS)
+            <span className="text-xs text-slate-500 font-normal tabular-nums">
+              ({overviewData?.tt22Classification.goodCount.toLocaleString("vi-VN")} HS)
             </span>
           </div>
           <p className="text-xs text-slate-500">Mức chất lượng mũi nhọn</p>
         </div>
 
         {/* KPI 3: Improving Trajectory Count */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
             <span>Tiến Bộ Vượt Bậc (m &gt; 0)</span>
-            <span className="text-[10px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold">OLS +</span>
+            <span className="text-[10px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md font-mono font-bold">OLS +</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-emerald-700">
-              {overviewData?.improvingCount}
+            <span className="text-3xl font-black text-emerald-700 tabular-nums">
+              {overviewData?.improvingCount.toLocaleString("vi-VN")}
             </span>
             <span className="text-xs text-slate-500 font-normal">học sinh</span>
           </div>
@@ -291,14 +291,14 @@ function ExamAnalyticsContent() {
         </div>
 
         {/* KPI 4: Urgent Intervention Count */}
-        <div className="bg-white p-5 rounded-xl border border-rose-200 bg-rose-50/30 shadow-xs space-y-2">
+        <div className="bg-white p-5 rounded-2xl border border-rose-200 bg-rose-50/30 shadow-2xs space-y-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xs">
           <div className="flex items-center justify-between text-rose-800 text-xs font-semibold uppercase tracking-wider">
             <span>Cần Can Thiệp Khẩn Cấp</span>
-            <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-mono font-bold">CẢNH BÁO</span>
+            <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-md font-mono font-bold">CẢNH BÁO</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-rose-700">
-              {overviewData?.atRiskCount}
+            <span className="text-3xl font-black text-rose-700 tabular-nums">
+              {overviewData?.atRiskCount.toLocaleString("vi-VN")}
             </span>
             <span className="text-xs text-rose-800 font-normal">học sinh</span>
           </div>
@@ -306,14 +306,14 @@ function ExamAnalyticsContent() {
         </div>
 
         {/* KPI 5: Total Exam Data Records */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
             <span>Tổng Bài Thi Đã Khảo Sát</span>
-            <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono">DỮ LIỆU</span>
+            <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-mono">DỮ LIỆU</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-slate-900">
-              {overviewData?.totalExams}
+            <span className="text-3xl font-black text-slate-900 tabular-nums">
+              {overviewData?.totalExams ? overviewData.totalExams.toLocaleString("vi-VN") : 0}
             </span>
             <span className="text-xs text-slate-500 font-normal">bài nộp</span>
           </div>

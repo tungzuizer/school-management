@@ -183,10 +183,10 @@ export default function AdminDashboardPage() {
       {/* ========================================================================= */}
       {/* 1. REFINED EXECUTIVE HEADER                                              */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-white via-slate-50/60 to-sky-50/30 rounded-2xl p-5 sm:p-6 border border-slate-200/80 border-l-4 border-l-sky-600 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">
+            <span className="px-2.5 py-0.5 bg-sky-50 text-sky-700 text-xs font-semibold rounded-md border border-sky-200/80">
               {isSuperAdmin ? "Quản trị Toàn Hệ thống" : "Ban Giám hiệu"}
             </span>
             <span className="text-xs text-slate-500 capitalize">
@@ -206,26 +206,26 @@ export default function AdminDashboardPage() {
           {isSuperAdmin && (
             <Link
               href="/admin/users-manager"
-              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+              className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-[0.98]"
             >
               Quản lý tài khoản
             </Link>
           )}
           <Link
             href="/admin/exam-analytics"
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
           >
             Phân tích điểm thi
           </Link>
           <Link
             href="/admin/nq37-compliance"
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
           >
             Định mức NQ 37
           </Link>
           <Link
             href="/admin/early-warnings"
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
           >
             Cảnh báo ({earlyWarnings.length})
           </Link>
@@ -492,39 +492,39 @@ export default function AdminDashboardPage() {
           </div>
 
           {today && (
-            <div className="lg:col-span-2 bg-[#090d16] text-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800 space-y-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-slate-800 space-y-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 bg-blue-950 border border-blue-800 text-blue-300 text-[10px] font-bold uppercase tracking-wider rounded">
+                  <span className="px-2.5 py-0.5 bg-sky-950 border border-sky-800 text-sky-300 text-[10px] font-bold uppercase tracking-wider rounded">
                     Tác Nghiệp
                   </span>
                   <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
                     Điểm danh & Sổ đầu bài hôm nay ({selectedSchoolId ? activeSchoolName : "Toàn hệ thống"})
                   </p>
                 </div>
-                <span className="text-xs text-slate-300 bg-slate-900 px-3 py-1 rounded-md font-medium border border-slate-700">
+                <span className="text-xs text-slate-300 bg-slate-800/80 px-3 py-1 rounded-md font-medium border border-slate-700/80">
                   {todayStr}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
-                  <p className="text-2xl font-black text-rose-400">{today.absentToday}</p>
+                <div className="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 backdrop-blur-xs">
+                  <p className="text-2xl font-black text-rose-400 tabular-nums">{today.absentToday}</p>
                   <p className="text-xs text-slate-200 font-bold mt-1">Vắng hôm nay</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Có phép & không phép</p>
                 </div>
-                <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
-                  <p className="text-2xl font-black text-slate-100">{today.lateToday}</p>
+                <div className="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 backdrop-blur-xs">
+                  <p className="text-2xl font-black text-slate-100 tabular-nums">{today.lateToday}</p>
                   <p className="text-xs text-slate-200 font-bold mt-1">Đi muộn</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Qua cổng điểm danh</p>
                 </div>
-                <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
-                  <p className="text-2xl font-black text-blue-400">{today.incidentsToday}</p>
+                <div className="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 backdrop-blur-xs">
+                  <p className="text-2xl font-black text-sky-400 tabular-nums">{today.incidentsToday}</p>
                   <p className="text-xs text-slate-200 font-bold mt-1">Sự vụ nề nếp</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Cần theo dõi xử lý</p>
                 </div>
-                <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
-                  <p className="text-2xl font-black text-emerald-400">
+                <div className="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 backdrop-blur-xs">
+                  <p className="text-2xl font-black text-emerald-400 tabular-nums">
                     {today.reportsSubmitted}/{today.totalClasses}
                   </p>
                   <p className="text-xs text-slate-200 font-bold mt-1">Sổ đầu bài</p>
@@ -545,7 +545,7 @@ export default function AdminDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-blue-600 rounded-sm" />
+              <div className="w-1.5 h-5 bg-rose-500 rounded-sm" />
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
                 AI Radar Cảnh Báo Sớm & An Toàn Học Đường
               </h2>
@@ -651,7 +651,7 @@ export default function AdminDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-blue-600 rounded-sm" />
+              <div className="w-1.5 h-5 bg-indigo-600 rounded-sm" />
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
                 Giám Sát Kế Hoạch Bài Dạy & Dạy Thay Khẩn Cấp
               </h2>
@@ -801,7 +801,7 @@ export default function AdminDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-blue-600 rounded-sm" />
+              <div className="w-1.5 h-5 bg-emerald-600 rounded-sm" />
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
                 Phân Tích Xu Hướng Chuyên Cần & Xếp Hạng Lớp Học
               </h2>
@@ -997,7 +997,7 @@ export default function AdminDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-blue-600 rounded-sm" />
+              <div className="w-1.5 h-5 bg-sky-600 rounded-sm" />
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
                 Phân Bổ Sĩ Số & Cơ Cấu Lớp Học
               </h2>
@@ -1016,7 +1016,7 @@ export default function AdminDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-blue-600 rounded-sm" />
+              <div className="w-1.5 h-5 bg-slate-700 rounded-sm" />
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
                 Bản Đồ Cơ Sở & Mạng Lưới Trường Thành Viên
               </h2>
@@ -1032,7 +1032,7 @@ export default function AdminDashboardPage() {
                   key={sch.id}
                   className={`rounded-2xl p-5 border transition-all shadow-sm relative flex flex-col justify-between hover:shadow-md ${
                     isSelected
-                      ? "bg-[#090d16] text-white border-blue-900 ring-2 ring-blue-600"
+                      ? "bg-slate-900 text-white border-slate-800 ring-2 ring-sky-500"
                       : "bg-white text-slate-900 border-slate-200 hover:border-slate-300"
                   }`}
                 >
@@ -1042,7 +1042,7 @@ export default function AdminDashboardPage() {
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                             isSelected
-                              ? "bg-blue-950 text-blue-300 border border-blue-800"
+                              ? "bg-sky-950 text-sky-300 border border-sky-800"
                               : "bg-slate-100 text-slate-700 border border-slate-200"
                           }`}
                         >
@@ -1138,22 +1138,22 @@ function MetricCard({
   highlight?: string;
   subtext?: string;
 }) {
-  const accentBorders = {
-    blue: "border-t-4 border-t-blue-600",
-    emerald: "border-t-4 border-t-emerald-600",
-    indigo: "border-t-4 border-t-indigo-600",
-    rose: "border-t-4 border-t-rose-600",
-    slate: "border-t-4 border-t-slate-800",
+  const accentStyles = {
+    blue: "border-t-4 border-t-sky-600 bg-gradient-to-b from-sky-50/40 via-white to-white",
+    emerald: "border-t-4 border-t-emerald-600 bg-gradient-to-b from-emerald-50/40 via-white to-white",
+    indigo: "border-t-4 border-t-indigo-600 bg-gradient-to-b from-indigo-50/40 via-white to-white",
+    rose: "border-t-4 border-t-rose-600 bg-gradient-to-b from-rose-50/40 via-white to-white",
+    slate: "border-t-4 border-t-slate-800 bg-gradient-to-b from-slate-50/50 via-white to-white",
   };
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between ${accentBorders[accent]}`}
+      className={`rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 flex flex-col justify-between ${accentStyles[accent] || accentStyles.blue}`}
     >
       <div>
         <p className="text-[11px] text-slate-500 font-extrabold uppercase tracking-wider">{label}</p>
-        <p className={`text-2xl sm:text-3xl font-black tracking-tight mt-1.5 ${highlight || "text-slate-900"}`}>
-          {typeof value === "number" ? value.toLocaleString() : value}
+        <p className={`text-2xl sm:text-3xl font-black tracking-tight mt-1.5 tabular-nums ${highlight || "text-slate-900"}`}>
+          {typeof value === "number" ? value.toLocaleString("vi-VN") : value}
         </p>
       </div>
       <p className="text-[11px] text-slate-400 font-medium mt-2">{subtext}</p>

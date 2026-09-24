@@ -37,6 +37,8 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -113,8 +115,7 @@ a[role="button"]:not(:disabled):hover,
 input[type="button"]:not(:disabled):hover,
 input[type="submit"]:not(:disabled):hover,
 .interactive-btn:not(:disabled):hover {
-  transform: translateY(-1px);
-  filter: brightness(1.04);
+  filter: brightness(1.03);
 }
 
 button:not(:disabled):active,
@@ -122,8 +123,7 @@ a[role="button"]:not(:disabled):active,
 input[type="button"]:not(:disabled):active,
 input[type="submit"]:not(:disabled):active,
 .interactive-btn:not(:disabled):active {
-  transform: translateY(0.5px) scale(0.97) !important;
-  filter: brightness(0.95);
+  filter: brightness(0.97);
 }
 
 a, [role="button"]:not(a) {
@@ -131,7 +131,9 @@ a, [role="button"]:not(a) {
 }
 
 a:not([role="button"]):not(.interactive-btn) {
-  transition: all 0.2s ease-in-out;
+  transition-property: color, opacity, background-color, border-color;
+  transition-duration: 0.18s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 a:not([role="button"]):not(.interactive-btn):hover {
   opacity: 0.88;
@@ -139,15 +141,33 @@ a:not([role="button"]):not(.interactive-btn):hover {
 
 /* Inputs & Focus Rings */
 input, select, textarea {
-  transition: all 0.2s ease-in-out !important;
+  transition-property: border-color, box-shadow, background-color, color;
+  transition-duration: 0.18s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 input:not(:disabled):hover, select:not(:disabled):hover, textarea:not(:disabled):hover {
-  border-color: rgba(79, 70, 229, 0.5);
+  border-color: rgba(79, 70, 229, 0.4);
 }
 input:focus, select:focus, textarea:focus {
-  border-color: #4f46e5 !important;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
   outline: none;
+}
+
+/* Typography & Numerals Optical Ergonomics */
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
+p, .text-pretty {
+  text-wrap: pretty;
+}
+
+.tabular-nums,
+table,
+.font-mono,
+[data-tabular-nums="true"] {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Table Rows */
@@ -549,7 +569,7 @@ tbody tr:not(.no-hover):hover {
 }
 
 .badge-glowing-indigo {
-  background: #ee2f1ff;
+  background: #eef2ff;
   color: #1e1b4b;
   border: 1px solid #c7d2fe;
   font-weight: 700;

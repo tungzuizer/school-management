@@ -74,10 +74,10 @@ const ROLES = [
     sub: "Thuộc Trường",
     desc: "Giảng dạy tại trường, xét duyệt bởi Hiệu trưởng",
     Icon: User,
-    activeColor: "#0d9488",
-    activeBg: "#f0fdfa",
-    activeBorder: "#0d9488",
-    badgeBg: "rgba(13, 148, 136, 0.12)",
+    activeColor: "#0284c7",
+    activeBg: "#f0f9ff",
+    activeBorder: "#0284c7",
+    badgeBg: "rgba(2, 132, 199, 0.12)",
   },
   {
     value: "INDEPENDENT_TEACHER" as const,
@@ -291,17 +291,17 @@ export default function RegisterTeacherPage() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 35%, #eef2ff 100%)" }}
+      style={{ background: "linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 35%, #eef2ff 100%)" }}
     >
       {/* ── COMPACT MOBILE HEADER ────────────────────────────────────────── */}
       <div
         className="relative flex-shrink-0"
-        style={{ background: "linear-gradient(135deg, #059669 0%, #0d9488 50%, #4f46e5 100%)" }}
+        style={{ background: "linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #4338ca 100%)" }}
       >
         {/* back button */}
         <Link
           href="/login"
-          className="absolute left-4 top-4 flex items-center gap-1.5 text-sm font-semibold text-white/90 hover:text-white z-10"
+          className="absolute left-4 top-4 flex items-center gap-1.5 text-sm font-semibold text-white/90 hover:text-white z-10 transition-[background-color,transform] duration-150 active:scale-[0.96]"
           style={{
             background: "rgba(255,255,255,0.15)",
             backdropFilter: "blur(8px)",
@@ -326,7 +326,7 @@ export default function RegisterTeacherPage() {
             <h1 className="text-lg sm:text-2xl font-extrabold text-white leading-tight">
               Đăng ký Tài khoản
             </h1>
-            <p className="text-xs sm:text-sm mt-0.5 sm:mt-1.5 sm:max-w-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
+            <p className="text-xs sm:text-sm mt-0.5 sm:mt-1.5 sm:max-w-sm" style={{ color: "rgba(255,255,255,0.85)" }}>
               Hệ thống Quản lý Giáo dục liên thông
             </p>
           </div>
@@ -696,14 +696,14 @@ export default function RegisterTeacherPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || !!successMsg}
-                  className="w-full flex items-center justify-center gap-2 font-bold text-base text-white rounded-2xl"
+                  className="w-full flex items-center justify-center gap-2 font-bold text-base text-white rounded-2xl active:scale-[0.98] transition-[background,box-shadow,transform] duration-150 shadow-md hover:shadow-lg cursor-pointer"
                   style={{
                     paddingTop: "14px",
                     paddingBottom: "14px",
                     background: isSubmitting || !!successMsg
                       ? "#94a3b8"
-                      : "linear-gradient(135deg, #059669 0%, #0d9488 50%, #4f46e5 100%)",
-                    boxShadow: isSubmitting || !!successMsg ? "none" : "0 6px 20px rgba(13,148,136,0.35)",
+                      : "linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #4338ca 100%)",
+                    boxShadow: isSubmitting || !!successMsg ? "none" : "0 6px 20px rgba(2,132,199,0.35)",
                     cursor: isSubmitting || !!successMsg ? "not-allowed" : "pointer",
                   }}
                 >
@@ -723,7 +723,7 @@ export default function RegisterTeacherPage() {
                 {/* Footer */}
                 <p className="text-center text-sm text-gray-500 pt-2">
                   Đã có tài khoản?{" "}
-                  <Link href="/login" className="font-bold hover:underline" style={{ color: "#0d9488" }}>
+                  <Link href="/login" className="font-bold hover:underline" style={{ color: "#0284c7" }}>
                     Đăng nhập ngay
                   </Link>
                 </p>
