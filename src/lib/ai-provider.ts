@@ -80,6 +80,15 @@ export async function getAISettings() {
 }
 
 export async function aiChatCompletion(params: AIChatParams): Promise<AIChatResult> {
+  if (process.env.NODE_ENV === "test" || process.env.VITEST) {
+    const localResponse = generateLocalSmartAIResponse(params);
+    return {
+      success: true,
+      text: localResponse,
+      error: null,
+    };
+  }
+
   const currentSettings = await getAISettings();
 
   const apiKey = currentSettings.apiKey;

@@ -115,7 +115,7 @@ export async function getUsersManagerData(filters?: {
       effectiveEmail === "superadmin.ninhbinh@gmail.com" ||
       effectiveEmail === "superadmin.demo@gmail.com" ||
       effectiveEmail === "superadmin@school.com" ||
-      effectiveEmail.includes("superadmin");
+      effectiveEmail === "superadmin@school.edu.vn";
 
     const isPrincipal = effectiveRole === Role.ADMIN || effectiveRole === Role.VICE_PRINCIPAL;
     const isWardAdmin = effectiveRole === Role.WARD_ADMIN || effectiveRole === Role.DISTRICT_ADMIN;

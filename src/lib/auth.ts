@@ -11,6 +11,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 import { checkLoginRateLimit } from "./rate-limiter";
+import { logSecurityEvent } from "./security-logger";
 
 export interface DemoAccountMetadata {
   role: string;
@@ -292,6 +293,13 @@ export const authOptions: NextAuthOptions = {
         if (!isDemoAccount) {
           const rateLimit = checkLoginRateLimit(rawEmail);
           if (!rateLimit.allowed) {
+            logSecurityEvent({
+              eventType: "RATE_LIMIT_TRIGGERED",
+              severity: "WARN",
+              userEmail: rawEmail,
+              message: "Login rate limit exceeded for user",
+              metadata: { retryAfterMs: rateLimit.retryAfterMs },
+            });
             throw new Error("Tài khoản bị tạm khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau 15 phút.");
           }
         }

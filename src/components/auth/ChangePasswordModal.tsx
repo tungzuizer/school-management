@@ -21,8 +21,13 @@ export default function ChangePasswordModal({ onClose }: ChangePasswordModalProp
     e.preventDefault();
     setError("");
 
-    if (!newPassword || newPassword.length < 6) {
-      setError("Mật khẩu mới phải có ít nhất 6 ký tự");
+    if (!newPassword || newPassword.length < 8) {
+      setError("Mật khẩu mới phải có ít nhất 8 ký tự");
+      return;
+    }
+
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      setError("Mật khẩu mới phải bao gồm cả chữ cái và số");
       return;
     }
 
@@ -31,8 +36,9 @@ export default function ChangePasswordModal({ onClose }: ChangePasswordModalProp
       return;
     }
 
-    if (newPassword === "abc123" || newPassword === "123456") {
-      setError("Vui lòng đặt mật khẩu mới khác mật khẩu mặc định (abc123/123456)");
+    const weakList = ["123456", "12345678", "abc123", "abcdef", "password", "admin123"];
+    if (weakList.includes(newPassword.toLowerCase())) {
+      setError("Vui lòng đặt mật khẩu mới khác mật khẩu mặc định/dễ đoán");
       return;
     }
 
@@ -92,10 +98,10 @@ export default function ChangePasswordModal({ onClose }: ChangePasswordModalProp
                   <input
                     type="password"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+                    placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự, gồm chữ và số)"
                     className="w-full pl-9 pr-4 py-2.5 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-medium"
                   />
                 </div>
