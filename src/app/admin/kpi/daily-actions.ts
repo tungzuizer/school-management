@@ -256,31 +256,24 @@ export async function getDailyKpiRealtime(
     // 1. Tính toán số liệu thô từ DB
     const metrics = await calculateDailyRawMetrics(normalized, campusId);
 
-    // 2. Lấy danh mục KPI đang hoạt động (ưu tiên các chỉ số có tần suất DAILY hoặc isDailyTracked = true)
+    // 2. Lấy danh mục KPI đang hoạt động
     let catalogs: any[] = [];
     try {
       catalogs = await prisma.kpiCatalog.findMany({
         where: {
           isActive: true,
-          OR: [{ frequency: ReportingFrequency.DAILY }, { isDailyTracked: true }, { frequency: ReportingFrequency.MONTHLY }],
+          OR: [{ frequency: ReportingFrequency.DAILY }, { frequency: ReportingFrequency.MONTHLY }],
         },
-        orderBy: [{ isDailyTracked: "desc" }, { category: "asc" }, { code: "asc" }],
+        orderBy: [{ category: "asc" }, { code: "asc" }],
       });
     } catch {
-      // Defensive fallback nếu cột isDailyTracked chưa được migration trong database cũ
       try {
-        catalogs = await prisma.kpiCatalog.findMany({
-          where: {
-            isActive: true,
-            OR: [{ frequency: ReportingFrequency.DAILY }, { frequency: ReportingFrequency.MONTHLY }],
-          },
-          orderBy: [{ category: "asc" }, { code: "asc" }],
-        });
-      } catch {
         catalogs = await prisma.kpiCatalog.findMany({
           where: { isActive: true },
           orderBy: { code: "asc" },
         });
+      } catch {
+        catalogs = [];
       }
     }
 

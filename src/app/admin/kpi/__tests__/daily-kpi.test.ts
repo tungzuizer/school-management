@@ -117,7 +117,6 @@ vi.mock("@/lib/prisma", () => ({
           targetValue: 95.0,
           weight: 40.0,
           unit: "%",
-          isDailyTracked: true,
           isActive: true,
         },
         {
@@ -130,7 +129,6 @@ vi.mock("@/lib/prisma", () => ({
           targetValue: 0.0,
           weight: 30.0,
           unit: "vụ",
-          isDailyTracked: true,
           isActive: true,
         },
         {
@@ -143,7 +141,6 @@ vi.mock("@/lib/prisma", () => ({
           targetValue: 100.0,
           weight: 30.0,
           unit: "%",
-          isDailyTracked: true,
           isActive: true,
         },
       ]),

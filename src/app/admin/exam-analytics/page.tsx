@@ -57,28 +57,33 @@ function ExamAnalyticsContent() {
     window.history.replaceState(null, "", `?${params.toString()}`);
   };
 
-  // Load Overview Data in parallel with graceful error resilience
+  // Load Overview Data in parallel with graceful error resilience and fast progressive rendering
   async function loadData() {
     try {
       setLoading(true);
       setErrorMsg(null);
 
-      const [overviewRes, studentsRes] = await Promise.all([
-        getMultiYearExamOverviewAction({
-          campusId: selectedCampusId !== "ALL" ? selectedCampusId : undefined,
-          gradeLevel: selectedGrade > 0 ? selectedGrade : undefined,
-        }),
-        getStudentProfilesTrajectoryAction({
-          campusId: selectedCampusId !== "ALL" ? selectedCampusId : undefined,
-          gradeLevel: selectedGrade > 0 ? selectedGrade : undefined,
-          search: searchQuery,
-          trendCategory: selectedCategoryFilter !== "ALL" ? selectedCategoryFilter : undefined,
-          onlyNeedIntervention: onlyInterventionFilter,
-        }),
-      ]);
+      const overviewPromise = getMultiYearExamOverviewAction({
+        campusId: selectedCampusId !== "ALL" ? selectedCampusId : undefined,
+        gradeLevel: selectedGrade > 0 ? selectedGrade : undefined,
+      }).then((res) => {
+        setOverviewData(res);
+        setLoading(false);
+        return res;
+      });
 
-      setOverviewData(overviewRes);
-      setStudentList(studentsRes);
+      const studentsPromise = getStudentProfilesTrajectoryAction({
+        campusId: selectedCampusId !== "ALL" ? selectedCampusId : undefined,
+        gradeLevel: selectedGrade > 0 ? selectedGrade : undefined,
+        search: searchQuery,
+        trendCategory: selectedCategoryFilter !== "ALL" ? selectedCategoryFilter : undefined,
+        onlyNeedIntervention: onlyInterventionFilter,
+      }).then((res) => {
+        setStudentList(res);
+        return res;
+      });
+
+      await Promise.all([overviewPromise, studentsPromise]);
     } catch (err: any) {
       console.error("Failed to load exam analytics:", err);
       setErrorMsg(err?.message || "Không thể tải dữ liệu phân tích điểm thi. Vui lòng kiểm tra kết nối.");

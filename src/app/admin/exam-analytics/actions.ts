@@ -95,12 +95,29 @@ export async function getMultiYearExamOverviewAction(filters?: {
     targetSchoolId = defaultSchool.id;
   }
 
-  // 2. Fetch campuses of the school
-  const campuses = await prisma.campus.findMany({
-    where: { schoolId: targetSchoolId },
-    select: { id: true, name: true },
-    orderBy: { createdAt: "asc" },
-  });
+  // 2. Fetch campuses, available years and available grades in parallel
+  const [campuses, yearsRaw, gradesRaw] = await Promise.all([
+    prisma.campus.findMany({
+      where: { schoolId: targetSchoolId },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.$queryRaw<Array<{ schoolYear: string }>>`
+      SELECT DISTINCT ep."schoolYear"
+      FROM "StudentScore" s
+      JOIN "ExamPeriod" ep ON s."examPeriodId" = ep.id
+      WHERE s."schoolId" = ${targetSchoolId}
+      ORDER BY ep."schoolYear" ASC
+    `,
+    prisma.$queryRaw<Array<{ gradeLevel: number }>>`
+      SELECT DISTINCT cr."gradeLevel"
+      FROM "StudentScore" s
+      JOIN "Student" stu ON s."studentId" = stu.id
+      JOIN "ClassRoom" cr ON stu."classId" = cr.id
+      WHERE s."schoolId" = ${targetSchoolId} AND cr."gradeLevel" IS NOT NULL
+      ORDER BY cr."gradeLevel" ASC
+    `,
+  ]);
 
   // Dynamic SQL filters
   const campusFilter =
@@ -118,24 +135,7 @@ export async function getMultiYearExamOverviewAction(filters?: {
       ? Prisma.sql`AND s."subjectId" = ${filters.subjectId}`
       : Prisma.empty;
 
-  // 3. Available years & grades
-  const yearsRaw = await prisma.$queryRaw<Array<{ schoolYear: string }>>`
-    SELECT DISTINCT ep."schoolYear"
-    FROM "StudentScore" s
-    JOIN "ExamPeriod" ep ON s."examPeriodId" = ep.id
-    WHERE s."schoolId" = ${targetSchoolId}
-    ORDER BY ep."schoolYear" ASC
-  `;
   const availableYears = yearsRaw.map((r) => r.schoolYear).filter(Boolean);
-
-  const gradesRaw = await prisma.$queryRaw<Array<{ gradeLevel: number }>>`
-    SELECT DISTINCT cr."gradeLevel"
-    FROM "StudentScore" s
-    JOIN "Student" stu ON s."studentId" = stu.id
-    JOIN "ClassRoom" cr ON stu."classId" = cr.id
-    WHERE s."schoolId" = ${targetSchoolId} AND cr."gradeLevel" IS NOT NULL
-    ORDER BY cr."gradeLevel" ASC
-  `;
   const availableGrades = gradesRaw.map((r) => r.gradeLevel).filter(Boolean);
 
   if (availableYears.length === 0) {
@@ -160,34 +160,125 @@ export async function getMultiYearExamOverviewAction(filters?: {
     };
   }
 
-  // 4. Multi-year Subject Trends via SQL Aggregation
-  const subjectTrendsRaw = await prisma.$queryRaw<
-    Array<{
-      subjectId: string;
-      subjectName: string;
-      schoolYear: string;
-      avgScore: number;
-      examCount: bigint;
-    }>
-  >`
-    SELECT
-      s."subjectId",
-      sub.name as "subjectName",
-      ep."schoolYear",
-      ROUND(AVG(s.score)::numeric, 2) as "avgScore",
-      COUNT(s.id) as "examCount"
-    FROM "StudentScore" s
-    JOIN "Subject" sub ON s."subjectId" = sub.id
-    JOIN "ExamPeriod" ep ON s."examPeriodId" = ep.id
-    JOIN "Student" stu ON s."studentId" = stu.id
-    LEFT JOIN "ClassRoom" cr ON stu."classId" = cr.id
-    WHERE s."schoolId" = ${targetSchoolId}
-    ${campusFilter}
-    ${gradeFilter}
-    ${subjectFilter}
-    GROUP BY s."subjectId", sub.name, ep."schoolYear"
-    ORDER BY sub.name ASC, ep."schoolYear" ASC
-  `;
+  // 3. Execute all 4 Aggregation Queries Concurrently on PostgreSQL Server
+  const [subjectTrendsRaw, tt22StatsRaw, bandsRaw, campusStatsRaw] = await Promise.all([
+    prisma.$queryRaw<
+      Array<{
+        subjectId: string;
+        subjectName: string;
+        schoolYear: string;
+        avgScore: number;
+        examCount: bigint;
+      }>
+    >`
+      SELECT
+        s."subjectId",
+        sub.name as "subjectName",
+        ep."schoolYear",
+        ROUND(AVG(s.score)::numeric, 2) as "avgScore",
+        COUNT(s.id) as "examCount"
+      FROM "StudentScore" s
+      JOIN "Subject" sub ON s."subjectId" = sub.id
+      JOIN "ExamPeriod" ep ON s."examPeriodId" = ep.id
+      JOIN "Student" stu ON s."studentId" = stu.id
+      LEFT JOIN "ClassRoom" cr ON stu."classId" = cr.id
+      WHERE s."schoolId" = ${targetSchoolId}
+      ${campusFilter}
+      ${gradeFilter}
+      ${subjectFilter}
+      GROUP BY s."subjectId", sub.name, ep."schoolYear"
+      ORDER BY sub.name ASC, ep."schoolYear" ASC
+    `,
+    prisma.$queryRaw<
+      Array<{
+        total_students: bigint;
+        overall_avg: number;
+        good_count: bigint;
+        fair_count: bigint;
+        pass_count: bigint;
+        fail_count: bigint;
+        excellent_count: bigint;
+        at_risk_count: bigint;
+        improving_count: bigint;
+      }>
+    >`
+      WITH student_avgs AS (
+        SELECT
+          s."studentId",
+          AVG(s.score) as avg_score,
+          COUNT(s.id) as score_count
+        FROM "StudentScore" s
+        JOIN "Student" stu ON s."studentId" = stu.id
+        LEFT JOIN "ClassRoom" cr ON stu."classId" = cr.id
+        WHERE s."schoolId" = ${targetSchoolId}
+        ${campusFilter}
+        ${gradeFilter}
+        ${subjectFilter}
+        GROUP BY s."studentId"
+      )
+      SELECT
+        COUNT(*) as total_students,
+        ROUND(AVG(avg_score)::numeric, 2) as overall_avg,
+        COUNT(CASE WHEN avg_score >= 8.0 THEN 1 END) as good_count,
+        COUNT(CASE WHEN avg_score >= 6.5 AND avg_score < 8.0 THEN 1 END) as fair_count,
+        COUNT(CASE WHEN avg_score >= 5.0 AND avg_score < 6.5 THEN 1 END) as pass_count,
+        COUNT(CASE WHEN avg_score < 5.0 THEN 1 END) as fail_count,
+        COUNT(CASE WHEN avg_score >= 8.5 THEN 1 END) as excellent_count,
+        COUNT(CASE WHEN avg_score < 5.0 THEN 1 END) as at_risk_count,
+        COUNT(CASE WHEN avg_score >= 6.5 AND avg_score < 8.5 THEN 1 END) as improving_count
+      FROM student_avgs
+    `,
+    prisma.$queryRaw<
+      Array<{
+        b0to3: bigint;
+        b3to5: bigint;
+        b5to65: bigint;
+        b65to8: bigint;
+        b8to10: bigint;
+        totalExams: bigint;
+      }>
+    >`
+      SELECT
+        COUNT(CASE WHEN s.score < 3.0 THEN 1 END) as "b0to3",
+        COUNT(CASE WHEN s.score >= 3.0 AND s.score < 5.0 THEN 1 END) as "b3to5",
+        COUNT(CASE WHEN s.score >= 5.0 AND s.score < 6.5 THEN 1 END) as "b5to65",
+        COUNT(CASE WHEN s.score >= 6.5 AND s.score < 8.0 THEN 1 END) as "b65to8",
+        COUNT(CASE WHEN s.score >= 8.0 THEN 1 END) as "b8to10",
+        COUNT(s.id) as "totalExams"
+      FROM "StudentScore" s
+      JOIN "Student" stu ON s."studentId" = stu.id
+      LEFT JOIN "ClassRoom" cr ON stu."classId" = cr.id
+      WHERE s."schoolId" = ${targetSchoolId}
+      ${campusFilter}
+      ${gradeFilter}
+      ${subjectFilter}
+    `,
+    prisma.$queryRaw<
+      Array<{
+        campusId: string;
+        campusName: string;
+        avgScore: number;
+        studentCount: bigint;
+        totalExams: bigint;
+        passRate: number;
+        goodRate: number;
+      }>
+    >`
+      SELECT
+        c.id as "campusId",
+        c.name as "campusName",
+        ROUND(AVG(s.score)::numeric, 2) as "avgScore",
+        COUNT(DISTINCT s."studentId") as "studentCount",
+        COUNT(s.id) as "totalExams",
+        ROUND((COUNT(CASE WHEN s.score >= 5.0 THEN 1 END)::numeric / NULLIF(COUNT(s.id), 0) * 100), 1) as "passRate",
+        ROUND((COUNT(CASE WHEN s.score >= 8.0 THEN 1 END)::numeric / NULLIF(COUNT(s.id), 0) * 100), 1) as "goodRate"
+      FROM "Campus" c
+      LEFT JOIN "StudentScore" s ON s."campusId" = c.id AND s."schoolId" = ${targetSchoolId}
+      WHERE c."schoolId" = ${targetSchoolId}
+      GROUP BY c.id, c.name
+      ORDER BY c.name ASC
+    `,
+  ]);
 
   const subjectMap = new Map<
     string,
@@ -250,47 +341,7 @@ export async function getMultiYearExamOverviewAction(filters?: {
     });
   });
 
-  // 5. TT22 & Totals via Subquery Aggregation
-  const tt22StatsRaw = await prisma.$queryRaw<
-    Array<{
-      total_students: bigint;
-      overall_avg: number;
-      good_count: bigint;
-      fair_count: bigint;
-      pass_count: bigint;
-      fail_count: bigint;
-      excellent_count: bigint;
-      at_risk_count: bigint;
-      improving_count: bigint;
-    }>
-  >`
-    WITH student_avgs AS (
-      SELECT
-        s."studentId",
-        AVG(s.score) as avg_score,
-        COUNT(s.id) as score_count
-      FROM "StudentScore" s
-      JOIN "Student" stu ON s."studentId" = stu.id
-      LEFT JOIN "ClassRoom" cr ON stu."classId" = cr.id
-      WHERE s."schoolId" = ${targetSchoolId}
-      ${campusFilter}
-      ${gradeFilter}
-      ${subjectFilter}
-      GROUP BY s."studentId"
-    )
-    SELECT
-      COUNT(*) as total_students,
-      ROUND(AVG(avg_score)::numeric, 2) as overall_avg,
-      COUNT(CASE WHEN avg_score >= 8.0 THEN 1 END) as good_count,
-      COUNT(CASE WHEN avg_score >= 6.5 AND avg_score < 8.0 THEN 1 END) as fair_count,
-      COUNT(CASE WHEN avg_score >= 5.0 AND avg_score < 6.5 THEN 1 END) as pass_count,
-      COUNT(CASE WHEN avg_score < 5.0 THEN 1 END) as fail_count,
-      COUNT(CASE WHEN avg_score >= 8.5 THEN 1 END) as excellent_count,
-      COUNT(CASE WHEN avg_score < 5.0 THEN 1 END) as at_risk_count,
-      COUNT(CASE WHEN avg_score >= 6.5 AND avg_score < 8.5 THEN 1 END) as improving_count
-    FROM student_avgs
-  `;
-
+  // 5. TT22 & Totals via Subquery Aggregation Result
   const ttRow = tt22StatsRaw[0] || ({} as any);
   const totalStudents = Number(ttRow.total_students || 0);
   const overallAverage = Number(ttRow.overall_avg || 0);
@@ -314,32 +365,7 @@ export async function getMultiYearExamOverviewAction(filters?: {
     total: totalStudents,
   };
 
-  // 6. Score Distribution Bands via SQL
-  const bandsRaw = await prisma.$queryRaw<
-    Array<{
-      b0to3: bigint;
-      b3to5: bigint;
-      b5to65: bigint;
-      b65to8: bigint;
-      b8to10: bigint;
-      totalExams: bigint;
-    }>
-  >`
-    SELECT
-      COUNT(CASE WHEN s.score < 3.0 THEN 1 END) as "b0to3",
-      COUNT(CASE WHEN s.score >= 3.0 AND s.score < 5.0 THEN 1 END) as "b3to5",
-      COUNT(CASE WHEN s.score >= 5.0 AND s.score < 6.5 THEN 1 END) as "b5to65",
-      COUNT(CASE WHEN s.score >= 6.5 AND s.score < 8.0 THEN 1 END) as "b65to8",
-      COUNT(CASE WHEN s.score >= 8.0 THEN 1 END) as "b8to10",
-      COUNT(s.id) as "totalExams"
-    FROM "StudentScore" s
-    JOIN "Student" stu ON s."studentId" = stu.id
-    LEFT JOIN "ClassRoom" cr ON stu."classId" = cr.id
-    WHERE s."schoolId" = ${targetSchoolId}
-    ${campusFilter}
-    ${gradeFilter}
-    ${subjectFilter}
-  `;
+  // 6. Score Distribution Bands
   const bRow = bandsRaw[0] || ({} as any);
   const totalExams = Number(bRow.totalExams || 0);
 
@@ -391,33 +417,7 @@ export async function getMultiYearExamOverviewAction(filters?: {
     },
   ];
 
-  // 7. Campus Comparison via SQL
-  const campusStatsRaw = await prisma.$queryRaw<
-    Array<{
-      campusId: string;
-      campusName: string;
-      avgScore: number;
-      studentCount: bigint;
-      totalExams: bigint;
-      passRate: number;
-      goodRate: number;
-    }>
-  >`
-    SELECT
-      c.id as "campusId",
-      c.name as "campusName",
-      ROUND(AVG(s.score)::numeric, 2) as "avgScore",
-      COUNT(DISTINCT s."studentId") as "studentCount",
-      COUNT(s.id) as "totalExams",
-      ROUND((COUNT(CASE WHEN s.score >= 5.0 THEN 1 END)::numeric / NULLIF(COUNT(s.id), 0) * 100), 1) as "passRate",
-      ROUND((COUNT(CASE WHEN s.score >= 8.0 THEN 1 END)::numeric / NULLIF(COUNT(s.id), 0) * 100), 1) as "goodRate"
-    FROM "Campus" c
-    LEFT JOIN "StudentScore" s ON s."campusId" = c.id AND s."schoolId" = ${targetSchoolId}
-    WHERE c."schoolId" = ${targetSchoolId}
-    GROUP BY c.id, c.name
-    ORDER BY c.name ASC
-  `;
-
+  // 7. Campus Comparison
   const campusComparison: CampusExamStat[] = campusStatsRaw.map((c) => ({
     campusId: c.campusId,
     campusName: c.campusName,
