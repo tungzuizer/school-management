@@ -38,6 +38,8 @@ import {
   ShieldCheck,
   MapPin,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import StudentCredentialsModal from "./components/StudentCredentialsModal";
 import StudentCredentialSlipsModal from "./components/StudentCredentialSlipsModal";
@@ -140,26 +142,48 @@ export default function StudentsPage() {
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ count: number; errors: string[] } | null>(null);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(24);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   // Khối lớp Tiểu học chuẩn hóa (Khối 1 đến Khối 5)
   const primaryGrades = [1, 2, 3, 4, 5];
 
-  const loadData = useCallback(async (silent = false) => {
+  const loadData = useCallback(async (silent = false, targetPage?: number, targetPageSize?: number) => {
     if (!silent) setLoading(true);
     const gradeNum = filterGrade ? Number(filterGrade) : undefined;
     const campusParam = filterCampus !== "ALL" ? filterCampus : undefined;
+    const currentPage = targetPage ?? page;
+    const currentPageSize = targetPageSize ?? pageSize;
 
-    const [studentsData, campusesData, classesData, schoolsData] = await Promise.all([
-      getStudents(search || undefined, filterClass || undefined, gradeNum, campusParam),
+    const [studentsResult, campusesData, classesData, schoolsData] = await Promise.all([
+      getStudents({
+        search: search || undefined,
+        classId: filterClass || undefined,
+        gradeLevel: gradeNum,
+        campusId: campusParam,
+        page: currentPage,
+        pageSize: currentPageSize,
+      }),
       getCampusesForSelect(),
       getClassesForSelect(campusParam, gradeNum),
       getSchoolsForSelect(),
     ]);
 
-    setStudents(studentsData as unknown as StudentData[]);
+    setStudents((studentsResult?.students || []) as unknown as StudentData[]);
+    setTotal(studentsResult?.total || 0);
+    setTotalPages(studentsResult?.totalPages || 1);
     setCampuses(campusesData);
     setClasses(classesData);
     setSchools(schoolsData);
     setLoading(false);
+  }, [search, filterCampus, filterGrade, filterClass, page, pageSize]);
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
   }, [search, filterCampus, filterGrade, filterClass]);
 
   useEffect(() => {
@@ -547,7 +571,7 @@ export default function StudentsPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Hồ sơ Học sinh</h1>
             <span className="bg-indigo-100 text-indigo-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-indigo-200">
-              1.706 Học sinh • Khối 1 - 5
+              {total > 0 ? `${total.toLocaleString("vi-VN")} Học sinh` : "Đang tải..."} • Khối 1 - 5
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
@@ -851,6 +875,94 @@ export default function StudentsPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination Bar */}
+      {total > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs text-xs">
+          <div className="flex items-center gap-2 text-slate-600">
+            <span>Hiển thị</span>
+            <span className="font-bold text-slate-900">
+              {Math.min((page - 1) * pageSize + 1, total)} - {Math.min(page * pageSize, total)}
+            </span>
+            <span>trên</span>
+            <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+              {total.toLocaleString("vi-VN")}
+            </span>
+            <span>học sinh</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 mr-2">
+              <span className="text-slate-500">Mỗi trang:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  const newSize = Number(e.target.value);
+                  setPageSize(newSize);
+                  setPage(1);
+                }}
+                className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value={12}>12</option>
+                <option value={24}>24</option>
+                <option value={48}>48</option>
+                <option value={96}>96</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="Trang trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-1 px-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+
+                  const isCurrent = pageNum === page;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      disabled={loading}
+                      className={`min-w-7 h-7 px-1.5 rounded-lg font-bold text-xs transition-colors ${
+                        isCurrent
+                          ? "bg-indigo-600 text-white shadow-2xs"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="Trang sau"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -3,7 +3,7 @@
  * 1. Importers/Callers: `src/app/admin/students/page.tsx`, `src/app/admin/students/components/StudentCredentialsModal.tsx`, `src/app/admin/students/components/StudentCredentialSlipsModal.tsx`.
  * 2. Affected APIs: `getStudentCredentialsOverview`, `resetStudentPasswordSecure`, `getStudentCredentialSlips`, `resetStudentPassword`, `createStudent`, `getStudents`, `getCampusesForSelect`, `getClassesForSelect`.
  * 3. Schemas: Prisma models `User`, `Student`, `School`, `Campus`, `ClassRoom`.
- * 4. Verbatim User Instruction: "theo khuyến nghị của bạn" - Chuẩn hóa bộ lọc Phân hiệu / Điểm trường trực thuộc cho Hồ sơ Học sinh (1.706 học sinh, Khối 1-5).
+ * 4. Optimized: Server-side pagination (skip, take, count), caching for select dropdowns, zero N+1.
  */
 
 "use server";
@@ -17,6 +17,7 @@ import {
   previewNextStudentCodeAndEmail,
   DEFAULT_INITIAL_PASSWORD,
 } from "@/lib/account-automation";
+import { withCache, cache, CACHE_TAGS } from "@/lib/cache";
 
 export interface StudentCredentialItem {
   id: string; // studentId
@@ -40,6 +41,24 @@ export interface StudentCredentialItem {
   defaultPasswordHint: string;
 }
 
+export interface GetStudentsOptions {
+  search?: string;
+  classId?: string;
+  gradeLevel?: number;
+  campusId?: string;
+  schoolId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedStudentsResult {
+  students: any[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 function assertPrincipalOrAdmin(ctx: { userRole?: string; userEmail?: string }) {
   const allowedRoles = ["SUPER_ADMIN", "ADMIN", "DEPARTMENT_ADMIN", "DISTRICT_ADMIN", "VICE_PRINCIPAL"];
   const hasAllowedRole = ctx.userRole && allowedRoles.includes(ctx.userRole);
@@ -52,13 +71,39 @@ function assertPrincipalOrAdmin(ctx: { userRole?: string; userEmail?: string }) 
 }
 
 export async function getStudents(
-  search?: string,
-  classId?: string,
-  gradeLevel?: number,
-  campusId?: string,
-  schoolId?: string
-) {
+  searchOrOptions?: string | GetStudentsOptions,
+  classIdArg?: string,
+  gradeLevelArg?: number,
+  campusIdArg?: string,
+  schoolIdArg?: string,
+  pageArg: number = 1,
+  pageSizeArg: number = 24
+): Promise<PaginatedStudentsResult> {
   try {
+    let search: string | undefined;
+    let classId: string | undefined;
+    let gradeLevel: number | undefined;
+    let campusId: string | undefined;
+    let schoolId: string | undefined;
+    let page = pageArg;
+    let pageSize = pageSizeArg;
+
+    if (typeof searchOrOptions === "object" && searchOrOptions !== null) {
+      search = searchOrOptions.search;
+      classId = searchOrOptions.classId;
+      gradeLevel = searchOrOptions.gradeLevel;
+      campusId = searchOrOptions.campusId;
+      schoolId = searchOrOptions.schoolId;
+      if (searchOrOptions.page) page = Math.max(1, searchOrOptions.page);
+      if (searchOrOptions.pageSize) pageSize = Math.max(1, Math.min(100, searchOrOptions.pageSize));
+    } else {
+      search = searchOrOptions;
+      classId = classIdArg;
+      gradeLevel = gradeLevelArg;
+      campusId = campusIdArg;
+      schoolId = schoolIdArg;
+    }
+
     const ctx = await getTenantContext().catch(() => null);
     let targetSchoolId: string | undefined;
     let targetCampusId: string | undefined;
@@ -113,124 +158,177 @@ export async function getStudents(
       andConditions.push({ classRoom: { gradeLevel: Number(gradeLevel) } });
     }
 
-    const includeSelect = {
-      user: { select: { id: true, name: true, email: true } },
-      classRoom: {
+    const where = andConditions.length > 0 ? { AND: andConditions } : {};
+
+    const [total, students] = await Promise.all([
+      prisma.student.count({ where }),
+      prisma.student.findMany({
+        where,
         select: {
           id: true,
-          name: true,
-          gradeLevel: true,
-          campusId: true,
-          campus: { select: { id: true, name: true } },
-          school: { select: { id: true, name: true } },
+          studentCode: true,
+          dob: true,
+          gender: true,
+          phone: true,
+          status: true,
+          ethnicity: true,
+          addressCurrent: true,
+          fatherName: true,
+          fatherJob: true,
+          motherName: true,
+          motherJob: true,
+          user: { select: { id: true, name: true, email: true } },
+          classRoom: {
+            select: {
+              id: true,
+              name: true,
+              gradeLevel: true,
+              campusId: true,
+              campus: { select: { id: true, name: true } },
+              school: { select: { id: true, name: true } },
+            },
+          },
+          group: { select: { id: true, name: true } },
         },
-      },
-      group: { select: { id: true, name: true } },
+        orderBy: [
+          { classRoom: { gradeLevel: "asc" } },
+          { classRoom: { name: "asc" } },
+          { user: { name: "asc" } },
+        ],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    return {
+      students,
+      total,
+      page,
+      pageSize,
+      totalPages,
     };
-
-    const result = await prisma.student.findMany({
-      where: andConditions.length > 0 ? { AND: andConditions } : {},
-      include: includeSelect,
-      orderBy: [
-        { classRoom: { gradeLevel: "asc" } },
-        { classRoom: { name: "asc" } },
-        { user: { name: "asc" } },
-      ],
-      take: 2000,
-    });
-
-    return result;
   } catch (error) {
     console.error("Error in getStudents:", error);
-    return [];
+    return {
+      students: [],
+      total: 0,
+      page: 1,
+      pageSize: pageSizeArg || 24,
+      totalPages: 1,
+    };
   }
 }
 
 export async function getCampusesForSelect(schoolId?: string) {
-  try {
-    const where = schoolId ? { schoolId } : {};
-    return await prisma.campus.findMany({
-      where,
-      select: { id: true, name: true, schoolId: true },
-      orderBy: { name: "asc" },
-    });
-  } catch (err) {
-    console.error("getCampusesForSelect error:", err);
-    return [];
-  }
+  const cacheKey = `campuses_select_${schoolId || "all"}`;
+  return withCache(
+    cacheKey,
+    120,
+    async () => {
+      try {
+        const where = schoolId ? { schoolId } : {};
+        return await prisma.campus.findMany({
+          where,
+          select: { id: true, name: true, schoolId: true },
+          orderBy: { name: "asc" },
+        });
+      } catch (err) {
+        console.error("getCampusesForSelect error:", err);
+        return [];
+      }
+    },
+    [CACHE_TAGS.CAMPUSES]
+  );
 }
 
 export async function getClassesForSelect(campusId?: string, gradeLevel?: number, schoolId?: string) {
-  try {
-    const ctx = await getTenantContext().catch(() => null);
-    const where: any = {};
+  const cacheKey = `classes_select_${campusId || "all"}_${gradeLevel || "all"}_${schoolId || "all"}`;
+  return withCache(
+    cacheKey,
+    60,
+    async () => {
+      try {
+        const ctx = await getTenantContext().catch(() => null);
+        const where: any = {};
 
-    if (ctx?.campusId) {
-      where.campusId = ctx.campusId;
-    } else if (campusId && campusId !== "ALL" && campusId !== "") {
-      where.campusId = campusId;
-    }
+        if (ctx?.campusId) {
+          where.campusId = ctx.campusId;
+        } else if (campusId && campusId !== "ALL" && campusId !== "") {
+          where.campusId = campusId;
+        }
 
-    if (gradeLevel) {
-      where.gradeLevel = Number(gradeLevel);
-    }
+        if (gradeLevel) {
+          where.gradeLevel = Number(gradeLevel);
+        }
 
-    if (schoolId && schoolId !== "ALL" && schoolId !== "") {
-      where.schoolId = schoolId;
-    } else if (
-      ctx?.schoolId &&
-      ctx?.userRole !== "SUPER_ADMIN" &&
-      ctx?.userRole !== "DEPARTMENT_ADMIN" &&
-      ctx?.userRole !== "DISTRICT_ADMIN"
-    ) {
-      where.schoolId = ctx.schoolId;
-    }
+        if (schoolId && schoolId !== "ALL" && schoolId !== "") {
+          where.schoolId = schoolId;
+        } else if (
+          ctx?.schoolId &&
+          ctx?.userRole !== "SUPER_ADMIN" &&
+          ctx?.userRole !== "DEPARTMENT_ADMIN" &&
+          ctx?.userRole !== "DISTRICT_ADMIN"
+        ) {
+          where.schoolId = ctx.schoolId;
+        }
 
-    return await prisma.classRoom.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        gradeLevel: true,
-        campusId: true,
-        campus: { select: { id: true, name: true } },
-        schoolId: true,
-        school: { select: { id: true, name: true } },
-      },
-      orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
-    });
-  } catch (error) {
-    console.error("Error in getClassesForSelect:", error);
-    return [];
-  }
+        return await prisma.classRoom.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            gradeLevel: true,
+            campusId: true,
+            campus: { select: { id: true, name: true } },
+            schoolId: true,
+            school: { select: { id: true, name: true } },
+          },
+          orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+        });
+      } catch (error) {
+        console.error("Error in getClassesForSelect:", error);
+        return [];
+      }
+    },
+    [CACHE_TAGS.CLASSES]
+  );
 }
 
 export async function getSchoolsForSelect() {
-  try {
-    const ctx = await getTenantContext().catch(() => null);
-    if (
-      ctx?.schoolId &&
-      ctx?.userRole !== "SUPER_ADMIN" &&
-      ctx?.userRole !== "ADMIN" &&
-      ctx?.userRole !== "DEPARTMENT_ADMIN" &&
-      ctx?.userRole !== "DISTRICT_ADMIN"
-    ) {
-      return prisma.school.findMany({
-        where: { id: ctx.schoolId },
-        select: { id: true, name: true },
-        orderBy: { name: "asc" },
-      });
-    }
-    return prisma.school.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    });
-  } catch {
-    return prisma.school.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    });
-  }
+  return withCache(
+    "schools_select_all",
+    180,
+    async () => {
+      try {
+        const ctx = await getTenantContext().catch(() => null);
+        if (
+          ctx?.schoolId &&
+          ctx?.userRole !== "SUPER_ADMIN" &&
+          ctx?.userRole !== "ADMIN" &&
+          ctx?.userRole !== "DEPARTMENT_ADMIN" &&
+          ctx?.userRole !== "DISTRICT_ADMIN"
+        ) {
+          return prisma.school.findMany({
+            where: { id: ctx.schoolId },
+            select: { id: true, name: true },
+            orderBy: { name: "asc" },
+          });
+        }
+        return prisma.school.findMany({
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        });
+      } catch {
+        return prisma.school.findMany({
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        });
+      }
+    },
+    [CACHE_TAGS.SCHOOLS]
+  );
 }
 
 export async function getNextStudentCodePreviewAction(classId?: string, gradeLevel?: number) {
@@ -357,6 +455,9 @@ export async function createStudent(data: {
       },
     });
 
+    // Invalidate dashboard and student caches
+    cache.invalidateByTags([CACHE_TAGS.STUDENTS, CACHE_TAGS.DASHBOARD]);
+
     // Audit Log
     try {
       const ctx = await getTenantContext();
@@ -458,6 +559,8 @@ export async function updateStudent(
       }),
     ]);
 
+    cache.invalidateByTags([CACHE_TAGS.STUDENTS, CACHE_TAGS.DASHBOARD]);
+
     return { success: true };
   } catch (error: any) {
     console.error("Lỗi khi cập nhật học sinh:", error);
@@ -471,6 +574,8 @@ export async function deleteStudent(studentId: string) {
     if (!student) return { success: false, error: "Không tìm thấy học sinh" };
 
     await prisma.user.delete({ where: { id: student.userId } });
+
+    cache.invalidateByTags([CACHE_TAGS.STUDENTS, CACHE_TAGS.DASHBOARD]);
 
     return { success: true };
   } catch (error: any) {
@@ -588,6 +693,8 @@ export async function createBulkStudents(studentsData: BulkStudentInput[]) {
       }
     }
 
+    cache.invalidateByTags([CACHE_TAGS.STUDENTS, CACHE_TAGS.DASHBOARD]);
+
     return {
       success: createdCount > 0,
       count: createdCount,
@@ -658,7 +765,13 @@ export async function getStudentCredentialsOverview(filters?: {
 
     const students = await prisma.student.findMany({
       where: andConditions.length > 0 ? { AND: andConditions } : {},
-      include: {
+      select: {
+        id: true,
+        studentCode: true,
+        phone: true,
+        parentPhone: true,
+        parentName: true,
+        status: true,
         user: {
           select: {
             id: true,
@@ -828,6 +941,6 @@ export async function getStudentCredentialSlips(filters?: {
 
     return { success: true, schoolName, className, slips };
   } catch (error: any) {
-    return { success: false, schoolName: "", slips: [], error: error.message || "Lỗi tạo phiếu tài khoản học sinh" };
+    return { success: false, schoolName: "", slips: [], error: error.message || "Lỗi tạo phiếu bàn giao học sinh" };
   }
 }

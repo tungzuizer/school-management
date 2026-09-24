@@ -13,6 +13,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Role } from "@prisma/client";
 import { getTenantContext } from "@/lib/tenant";
+import { cache, withCache, CACHE_TAGS } from "@/lib/cache";
 
 // Check if user is authorized admin (SuperAdmin, School Admin, Vice Principal, Dept Admin)
 async function isAuthorizedAdmin() {
@@ -55,52 +56,56 @@ export async function getAdminJournalMetadata(campusId?: string, schoolId?: stri
     targetCampusId = campusId;
   }
 
-  const classWhere: any = {};
-  if (targetSchoolId) classWhere.schoolId = targetSchoolId;
-  if (targetCampusId) classWhere.campusId = targetCampusId;
+  const cacheKey = `journal:metadata:${targetSchoolId || "all"}:${targetCampusId || "all"}`;
 
-  const campusWhere: any = {};
-  if (targetSchoolId) campusWhere.schoolId = targetSchoolId;
+  return withCache(cacheKey, 120, async () => {
+    const classWhere: any = {};
+    if (targetSchoolId) classWhere.schoolId = targetSchoolId;
+    if (targetCampusId) classWhere.campusId = targetCampusId;
 
-  const [classes, campuses, schools] = await Promise.all([
-    prisma.classRoom.findMany({
-      where: classWhere,
-      orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
-      include: {
-        school: { select: { id: true, name: true } },
-        campus: { select: { id: true, name: true } },
-        homeroomTeacher: {
-          include: {
-            user: { select: { name: true } },
+    const campusWhere: any = {};
+    if (targetSchoolId) campusWhere.schoolId = targetSchoolId;
+
+    const [classes, campuses, schools] = await Promise.all([
+      prisma.classRoom.findMany({
+        where: classWhere,
+        orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+        include: {
+          school: { select: { id: true, name: true } },
+          campus: { select: { id: true, name: true } },
+          homeroomTeacher: {
+            include: {
+              user: { select: { name: true } },
+            },
           },
         },
-      },
-    }),
-    prisma.campus.findMany({
-      where: campusWhere,
-      select: { id: true, name: true, schoolId: true },
-      orderBy: { name: "asc" },
-    }),
-    prisma.school.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+      }),
+      prisma.campus.findMany({
+        where: campusWhere,
+        select: { id: true, name: true, schoolId: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.school.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
 
-  return {
-    schools,
-    campuses,
-    classes: classes.map((c) => ({
-      id: c.id,
-      name: c.name,
-      gradeLevel: c.gradeLevel,
-      schoolId: c.schoolId || null,
-      schoolName: c.school?.name || "Toàn trường",
-      campusId: c.campusId || null,
-      campusName: c.campus?.name || "Điểm Trung tâm",
-      homeroomTeacherName: c.homeroomTeacher?.user?.name || "Chưa phân công",
-    })),
-  };
+    return {
+      schools,
+      campuses,
+      classes: classes.map((c) => ({
+        id: c.id,
+        name: c.name,
+        gradeLevel: c.gradeLevel,
+        schoolId: c.schoolId || null,
+        schoolName: c.school?.name || "Toàn trường",
+        campusId: c.campusId || null,
+        campusName: c.campus?.name || "Điểm Trung tâm",
+        homeroomTeacherName: c.homeroomTeacher?.user?.name || "Chưa phân công",
+      })),
+    };
+  }, [CACHE_TAGS.JOURNALS, CACHE_TAGS.CLASSES, CACHE_TAGS.CAMPUSES]);
 }
 
 export async function getAdminJournalEntries(classId: string, dateStr: string) {

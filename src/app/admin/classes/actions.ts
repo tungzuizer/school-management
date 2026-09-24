@@ -10,24 +10,21 @@
 
 import prisma from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant";
-
+import { cache, withCache, CACHE_TAGS } from "@/lib/cache";
 
 export async function getClasses(search?: string, campusId?: string, gradeLevel?: number, schoolId?: string) {
   try {
-    const where: any = {};
-    if (search && search.trim()) {
-      where.name = { contains: search.trim(), mode: "insensitive" };
-    }
-
     const cleanCampusId = campusId && campusId !== "ALL" && campusId !== "" ? campusId : undefined;
     const cleanSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
 
     let targetSchoolId: string | undefined = cleanSchoolId;
     let targetCampusId: string | undefined = cleanCampusId;
+    let userRole: string | undefined;
 
     // Check tenant context for campus / school scoping
     try {
       const ctx = await getTenantContext();
+      userRole = ctx.userRole;
 
       // Resolve schoolId scoping
       if (!targetSchoolId && ctx.schoolId) {
@@ -42,52 +39,61 @@ export async function getClasses(search?: string, campusId?: string, gradeLevel?
       // In unauthenticated context, cleanSchoolId and cleanCampusId are used
     }
 
-    // Verify targetSchoolId against DB to prevent mock ID mismatches
-    if (targetSchoolId) {
-      const schoolRecord = await prisma.school.findUnique({
-        where: { id: targetSchoolId },
-        select: { id: true },
-      });
-      if (!schoolRecord) {
-        // Fallback: If mock ID like "sch_th_pholu", resolve to primary school in DB
-        const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
-        if (defaultSchool) {
-          targetSchoolId = defaultSchool.id;
-        } else {
-          targetSchoolId = undefined;
+    const cacheKey = `admin:classes:${targetSchoolId || "all"}:${targetCampusId || "all"}:${gradeLevel || "all"}:${search || "all"}:${userRole || "guest"}`;
+
+    return await withCache(cacheKey, 60, async () => {
+      const where: any = {};
+      if (search && search.trim()) {
+        where.name = { contains: search.trim(), mode: "insensitive" };
+      }
+
+      // Verify targetSchoolId against DB to prevent mock ID mismatches
+      if (targetSchoolId) {
+        const schoolRecord = await prisma.school.findUnique({
+          where: { id: targetSchoolId },
+          select: { id: true },
+        });
+        if (!schoolRecord) {
+          // Fallback: If mock ID like "sch_th_pholu", resolve to primary school in DB
+          const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
+          if (defaultSchool) {
+            targetSchoolId = defaultSchool.id;
+          } else {
+            targetSchoolId = undefined;
+          }
         }
       }
-    }
 
-    if (targetSchoolId) {
-      where.schoolId = targetSchoolId;
-    }
-
-    // Verify targetCampusId against DB to prevent mock ID mismatches
-    if (targetCampusId) {
-      const campusRecord = await prisma.campus.findUnique({
-        where: { id: targetCampusId },
-        select: { id: true },
-      });
-      if (campusRecord) {
-        where.campusId = campusRecord.id;
+      if (targetSchoolId) {
+        where.schoolId = targetSchoolId;
       }
-    }
 
-    if (gradeLevel) {
-      where.gradeLevel = Number(gradeLevel);
-    }
+      // Verify targetCampusId against DB to prevent mock ID mismatches
+      if (targetCampusId) {
+        const campusRecord = await prisma.campus.findUnique({
+          where: { id: targetCampusId },
+          select: { id: true },
+        });
+        if (campusRecord) {
+          where.campusId = campusRecord.id;
+        }
+      }
 
-    return await prisma.classRoom.findMany({
-      where,
-      include: {
-        school: { select: { id: true, name: true } },
-        campus: { select: { id: true, name: true } },
-        homeroomTeacher: { select: { id: true, user: { select: { name: true } } } },
-        _count: { select: { students: true } },
-      },
-      orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
-    });
+      if (gradeLevel) {
+        where.gradeLevel = Number(gradeLevel);
+      }
+
+      return await prisma.classRoom.findMany({
+        where,
+        include: {
+          school: { select: { id: true, name: true } },
+          campus: { select: { id: true, name: true } },
+          homeroomTeacher: { select: { id: true, user: { select: { name: true } } } },
+          _count: { select: { students: true } },
+        },
+        orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+      });
+    }, [CACHE_TAGS.CLASSES]);
   } catch (err) {
     console.error("getClasses error:", err);
     return [];
@@ -95,76 +101,84 @@ export async function getClasses(search?: string, campusId?: string, gradeLevel?
 }
 
 export async function getSchoolsForSelect() {
-  try {
-    return await prisma.school.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
-  } catch (err) {
-    console.error("getSchoolsForSelect error:", err);
-    return [];
-  }
+  return withCache("schools:for-select", 300, async () => {
+    try {
+      return await prisma.school.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
+    } catch (err) {
+      console.error("getSchoolsForSelect error:", err);
+      return [];
+    }
+  }, [CACHE_TAGS.SCHOOLS]);
 }
 
 export async function getCampusesForSelect(schoolId?: string) {
-  try {
-    let targetSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
-    if (!targetSchoolId) {
-      try {
-        const ctx = await getTenantContext();
-        if (ctx.schoolId) targetSchoolId = ctx.schoolId;
-      } catch {}
-    }
-
-    if (targetSchoolId) {
-      const valid = await prisma.school.findUnique({ where: { id: targetSchoolId } });
-      if (!valid) {
-        const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
-        targetSchoolId = defaultSchool ? defaultSchool.id : undefined;
+  const cacheKey = `campuses:for-select:${schoolId || "all"}`;
+  return withCache(cacheKey, 300, async () => {
+    try {
+      let targetSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
+      if (!targetSchoolId) {
+        try {
+          const ctx = await getTenantContext();
+          if (ctx.schoolId) targetSchoolId = ctx.schoolId;
+        } catch {}
       }
-    }
 
-    const where = targetSchoolId ? { schoolId: targetSchoolId } : {};
-    return await prisma.campus.findMany({
-      where,
-      select: { id: true, name: true, schoolId: true },
-      orderBy: { name: "asc" },
-    });
-  } catch (err) {
-    console.error("getCampusesForSelect error:", err);
-    return [];
-  }
+      if (targetSchoolId) {
+        const valid = await prisma.school.findUnique({ where: { id: targetSchoolId } });
+        if (!valid) {
+          const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
+          targetSchoolId = defaultSchool ? defaultSchool.id : undefined;
+        }
+      }
+
+      const where = targetSchoolId ? { schoolId: targetSchoolId } : {};
+      return await prisma.campus.findMany({
+        where,
+        select: { id: true, name: true, schoolId: true },
+        orderBy: { name: "asc" },
+      });
+    } catch (err) {
+      console.error("getCampusesForSelect error:", err);
+      return [];
+    }
+  }, [CACHE_TAGS.CAMPUSES]);
 }
 
 export async function getTeachersForSelect(schoolId?: string) {
-  try {
-    let targetSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
-    if (!targetSchoolId) {
-      try {
-        const ctx = await getTenantContext();
-        if (ctx.schoolId) targetSchoolId = ctx.schoolId;
-      } catch {}
-    }
-
-    if (targetSchoolId) {
-      const valid = await prisma.school.findUnique({ where: { id: targetSchoolId } });
-      if (!valid) {
-        const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
-        targetSchoolId = defaultSchool ? defaultSchool.id : undefined;
+  const cacheKey = `teachers:for-select:${schoolId || "all"}`;
+  return withCache(cacheKey, 120, async () => {
+    try {
+      let targetSchoolId = schoolId && schoolId !== "ALL" && schoolId !== "" ? schoolId : undefined;
+      if (!targetSchoolId) {
+        try {
+          const ctx = await getTenantContext();
+          if (ctx.schoolId) targetSchoolId = ctx.schoolId;
+        } catch {}
       }
-    }
 
-    const where = targetSchoolId ? { user: { schoolId: targetSchoolId } } : undefined;
-    return await prisma.teacher.findMany({
-      where,
-      select: {
-        id: true,
-        specialty: true,
-        user: { select: { name: true, school: { select: { name: true } } } },
-      },
-      orderBy: { user: { name: "asc" } },
-    });
-  } catch (err) {
-    console.error("getTeachersForSelect error:", err);
-    return [];
-  }
+      if (targetSchoolId) {
+        const valid = await prisma.school.findUnique({ where: { id: targetSchoolId } });
+        if (!valid) {
+          const defaultSchool = await prisma.school.findFirst({ select: { id: true } });
+          targetSchoolId = defaultSchool ? defaultSchool.id : undefined;
+        }
+      }
+
+      const where = targetSchoolId ? { user: { schoolId: targetSchoolId } } : undefined;
+      return await prisma.teacher.findMany({
+        where,
+        select: {
+          id: true,
+          specialty: true,
+          user: { select: { name: true, school: { select: { name: true } } } },
+        },
+        orderBy: { user: { name: "asc" } },
+      });
+    } catch (err) {
+      console.error("getTeachersForSelect error:", err);
+      return [];
+    }
+  }, [CACHE_TAGS.TEACHERS]);
 }
 
 export async function createClass(data: { name: string; gradeLevel: number; schoolId?: string; campusId?: string; homeroomTeacherId?: string }) {
@@ -212,6 +226,8 @@ export async function createClass(data: { name: string; gradeLevel: number; scho
         homeroomTeacherId: teacherId,
       },
     });
+
+    cache.invalidateByTags([CACHE_TAGS.CLASSES, CACHE_TAGS.DASHBOARD]);
 
     return { success: true };
   } catch (error: any) {
@@ -263,6 +279,8 @@ export async function updateClass(id: string, data: { name: string; gradeLevel: 
       },
     });
 
+    cache.invalidateByTags([CACHE_TAGS.CLASSES, CACHE_TAGS.DASHBOARD]);
+
     return { success: true };
   } catch (error: any) {
     console.error("updateClass error:", error);
@@ -273,7 +291,9 @@ export async function updateClass(id: string, data: { name: string; gradeLevel: 
 export async function deleteClass(id: string) {
   try {
     await prisma.classRoom.delete({ where: { id } });
-    
+
+    cache.invalidateByTags([CACHE_TAGS.CLASSES, CACHE_TAGS.DASHBOARD]);
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi xóa lớp" };
@@ -375,7 +395,10 @@ export async function createBulkClasses(classesData: BulkClassInput[], defaultSc
       }
     }
 
-    
+    if (createdCount > 0) {
+      cache.invalidateByTags([CACHE_TAGS.CLASSES, CACHE_TAGS.DASHBOARD]);
+    }
+
     return {
       success: createdCount > 0,
       count: createdCount,
