@@ -58,14 +58,14 @@ export async function getCurrentAdminProfile(): Promise<AdminProfile | null> {
     const effectiveEmail = user?.email || sessionEmail;
 
     const isSuperAdmin =
+      effectiveRole === "SUPER_ADMIN" ||
+      effectiveRole === "DEPARTMENT_ADMIN" ||
       effectiveEmail === "superadmin@gmail.com" ||
       effectiveEmail === "superadmin.vietnam@gmail.com" ||
       effectiveEmail === "superadmin.ninhbinh@gmail.com" ||
       effectiveEmail === "superadmin.demo@gmail.com" ||
       effectiveEmail === "superadmin@school.com" ||
-      effectiveEmail.includes("superadmin") ||
-      effectiveRole === "SUPER_ADMIN" ||
-      effectiveRole === "DEPARTMENT_ADMIN";
+      effectiveEmail === "superadmin@school.edu.vn";
 
     let schoolName = user?.school?.name || "Đơn vị Giáo dục Trực thuộc";
     let districtWardName = user?.districtWard?.name || (user?.school?.districtWardId ? "Theo trường trực thuộc" : "Toàn quốc");

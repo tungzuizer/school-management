@@ -33,9 +33,9 @@ import {
   syncDailyToMonthlyKpi,
   DailyKpiEvaluationPayload,
   DailyKpiItemPayload,
-} from "./daily-actions";
-import { getCampuses } from "./actions";
-import { CATEGORY_LABELS } from "./kpi-labels";
+} from "../daily-actions";
+import { getCampuses } from "../actions";
+import { CATEGORY_LABELS } from "../kpi-labels";
 import { DailyKpiStatus } from "@prisma/client";
 
 export default function DailyKpiConsole() {

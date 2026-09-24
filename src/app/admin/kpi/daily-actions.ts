@@ -683,7 +683,7 @@ export async function syncDailyToMonthlyKpi(
     });
 
     if (!period) {
-      period = await prisma.kpiPeriod.create({
+      const createdPeriod = await prisma.kpiPeriod.create({
         data: {
           title: periodTitle,
           year,
@@ -704,7 +704,7 @@ export async function syncDailyToMonthlyKpi(
       if (activeCatalogs.length > 0) {
         await prisma.kpiTarget.createMany({
           data: activeCatalogs.map((kpi) => ({
-            periodId: period.id,
+            periodId: createdPeriod.id,
             kpiId: kpi.id,
             targetValue: kpi.targetValue ?? 100,
             weight: kpi.weight ?? 0,
@@ -712,10 +712,12 @@ export async function syncDailyToMonthlyKpi(
         });
 
         // Re-fetch targets
-        period = await prisma.kpiPeriod.findUnique({
-          where: { id: period.id },
+        period = (await prisma.kpiPeriod.findUnique({
+          where: { id: createdPeriod.id },
           include: { targets: { include: { kpi: true } } },
-        }) as any;
+        })) as any;
+      } else {
+        period = createdPeriod as any;
       }
     }
 
