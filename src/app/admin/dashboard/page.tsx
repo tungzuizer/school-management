@@ -13,7 +13,6 @@ import Link from "next/link";
 import { useEasyMode } from "@/lib/useEasyMode";
 import { useSession } from "next-auth/react";
 import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
-import ClassDistributionWidget from "@/components/dashboard/ClassDistributionWidget";
 import DailyKpiWidget from "@/components/dashboard/DailyKpiWidget";
 import UnapprovedBanner from "@/components/ui/UnapprovedBanner";
 import {
@@ -991,26 +990,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 10. CLASS SIZE DISTRIBUTION & CAPACITY STRUCTURE                          */}
-      {/* ========================================================================= */}
-      {(activeCategory === "ALL" || activeCategory === "ACADEMICS") && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-sky-600 rounded-sm" />
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                Phân Bổ Sĩ Số & Cơ Cấu Lớp Học
-              </h2>
-            </div>
-            <span className="text-xs text-slate-500 font-semibold">Theo khối & GVCN</span>
-          </div>
-
-          <ClassDistributionWidget classes={classGrades as any} />
-        </section>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 11. CAMPUS NETWORK & AFFILIATED SCHOOLS                                   */}
+      {/* 10. CAMPUS NETWORK & AFFILIATED SCHOOLS                                   */}
       {/* ========================================================================= */}
       {(activeCategory === "ALL" || activeCategory === "CAMPUS") && (
         <section className="space-y-4">
