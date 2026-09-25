@@ -42,6 +42,7 @@ import {
   deletePrincipalAccount,
   resetUserPassword,
   PrincipalUserItem,
+  CampusOptionItem,
 } from "./actions";
 
 interface OptionItem {
@@ -49,6 +50,7 @@ interface OptionItem {
   name: string;
   departmentId?: string | null;
   districtWardId?: string | null;
+  schoolId?: string | null;
 }
 
 export default function AdminPrincipalsPage() {
@@ -60,11 +62,13 @@ export default function AdminPrincipalsPage() {
   const [departments, setDepartments] = useState<OptionItem[]>([]);
   const [districtWards, setDistrictWards] = useState<OptionItem[]>([]);
   const [schools, setSchools] = useState<OptionItem[]>([]);
+  const [campuses, setCampuses] = useState<CampusOptionItem[]>([]);
 
   // Filter states
   const [selectedDeptId, setSelectedDeptId] = useState("");
   const [selectedDistrictWardId, setSelectedDistrictWardId] = useState("");
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
+  const [selectedCampusId, setSelectedCampusId] = useState("");
   const [selectedRole, setSelectedRole] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState<"ALL" | "APPROVED" | "PENDING">("ALL");
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,6 +85,7 @@ export default function AdminPrincipalsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<"ADMIN" | "VICE_PRINCIPAL" | "DEPARTMENT_ADMIN" | "WARD_ADMIN">("ADMIN");
   const [newSchoolId, setNewSchoolId] = useState("");
+  const [newCampusId, setNewCampusId] = useState("");
   const [newDeptId, setNewDeptId] = useState("");
   const [newWardId, setNewWardId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,6 +93,7 @@ export default function AdminPrincipalsPage() {
   // Form states for Transfer
   const [transferRole, setTransferRole] = useState<"ADMIN" | "VICE_PRINCIPAL" | "DEPARTMENT_ADMIN" | "WARD_ADMIN">("ADMIN");
   const [transferSchoolId, setTransferSchoolId] = useState("");
+  const [transferCampusId, setTransferCampusId] = useState("");
   const [transferDeptId, setTransferDeptId] = useState("");
   const [transferWardId, setTransferWardId] = useState("");
 
@@ -104,6 +110,7 @@ export default function AdminPrincipalsPage() {
       departmentId: selectedDeptId || undefined,
       districtWardId: selectedDistrictWardId || undefined,
       schoolId: selectedSchoolId || undefined,
+      campusId: selectedCampusId || undefined,
       role: selectedRole !== "ALL" ? selectedRole : undefined,
       status: selectedStatus,
       search: searchTerm || undefined,
@@ -114,6 +121,7 @@ export default function AdminPrincipalsPage() {
       setDepartments(res.departments);
       setDistrictWards(res.districtWards);
       setSchools(res.schools);
+      setCampuses(res.campuses || []);
     } else {
       setErrorMsg(res.error || "Không thể tải danh sách tài khoản.");
     }
@@ -122,7 +130,7 @@ export default function AdminPrincipalsPage() {
 
   useEffect(() => {
     loadData();
-  }, [selectedDeptId, selectedDistrictWardId, selectedSchoolId, selectedRole, selectedStatus]);
+  }, [selectedDeptId, selectedDistrictWardId, selectedSchoolId, selectedCampusId, selectedRole, selectedStatus]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +165,7 @@ export default function AdminPrincipalsPage() {
     setActiveUser(u);
     setTransferRole(u.role as any);
     setTransferSchoolId(u.schoolId || "");
+    setTransferCampusId(u.campusId || "");
     setTransferDeptId(u.departmentId || "");
     setTransferWardId(u.districtWardId || "");
     setShowTransferModal(true);
@@ -195,13 +204,14 @@ export default function AdminPrincipalsPage() {
       userId: activeUser.id,
       role: transferRole as any,
       schoolId: transferSchoolId || null,
+      campusId: transferRole === "VICE_PRINCIPAL" ? (transferCampusId || null) : null,
       departmentId: transferDeptId || null,
       districtWardId: transferWardId || null,
     });
     setIsSubmitting(false);
 
     if (res.success) {
-      setSuccessMsg("Đã cập nhật công tác / chuyển quyền cho Hiệu trưởng!");
+      setSuccessMsg("Đã cập nhật công tác / chuyển quyền cho Hiệu trưởng / Phó Hiệu trưởng!");
       setShowTransferModal(false);
       loadData();
       setTimeout(() => setSuccessMsg(""), 3000);
@@ -219,6 +229,7 @@ export default function AdminPrincipalsPage() {
       password: newPassword,
       role: newRole,
       schoolId: newSchoolId || undefined,
+      campusId: newRole === "VICE_PRINCIPAL" ? (newCampusId || undefined) : undefined,
       departmentId: newDeptId || undefined,
       districtWardId: newWardId || undefined,
     });
@@ -230,6 +241,7 @@ export default function AdminPrincipalsPage() {
       setNewName("");
       setNewEmail("");
       setNewPassword("");
+      setNewCampusId("");
       loadData();
       setTimeout(() => setSuccessMsg(""), 3000);
     } else {
@@ -373,7 +385,7 @@ export default function AdminPrincipalsPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           {/* Department Filter */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1">Sở GD&ĐT</label>
@@ -383,6 +395,7 @@ export default function AdminPrincipalsPage() {
                 setSelectedDeptId(e.target.value);
                 setSelectedDistrictWardId("");
                 setSelectedSchoolId("");
+                setSelectedCampusId("");
               }}
               className="w-full text-xs p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white"
             >
@@ -403,6 +416,7 @@ export default function AdminPrincipalsPage() {
               onChange={(e) => {
                 setSelectedDistrictWardId(e.target.value);
                 setSelectedSchoolId("");
+                setSelectedCampusId("");
               }}
               className="w-full text-xs p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white"
             >
@@ -420,7 +434,10 @@ export default function AdminPrincipalsPage() {
             <label className="block text-xs font-semibold text-gray-600 mb-1">Trường học</label>
             <select
               value={selectedSchoolId}
-              onChange={(e) => setSelectedSchoolId(e.target.value)}
+              onChange={(e) => {
+                setSelectedSchoolId(e.target.value);
+                setSelectedCampusId("");
+              }}
               className="w-full text-xs p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white font-medium"
             >
               <option value="">-- Tất cả các Trường --</option>
@@ -429,6 +446,25 @@ export default function AdminPrincipalsPage() {
                   {s.name}
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* Campus Filter */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Phân hiệu / Cơ sở</label>
+            <select
+              value={selectedCampusId}
+              onChange={(e) => setSelectedCampusId(e.target.value)}
+              className="w-full text-xs p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white"
+            >
+              <option value="">-- Tất cả phân hiệu --</option>
+              {campuses
+                .filter((c) => !selectedSchoolId || c.schoolId === selectedSchoolId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -539,11 +575,23 @@ export default function AdminPrincipalsPage() {
                         </span>
                       </td>
 
-                      {/* School */}
+                      {/* School & Campus */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5 text-xs text-gray-800 font-medium">
-                          <Building2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                          <span>{u.schoolName}</span>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-800 font-medium">
+                            <Building2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                            <span>{u.schoolName}</span>
+                          </div>
+                          {u.role === "VICE_PRINCIPAL" ? (
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                              <MapPin className="w-3 h-3 text-teal-600 shrink-0" />
+                              <span>{u.campusName}</span>
+                            </div>
+                          ) : u.role === "ADMIN" ? (
+                            <span className="text-[11px] text-gray-500 font-normal">
+                              Quản lý toàn bộ phân hiệu
+                            </span>
+                          ) : null}
                         </div>
                       </td>
 
@@ -771,7 +819,10 @@ export default function AdminPrincipalsPage() {
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Trường học phụ trách</label>
                 <select
                   value={transferSchoolId}
-                  onChange={(e) => setTransferSchoolId(e.target.value)}
+                  onChange={(e) => {
+                    setTransferSchoolId(e.target.value);
+                    setTransferCampusId("");
+                  }}
                   className="w-full text-sm p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white font-medium"
                 >
                   <option value="">-- Chưa gán trường --</option>
@@ -782,6 +833,29 @@ export default function AdminPrincipalsPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Campus for Vice Principal */}
+              {transferRole === "VICE_PRINCIPAL" && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Phân hiệu / Cơ sở phụ trách trực tiếp
+                  </label>
+                  <select
+                    value={transferCampusId}
+                    onChange={(e) => setTransferCampusId(e.target.value)}
+                    className="w-full text-sm p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    <option value="">-- Chưa gán phân hiệu --</option>
+                    {campuses
+                      .filter((c) => !transferSchoolId || c.schoolId === transferSchoolId)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
 
               {/* Department */}
               <div>
@@ -919,7 +993,10 @@ export default function AdminPrincipalsPage() {
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Trường học công tác</label>
                 <select
                   value={newSchoolId}
-                  onChange={(e) => setNewSchoolId(e.target.value)}
+                  onChange={(e) => {
+                    setNewSchoolId(e.target.value);
+                    setNewCampusId("");
+                  }}
                   className="w-full text-sm p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 bg-white font-medium"
                 >
                   <option value="">-- Chọn trường học --</option>
@@ -930,6 +1007,29 @@ export default function AdminPrincipalsPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Campus for Vice Principal */}
+              {newRole === "VICE_PRINCIPAL" && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Phân hiệu / Cơ sở phụ trách trực tiếp
+                  </label>
+                  <select
+                    value={newCampusId}
+                    onChange={(e) => setNewCampusId(e.target.value)}
+                    className="w-full text-sm p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 bg-white"
+                  >
+                    <option value="">-- Chọn phân hiệu / cơ sở --</option>
+                    {campuses
+                      .filter((c) => !newSchoolId || c.schoolId === newSchoolId)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
 
               <div className="pt-3 flex gap-3">
                 <button

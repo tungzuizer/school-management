@@ -11,7 +11,7 @@
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { Role } from "@prisma/client";
+import { Role, ScopeType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { recordAuditLog } from "@/lib/audit-logger";
 import { revalidatePath } from "next/cache";
@@ -28,13 +28,22 @@ export interface PrincipalUserItem {
   districtWardName: string;
   schoolId: string | null;
   schoolName: string;
+  campusId: string | null;
+  campusName: string;
   createdAt: string;
+}
+
+export interface CampusOptionItem {
+  id: string;
+  name: string;
+  schoolId: string;
 }
 
 export async function getPrincipalsAndAdmins(filters?: {
   departmentId?: string;
   districtWardId?: string;
   schoolId?: string;
+  campusId?: string;
   role?: string;
   status?: "ALL" | "APPROVED" | "PENDING";
   search?: string;
@@ -42,7 +51,7 @@ export async function getPrincipalsAndAdmins(filters?: {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return { success: false, error: "Chưa đăng nhập", data: [], departments: [], districtWards: [], schools: [] };
+      return { success: false, error: "Chưa đăng nhập", data: [], departments: [], districtWards: [], schools: [], campuses: [] };
     }
 
     const sessionEmail = session.user.email ? session.user.email.trim().toLowerCase() : "";
@@ -81,7 +90,7 @@ export async function getPrincipalsAndAdmins(filters?: {
       effectiveRole !== Role.ADMIN &&
       effectiveRole !== Role.WARD_ADMIN
     ) {
-      return { success: false, error: "Không có quyền quản trị cấp cao", data: [], departments: [], districtWards: [], schools: [] };
+      return { success: false, error: "Không có quyền quản trị cấp cao", data: [], departments: [], districtWards: [], schools: [], campuses: [] };
     }
 
     const where: any = {
@@ -99,6 +108,20 @@ export async function getPrincipalsAndAdmins(filters?: {
     if (filters?.schoolId) {
       where.schoolId = filters.schoolId;
     }
+    if (filters?.campusId) {
+      where.OR = [
+        { campusId: filters.campusId },
+        {
+          userRoleScopes: {
+            some: {
+              role: Role.VICE_PRINCIPAL,
+              scopeType: ScopeType.CAMPUS,
+              scopeId: filters.campusId,
+            },
+          },
+        },
+      ];
+    }
     if (filters?.role && filters.role !== "ALL") {
       where.role = filters.role as Role;
     }
@@ -108,19 +131,30 @@ export async function getPrincipalsAndAdmins(filters?: {
       where.isApproved = false;
     }
     if (filters?.search && filters.search.trim()) {
-      where.OR = [
+      const searchCondition = [
         { name: { contains: filters.search.trim(), mode: "insensitive" } },
         { email: { contains: filters.search.trim(), mode: "insensitive" } },
       ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchCondition }];
+        delete where.OR;
+      } else {
+        where.OR = searchCondition;
+      }
     }
 
-    const [users, departments, districtWards, schools] = await Promise.all([
+    const [users, departments, districtWards, schools, rawCampuses] = await Promise.all([
       prisma.user.findMany({
         where,
         include: {
           department: { select: { id: true, name: true } },
           districtWard: { select: { id: true, name: true } },
           school: { select: { id: true, name: true } },
+          campus: { select: { id: true, name: true } },
+          userRoleScopes: {
+            where: { role: Role.VICE_PRINCIPAL, scopeType: ScopeType.CAMPUS },
+            select: { scopeId: true },
+          },
         },
         orderBy: [{ isApproved: "asc" }, { createdAt: "desc" }],
       }),
@@ -136,22 +170,40 @@ export async function getPrincipalsAndAdmins(filters?: {
         select: { id: true, name: true, departmentId: true, districtWardId: true },
         orderBy: { name: "asc" },
       }),
+      prisma.campus.findMany({
+        select: { id: true, name: true, schoolId: true },
+        orderBy: { name: "asc" },
+      }),
     ]);
 
-    const formattedUsers: PrincipalUserItem[] = users.map((u) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      isApproved: u.isApproved,
-      departmentId: u.departmentId,
-      departmentName: u.department?.name || "Sở GD&ĐT (Chưa chọn)",
-      districtWardId: u.districtWardId,
-      districtWardName: u.districtWard?.name || "Phòng GD&ĐT (Chưa chọn)",
-      schoolId: u.schoolId,
-      schoolName: u.school?.name || "Chưa gán Trường",
-      createdAt: u.createdAt.toISOString(),
-    }));
+    const formattedUsers: PrincipalUserItem[] = users.map((u) => {
+      const scopeCampusId = u.userRoleScopes?.[0]?.scopeId || null;
+      const effectiveCampusId = u.campusId || scopeCampusId;
+      let effectiveCampusName = u.campus?.name;
+      if (!effectiveCampusName && effectiveCampusId) {
+        effectiveCampusName = rawCampuses.find((c) => c.id === effectiveCampusId)?.name;
+      }
+
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        isApproved: u.isApproved,
+        departmentId: u.departmentId,
+        departmentName: u.department?.name || "Sở GD&ĐT (Chưa chọn)",
+        districtWardId: u.districtWardId,
+        districtWardName: u.districtWard?.name || "Phòng GD&ĐT (Chưa chọn)",
+        schoolId: u.schoolId,
+        schoolName: u.school?.name || "Chưa gán Trường",
+        campusId: effectiveCampusId,
+        campusName:
+          u.role === Role.VICE_PRINCIPAL
+            ? effectiveCampusName || "Chưa phân công phân hiệu"
+            : effectiveCampusName || "Toàn trường",
+        createdAt: u.createdAt.toISOString(),
+      };
+    });
 
     return {
       success: true,
@@ -159,6 +211,7 @@ export async function getPrincipalsAndAdmins(filters?: {
       departments,
       districtWards,
       schools,
+      campuses: rawCampuses,
     };
   } catch (error: any) {
     console.error("Error fetching principals and admins:", error);
@@ -169,6 +222,7 @@ export async function getPrincipalsAndAdmins(filters?: {
       departments: [],
       districtWards: [],
       schools: [],
+      campuses: [],
     };
   }
 }
@@ -214,6 +268,7 @@ export async function updatePrincipalAssignment(input: {
   schoolId?: string | null;
   departmentId?: string | null;
   districtWardId?: string | null;
+  campusId?: string | null;
 }) {
   try {
     const session = await getServerSession(authOptions);
@@ -221,7 +276,7 @@ export async function updatePrincipalAssignment(input: {
 
     const targetUser = await prisma.user.findUnique({
       where: { id: input.userId },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, role: true, schoolId: true, campusId: true },
     });
 
     if (!targetUser) return { success: false, error: "Không tìm thấy tài khoản" };
@@ -229,8 +284,21 @@ export async function updatePrincipalAssignment(input: {
     let finalSchoolId = input.schoolId;
     let finalDeptId = input.departmentId;
     let finalWardId = input.districtWardId;
+    let finalCampusId = input.campusId;
 
-    if (finalSchoolId) {
+    if (finalCampusId) {
+      const campus = await prisma.campus.findUnique({
+        where: { id: finalCampusId },
+        select: { schoolId: true, school: { select: { departmentId: true, districtWardId: true } } },
+      });
+      if (campus) {
+        if (!finalSchoolId) finalSchoolId = campus.schoolId;
+        if (!finalDeptId && campus.school?.departmentId) finalDeptId = campus.school.departmentId;
+        if (!finalWardId && campus.school?.districtWardId) finalWardId = campus.school.districtWardId;
+      }
+    }
+
+    if (finalSchoolId && (!finalDeptId || !finalWardId)) {
       const sch = await prisma.school.findUnique({
         where: { id: finalSchoolId },
         select: { departmentId: true, districtWardId: true },
@@ -241,6 +309,13 @@ export async function updatePrincipalAssignment(input: {
       }
     }
 
+    const effectiveRole = input.role || targetUser.role;
+
+    // If role is ADMIN (Hiệu trưởng), campusId is null (Toàn trường)
+    if (input.role === Role.ADMIN) {
+      finalCampusId = null;
+    }
+
     await prisma.user.update({
       where: { id: input.userId },
       data: {
@@ -248,8 +323,42 @@ export async function updatePrincipalAssignment(input: {
         schoolId: finalSchoolId !== undefined ? finalSchoolId : undefined,
         departmentId: finalDeptId !== undefined ? finalDeptId : undefined,
         districtWardId: finalWardId !== undefined ? finalWardId : undefined,
+        campusId: finalCampusId !== undefined ? finalCampusId : undefined,
       },
     });
+
+    // Update UserRoleScope for VICE_PRINCIPAL
+    if (effectiveRole === Role.VICE_PRINCIPAL && finalCampusId !== undefined) {
+      // Remove old campus scopes
+      await prisma.userRoleScope.deleteMany({
+        where: {
+          userId: input.userId,
+          role: Role.VICE_PRINCIPAL,
+          scopeType: ScopeType.CAMPUS,
+        },
+      });
+
+      // Insert new scope if assigned to a specific campus
+      if (finalCampusId) {
+        await prisma.userRoleScope.create({
+          data: {
+            userId: input.userId,
+            role: Role.VICE_PRINCIPAL,
+            scopeType: ScopeType.CAMPUS,
+            scopeId: finalCampusId,
+          },
+        });
+      }
+    } else if (input.role && input.role !== Role.VICE_PRINCIPAL) {
+      // Clean up campus scopes if no longer VP
+      await prisma.userRoleScope.deleteMany({
+        where: {
+          userId: input.userId,
+          role: Role.VICE_PRINCIPAL,
+          scopeType: ScopeType.CAMPUS,
+        },
+      });
+    }
 
     await recordAuditLog({
       userId: session.user.id,
@@ -258,10 +367,11 @@ export async function updatePrincipalAssignment(input: {
       action: "UPDATE",
       entityName: "UserPrincipal",
       entityId: input.userId,
-      description: `Điều chuyển/Cập nhật công tác tài khoản Hiệu trưởng: ${targetUser.name}`,
+      description: `Điều chuyển/Cập nhật công tác tài khoản Cán bộ/Hiệu trưởng: ${targetUser.name}`,
     });
 
     revalidatePath("/admin/principals");
+    revalidatePath("/admin/campuses");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi cập nhật công tác" };
@@ -276,6 +386,7 @@ export async function createPrincipalAccount(data: {
   schoolId?: string;
   departmentId?: string;
   districtWardId?: string;
+  campusId?: string;
 }) {
   try {
     const session = await getServerSession(authOptions);
@@ -292,8 +403,21 @@ export async function createPrincipalAccount(data: {
     let schoolId = data.schoolId || undefined;
     let deptId = data.departmentId || undefined;
     let wardId = data.districtWardId || undefined;
+    let campusId = data.role === Role.ADMIN ? undefined : (data.campusId || undefined);
 
-    if (schoolId) {
+    if (campusId) {
+      const campus = await prisma.campus.findUnique({
+        where: { id: campusId },
+        select: { schoolId: true, school: { select: { departmentId: true, districtWardId: true } } },
+      });
+      if (campus) {
+        if (!schoolId) schoolId = campus.schoolId;
+        if (!deptId && campus.school?.departmentId) deptId = campus.school.departmentId;
+        if (!wardId && campus.school?.districtWardId) wardId = campus.school.districtWardId;
+      }
+    }
+
+    if (schoolId && (!deptId || !wardId)) {
       const sch = await prisma.school.findUnique({
         where: { id: schoolId },
         select: { departmentId: true, districtWardId: true },
@@ -316,8 +440,20 @@ export async function createPrincipalAccount(data: {
         schoolId,
         departmentId: deptId,
         districtWardId: wardId,
+        campusId,
       },
     });
+
+    if (data.role === Role.VICE_PRINCIPAL && campusId) {
+      await prisma.userRoleScope.create({
+        data: {
+          userId: newUser.id,
+          role: Role.VICE_PRINCIPAL,
+          scopeType: ScopeType.CAMPUS,
+          scopeId: campusId,
+        },
+      });
+    }
 
     await recordAuditLog({
       userId: session.user.id,
@@ -330,6 +466,7 @@ export async function createPrincipalAccount(data: {
     });
 
     revalidatePath("/admin/principals");
+    revalidatePath("/admin/campuses");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Lỗi khi tạo tài khoản" };

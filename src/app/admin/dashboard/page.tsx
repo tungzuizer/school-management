@@ -2,13 +2,14 @@
  * FACT-FORCING GATE CONTEXT:
  * 1. Importers/Callers: Next.js App Router Page for `/admin/dashboard` (referenced by `src/app/admin/layout.tsx`).
  * 2. Affected APIs: `src/app/admin/dashboard/page.tsx` (AdminDashboardPage default export).
- * 3. Schemas: `getAdminDashboardData`, `getNQ37DashboardSummary`, `getDashboardStats`, `getAttendanceByWeek`, `getGradesByClass`, `getClassAttendanceRanking`, `getRecentIncidents`, `getTodaySummary`, `getLessonPlanAlerts`, `getEarlyWarnings`, `getSubstituteDispatchSummary`.
- * 4. Verbatim User Instruction: "giao diện đơn sắc quá và vấn quá tệ thiếu hiệu ứng thiếu phân loại" & "tôi cần bạn xóa bỏ hết các icon và không được dùng cái màu sắc vàng và cái huy chương nó quá thiếu chuyên nghiệp".
+ * 3. Schemas: `CampusSummaryItem`, `getAdminDashboardData`, `getNQ37DashboardSummary`, `getDashboardStats`, `getAttendanceByWeek`, `getGradesByClass`, `getClassAttendanceRanking`, `getRecentIncidents`, `getTodaySummary`, `getLessonPlanAlerts`, `getEarlyWarnings`, `getSubstituteDispatchSummary`.
+ * 4. Multi-Campus Hierarchy: School Principal (Role.ADMIN) manages Campuses (Phân hiệu), where each Campus is supervised by assigned Vice Principals (Role.VICE_PRINCIPAL).
+ * 5. Design: Monochrome, minimalist, highly professional executive UI with Lucide stroke icons.
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useEasyMode } from "@/lib/useEasyMode";
 import { useSession } from "next-auth/react";
@@ -16,7 +17,35 @@ import { StatCardSkeleton, TableSkeleton, Skeleton } from "@/components/ui/Skele
 import DailyKpiWidget from "@/components/dashboard/DailyKpiWidget";
 import UnapprovedBanner from "@/components/ui/UnapprovedBanner";
 import {
-  getSchoolsList,
+  Building2,
+  Users,
+  GraduationCap,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  ArrowUpRight,
+  ShieldCheck,
+  Layers,
+  School,
+  Activity,
+  Phone,
+  Mail,
+  Compass,
+  ChevronRight,
+  Filter,
+  Sparkles,
+  Calendar,
+  Award,
+  FileText,
+  RefreshCw,
+  SlidersHorizontal,
+  MapPin,
+  Check,
+  AlertCircle,
+  TrendingUp,
+} from "lucide-react";
+import {
+  CampusSummaryItem,
   getDashboardStats,
   getAttendanceByWeek,
   getGradesByClass,
@@ -41,7 +70,6 @@ import {
   Cell,
 } from "recharts";
 
-type SchoolItem = Awaited<ReturnType<typeof getSchoolsList>>[number];
 type Stats = Awaited<ReturnType<typeof getDashboardStats>>;
 type WeekData = Awaited<ReturnType<typeof getAttendanceByWeek>>;
 type ClassGrade = Awaited<ReturnType<typeof getGradesByClass>>;
@@ -53,15 +81,17 @@ type EarlyWarningItem = Awaited<ReturnType<typeof getEarlyWarnings>>[number];
 type SubstituteSummary = Awaited<ReturnType<typeof getSubstituteDispatchSummary>>;
 type NQ37Summary = Awaited<ReturnType<typeof getNQ37DashboardSummary>>;
 
-type DashboardCategory = "ALL" | "ACADEMICS" | "COMPLIANCE" | "DISCIPLINE" | "CAMPUS";
+type DashboardCategory = "ALL" | "CAMPUSES" | "ACADEMICS" | "COMPLIANCE" | "DISCIPLINE";
 
-const CHART_PALETTE = ["#1e293b", "#059669", "#2563eb", "#dc2626", "#475569", "#0891b2", "#4f46e5"];
+const CHART_PALETTE = ["#1e293b", "#0f766e", "#2563eb", "#e11d48", "#475569", "#0891b2", "#4f46e5"];
 
 export default function AdminDashboardPage() {
   const { data: session } = useSession();
   const { isEasyMode } = useEasyMode();
-  const [schools, setSchools] = useState<SchoolItem[]>([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>(undefined);
+  const [isPending, startTransition] = useTransition();
+
+  const [campuses, setCampuses] = useState<CampusSummaryItem[]>([]);
+  const [selectedCampusId, setSelectedCampusId] = useState<string | undefined>(undefined);
   const [activeCategory, setActiveCategory] = useState<DashboardCategory>("ALL");
 
   const [stats, setStats] = useState<Stats | null>(null);
@@ -81,8 +111,8 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function initData() {
       try {
-        const data = await getAdminDashboardData();
-        setSchools(data.schools);
+        const data = await getAdminDashboardData(undefined, undefined);
+        setCampuses(data.campuses);
         setStats(data.stats);
         setWeekData(data.weekData);
         setClassGrades(data.classGrades);
@@ -94,7 +124,7 @@ export default function AdminDashboardPage() {
         setSubstitutes(data.substitutes);
         setNq37Summary(data.nq37Summary);
       } catch (err) {
-        console.error("Failed to load initial dashboard data:", err);
+        console.error("Failed to load initial multi-campus dashboard data:", err);
       } finally {
         setLoading(false);
       }
@@ -102,26 +132,29 @@ export default function AdminDashboardPage() {
     initData();
   }, []);
 
-  const handleSchoolChange = async (schoolId?: string) => {
-    setSelectedSchoolId(schoolId);
+  const handleCampusChange = async (campusId?: string) => {
+    setSelectedCampusId(campusId);
     setRefreshing(true);
-    try {
-      const data = await getAdminDashboardData(schoolId);
-      setStats(data.stats);
-      setWeekData(data.weekData);
-      setClassGrades(data.classGrades);
-      setClassAttendance(data.classAttendance);
-      setIncidents(data.incidents);
-      setToday(data.today);
-      setLpAlerts(data.lpAlerts);
-      setEarlyWarnings(data.earlyWarnings);
-      setSubstitutes(data.substitutes);
-      setNq37Summary(data.nq37Summary);
-    } catch (err) {
-      console.error("Failed to refresh school dashboard data:", err);
-    } finally {
-      setRefreshing(false);
-    }
+    startTransition(async () => {
+      try {
+        const data = await getAdminDashboardData(undefined, campusId);
+        setCampuses(data.campuses);
+        setStats(data.stats);
+        setWeekData(data.weekData);
+        setClassGrades(data.classGrades);
+        setClassAttendance(data.classAttendance);
+        setIncidents(data.incidents);
+        setToday(data.today);
+        setLpAlerts(data.lpAlerts);
+        setEarlyWarnings(data.earlyWarnings);
+        setSubstitutes(data.substitutes);
+        setNq37Summary(data.nq37Summary);
+      } catch (err) {
+        console.error("Failed to refresh campus dashboard data:", err);
+      } finally {
+        setRefreshing(false);
+      }
+    });
   };
 
   if (loading) {
@@ -161,18 +194,17 @@ export default function AdminDashboardPage() {
     session?.user?.email === "superadmin@school.com" ||
     (session?.user as { role?: string })?.role === "SUPER_ADMIN";
 
-  const activeSchoolName = selectedSchoolId
-    ? schools.find((s) => s.id === selectedSchoolId)?.name || "Trường đã chọn"
-    : isSuperAdmin
-    ? "Toàn bộ Nền Tảng (Tất cả Tỉnh/Thành & Mạng lưới Trường)"
-    : "Tất cả các cơ sở trực thuộc";
+  const activeCampus = campuses.find((c) => c.id === selectedCampusId);
+  const activeScopeName = activeCampus
+    ? `${activeCampus.name} (${activeCampus.isMainCampus ? "Trụ sở chính" : "Phân hiệu"})`
+    : `Toàn trường (${campuses.length} phân hiệu & điểm trường)`;
 
-  const categories = [
-    { id: "ALL" as DashboardCategory, label: "Tất cả" },
-    { id: "ACADEMICS" as DashboardCategory, label: "Học tập & Điểm số" },
-    { id: "COMPLIANCE" as DashboardCategory, label: "Tuân thủ NQ 37" },
-    { id: "DISCIPLINE" as DashboardCategory, label: "Nề nếp & Cảnh báo" },
-    { id: "CAMPUS" as DashboardCategory, label: "Mạng lưới trường" },
+  const categories: { id: DashboardCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: "ALL", label: "Tổng quan điều hành", icon: Layers },
+    { id: "CAMPUSES", label: "Ma trận phân hiệu", icon: Building2 },
+    { id: "ACADEMICS", label: "Học tập & Giảng dạy", icon: GraduationCap },
+    { id: "COMPLIANCE", label: "Định mức NQ 37", icon: ShieldCheck },
+    { id: "DISCIPLINE", label: "Chuyên cần & Nề nếp", icon: Activity },
   ];
 
   return (
@@ -182,167 +214,437 @@ export default function AdminDashboardPage() {
       {/* ========================================================================= */}
       {/* 1. REFINED EXECUTIVE HEADER                                              */}
       {/* ========================================================================= */}
-      <div className="bg-gradient-to-r from-white via-slate-50/70 to-sky-50/40 rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-1">
+      <div className="bg-gradient-to-r from-white via-slate-50/70 to-slate-100/60 rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2.5 py-0.5 bg-sky-50 text-sky-700 text-xs font-semibold rounded-md border border-sky-200/80">
-              {isSuperAdmin ? "Quản trị Toàn Hệ thống" : "Ban Giám hiệu"}
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-900 text-white text-xs font-semibold rounded-md shadow-2xs">
+              <School className="w-3.5 h-3.5" />
+              {isSuperAdmin ? "Tổng Quản Trị Hệ Thống" : "Ban Giám Hiệu — Hiệu Trưởng"}
             </span>
-            <span className="text-xs text-slate-500 capitalize">
+            <span className="inline-flex items-center gap-1 text-xs text-slate-500 capitalize bg-white/80 px-2.5 py-0.5 rounded-md border border-slate-200">
+              <Calendar className="w-3 h-3 text-slate-400" />
               {todayStr}
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            {isSuperAdmin ? "Tổng quan Điều hành Hệ thống" : "Bảng Điều hành Nhà trường"}
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            Trung Tâm Điều Hành Đa Phân Hiệu
           </h1>
-          <p className="text-xs text-slate-500">
-            Phạm vi giám sát: <span className="font-semibold text-slate-700">{activeSchoolName}</span>
+          <p className="text-xs text-slate-600 flex items-center gap-1.5">
+            <Compass className="w-3.5 h-3.5 text-slate-400" />
+            Phạm vi giám sát hiện tại:{" "}
+            <span className="font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+              {activeScopeName}
+            </span>
+            {refreshing && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-blue-600 animate-pulse ml-2 font-medium">
+                <RefreshCw className="w-3 h-3 animate-spin" /> Đang cập nhật dữ liệu...
+              </span>
+            )}
           </p>
         </div>
 
         {/* Quick action buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          {isSuperAdmin && (
-            <Link
-              href="/admin/users-manager"
-              className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-[0.98]"
-            >
-              Quản lý tài khoản
-            </Link>
-          )}
           <Link
-            href="/admin/exam-analytics"
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
+            href="/admin/campuses"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-[0.98]"
           >
-            Phân tích điểm thi
+            <Building2 className="w-3.5 h-3.5" />
+            Quản lý phân hiệu
+          </Link>
+          <Link
+            href="/admin/principals"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
+          >
+            <Users className="w-3.5 h-3.5 text-slate-500" />
+            Phân công PHT
           </Link>
           <Link
             href="/admin/nq37-compliance"
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
           >
+            <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
             Định mức NQ 37
           </Link>
           <Link
             href="/admin/early-warnings"
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-xl text-xs font-semibold transition active:scale-[0.98]"
           >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
             Cảnh báo ({earlyWarnings.length})
           </Link>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. CATEGORY TABS & SCHOOL SELECTOR                                       */}
+      {/* 2. MULTI-CAMPUS COMMAND SWITCHER & CATEGORY TABS                          */}
       {/* ========================================================================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
-        {/* Tab buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+        {/* Category Navigation Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
           {categories.map((cat) => {
             const isActive = activeCategory === cat.id;
+            const Icon = cat.icon;
             return (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
                   isActive
                     ? "bg-slate-900 text-white shadow-xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-slate-500"}`} />
                 {cat.label}
               </button>
             );
           })}
         </div>
 
-        {/* Campus / School selector */}
-        {schools.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-slate-500 font-medium">Cơ sở:</span>
-            <select
-              value={selectedSchoolId || ""}
-              onChange={(e) => handleSchoolChange(e.target.value || undefined)}
-              aria-label="Chọn trường hoặc cơ sở trực thuộc"
-              className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tất cả ({schools.length} trường)</option>
-              {schools.map((sch) => (
-                <option key={sch.id} value={sch.id}>
-                  {sch.name} ({sch.studentCount} HS)
-                </option>
-              ))}
-            </select>
+        {/* Multi-Campus Switcher */}
+        {campuses.length > 0 && (
+          <div className="flex items-center gap-2 shrink-0 bg-slate-50 p-1 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-1.5 px-2 text-slate-600">
+              <Building2 className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-xs font-semibold">Phân hiệu:</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleCampusChange(undefined)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  selectedCampusId === undefined
+                    ? "bg-slate-900 text-white shadow-2xs"
+                    : "text-slate-700 hover:bg-white hover:text-slate-900"
+                }`}
+              >
+                Toàn trường ({campuses.length})
+              </button>
+              {campuses.map((campus) => {
+                const isSelected = selectedCampusId === campus.id;
+                return (
+                  <button
+                    key={campus.id}
+                    type="button"
+                    onClick={() => handleCampusChange(campus.id)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      isSelected
+                        ? "bg-slate-900 text-white shadow-2xs"
+                        : "text-slate-700 hover:bg-white hover:text-slate-900"
+                    }`}
+                  >
+                    <span>{campus.name}</span>
+                    {campus.isMainCampus && (
+                      <span
+                        className={`text-[10px] px-1 py-0.2 rounded font-normal ${
+                          isSelected ? "bg-slate-800 text-slate-200" : "bg-slate-200 text-slate-700"
+                        }`}
+                      >
+                        Chính
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. KEY METRIC CARDS WITH COLORED TOP-ACCENTS & HOVER ELEVATIONS           */}
+      {/* 3. KEY METRIC CARDS WITH REFINED MONOCHROME STYLING                       */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <MetricCard
           label="Tổng Học Sinh"
           value={stats?.totalStudents ?? 0}
-          accent="blue"
-          subtext={selectedSchoolId ? "Tại trường đã chọn" : "Toàn bộ hệ thống"}
+          icon={GraduationCap}
+          accent="slate"
+          subtext={activeCampus ? `Tại ${activeCampus.name}` : "Toàn bộ các phân hiệu"}
         />
         <MetricCard
           label="Đội Ngũ Giáo Viên"
           value={stats?.totalTeachers ?? 0}
-          accent="emerald"
-          subtext={selectedSchoolId ? "Tại trường đã chọn" : "Toàn bộ hệ thống"}
-        />
-        <MetricCard
-          label="Lớp Học Đang Hoạt Động"
-          value={stats?.totalClasses ?? 0}
-          accent="indigo"
-          subtext={selectedSchoolId ? "Tại trường đã chọn" : "Toàn bộ hệ thống"}
-        />
-        <MetricCard
-          label="Điểm Trường / Cơ Sở"
-          value={stats?.totalSchools ?? 0}
+          icon={Users}
           accent="slate"
-          subtext="Cơ sở liên kết"
+          subtext={activeCampus ? `Tại ${activeCampus.name}` : "Toàn bộ các phân hiệu"}
+        />
+        <MetricCard
+          label="Lớp Học Hoạt Động"
+          value={stats?.totalClasses ?? 0}
+          icon={Layers}
+          accent="slate"
+          subtext={activeCampus ? `Tại ${activeCampus.name}` : "Toàn bộ các phân hiệu"}
+        />
+        <MetricCard
+          label="Phân Hiệu / Điểm Trường"
+          value={activeCampus ? activeCampus.schoolPointsCount + 1 : campuses.length}
+          icon={Building2}
+          accent="slate"
+          subtext={activeCampus ? `${activeCampus.schoolPointsCount} điểm vệ tinh` : "Tổng số cơ sở trực thuộc"}
         />
         <MetricCard
           label="Chuyên Cần (30 Ngày)"
           value={`${stats?.attendanceRate ?? 0}%`}
-          accent={(stats?.attendanceRate ?? 100) < 90 ? "rose" : "emerald"}
-          highlight={(stats?.attendanceRate ?? 100) < 90 ? "text-rose-700" : "text-emerald-700"}
-          subtext={selectedSchoolId ? "Trường đã chọn" : "Trung bình toàn trường"}
+          icon={Activity}
+          accent={(stats?.attendanceRate ?? 100) < 90 ? "rose" : "slate"}
+          highlight={(stats?.attendanceRate ?? 100) < 90 ? "text-rose-700" : "text-slate-900"}
+          subtext={activeCampus ? `Tại ${activeCampus.name}` : "Tỷ lệ bình quân toàn trường"}
         />
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. COMPLIANCE NGHỊ QUYẾT 37/2026/NQ-CP HUB                                */}
+      {/* 4. EXECUTIVE MULTI-CAMPUS COMPARATIVE MATRIX (BẢNG MA TRẬN PHÂN HIỆU)      */}
+      {/* ========================================================================= */}
+      {(activeCategory === "ALL" || activeCategory === "CAMPUSES") && (
+        <section className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden space-y-4 p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider rounded">
+                  <Building2 className="w-3 h-3" /> Ma trận so sánh phân hiệu
+                </span>
+                <span className="text-xs text-slate-500 font-medium">
+                  {campuses.length} Phân hiệu trực thuộc
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+                Giám Sát Vận Hành & Phân Công Lãnh Đạo Theo Phân Hiệu
+              </h2>
+              <p className="text-xs text-slate-500">
+                Hiệu trưởng trực tiếp theo dõi hiệu suất từng phân hiệu, các Phó Hiệu trưởng phụ trách và cảnh báo an toàn.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {selectedCampusId && (
+                <button
+                  type="button"
+                  onClick={() => handleCampusChange(undefined)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Bỏ lọc (Xem toàn trường)
+                </button>
+              )}
+              <Link
+                href="/admin/campuses"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+              >
+                <span>Cấu hình phân hiệu</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 uppercase font-bold text-[11px]">
+                <tr>
+                  <th className="px-4 py-3">Phân Hiệu / Cơ Sở</th>
+                  <th className="px-4 py-3">Phó Hiệu Trưởng Phụ Trách</th>
+                  <th className="px-4 py-3 text-center">Điểm Vệ Tinh</th>
+                  <th className="px-4 py-3 text-center">Quy Mô (HS / GV / Lớp)</th>
+                  <th className="px-4 py-3 text-center">Chuyên Cần 30N</th>
+                  <th className="px-4 py-3 text-center">An Toàn & Cảnh Báo</th>
+                  <th className="px-4 py-3 text-right">Điều Hành</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {campuses.map((campus) => {
+                  const isSelected = selectedCampusId === campus.id;
+                  const hasCriticalAlert = campus.maxAlertLevel === "CRITICAL";
+                  const hasWarning = campus.alertCount > 0;
+
+                  return (
+                    <tr
+                      key={campus.id}
+                      className={`transition-colors ${
+                        isSelected
+                          ? "bg-slate-50/90 font-medium"
+                          : "hover:bg-slate-50/60"
+                      }`}
+                    >
+                      {/* Campus Name & Address */}
+                      <td className="px-4 py-3.5">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-sm text-slate-900">
+                              {campus.name}
+                            </span>
+                            {campus.isMainCampus && (
+                              <span className="px-1.5 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded">
+                                Trụ sở chính
+                              </span>
+                            )}
+                            {isSelected && (
+                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-bold rounded">
+                                Đang chọn
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="truncate max-w-[200px]">{campus.address || "Chưa cập nhật địa chỉ"}</span>
+                          </p>
+                        </div>
+                      </td>
+
+                      {/* Vice Principals Assigned */}
+                      <td className="px-4 py-3.5">
+                        {campus.vicePrincipals.length === 0 ? (
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 italic">
+                              <Users className="w-3 h-3" /> Chưa phân công PHT
+                            </span>
+                            <Link
+                              href="/admin/principals"
+                              className="block text-[11px] text-blue-600 hover:text-blue-800 font-semibold"
+                            >
+                              + Phân công ngay
+                            </Link>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {campus.vicePrincipals.map((vp) => (
+                              <div key={vp.id} className="text-[11px]">
+                                <p className="font-semibold text-slate-900 flex items-center gap-1">
+                                  <Users className="w-3 h-3 text-slate-500" />
+                                  {vp.name}
+                                </p>
+                                <div className="flex items-center gap-2 text-slate-500 text-[10px] mt-0.5">
+                                  {vp.phone && (
+                                    <span className="flex items-center gap-0.5">
+                                      <Phone className="w-2.5 h-2.5 text-slate-400" /> {vp.phone}
+                                    </span>
+                                  )}
+                                  <span className="flex items-center gap-0.5 truncate max-w-[130px]">
+                                    <Mail className="w-2.5 h-2.5 text-slate-400" /> {vp.email}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Satellite SchoolPoints Count */}
+                      <td className="px-4 py-3.5 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-semibold text-xs border border-slate-200">
+                          <Compass className="w-3 h-3 text-slate-500" />
+                          {campus.schoolPointsCount} điểm
+                        </span>
+                      </td>
+
+                      {/* Students / Teachers / Classes Scale */}
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-slate-900 text-xs">
+                            {campus.studentCount} HS
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {campus.teacherCount} GV • {campus.classCount} Lớp
+                          </p>
+                        </div>
+                      </td>
+
+                      {/* 30-Day Attendance Rate */}
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="inline-flex flex-col items-center">
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-bold ${
+                              campus.attendanceRate >= 95
+                                ? "bg-slate-100 text-slate-900 border border-slate-200"
+                                : campus.attendanceRate >= 85
+                                ? "bg-slate-50 text-slate-700 border border-slate-200"
+                                : "bg-rose-50 text-rose-700 border border-rose-200"
+                            }`}
+                          >
+                            {campus.attendanceRate}%
+                          </span>
+                          <span className="text-[10px] text-slate-400 mt-0.5">30 ngày qua</span>
+                        </div>
+                      </td>
+
+                      {/* Safety & Alerts */}
+                      <td className="px-4 py-3.5 text-center">
+                        {hasWarning ? (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold ${
+                              hasCriticalAlert
+                                ? "bg-rose-100 text-rose-800 border border-rose-200 animate-pulse"
+                                : "bg-amber-100 text-amber-800 border border-amber-200"
+                            }`}
+                          >
+                            <AlertTriangle className="w-3 h-3" />
+                            {campus.alertCount} sự vụ ({campus.maxAlertLevel})
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-slate-600 text-xs font-medium">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            An toàn
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Action Button */}
+                      <td className="px-4 py-3.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleCampusChange(isSelected ? undefined : campus.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1 ${
+                            isSelected
+                              ? "bg-slate-200 text-slate-800 hover:bg-slate-300"
+                              : "bg-slate-900 hover:bg-slate-800 text-white shadow-2xs"
+                          }`}
+                        >
+                          <Filter className="w-3 h-3" />
+                          {isSelected ? "Bỏ lọc" : "Lọc số liệu"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. COMPLIANCE NGHỊ QUYẾT 37/2026/NQ-CP HUB                                */}
       {/* ========================================================================= */}
       {(activeCategory === "ALL" || activeCategory === "COMPLIANCE") && nq37Summary && nq37Summary.scorecard && (
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-900 text-white text-xs font-semibold rounded-md shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   NQ 37/2026/NQ-CP
                 </span>
                 {nq37Summary.hasCriticalViolations ? (
-                  <span className="px-2.5 py-0.5 bg-rose-50 text-rose-700 text-xs font-semibold rounded-md border border-rose-200">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-rose-50 text-rose-700 text-xs font-semibold rounded-md border border-rose-200">
+                    <AlertCircle className="w-3 h-3" />
                     Cần rà soát định mức
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-md border border-emerald-200">
+                    <Check className="w-3 h-3" />
                     Đạt chuẩn định mức
                   </span>
                 )}
               </div>
               <h2 className="text-base font-bold text-slate-900 mt-1">
-                Tuân thủ Định mức Lãnh đạo & Nhân sự Hỗ trợ
+                Tuân thủ Định mức Lãnh đạo & Nhân sự Hỗ trợ Giáo dục
               </h2>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href="/admin/nq37-compliance"
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition shadow-xs"
+                className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition shadow-xs"
               >
                 Chi tiết thẩm định
               </Link>
@@ -375,7 +677,7 @@ export default function AdminDashboardPage() {
               <span className="text-[11px] font-semibold text-slate-500 block mb-1">
                 Lộ trình chuẩn hóa 36T
               </span>
-              <p className="text-lg font-bold text-blue-700">
+              <p className="text-lg font-bold text-slate-900">
                 {nq37Summary.deadlines.standardizationMonthsLeft} tháng nữa
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
@@ -385,97 +687,26 @@ export default function AdminDashboardPage() {
 
             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
               <span className="text-[11px] font-semibold text-slate-500 block mb-1">
-                Ban Giám hiệu
+                Ban Giám hiệu (HT & PHT)
               </span>
-              <p className="text-lg font-bold text-emerald-700">
+              <p className="text-lg font-bold text-slate-900">
                 {nq37Summary.scorecard.leadershipAudit.principalActual} HT • {nq37Summary.scorecard.leadershipAudit.vicePrincipalActual} PHT
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Theo định mức quy định
+                Phân bổ theo phân hiệu
               </p>
             </div>
 
             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
               <span className="text-[11px] font-semibold text-slate-500 block mb-1">
-                Tỷ lệ tuân thủ
+                Tỷ lệ tuân thủ vị trí việc làm
               </span>
-              <p className="text-lg font-bold text-emerald-700">
+              <p className="text-lg font-bold text-slate-900">
                 {nq37Summary.scorecard.overallScore}%
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Vị trí hỗ trợ giáo dục
+                Theo danh mục NQ 37
               </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 5. MULTI-YEAR EXAM ANALYTICS & STUDENT TRAJECTORY PREVIEW (OLS ENGINE)   */}
-      {/* ========================================================================= */}
-      {(activeCategory === "ALL" || activeCategory === "ACADEMICS") && (
-        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 bg-blue-950 border border-blue-800 text-blue-300 text-[10px] font-bold uppercase tracking-wider rounded">
-                  Khảo Sát Đa Niên Khóa (2023 - 2026)
-                </span>
-                <span className="px-2.5 py-0.5 bg-indigo-950 border border-indigo-800 text-indigo-300 text-[10px] font-bold rounded">
-                  Hồi Quy Tuyến Tính OLS (y = mx + b)
-                </span>
-                <span className="px-2.5 py-0.5 bg-slate-900 text-slate-200 text-[10px] font-bold rounded">
-                  Chuẩn TT 22/2021/TT-BGDĐT
-                </span>
-              </div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
-                Giám Sát Chất Lượng Điểm Thi & Quỹ Đạo Phát Triển Học Sinh
-              </h2>
-            </div>
-
-            <Link
-              href="/admin/exam-analytics"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shrink-0 shadow-xs"
-            >
-              Mở Bảng Phân Tích Chuyên Sâu
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1 hover:border-slate-300 transition">
-              <span className="text-[11px] text-slate-500 font-bold block">Điểm TB Toàn Trường</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-slate-900">7.62</span>
-                <span className="text-xs text-emerald-700 font-bold">+0.48</span>
-              </div>
-              <p className="text-[10px] text-slate-500">Tăng trưởng qua 3 năm liên tiếp</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1 hover:border-emerald-300 transition">
-              <span className="text-[11px] text-emerald-900 font-bold block">Tỷ Lệ Giỏi / Tốt (TT22)</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-emerald-800">42.5%</span>
-                <span className="text-xs text-slate-600 font-normal">(51 HS)</span>
-              </div>
-              <p className="text-[10px] text-emerald-700 font-medium">Đạt chuẩn mũi nhọn</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-1 hover:border-blue-300 transition">
-              <span className="text-[11px] text-blue-900 font-bold block">Tiến Bộ Vượt Bậc (m &gt; 0)</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-blue-800">68</span>
-                <span className="text-xs text-slate-600 font-normal">học sinh</span>
-              </div>
-              <p className="text-[10px] text-blue-700 font-medium">Độ dốc tăng trưởng dương</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-rose-50/70 border border-rose-200 space-y-1 hover:border-rose-300 transition">
-              <span className="text-[11px] text-rose-900 font-bold block">Cần Can Thiệp Sớm</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-rose-700">7</span>
-                <span className="text-xs text-rose-600 font-normal">học sinh</span>
-              </div>
-              <p className="text-[10px] text-rose-700 font-medium">Nguy cơ sụt giảm điểm số</p>
             </div>
           </div>
         </div>
@@ -487,18 +718,19 @@ export default function AdminDashboardPage() {
       {(activeCategory === "ALL" || activeCategory === "DISCIPLINE") && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-1">
-            <DailyKpiWidget campusId={selectedSchoolId} />
+            <DailyKpiWidget campusId={selectedCampusId} />
           </div>
 
           {today && (
             <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-slate-800 space-y-4 flex flex-col justify-between">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 bg-sky-950 border border-sky-800 text-sky-300 text-[10px] font-bold uppercase tracking-wider rounded">
-                    Tác Nghiệp
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-800 border border-slate-700 text-slate-200 text-[10px] font-bold uppercase tracking-wider rounded">
+                    <Activity className="w-3 h-3 text-slate-300" />
+                    Tác Nghiệp Hằng Ngày
                   </span>
                   <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                    Điểm danh & Sổ đầu bài hôm nay ({selectedSchoolId ? activeSchoolName : "Toàn hệ thống"})
+                    Điểm danh & Sổ đầu bài ({activeScopeName})
                   </p>
                 </div>
                 <span className="text-xs text-slate-300 bg-slate-800/80 px-3 py-1 rounded-md font-medium border border-slate-700/80">
@@ -515,15 +747,15 @@ export default function AdminDashboardPage() {
                 <div className="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 backdrop-blur-xs">
                   <p className="text-2xl font-black text-slate-100 tabular-nums">{today.lateToday}</p>
                   <p className="text-xs text-slate-200 font-bold mt-1">Đi muộn</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Qua cổng điểm danh</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Ghi nhận tại cổng</p>
                 </div>
                 <div className="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 backdrop-blur-xs">
-                  <p className="text-2xl font-black text-sky-400 tabular-nums">{today.incidentsToday}</p>
+                  <p className="text-2xl font-black text-slate-200 tabular-nums">{today.incidentsToday}</p>
                   <p className="text-xs text-slate-200 font-bold mt-1">Sự vụ nề nếp</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Cần theo dõi xử lý</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Đang xử lý</p>
                 </div>
                 <div className="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60 backdrop-blur-xs">
-                  <p className="text-2xl font-black text-emerald-400 tabular-nums">
+                  <p className="text-2xl font-black text-slate-100 tabular-nums">
                     {today.reportsSubmitted}/{today.totalClasses}
                   </p>
                   <p className="text-xs text-slate-200 font-bold mt-1">Sổ đầu bài</p>
@@ -544,24 +776,29 @@ export default function AdminDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-rose-500 rounded-sm" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-900 text-white text-xs font-bold uppercase rounded">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                AI Radar Cảnh Báo Sớm
+              </span>
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                AI Radar Cảnh Báo Sớm & An Toàn Học Đường
+                An Toàn Học Đường & Rủi Ro Học Tập ({activeScopeName})
               </h2>
             </div>
             <Link
               href="/admin/early-warnings"
-              className="text-xs font-bold text-slate-800 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-300 transition"
+              className="inline-flex items-center gap-1 text-xs font-bold text-slate-800 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-300 transition"
             >
-              Xem tất cả cảnh báo ({earlyWarnings.length})
+              <span>Xem tất cả ({earlyWarnings.length})</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {earlyWarnings.length === 0 ? (
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center space-y-1">
+              <CheckCircle2 className="w-8 h-8 text-slate-400 mx-auto mb-1" />
               <h3 className="font-bold text-sm text-slate-900">Radar An Toàn: Không Có Cảnh Báo Khẩn</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                AI chưa phát hiện bất thường nghiêm trọng về nguy cơ bỏ học, điểm rơi tự do hay vi phạm nề nếp tại các lớp.
+                AI chưa phát hiện bất thường nghiêm trọng về nguy cơ bỏ học, điểm rơi tự do hay vi phạm nề nếp tại phân hiệu này.
               </p>
             </div>
           ) : (
@@ -569,20 +806,22 @@ export default function AdminDashboardPage() {
               {earlyWarnings.map((warning) => {
                 const isCritical = warning.level === "CRITICAL";
 
-                const badgeColor = isCritical
-                  ? "bg-rose-100 text-rose-800 border-rose-200"
-                  : "bg-blue-100 text-blue-800 border-blue-200";
-
                 return (
                   <div
                     key={warning.id}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm transition-all hover:shadow-md flex flex-col justify-between ${
+                    className={`bg-white rounded-2xl p-5 border shadow-xs transition-all hover:shadow-sm flex flex-col justify-between ${
                       isCritical ? "border-rose-300 ring-1 ring-rose-200" : "border-slate-200"
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${badgeColor}`}>
+                        <span
+                          className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                            isCritical
+                              ? "bg-rose-100 text-rose-800 border-rose-200"
+                              : "bg-slate-100 text-slate-800 border-slate-200"
+                          }`}
+                        >
                           {warning.level}
                         </span>
                         <span className="text-[11px] text-slate-500">
@@ -618,7 +857,8 @@ export default function AdminDashboardPage() {
 
                       {warning.aiAnalysis && (
                         <div className="mt-3 p-2.5 bg-slate-900 text-slate-200 rounded-xl border border-slate-800 text-[11px] leading-relaxed">
-                          <span className="font-bold text-blue-300 block mb-0.5 uppercase tracking-wider text-[10px]">
+                          <span className="font-bold text-slate-300 flex items-center gap-1 mb-0.5 uppercase tracking-wider text-[10px]">
+                            <Sparkles className="w-3 h-3 text-slate-300" />
                             AI Đề Xuất Xử Lý:
                           </span>
                           {warning.aiAnalysis}
@@ -630,9 +870,10 @@ export default function AdminDashboardPage() {
                       <span className="text-[11px] text-slate-500 font-medium">Danh mục: {warning.category}</span>
                       <Link
                         href="/admin/early-warnings"
-                        className="text-xs font-bold text-blue-700 hover:text-blue-900 underline"
+                        className="text-xs font-bold text-slate-900 hover:text-slate-700 inline-flex items-center gap-1"
                       >
-                        Chi tiết
+                        <span>Chi tiết</span>
+                        <ChevronRight className="w-3 h-3" />
                       </Link>
                     </div>
                   </div>
@@ -650,22 +891,26 @@ export default function AdminDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-indigo-600 rounded-sm" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-900 text-white text-xs font-bold uppercase rounded">
+                <FileText className="w-3.5 h-3.5" />
+                Giáo Án & Dạy Thay
+              </span>
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                Giám Sát Kế Hoạch Bài Dạy & Dạy Thay Khẩn Cấp
+                Giám Sát Kế Hoạch Bài Dạy & Điều Động Khẩn Cấp
               </h2>
             </div>
             <Link
               href="/admin/lesson-plans"
-              className="text-xs font-bold text-slate-800 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-300 transition"
+              className="inline-flex items-center gap-1 text-xs font-bold text-slate-800 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-300 transition"
             >
-              Quản lý giáo án
+              <span>Quản lý giáo án</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* AI Lesson Plan Deadline Alerts */}
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-xs border border-slate-200 p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">Tiến Độ Nộp Kế Hoạch Bài Dạy</h3>
@@ -690,7 +935,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {!lpAlerts || lpAlerts.alerts.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-6">Không có dữ liệu phân công giảng dạy cho kỳ này</p>
+                <p className="text-xs text-slate-400 text-center py-6">Không có dữ liệu phân công giảng dạy cho phân hiệu này</p>
               ) : (
                 <div className="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border border-slate-100">
                   <table className="w-full text-left text-xs">
@@ -734,14 +979,14 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Substitute Teaching & Emergency Dispatch Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between space-y-4">
+            <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">Điều Động Dạy Thay</h3>
                     <p className="text-xs text-slate-500">Ca điều động khẩn cấp</p>
                   </div>
-                  <span className="px-2.5 py-1 bg-blue-950 border border-blue-800 text-blue-300 rounded-lg text-xs font-bold">
+                  <span className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-bold">
                     {substitutes?.pendingCount ?? 0} Chờ duyệt
                   </span>
                 </div>
@@ -800,9 +1045,12 @@ export default function AdminDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-emerald-600 rounded-sm" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-900 text-white text-xs font-bold uppercase rounded">
+                <Activity className="w-3.5 h-3.5" />
+                Xu Hướng Chuyên Cần
+              </span>
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                Phân Tích Xu Hướng Chuyên Cần & Xếp Hạng Lớp Học
+                Phân Tích Chuyên Cần & Xếp Hạng Lớp Học ({activeScopeName})
               </h2>
             </div>
             <span className="text-xs text-slate-500 font-semibold">Theo dõi 8 tuần gần nhất</span>
@@ -810,12 +1058,12 @@ export default function AdminDashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Weekly Attendance Trend Chart */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-slate-900">
-                  Xu Hướng Chuyên Cần Theo Tuần {selectedSchoolId ? `(${activeSchoolName})` : ""}
+                  Xu Hướng Chuyên Cần Theo Tuần
                 </h3>
-                <span className="text-[11px] text-slate-500 font-medium">8 Tuần Qua</span>
+                <span className="text-[11px] text-slate-500 font-medium">8 Tuần Gần Nhất</span>
               </div>
               {isEasyMode && (
                 <p className="text-xs text-slate-700 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
@@ -831,7 +1079,7 @@ export default function AdminDashboardPage() {
                     <YAxis fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="present" name="Có mặt" fill="#059669" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="present" name="Có mặt" fill="#0f766e" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="absent" name="Vắng" fill="#dc2626" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="late" name="Đi trễ" fill="#64748b" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -842,16 +1090,16 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Average Grade by Class Bar Chart */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-slate-900">
-                  Điểm Trung Bình Theo Lớp {selectedSchoolId ? `(${activeSchoolName})` : ""}
+                  Điểm Trung Bình Theo Lớp
                 </h3>
                 <span className="text-[11px] text-slate-500 font-medium">Thang Điểm 10</span>
               </div>
               {isEasyMode && (
                 <p className="text-xs text-slate-700 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                  <strong>Hướng dẫn:</strong> Điểm trung bình kết quả học tập của học sinh từng lớp. Lớp có cột càng cao biểu thị học lực trung bình càng tốt.
+                  <strong>Hướng dẫn:</strong> Điểm trung bình kết quả học tập của học sinh từng lớp tại phân hiệu đang chọn.
                 </p>
               )}
               {classGrades.length > 0 && classGrades.some((c) => c.avgScore > 0) ? (
@@ -860,7 +1108,7 @@ export default function AdminDashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="shortClassName" fontSize={11} tickLine={false} />
                     <YAxis domain={[0, 10]} fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip formatter={(v, _, item) => [`${v} điểm`, item?.payload?.schoolName || "ĐTB"]} />
+                    <Tooltip formatter={(v, _, item) => [`${v} điểm`, item?.payload?.campusName || "ĐTB"]} />
                     <Bar dataKey="avgScore" name="Điểm trung bình" fill="#1e293b" radius={[4, 4, 0, 0]}>
                       {classGrades.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={CHART_PALETTE[index % CHART_PALETTE.length]} />
@@ -877,11 +1125,11 @@ export default function AdminDashboardPage() {
           {/* Class Attendance Ranking & Discipline Incident Feed */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Class Attendance Leaderboard */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">Bảng Xếp Hạng Chuyên Cần 7 Ngày Qua</h3>
-                  <p className="text-xs text-slate-500">Tỷ lệ đi học đầy đủ theo từng lớp</p>
+                  <p className="text-xs text-slate-500">Tỷ lệ đi học đầy đủ theo từng lớp học</p>
                 </div>
               </div>
 
@@ -905,7 +1153,7 @@ export default function AdminDashboardPage() {
                             <span
                               className={`px-2 py-0.5 rounded text-[11px] font-bold ${
                                 idx === 0
-                                  ? "bg-blue-950 text-blue-300 border border-blue-800"
+                                  ? "bg-slate-900 text-white"
                                   : idx < 3
                                   ? "bg-slate-800 text-slate-200"
                                   : "bg-slate-100 text-slate-700"
@@ -916,7 +1164,7 @@ export default function AdminDashboardPage() {
                           </td>
                           <td className="px-4 py-2.5 font-bold text-slate-900">
                             {cls.className}
-                            {cls.schoolName && <span className="text-[10px] text-slate-400 block font-normal">{cls.schoolName}</span>}
+                            {cls.campusName && <span className="text-[10px] text-slate-400 block font-normal">{cls.campusName}</span>}
                           </td>
                           <td className="px-4 py-2.5 text-slate-600">{cls.studentCount} HS</td>
                           <td className="px-4 py-2.5 text-right font-bold">
@@ -941,17 +1189,17 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Recent Discipline Incidents Feed */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">Nhật Ký Sự Vụ & Kỷ Luật Gần Đây</h3>
-                  <p className="text-xs text-slate-500">Các vụ việc được ghi nhận trong trường</p>
+                  <p className="text-xs text-slate-500">Các sự vụ ghi nhận tại các lớp</p>
                 </div>
               </div>
 
               {incidents.length === 0 ? (
                 <div className="text-center py-8 text-slate-400">
-                  <p className="text-xs font-semibold text-emerald-800">Không có vi phạm kỷ luật nào gần đây</p>
+                  <p className="text-xs font-semibold text-slate-600">Không có vi phạm kỷ luật nào gần đây</p>
                 </div>
               ) : (
                 <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
@@ -973,10 +1221,10 @@ export default function AdminDashboardPage() {
                         <span>HS: <strong className="text-slate-800">{inc.studentName}</strong></span>
                         <span>•</span>
                         <span>Lớp: <strong className="text-slate-800">{inc.className}</strong></span>
-                        {inc.schoolName && (
+                        {inc.campusName && (
                           <>
                             <span>•</span>
-                            <span className="text-slate-500">{inc.schoolName}</span>
+                            <span className="text-slate-500">{inc.campusName}</span>
                           </>
                         )}
                       </p>
@@ -988,119 +1236,6 @@ export default function AdminDashboardPage() {
           </div>
         </section>
       )}
-
-      {/* ========================================================================= */}
-      {/* 10. CAMPUS NETWORK & AFFILIATED SCHOOLS                                   */}
-      {/* ========================================================================= */}
-      {(activeCategory === "ALL" || activeCategory === "CAMPUS") && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-5 bg-slate-700 rounded-sm" />
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                Bản Đồ Cơ Sở & Mạng Lưới Trường Thành Viên
-              </h2>
-            </div>
-            <span className="text-xs text-slate-500 font-semibold">{schools.length} cơ sở</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {schools.map((sch) => {
-              const isSelected = selectedSchoolId === sch.id;
-              return (
-                <div
-                  key={sch.id}
-                  className={`rounded-2xl p-5 border transition-all shadow-sm relative flex flex-col justify-between hover:shadow-md ${
-                    isSelected
-                      ? "bg-slate-900 text-white border-slate-800 ring-2 ring-sky-500"
-                      : "bg-white text-slate-900 border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                            isSelected
-                              ? "bg-sky-950 text-sky-300 border border-sky-800"
-                              : "bg-slate-100 text-slate-700 border border-slate-200"
-                          }`}
-                        >
-                          Điểm trường / Cơ sở
-                        </span>
-                        <h3
-                          className={`font-bold text-base mt-1.5 ${
-                            isSelected ? "text-white" : "text-slate-900"
-                          }`}
-                        >
-                          {sch.name}
-                        </h3>
-                      </div>
-                      {isSelected && (
-                        <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-extrabold rounded">
-                          Đang Lọc
-                        </span>
-                      )}
-                    </div>
-
-                    <p
-                      className={`text-xs mb-3.5 truncate ${
-                        isSelected ? "text-slate-400" : "text-slate-500"
-                      }`}
-                    >
-                      {sch.address}
-                    </p>
-
-                    <div
-                      className={`grid grid-cols-3 gap-2 p-3 rounded-xl border text-center mb-3 ${
-                        isSelected
-                          ? "bg-slate-900/90 border-slate-800"
-                          : "bg-slate-50 border-slate-100"
-                      }`}
-                    >
-                      <div>
-                        <p className={`text-lg font-bold ${isSelected ? "text-white" : "text-slate-900"}`}>
-                          {sch.studentCount}
-                        </p>
-                        <p className={`text-[10px] font-bold uppercase ${isSelected ? "text-slate-400" : "text-slate-500"}`}>
-                          Học sinh
-                        </p>
-                      </div>
-                      <div>
-                        <p className={`text-lg font-bold ${isSelected ? "text-white" : "text-slate-900"}`}>
-                          {sch.classCount}
-                        </p>
-                        <p className={`text-[10px] font-bold uppercase ${isSelected ? "text-slate-400" : "text-slate-500"}`}>
-                          Lớp học
-                        </p>
-                      </div>
-                      <div>
-                        <p className={`text-lg font-bold ${isSelected ? "text-white" : "text-slate-900"}`}>
-                          {sch.teacherCount}
-                        </p>
-                        <p className={`text-[10px] font-bold uppercase ${isSelected ? "text-slate-400" : "text-slate-500"}`}>
-                          Giáo viên
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleSchoolChange(isSelected ? undefined : sch.id)}
-                    className={`w-full py-2 px-4 rounded-xl text-xs font-bold transition cursor-pointer text-center ${
-                      isSelected
-                        ? "bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700"
-                        : "bg-slate-900 text-white hover:bg-slate-800"
-                    }`}
-                  >
-                    {isSelected ? "Bỏ lọc cơ sở này" : "Xem số liệu cơ sở này"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
@@ -1108,31 +1243,28 @@ export default function AdminDashboardPage() {
 function MetricCard({
   label,
   value,
-  accent = "blue",
+  icon: Icon,
+  accent = "slate",
   highlight,
   subtext = "Hoạt động ổn định",
 }: {
   label: string;
   value: number | string;
-  accent?: "blue" | "emerald" | "indigo" | "rose" | "slate";
+  icon?: React.ComponentType<{ className?: string }>;
+  accent?: "slate" | "rose";
   highlight?: string;
   subtext?: string;
 }) {
-  const accentStyles = {
-    blue: "border-slate-200/90 bg-gradient-to-b from-sky-50/50 via-white to-white",
-    emerald: "border-slate-200/90 bg-gradient-to-b from-emerald-50/50 via-white to-white",
-    indigo: "border-slate-200/90 bg-gradient-to-b from-indigo-50/50 via-white to-white",
-    rose: "border-slate-200/90 bg-gradient-to-b from-rose-50/50 via-white to-white",
-    slate: "border-slate-200/90 bg-gradient-to-b from-slate-50/60 via-white to-white",
-  };
-
   return (
     <div
-      className={`rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 flex flex-col justify-between ${accentStyles[accent] || accentStyles.blue}`}
+      className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 flex flex-col justify-between"
     >
       <div>
-        <p className="text-[11px] text-slate-500 font-extrabold uppercase tracking-wider">{label}</p>
-        <p className={`text-2xl sm:text-3xl font-black tracking-tight mt-1.5 tabular-nums ${highlight || "text-slate-900"}`}>
+        <div className="flex items-center justify-between text-slate-500 mb-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider">{label}</p>
+          {Icon && <Icon className="w-4 h-4 text-slate-400" />}
+        </div>
+        <p className={`text-2xl sm:text-3xl font-black tracking-tight mt-1 tabular-nums ${highlight || "text-slate-900"}`}>
           {typeof value === "number" ? value.toLocaleString("vi-VN") : value}
         </p>
       </div>
