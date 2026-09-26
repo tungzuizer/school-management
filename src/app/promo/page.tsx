@@ -192,11 +192,11 @@ export default function PromoPage() {
             </div>
 
             {/* Metric 4 */}
-            <div className="p-5 rounded-2xl bg-slate-900/80 border border-indigo-500/30 backdrop-blur-xl flex flex-col justify-between">
+            <div className="p-5 rounded-2xl bg-slate-900/80 border border-blue-500/30 backdrop-blur-xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-indigo-400">&gt; 500h</span>
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                  <span className="text-3xl font-black font-mono text-blue-400">&gt; 500h</span>
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                 </div>
@@ -205,7 +205,7 @@ export default function PromoPage() {
                   Cắt giảm 90% chi phí giấy tờ, mực in; khóa niêm phong thẩm định 4 cấp bất biến.
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] font-semibold text-indigo-400 flex items-center gap-1">
+              <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] font-semibold text-blue-400 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> 100% kiểm toán số chống sửa dữ liệu
               </div>
             </div>
