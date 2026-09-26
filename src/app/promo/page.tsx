@@ -30,7 +30,7 @@ export default function PromoPage() {
       {/* ── Top Navigation Bar ── */}
       <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl px-4 lg:px-8 py-3.5 flex items-center justify-between">
         <Link href="/login" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 p-0.5 shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-600 p-0.5 shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform">
             <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center font-black text-white text-base">
               SM
             </div>
@@ -78,7 +78,7 @@ export default function PromoPage() {
             onClick={() => setIsScriptModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-800 transition-all hover:scale-105"
           >
-            <FileText className="w-4 h-4 text-cyan-400" />
+            <FileText className="w-4 h-4 text-indigo-400" />
             <span className="hidden md:inline">Kịch Bản & Lời Bình</span>
           </button>
 
@@ -96,13 +96,13 @@ export default function PromoPage() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex flex-col items-center gap-10">
         {/* Hero Headings */}
         <div className="flex flex-col items-center text-center max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 via-cyan-500/15 to-emerald-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold tracking-wider uppercase mb-3">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 text-xs font-bold tracking-wider uppercase mb-3">
             <Sparkles className="w-4 h-4 text-indigo-400" />
             <span>Chiến Dịch Chuyển Đổi Số Giáo Dục Toàn Diện</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.15]">
-            Giải Phóng Người Thầy, <span className="text-cyan-400">Kiến Tạo Tương Lai Số</span>
+            Giải Phóng Người Thầy, <span className="text-indigo-400">Kiến Tạo Tương Lai Số</span>
           </h1>
 
           <p className="mt-4 text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed">
@@ -173,11 +173,11 @@ export default function PromoPage() {
             </div>
 
             {/* Metric 3 */}
-            <div className="p-5 rounded-2xl bg-slate-900/80 border border-cyan-500/30 backdrop-blur-xl flex flex-col justify-between">
+            <div className="p-5 rounded-2xl bg-slate-900/80 border border-sky-500/30 backdrop-blur-xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-cyan-400">Kỳ 3</span>
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                  <span className="text-3xl font-black font-mono text-sky-400">Kỳ 3</span>
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
                     <Zap className="w-4 h-4" />
                   </div>
                 </div>
@@ -186,17 +186,17 @@ export default function PromoPage() {
                   Phân tích phổ điểm Gauss, đo độ lệch chuẩn σ và phát hiện nguy cơ sa sút sớm.
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] font-semibold text-cyan-400 flex items-center gap-1">
+              <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] font-semibold text-sky-400 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Lập Hồ sơ can thiệp sư phạm kịp thời
               </div>
             </div>
 
             {/* Metric 4 */}
-            <div className="p-5 rounded-2xl bg-slate-900/80 border border-purple-500/30 backdrop-blur-xl flex flex-col justify-between">
+            <div className="p-5 rounded-2xl bg-slate-900/80 border border-indigo-500/30 backdrop-blur-xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-purple-400">&gt; 500h</span>
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                  <span className="text-3xl font-black font-mono text-indigo-400">&gt; 500h</span>
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                 </div>
@@ -205,7 +205,7 @@ export default function PromoPage() {
                   Cắt giảm 90% chi phí giấy tờ, mực in; khóa niêm phong thẩm định 4 cấp bất biến.
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] font-semibold text-purple-400 flex items-center gap-1">
+              <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] font-semibold text-indigo-400 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> 100% kiểm toán số chống sửa dữ liệu
               </div>
             </div>
@@ -213,7 +213,7 @@ export default function PromoPage() {
         </section>
 
         {/* ── Call To Action Banner ── */}
-        <section className="w-full max-w-6xl p-8 rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <section className="w-full max-w-6xl p-8 rounded-3xl bg-slate-900 border border-indigo-500/30 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col gap-2 text-center md:text-left">
             <h3 className="text-2xl md:text-3xl font-black text-white">
               Sẵn Sàng Chuyển Đổi Số Toàn Diện Cho Trường Học Của Bạn?

@@ -97,12 +97,12 @@ export default function Scene4KpiEngine({ progress }: SceneProps) {
                   showPodium ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
               >
-                <div className="w-8 h-8 rounded-full bg-slate-700 border-2 border-slate-300 flex items-center justify-center text-xs font-bold text-white shadow-lg mb-1">
+                <div className="w-8 h-8 rounded-full bg-slate-700 border border-slate-400 flex items-center justify-center text-xs font-bold text-white shadow-lg mb-1">
                   2
                 </div>
                 <span className="text-xs font-bold text-slate-200">Lớp 8B</span>
                 <span className="text-[11px] font-mono font-bold text-slate-300">99.0đ</span>
-                <div className="w-16 h-16 rounded-t-xl bg-slate-700/70 border-t-2 border-slate-400 flex items-center justify-center text-xs font-bold text-slate-100 mt-1">
+                <div className="w-16 h-16 rounded-t-lg bg-slate-700/80 flex items-center justify-center text-xs font-bold text-slate-100 mt-1">
                   Tốt
                 </div>
               </div>
@@ -113,12 +113,12 @@ export default function Scene4KpiEngine({ progress }: SceneProps) {
                   showPodium ? "opacity-100 translate-y-0 scale-105" : "opacity-0 translate-y-12"
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-amber-500 border-2 border-amber-200 flex items-center justify-center text-sm font-black text-slate-950 shadow-lg shadow-amber-500/50 mb-1 animate-bounce">
+                <div className="w-10 h-10 rounded-full bg-amber-500 border border-amber-300 flex items-center justify-center text-sm font-black text-slate-950 shadow-lg shadow-amber-500/30 mb-1">
                   👑 1
                 </div>
                 <span className="text-xs font-bold text-amber-300">Lớp 9A</span>
                 <span className="text-xs font-mono font-black text-amber-400">103.5đ</span>
-                <div className="w-20 h-24 rounded-t-xl bg-gradient-to-b from-amber-500/40 to-amber-700/20 border-t-2 border-amber-300 flex items-center justify-center text-xs font-bold text-amber-200 mt-1 shadow-lg">
+                <div className="w-20 h-24 rounded-t-lg bg-amber-500/30 flex items-center justify-center text-xs font-bold text-amber-200 mt-1 shadow-lg">
                   Xuất Sắc
                 </div>
               </div>
@@ -129,12 +129,12 @@ export default function Scene4KpiEngine({ progress }: SceneProps) {
                   showPodium ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                 }`}
               >
-                <div className="w-8 h-8 rounded-full bg-amber-800 border-2 border-amber-600 flex items-center justify-center text-xs font-bold text-amber-100 shadow-lg mb-1">
+                <div className="w-8 h-8 rounded-full bg-amber-800 border border-amber-600 flex items-center justify-center text-xs font-bold text-amber-100 shadow-lg mb-1">
                   3
                 </div>
                 <span className="text-xs font-bold text-slate-200">Lớp 7A</span>
                 <span className="text-[11px] font-mono font-bold text-amber-500">96.5đ</span>
-                <div className="w-16 h-12 rounded-t-xl bg-amber-950/60 border-t-2 border-amber-700 flex items-center justify-center text-xs font-bold text-amber-400 mt-1">
+                <div className="w-16 h-12 rounded-t-lg bg-amber-950/70 flex items-center justify-center text-xs font-bold text-amber-400 mt-1">
                   Xuất Sắc
                 </div>
               </div>
