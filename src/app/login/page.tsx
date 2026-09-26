@@ -27,6 +27,7 @@ import {
   FileCheck,
   ArrowRight,
   Sparkles,
+  Play,
 } from "lucide-react";
 
 {/* ── Background Interactive Particle System ── */}
@@ -436,6 +437,19 @@ function LoginFormContent() {
                 </div>
                 <span className="text-xs font-semibold text-white/95">Chuẩn hóa sổ sách & Báo cáo điện tử</span>
               </div>
+
+              <Link
+                href="/promo"
+                className="flex items-center gap-3 p-3.5 rounded-2xl bg-indigo-500/25 border border-indigo-400/40 backdrop-blur-md hover:bg-indigo-500/35 hover:translate-x-1 transition-all duration-300 shadow-md group"
+              >
+                <div className="w-8 h-8 rounded-xl bg-indigo-400/30 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                  <Play className="w-4 h-4 text-white fill-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-white">Video Marketing & Pitch Deck</span>
+                  <span className="text-[10px] text-sky-200">Khám phá 4 trụ cột đột phá (120s)</span>
+                </div>
+              </Link>
             </div>
           </div>
 
@@ -573,6 +587,15 @@ function LoginFormContent() {
           >
             <UserPlus className="w-4 h-4 text-sky-600" />
             <span>Tạo tài khoản Giáo viên mới</span>
+          </Link>
+
+          {/* Watch Promo Video Banner */}
+          <Link
+            href="/promo"
+            className="mt-2.5 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50/90 border border-indigo-200/80 hover:bg-indigo-100 hover:text-indigo-900 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Xem Video Marketing & Slide Pitch Deck (120s)</span>
           </Link>
 
           {/* Security Note */}

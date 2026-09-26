@@ -1,7 +1,5 @@
 # TÓM TẮT ĐIỀU HÀNH DỰ ÁN (EXECUTIVE SUMMARY)
 ## HỆ THỐNG QUẢN LÝ NHÀ TRƯỜNG THÔNG MINH ĐA ĐIỂM TRƯỜNG (`SCHOOL-MANAGEMENT`)
-**Tác giả / Người phát triển:** Nguyễn Việt Tùng  
-**Thời gian hoàn thiện:** Tháng 09 năm 2026 | **Phiên bản:** v1.0.0 Stable  
 
 ---
 
