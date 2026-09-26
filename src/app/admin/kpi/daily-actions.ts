@@ -177,7 +177,7 @@ export interface DailyExecutiveBriefingData {
 /**
  * Truncates / parses date to UTC midnight for consistent daily uniqueness
  */
-export function normalizeDate(dateInput: string | Date): { normalized: Date; startOfDay: Date; endOfDay: Date } {
+function normalizeDate(dateInput: string | Date): { normalized: Date; startOfDay: Date; endOfDay: Date } {
   const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   const year = d.getFullYear();
   const month = d.getMonth();
