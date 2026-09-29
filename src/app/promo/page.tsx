@@ -101,7 +101,7 @@ export default function PromoPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsMarketingKitOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all hover:scale-105"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all hover:scale-105"
             title="Mẫu bài đăng Facebook, Zalo, TikTok, Email"
           >
             <Share2 className="w-4 h-4" />
@@ -144,7 +144,7 @@ export default function PromoPage() {
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.15]">
             Giải Phóng Người Thầy, <br className="hidden sm:inline" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-300 to-cyan-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-300">
               Xếp TKB 6 Phân Hiệu Trong 15 Giây!
             </span>
           </h1>
@@ -404,21 +404,21 @@ export default function PromoPage() {
             </div>
 
             {/* Card 6: Time & Cost Savings */}
-            <div className="p-6 rounded-3xl bg-slate-900/90 border border-purple-500/40 backdrop-blur-xl flex flex-col justify-between hover:border-purple-400 transition-all shadow-xl group">
+            <div className="p-6 rounded-3xl bg-slate-900/90 border border-teal-500/40 backdrop-blur-xl flex flex-col justify-between hover:border-teal-400 transition-all shadow-xl group">
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-purple-950 text-purple-300 border border-purple-800">
+                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-teal-950 text-teal-300 border border-teal-800">
                     ĐIỂM MẠNH #6
                   </span>
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
                     <Zap className="w-5 h-5" />
                   </div>
                 </div>
 
-                <h3 className="text-lg font-black text-white group-hover:text-purple-300 transition-colors">
+                <h3 className="text-lg font-black text-white group-hover:text-teal-300 transition-colors">
                   Tiết Kiệm & Chuẩn Hóa 16 Vai Trò
                 </h3>
-                <div className="text-3xl font-black font-mono text-purple-400 my-2">
+                <div className="text-3xl font-black font-mono text-teal-400 my-2">
                   &gt; 500h <span className="text-xs font-sans text-slate-400 font-normal">/ Cắt giảm 90% in ấn</span>
                 </div>
 
@@ -428,8 +428,8 @@ export default function PromoPage() {
                     <span className="font-bold text-rose-400 block mb-0.5">❌ Trước đây (Thủ công):</span>
                     Chi phí in ấn sổ sách hàng chục triệu/năm, giáo viên kiệt sức vì việc hành chính giấy tờ vô bổ.
                   </div>
-                  <div className="p-2.5 rounded-xl bg-purple-950/40 border border-purple-900/50 text-purple-300">
-                    <span className="font-bold text-purple-400 block mb-0.5">✅ Với QLTHVN:</span>
+                  <div className="p-2.5 rounded-xl bg-teal-950/40 border border-teal-900/50 text-teal-300">
+                    <span className="font-bold text-teal-400 block mb-0.5">✅ Với QLTHVN:</span>
                     Cắt giảm 90% in ấn, tiết kiệm hơn 500 giờ làm việc hành chính/năm, chuẩn hóa 16 vai trò theo TT15/2024.
                   </div>
                 </div>
@@ -437,14 +437,14 @@ export default function PromoPage() {
 
               <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
                 <span>Chuẩn Thông tư 15/2024</span>
-                <span className="font-bold text-purple-400">Tiết kiệm 90% chi phí</span>
+                <span className="font-bold text-teal-400">Tiết kiệm 90% chi phí</span>
               </div>
             </div>
           </div>
         </section>
 
         {/* ── SECTION: READY-TO-POST MARKETING KIT BANNER ── */}
-        <section className="w-full max-w-6xl p-8 rounded-3xl bg-gradient-to-br from-indigo-950/90 via-slate-900 to-slate-950 border border-indigo-500/40 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-8">
+        <section className="w-full max-w-6xl p-8 rounded-3xl bg-slate-900/90 border border-indigo-500/40 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-8 backdrop-blur-xl">
           <div className="flex flex-col gap-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-600/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold w-fit">
               <Share2 className="w-3.5 h-3.5" />
