@@ -163,7 +163,7 @@ export default function PromoPage() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-indigo-600/30 transition-all hover:scale-105"
             >
               <Play className="w-4 h-4 fill-white" />
-              <span>Xem Video Demo 25 Phút & 120s</span>
+              <span>Xem Video Master 5 Phút (6 Điểm Mạnh)</span>
             </button>
 
             <button
