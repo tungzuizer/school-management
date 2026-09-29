@@ -51,8 +51,8 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // ── Mode Switch: "interactive" (6-Scene Canvas 05:00) vs "mp4" (Real Video Streaming) ──
-  const [playerMode, setPlayerMode] = useState<"mp4" | "interactive">("interactive");
+  // ── Mode Switch: "mp4" (Real Video Streaming 05:00) vs "interactive" (6-Scene Canvas) ──
+  const [playerMode, setPlayerMode] = useState<"mp4" | "interactive">("mp4");
 
   // ── Real MP4 Video Player State ──
   const videoRef = useRef<HTMLVideoElement | null>(null);
