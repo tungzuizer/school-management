@@ -66,7 +66,7 @@ export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerPro
   const [isVideoBuffering, setIsVideoBuffering] = useState<boolean>(false);
   const [isPlaylistOpen, setIsPlaylistOpen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<
-    "all" | "master" | "cluster" | "role_guide" | "social_reels"
+    "all" | "master" | "teaser" | "social_reels"
   >("all");
 
   // ── Interactive Cinema Canvas State ──
@@ -633,11 +633,10 @@ export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerPro
             {/* Filter Categories */}
             <div className="flex items-center gap-1 my-3 overflow-x-auto pb-1 shrink-0">
               {[
-                { id: "all", label: "Tất Cả" },
-                { id: "master", label: "Master" },
-                { id: "cluster", label: "5 Cụm Chuyên Sâu" },
-                { id: "role_guide", label: "HDSD Vai Trò" },
-                { id: "social_reels", label: "Reels 30s" },
+                { id: "all", label: "Tất Cả (10)" },
+                { id: "master", label: "Master 5P (1)" },
+                { id: "teaser", label: "Teaser Đột Phá (6)" },
+                { id: "social_reels", label: "Viral Reels (3)" },
               ].map((cat) => (
                 <button
                   key={cat.id}
