@@ -57,13 +57,13 @@ ${scene.keyPoints.map((p) => `  * ${p}`).join("\n")}
             </div>
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>Kịch Bản Video Marketing & Pitching 120s</span>
+                <span>Kịch Bản Video Master 5 Phút (300s)</span>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800">
-                  Chuẩn 7 Phân Cảnh
+                  Chuẩn 6 Điểm Mạnh Sát Thủ
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
-                Toàn bộ lời bình (Voiceover), visual cues, text overlay & số liệu thực chứng
+                Toàn bộ lời bình (Voiceover), visual cues, text overlay & số liệu thực chứng 6 điểm mạnh
               </p>
             </div>
           </div>

@@ -57,7 +57,7 @@ Thầy cô và các nhà quản lý giáo dục có bao giờ tự hỏi:
 5️⃣ 📈 KHOA HỌC PHỔ GAUSS CẢNH BÁO SỚM KỲ 3: Phân tích 153.000 bài thi theo đường cong chuẩn hóa Gauss, phát hiện học sinh sa sút trước 3-6 tháng để lập hồ sơ can thiệp sư phạm 1-1.
 6️⃣ 💰 TIẾT KIỆM >500 GIỜ HÀNH CHÍNH & CẮT GIẢM 90% CHI PHÍ IN ẤN: Chuẩn hóa 16 vai trò theo Thông tư 15/2024/TT-BGDĐT và chuẩn dữ liệu EMIS quốc gia.
 
-🎬 Xem ngay Video Demo thực tế 25 phút & Video điện ảnh 120s tại:
+🎬 Xem ngay Video Master 5 Phút (6 Điểm Mạnh Sát Thủ) & Trải nghiệm trực tiếp tại:
 👉 https://qlthvn.com/promo
 
 💬 Hãy để lại bình luận hoặc nhắn tin trực tiếp để nhận tài khoản trải nghiệm thử nghiệm ngay hôm nay!
@@ -75,7 +75,7 @@ Trân trọng gửi đến Quý Thầy/Cô giải pháp "Quản trị Trường 
 3. ĐÁNH GIÁ CHUẨN TT15/2024: Tự động hóa 5 tiêu chuẩn 15 tiêu chí đánh giá chuẩn nghề nghiệp giáo viên, lưu trữ minh chứng số đầy đủ.
 4. BÁO CÁO PHÂN TÍCH CHẤT LƯỢNG GAUSS: Phát hiện sớm nguy cơ học sinh sa sút học tập ngay từ Kỳ 3 để chỉ đạo chuyên môn kịp thời.
 
-Quý Thầy/Cô vui lòng xem video giới thiệu chi tiết 25 tính năng và trải nghiệm hệ thống tại:
+Quý Thầy/Cô vui lòng xem video phân tích 6 điểm mạnh (5 phút) và trải nghiệm hệ thống tại:
 🌐 https://qlthvn.com/promo
 
 Trân trọng cảm ơn!`;
