@@ -105,7 +105,7 @@ export default function Scene3AuditLocking({ progress }: SceneProps) {
           title: "Khóa Niêm Phong Audit Lock 4 Cấp",
           badge: "BẢO MẬT BẤT BIẾN",
           description: "Quy trình chuẩn: GVBM ➔ GVCN ➔ PHT ➔ HT niêm phong, chống sửa số liệu sau khi hoàn tất",
-          color: "purple",
+          color: "indigo",
           visibleAfter: 0.35,
         },
       ];

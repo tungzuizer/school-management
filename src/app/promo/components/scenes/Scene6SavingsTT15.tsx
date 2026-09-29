@@ -88,9 +88,9 @@ export default function Scene6SavingsTT15({
       val: "Cắt Giảm 90%",
       label: "Chi Phí Sổ Sách In Ấn",
       desc: "Audit Lock 4 cấp, số hóa sổ đầu bài & giáo án",
-      color: "text-purple-400",
-      border: "border-purple-500/30",
-      bg: "bg-purple-950/40",
+      color: "text-blue-400",
+      border: "border-blue-500/30",
+      bg: "bg-blue-950/40",
       badge: "Audit Lock 4 Cấp",
     },
     {
@@ -114,7 +114,7 @@ export default function Scene6SavingsTT15({
       <div className="relative w-full h-full bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/60 p-4 md:p-6 flex flex-col justify-between overflow-hidden">
         {/* Background Ambient Glows */}
         <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* ── Top Header ── */}
         <div className="relative z-10 text-center space-y-1.5 shrink-0">
@@ -170,7 +170,7 @@ export default function Scene6SavingsTT15({
         >
           {/* Author info & TT15 certification */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 p-0.5 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 p-0.5 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
               <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-indigo-400" />
               </div>
@@ -207,14 +207,14 @@ export default function Scene6SavingsTT15({
                 onClick={onOpenDeck}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all"
               >
-                <Download className="w-3.5 h-3.5 text-purple-400" />
+                <Download className="w-3.5 h-3.5 text-blue-400" />
                 <span>Pitch Deck</span>
               </button>
             )}
 
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-105"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-105"
             >
               <span>Vào Hệ Thống Ngay</span>
               <ArrowRight className="w-3.5 h-3.5" />
