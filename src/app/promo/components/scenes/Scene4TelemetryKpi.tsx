@@ -10,6 +10,7 @@ import {
   Award,
   CheckCircle2,
   Target,
+  Gauge,
 } from "lucide-react";
 import RealScreenViewer, { SpotlightAnnotation } from "../RealScreenViewer";
 
@@ -17,7 +18,7 @@ interface SceneProps {
   progress: number;
 }
 
-export default function Scene4KpiEngine({ progress }: SceneProps) {
+export default function Scene4TelemetryKpi({ progress }: SceneProps) {
   // Toggle between KPI Dashboard (first half) and Emulation Podium (second half)
   const isSecondPhase = progress > 0.5;
   const imageSrc = isSecondPhase
@@ -67,9 +68,9 @@ export default function Scene4KpiEngine({ progress }: SceneProps) {
           y: 20,
           width: 56,
           height: 48,
-          title: "Bảng Vàng Thi Đua & Nề Nếp Realtime",
+          title: "Điểm Mạnh #4: Động Cơ Thi Đua Thang 0-105đ",
           badge: "PODIUM TOP LỚP",
-          description: "Tự động lượng hóa từ sổ đầu bài & chuyên cần thành thang điểm 0-105đ",
+          description: "Tự động lượng hóa từ dữ liệu sổ đầu bài & chuyên cần thành thang điểm chuẩn hóa 0-105đ",
           color: "amber",
           visibleAfter: 0.54,
         },
@@ -77,9 +78,9 @@ export default function Scene4KpiEngine({ progress }: SceneProps) {
           id: "transparent-ranking",
           x: 35,
           y: 70,
-          title: "Minh Bạch 360 Độ",
-          badge: "KHÔNG CẢM TÍNH",
-          description: "Triệt tiêu hoàn toàn bình xét dồn cục cuối kỳ",
+          title: "Minh Bạch 360 Độ - Xóa Bỏ Cảm Tính",
+          badge: "CÔNG BẰNG TUYỆT ĐỐI",
+          description: "Triệt tiêu hoàn toàn tình trạng bình xét dồn cục cuối kỳ và tranh cãi thi đua",
           color: "emerald",
           visibleAfter: 0.72,
         },
@@ -91,23 +92,23 @@ export default function Scene4KpiEngine({ progress }: SceneProps) {
           y: 18,
           width: 64,
           height: 35,
-          title: "8 Cảm Biến Telemetry Real-Time",
-          badge: "SỐNG 100%",
-          description: "Chuyên cần 98.7%, nề nếp, tiến độ dạy, vi phạm, cảnh báo rủi ro tức thì",
+          title: "8 Cảm Biến Telemetry Quét Dữ Liệu Sống",
+          badge: "GIÁM SÁT 24/7",
+          description: "Chuyên cần 98.7%, nề nếp tiết học, tiến độ giảng dạy và cảnh báo rủi ro an toàn trường học",
           color: "sky",
           visibleAfter: 0.1,
         },
         {
-          id: "campus-kpi-matrix",
-          x: 25,
-          y: 55,
-          width: 50,
-          height: 35,
-          title: "Ma Trận KPI Mạng Lưới 6 Phân Hiệu",
-          badge: "SO SÁNH ĐỐI SOÁT",
-          description: "Đo lường hiệu suất vận hành từng điểm trường theo thời gian thực",
-          color: "indigo",
-          visibleAfter: 0.3,
+          id: "semantic-traffic-light",
+          x: 52,
+          y: 56,
+          width: 42,
+          height: 32,
+          title: "Đèn Tín Hiệu Semantic Traffic Light",
+          badge: "CẢNH BÁO RỦI RO",
+          description: "Màu Xanh / Vàng / Đỏ báo hiệu tức thì lớp học sa sút để BGH chỉ đạo kịp thời",
+          color: "emerald",
+          visibleAfter: 0.32,
         },
       ];
 
@@ -115,30 +116,26 @@ export default function Scene4KpiEngine({ progress }: SceneProps) {
     <RealScreenViewer
       imageSrc={imageSrc}
       urlPath={urlPath}
-      title="Trung Tâm Chỉ Huy & Động Cơ Thi Đua Số"
-      campusName="Trường TH Phố Lu • Giám Sát Vận Hành"
-      progress={isSecondPhase ? (progress - 0.5) * 2 : progress * 2}
+      title="Trung Tâm Telemetry & Động Cơ Thi Đua"
+      campusName="Trường TH Phố Lu • Telemetry & KPI"
+      progress={progress}
       initialScale={1.0}
       targetScale={1.12}
       initialPanX={0}
       targetPanX={isSecondPhase ? -1 : -3}
       initialPanY={0}
-      targetPanY={isSecondPhase ? -4 : -5}
+      targetPanY={isSecondPhase ? -2 : -4}
       cursorX={cursorX}
       cursorY={cursorY}
       cursorLabel={cursorLabel}
       isClicking={isClicking}
       annotations={annotations}
       bottomPill={{
-        icon: isSecondPhase ? Trophy : Activity,
-        label: isSecondPhase
-          ? "Động Cơ Thi Đua Tự Động Thang Điểm 0 - 105đ"
-          : "8 Cảm Biến Telemetry & Cockpit Chỉ Huy Real-Time",
-        value: isSecondPhase
-          ? "Vinh Danh Hàng Tuần • Cập Nhật Từng Tiết Học"
-          : "Quét Dữ Liệu 6 Phân Hiệu • 0 Độ Trễ",
-        subtext: "Dữ liệu thực tế qlthvn.com",
-        badge: isSecondPhase ? "PODIUM HONORS" : "8 SENSORS LIVE",
+        icon: Gauge,
+        label: "8 Cảm Biến Telemetry & Động Cơ Thi Đua 0-105đ",
+        value: "Chuyên Cần 98.7% • Động Cơ Điểm 0-105đ • Vinh Danh Bục Vàng Hàng Tuần",
+        subtext: "Xóa bỏ 100% đánh giá cảm tính",
+        badge: "TELEMETRY 24/7",
       }}
     />
   );

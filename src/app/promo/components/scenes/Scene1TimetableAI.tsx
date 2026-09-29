@@ -9,6 +9,8 @@ import {
   Shield,
   Sparkles,
   Layers,
+  MapPin,
+  Flame,
 } from "lucide-react";
 import RealScreenViewer, { SpotlightAnnotation } from "../RealScreenViewer";
 
@@ -16,7 +18,7 @@ interface SceneProps {
   progress: number;
 }
 
-export default function Scene3Timetable({ progress }: SceneProps) {
+export default function Scene1TimetableAI({ progress }: SceneProps) {
   const [secondsRemaining, setSecondsRemaining] = useState(15);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function Scene3Timetable({ progress }: SceneProps) {
     }
   }, [progress]);
 
-  // Dynamic cursor trajectory
+  // Dynamic cursor trajectory simulating user actions
   let cursorX = 70;
   let cursorY = 25;
   let cursorLabel = "Kích Hoạt AI Solver Xếp TKB";
@@ -50,7 +52,7 @@ export default function Scene3Timetable({ progress }: SceneProps) {
     isClicking = progress > 0.48 && progress < 0.54;
   } else {
     const t = (progress - 0.65) / 0.35;
-    cursorX = 70 - t * 25; // moves to ~45 (Safety Algorithm)
+    cursorX = 70 - t * 25; // moves to ~45 (Safety Routing Algorithm)
     cursorY = 60 + t * 15; // moves to ~75
     cursorLabel = "Gom Lịch An Toàn: 1 Buổi = 1 Điểm Trường";
     isClicking = progress > 0.82 && progress < 0.88;
@@ -63,11 +65,11 @@ export default function Scene3Timetable({ progress }: SceneProps) {
       y: 18,
       width: 40,
       height: 25,
-      title: "Thuật Toán AI Solver 15 Giây",
-      badge: "NHANH HƠN 200 LẦN",
-      description: "Xử lý hàng nghìn ràng buộc phức tạp trong nháy mắt, thay thế 3-5 ngày xếp tay",
+      title: "Điểm Mạnh #1: Thuật Toán AI Solver 15 Giây",
+      badge: "NHANH GẤP 200 LẦN",
+      description: "Giải quyết hàng nghìn ràng buộc phức tạp trong 15s, thay thế hoàn toàn 3-5 ngày xếp tay thủ công",
       color: "emerald",
-      visibleAfter: 0.12,
+      visibleAfter: 0.1,
     },
     {
       id: "zero-conflict",
@@ -75,11 +77,11 @@ export default function Scene3Timetable({ progress }: SceneProps) {
       y: 48,
       width: 60,
       height: 40,
-      title: "0% Xung Đột Lịch Dạy & Phòng Học",
-      badge: "CHÍNH XÁC 100%",
-      description: "Đảm bảo định mức tiết dạy, tránh trùng giờ, phân bổ đều các môn học",
+      title: "Triệt Tiêu 100% Xung Đột & Trùng Lịch",
+      badge: "CHÍNH XÁC TUYỆT ĐỐI",
+      description: "Tự động cân bằng định mức tiết dạy, phòng chức năng và phân bổ đều môn học theo chuẩn Bộ GD&ĐT",
       color: "sky",
-      visibleAfter: 0.38,
+      visibleAfter: 0.35,
     },
     {
       id: "safety-routing",
@@ -87,9 +89,9 @@ export default function Scene3Timetable({ progress }: SceneProps) {
       y: 70,
       title: "Gom Lịch An Toàn Mùa Mưa Lũ",
       badge: "BẢO VỆ THẦY CÔ",
-      description: "Không phải chạy xe giữa các điểm trường trong cùng một buổi học",
+      description: "Quy tắc bất biến: 1 buổi = 1 điểm trường, triệt tiêu nguy cơ di chuyển nguy hiểm giữa đèo núi trong ngày",
       color: "amber",
-      visibleAfter: 0.68,
+      visibleAfter: 0.65,
     },
   ];
 
@@ -97,8 +99,8 @@ export default function Scene3Timetable({ progress }: SceneProps) {
     <RealScreenViewer
       imageSrc="/screenshots/real_web/04_admin_schedule.png"
       urlPath="/admin/schedule"
-      title="Xếp Thời Khóa Biểu Thông Minh & AI Solver"
-      campusName="Trường TH Phố Lu • Bộ Xếp TKB Tự Động"
+      title="Thời Khóa Biểu Thông Minh & AI Solver Tự Động"
+      campusName="Trường TH Phố Lu • Phân Hệ Xếp TKB AI"
       progress={progress}
       initialScale={1.0}
       targetScale={1.14}
@@ -113,10 +115,13 @@ export default function Scene3Timetable({ progress }: SceneProps) {
       annotations={annotations}
       bottomPill={{
         icon: Zap,
-        label: "AI Solver: Xếp TKB Hoàn Tất Trong 15 Giây",
-        value: secondsRemaining > 0 ? `Đang giải ràng buộc... ${secondsRemaining}s` : "0% Trùng Lịch • 100% Khả Thi",
-        subtext: "Gom lịch an toàn 6 phân hiệu",
-        badge: secondsRemaining === 0 ? "HOÀN TẤT" : "AI PROCESSING",
+        label: "AI Solver Xếp TKB: Hoàn Tất Trong 15 Giây",
+        value:
+          secondsRemaining > 0
+            ? `Đang giải 100+ ràng buộc... ${secondsRemaining}s`
+            : "0% Trùng Lịch • 100% Khả Thi • An Toàn Vùng Cao",
+        subtext: "Gom lịch thông minh 6 phân hiệu",
+        badge: secondsRemaining === 0 ? "HOÀN TẤT 15S" : "AI RUNNING",
       }}
     />
   );

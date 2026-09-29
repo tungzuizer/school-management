@@ -36,13 +36,12 @@ import {
   RealVideoItem,
 } from "./video-data";
 import { soundEffects, VoiceoverEngine } from "./AudioEngine";
-import Scene1PainPoints from "./scenes/Scene1PainPoints";
-import Scene2Solution from "./scenes/Scene2Solution";
-import Scene3Timetable from "./scenes/Scene3Timetable";
-import Scene4KpiEngine from "./scenes/Scene4KpiEngine";
-import Scene5ExamAnalytics from "./scenes/Scene5ExamAnalytics";
-import Scene6AuditLocking from "./scenes/Scene6AuditLocking";
-import Scene7OutroMetrics from "./scenes/Scene7OutroMetrics";
+import Scene1TimetableAI from "./scenes/Scene1TimetableAI";
+import Scene2MultiCampus from "./scenes/Scene2MultiCampus";
+import Scene3AuditLocking from "./scenes/Scene3AuditLocking";
+import Scene4TelemetryKpi from "./scenes/Scene4TelemetryKpi";
+import Scene5GaussAnalytics from "./scenes/Scene5GaussAnalytics";
+import Scene6SavingsTT15 from "./scenes/Scene6SavingsTT15";
 
 interface VideoPlayerProps {
   onOpenScript?: () => void;
@@ -120,14 +119,18 @@ export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerPro
   const triggerSceneAudio = useCallback(
     (sceneIdx: number) => {
       soundEffects.playTransition();
-      if (sceneIdx === 2) {
-        setTimeout(() => soundEffects.playSuccessChime(), 1800);
-      } else if (sceneIdx === 3) {
-        setTimeout(() => soundEffects.playPodiumFanfare(), 3000);
-      } else if (sceneIdx === 4) {
+      if (sceneIdx === 0) {
+        setTimeout(() => soundEffects.playSuccessChime(), 1500);
+      } else if (sceneIdx === 1) {
         setTimeout(() => soundEffects.playTelemetryBeep(1040), 1200);
+      } else if (sceneIdx === 2) {
+        setTimeout(() => soundEffects.playSuccessChime(), 2000);
+      } else if (sceneIdx === 3) {
+        setTimeout(() => soundEffects.playPodiumFanfare(), 2500);
+      } else if (sceneIdx === 4) {
+        setTimeout(() => soundEffects.playTelemetryBeep(880), 1200);
       } else if (sceneIdx === 5) {
-        setTimeout(() => soundEffects.playSuccessChime(), 2500);
+        setTimeout(() => soundEffects.playSuccessChime(), 2000);
       }
 
       if (voiceEngineRef.current && isVoiceoverEnabled && !isCanvasMuted) {
@@ -532,14 +535,13 @@ export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerPro
         {/* ── OPTION B: Interactive Cinema Canvas Walkthrough ── */}
         {playerMode === "interactive" && (
           <div className="relative w-full h-full bg-slate-950 flex items-center justify-center">
-            {currentSceneIndex === 0 && <Scene1PainPoints progress={sceneProgress} />}
-            {currentSceneIndex === 1 && <Scene2Solution progress={sceneProgress} />}
-            {currentSceneIndex === 2 && <Scene3Timetable progress={sceneProgress} />}
-            {currentSceneIndex === 3 && <Scene4KpiEngine progress={sceneProgress} />}
-            {currentSceneIndex === 4 && <Scene5ExamAnalytics progress={sceneProgress} />}
-            {currentSceneIndex === 5 && <Scene6AuditLocking progress={sceneProgress} />}
-            {currentSceneIndex === 6 && (
-              <Scene7OutroMetrics
+            {currentSceneIndex === 0 && <Scene1TimetableAI progress={sceneProgress} />}
+            {currentSceneIndex === 1 && <Scene2MultiCampus progress={sceneProgress} />}
+            {currentSceneIndex === 2 && <Scene3AuditLocking progress={sceneProgress} />}
+            {currentSceneIndex === 3 && <Scene4TelemetryKpi progress={sceneProgress} />}
+            {currentSceneIndex === 4 && <Scene5GaussAnalytics progress={sceneProgress} />}
+            {currentSceneIndex === 5 && (
+              <Scene6SavingsTT15
                 progress={sceneProgress}
                 onOpenScript={onOpenScript}
                 onOpenDeck={onOpenDeck}
