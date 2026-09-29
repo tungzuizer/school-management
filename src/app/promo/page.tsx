@@ -252,21 +252,21 @@ export default function PromoPage() {
             </div>
 
             {/* Card 2: Multi-Campus Realtime Sync */}
-            <div className="p-6 rounded-3xl bg-slate-900/90 border border-cyan-500/40 backdrop-blur-xl flex flex-col justify-between hover:border-cyan-400 transition-all shadow-xl group">
+            <div className="p-6 rounded-3xl bg-slate-900/90 border border-blue-500/40 backdrop-blur-xl flex flex-col justify-between hover:border-blue-400 transition-all shadow-xl group">
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-blue-950 text-blue-300 border border-blue-800">
                     ĐIỂM MẠNH #2
                   </span>
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
                     <Building2 className="w-5 h-5" />
                   </div>
                 </div>
 
-                <h3 className="text-lg font-black text-white group-hover:text-cyan-300 transition-colors">
+                <h3 className="text-lg font-black text-white group-hover:text-blue-300 transition-colors">
                   Liên Thông 6 Phân Hiệu 100%
                 </h3>
-                <div className="text-3xl font-black font-mono text-cyan-400 my-2">
+                <div className="text-3xl font-black font-mono text-blue-400 my-2">
                   1.700 <span className="text-xs font-sans text-slate-400 font-normal">học sinh / 62 lớp / 126 GV</span>
                 </div>
 
@@ -276,8 +276,8 @@ export default function PromoPage() {
                     <span className="font-bold text-rose-400 block mb-0.5">❌ Trước đây (Thủ công):</span>
                     6 phân hiệu phân tán cô lập, thông tin gửi qua Zalo/giấy tờ rời rạc, Ban giám hiệu không nắm được tình hình điểm lẻ.
                   </div>
-                  <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-900/50 text-cyan-300">
-                    <span className="font-bold text-cyan-400 block mb-0.5">✅ Với QLTHVN:</span>
+                  <div className="p-2.5 rounded-xl bg-blue-950/40 border border-blue-900/50 text-blue-300">
+                    <span className="font-bold text-blue-400 block mb-0.5">✅ Với QLTHVN:</span>
                     Một màn hình Cockpit điều hành trung tâm đồng bộ 100% thời gian thực toàn bộ 6 phân hiệu, chỉ huy tức thì.
                   </div>
                 </div>
@@ -285,7 +285,7 @@ export default function PromoPage() {
 
               <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
                 <span>Phố Lu • An Tiến • Sơn Hải...</span>
-                <span className="font-bold text-cyan-400">Real-time 24/7</span>
+                <span className="font-bold text-blue-400">Real-time 24/7</span>
               </div>
             </div>
 
