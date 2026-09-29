@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Info,
   Sliders,
+  Download,
 } from "lucide-react";
 import {
   VIDEO_SCENES,
@@ -958,6 +959,19 @@ export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerPro
                 <Volume2 className="w-4 h-4" />
               )}
             </button>
+
+            {/* Download Video Button (MP4 mode) */}
+            {playerMode === "mp4" && (
+              <a
+                href={currentVideoItem.src}
+                download
+                className="p-2.5 rounded-xl border border-indigo-500/40 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 transition-all flex items-center gap-1.5 text-xs font-semibold"
+                title={`Tải video "${currentVideoItem.title}" về máy`}
+              >
+                <Download className="w-4 h-4 text-indigo-400" />
+                <span className="hidden sm:inline">Tải MP4</span>
+              </a>
+            )}
 
             {/* Screen Recorder */}
             <button
