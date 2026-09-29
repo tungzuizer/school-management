@@ -51,15 +51,15 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // ── Mode Switch: "mp4" (Real Video Streaming) vs "interactive" (7-Scene Canvas) ──
-  const [playerMode, setPlayerMode] = useState<"mp4" | "interactive">("mp4");
+  // ── Mode Switch: "interactive" (6-Scene Canvas 05:00) vs "mp4" (Real Video Streaming) ──
+  const [playerMode, setPlayerMode] = useState<"mp4" | "interactive">("interactive");
 
   // ── Real MP4 Video Player State ──
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [currentVideoId, setCurrentVideoId] = useState<string>("master");
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
   const [videoCurrentTime, setVideoCurrentTime] = useState<number>(0);
-  const [videoDuration, setVideoDuration] = useState<number>(1500);
+  const [videoDuration, setVideoDuration] = useState<number>(300);
   const [videoVolume, setVideoVolume] = useState<number>(1);
   const [isVideoMuted, setIsVideoMuted] = useState<boolean>(false);
   const [videoPlaybackSpeed, setVideoPlaybackSpeed] = useState<number>(1);
@@ -259,6 +259,7 @@ export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerPro
     setCurrentVideoId(item.id);
     setIsVideoPlaying(true);
     setVideoCurrentTime(0);
+    setVideoDuration(item.durationSec);
     if (videoRef.current) {
       videoRef.current.src = item.src;
       videoRef.current.load();
@@ -389,6 +390,7 @@ export default function VideoPlayer({ onOpenScript, onOpenDeck }: VideoPlayerPro
                 setPlayerMode("mp4");
                 setIsCanvasPlaying(false);
                 voiceEngineRef.current?.stop();
+                setVideoDuration(currentVideoItem.durationSec);
               }}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 playerMode === "mp4"
