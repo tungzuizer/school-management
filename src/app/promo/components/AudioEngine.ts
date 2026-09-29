@@ -1,10 +1,14 @@
 /**
  * Audio Engine using Web Audio API for synthetic SFX & Web Speech API for Vietnamese Voiceover
+ * Generative Ambient Cinematic BGM for zero-dependency local playback
  */
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
+  private bgmGain: GainNode | null = null;
+  private bgmInterval: NodeJS.Timeout | null = null;
+  private isBgmPlaying: boolean = false;
 
   private initCtx() {
     if (!this.ctx && typeof window !== "undefined") {
@@ -20,6 +24,96 @@ class SoundEngine {
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
+    if (this.bgmGain && this.ctx) {
+      this.bgmGain.gain.setValueAtTime(muted ? 0 : 0.04, this.ctx.currentTime);
+    }
+  }
+
+  // Futuristic UI Click SFX
+  public playClick() {
+    if (this.isMuted) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.04);
+
+      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.05);
+    } catch {
+      // Ignore
+    }
+  }
+
+  // Timer Tick SFX
+  public playTimerTick() {
+    if (this.isMuted) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.035);
+    } catch {
+      // Ignore
+    }
+  }
+
+  // Digital Audit Lock Impact SFX
+  public playLockImpact() {
+    if (this.isMuted) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      // Heavy low-end impact + metallic ring
+      const oscLow = this.ctx.createOscillator();
+      const gainLow = this.ctx.createGain();
+      oscLow.type = "sawtooth";
+      oscLow.frequency.setValueAtTime(180, this.ctx.currentTime);
+      oscLow.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.3);
+
+      gainLow.gain.setValueAtTime(0.15, this.ctx.currentTime);
+      gainLow.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+
+      oscLow.connect(gainLow);
+      gainLow.connect(this.ctx.destination);
+      oscLow.start();
+      oscLow.stop(this.ctx.currentTime + 0.4);
+
+      // High metallic chime ring
+      const oscHigh = this.ctx.createOscillator();
+      const gainHigh = this.ctx.createGain();
+      oscHigh.type = "sine";
+      oscHigh.frequency.setValueAtTime(1760, this.ctx.currentTime);
+      oscHigh.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.5);
+
+      gainHigh.gain.setValueAtTime(0.06, this.ctx.currentTime);
+      gainHigh.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.6);
+
+      oscHigh.connect(gainHigh);
+      gainHigh.connect(this.ctx.destination);
+      oscHigh.start();
+      oscHigh.stop(this.ctx.currentTime + 0.65);
+    } catch {
+      // Ignore
+    }
   }
 
   // Futuristic swoosh transition
@@ -53,7 +147,7 @@ class SoundEngine {
       osc.start();
       osc.stop(this.ctx.currentTime + 0.45);
     } catch {
-      // Ignore audio context errors if not allowed yet
+      // Ignore
     }
   }
 
@@ -135,6 +229,71 @@ class SoundEngine {
       });
     } catch {
       // Ignore
+    }
+  }
+
+  // Generative Ambient Cinematic Pad BGM
+  public startBgm() {
+    if (this.isBgmPlaying) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      this.isBgmPlaying = true;
+
+      const chords = [
+        [261.63, 329.63, 392.0, 523.25], // C Major
+        [220.0, 261.63, 329.63, 440.0],  // A Minor
+        [174.61, 220.0, 261.63, 349.23], // F Major
+        [196.0, 246.94, 293.66, 392.0],  // G Major
+      ];
+
+      let chordIdx = 0;
+
+      const playChord = () => {
+        if (!this.isBgmPlaying || !this.ctx) return;
+        const currentChord = chords[chordIdx % chords.length];
+        chordIdx++;
+
+        currentChord.forEach((freq) => {
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
+
+          filter.type = "lowpass";
+          filter.frequency.setValueAtTime(600, this.ctx.currentTime);
+          filter.frequency.linearRampToValueAtTime(1200, this.ctx.currentTime + 1.5);
+          filter.frequency.linearRampToValueAtTime(500, this.ctx.currentTime + 3.0);
+
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          const baseVolume = this.isMuted ? 0 : 0.015;
+          gain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(baseVolume, this.ctx.currentTime + 0.8);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 3.2);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + 3.3);
+        });
+      };
+
+      playChord();
+      this.bgmInterval = setInterval(playChord, 3000);
+    } catch {
+      // Ignore
+    }
+  }
+
+  public stopBgm() {
+    this.isBgmPlaying = false;
+    if (this.bgmInterval) {
+      clearInterval(this.bgmInterval);
+      this.bgmInterval = null;
     }
   }
 }

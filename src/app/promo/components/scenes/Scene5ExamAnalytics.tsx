@@ -1,151 +1,136 @@
 "use client";
 
 import React from "react";
-import { TrendingUp, AlertOctagon, LineChart, Award, HeartHandshake, CheckCircle2 } from "lucide-react";
+import {
+  TrendingUp,
+  AlertOctagon,
+  LineChart,
+  Award,
+  HeartHandshake,
+  CheckCircle2,
+  BrainCircuit,
+  BarChart2,
+  Sparkles,
+} from "lucide-react";
+import RealScreenViewer, { SpotlightAnnotation } from "../RealScreenViewer";
 
 interface SceneProps {
   progress: number;
 }
 
 export default function Scene5ExamAnalytics({ progress }: SceneProps) {
-  const showCurve = progress > 0.15;
-  const showAlert = progress > 0.45;
-  const showIntervention = progress > 0.7;
+  // Toggle between Exam Analytics and Transcripts
+  const isSecondPhase = progress > 0.55;
+  const imageSrc = isSecondPhase
+    ? "/screenshots/real_web/11_admin_transcripts.png"
+    : "/screenshots/real_web/06_admin_exam_analytics.png";
+  const urlPath = isSecondPhase
+    ? "/admin/transcripts"
+    : "/admin/exam-analytics";
+
+  // Dynamic cursor trajectory
+  let cursorX = 75;
+  let cursorY = 22;
+  let cursorLabel = "Phổ Điểm Chuẩn Hóa Gauss & OLS";
+  let isClicking = false;
+
+  if (progress < 0.3) {
+    const t = progress / 0.3;
+    cursorX = 75 - t * 45; // moves to ~30 (Gauss curve center)
+    cursorY = 22 + t * 22; // moves to ~44
+    cursorLabel = "Phổ Điểm Gauss & Độ Lệch Chuẩn σ";
+    isClicking = progress > 0.18 && progress < 0.24;
+  } else if (progress < 0.55) {
+    const t = (progress - 0.3) / 0.25;
+    cursorX = 30 + t * 45; // moves to ~75 (Early Warning)
+    cursorY = 44 - t * 2;  // ~42
+    cursorLabel = "Phát Hiện Sớm Học Sinh Sa Sút Từ Kỳ 3";
+    isClicking = progress > 0.44 && progress < 0.5;
+  } else if (progress < 0.8) {
+    const t = (progress - 0.55) / 0.25;
+    cursorX = 75 - t * 40; // moves to ~35
+    cursorY = 42 + t * 20; // moves to ~62
+    cursorLabel = "Sổ Điểm Điện Tử & Bảng Điểm Tức Thì";
+    isClicking = progress > 0.68 && progress < 0.74;
+  } else {
+    const t = (progress - 0.8) / 0.2;
+    cursorX = 35 + t * 30; // moves to ~65
+    cursorY = 62 + t * 10; // moves to ~72
+    cursorLabel = "Kích Hoạt Hồ Sơ Can Thiệp Sư Phạm";
+    isClicking = progress > 0.88 && progress < 0.94;
+  }
+
+  const annotations: SpotlightAnnotation[] = isSecondPhase
+    ? [
+        {
+          id: "transcripts-table",
+          x: 20,
+          y: 20,
+          width: 60,
+          height: 55,
+          title: "Sổ Điểm Điện Tử Minh Bạch",
+          badge: "REALTIME GRADES",
+          description: "Nhập điểm linh hoạt, tự động tổng kết học lực & cảnh báo điểm liệt",
+          color: "sky",
+          visibleAfter: 0.58,
+        },
+      ]
+    : [
+        {
+          id: "gauss-chart",
+          x: 20,
+          y: 22,
+          width: 58,
+          height: 38,
+          title: "Phổ Điểm Chuẩn Hóa Gaussian Bell Curve",
+          badge: "OLS REGRESSION",
+          description: "Đo lường độ lệch chuẩn σ, phân hóa đề thi và chất lượng dạy thực chất",
+          color: "sky",
+          visibleAfter: 0.1,
+        },
+        {
+          id: "early-warning-alert",
+          x: 48,
+          y: 62,
+          width: 44,
+          height: 30,
+          title: "Cảnh Báo Sớm Từ Kỳ 3 (Trước 3-6 Tháng)",
+          badge: "CAN THIỆP SỚM",
+          description: "Phát hiện học sinh tụt hậu ngay khi mới chớm, kịp thời phụ đạo 1-1",
+          color: "rose",
+          visibleAfter: 0.32,
+        },
+      ];
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-900 overflow-hidden select-none">
-      {/* Background Grids */}
-      <div className="absolute inset-0 bg-[radial-gradient(#06b6d415_1px,transparent_1px)] [background-size:20px_20px] opacity-60" />
-      <div className="absolute top-1/4 left-10 w-96 h-96 bg-cyan-600/10 rounded-full blur-[100px] pointer-events-none" />
-
-      {/* Header Badge */}
-      <div className="relative z-10 flex flex-col items-center text-center mb-5">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-xs font-semibold tracking-wider uppercase mb-1.5">
-          <LineChart className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Longitudinal Exam Analytics & Psychometrics</span>
-        </div>
-        <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
-          Khoa Học Phân Tích Điểm Thi & <span className="text-cyan-400">Cảnh Báo Sớm Kỳ 3</span>
-        </h2>
-        <p className="text-sm text-slate-300 mt-1 max-w-xl">
-          Chuẩn hóa phổ điểm Gauss, đo lường độ lệch chuẩn • Phát hiện học sinh sa sút sớm trước 3–6 tháng
-        </p>
-      </div>
-
-      {/* Main Grid: Bell Curve & Early Warning */}
-      <div className="relative z-10 w-full max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-5 items-center my-2">
-        {/* Left: Gaussian Bell Curve SVG */}
-        <div className="md:col-span-7 flex flex-col gap-3">
-          <div className="p-4 rounded-2xl bg-slate-900/90 border border-cyan-500/30 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 text-xs">
-              <div className="flex items-center gap-2 text-slate-200 font-bold">
-                <TrendingUp className="w-4 h-4 text-cyan-400" />
-                <span>Phổ Điểm Chuẩn Hóa & Độ Lệch Chuẩn (σ)</span>
-              </div>
-              <span className="text-[11px] font-mono text-cyan-300 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">
-                σ = 1.24 (Phân phối chuẩn)
-              </span>
-            </div>
-
-            {/* SVG Gaussian Curve */}
-            <div className="relative h-44 w-full flex items-center justify-center pt-2">
-              <svg className="w-full h-full" viewBox="0 0 320 140">
-                {/* Grid lines */}
-                <line x1="30" y1="120" x2="300" y2="120" stroke="#334155" strokeWidth="1.5" />
-                <line x1="165" y1="20" x2="165" y2="120" stroke="#06b6d4" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
-
-                {/* Shaded Area */}
-                <path
-                  d="M 30 120 Q 100 115 130 70 Q 165 15 200 70 Q 230 115 300 120 Z"
-                  fill="url(#cyanGrad)"
-                  opacity={showCurve ? 0.4 : 0}
-                  className="transition-opacity duration-1000"
-                />
-
-                {/* Bell Curve Line */}
-                <path
-                  d="M 30 120 Q 100 115 130 70 Q 165 15 200 70 Q 230 115 300 120"
-                  fill="none"
-                  stroke="#22d3ee"
-                  strokeWidth="3"
-                  className="transition-all duration-1000"
-                />
-
-                {/* Markers */}
-                <circle cx="165" cy="20" r="4" fill="#38bdf8" />
-                <text x="165" y="14" fill="#bae6fd" fontSize="9" textAnchor="middle" fontWeight="bold">
-                  Trung vị (7.8đ)
-                </text>
-
-                {/* Score Labels */}
-                <text x="30" y="134" fill="#64748b" fontSize="8">0đ</text>
-                <text x="95" y="134" fill="#64748b" fontSize="8">Yếu (4đ)</text>
-                <text x="165" y="134" fill="#64748b" fontSize="8">Khá (7đ)</text>
-                <text x="235" y="134" fill="#64748b" fontSize="8">Giỏi (9đ)</text>
-                <text x="295" y="134" fill="#64748b" fontSize="8">10đ</text>
-
-                <defs>
-                  <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Early Warning & Intervention Tracking */}
-        <div className="md:col-span-5 flex flex-col gap-3">
-          {/* Card 1: Cảnh báo sớm Kỳ 3 */}
-          <div
-            className={`p-4 rounded-2xl bg-slate-900/90 border border-amber-500/40 backdrop-blur-xl shadow-xl transition-all duration-700 ${
-              showAlert ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-                <AlertOctagon className="w-5 h-5 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
-                  CẢNH BÁO SỚM KỲ 3
-                </span>
-                <h4 className="text-sm font-bold text-white mt-1">
-                  Phát Hiện Sớm Trước 3 – 6 Tháng
-                </h4>
-                <p className="text-xs text-slate-300 mt-1 leading-snug">
-                  Nhận diện học sinh có quỹ đạo trượt dốc (Declining Trajectory) ngay từ đầu năm thay vì chờ đến cuối kỳ.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Hồ sơ Can thiệp Sư phạm */}
-          <div
-            className={`p-4 rounded-2xl bg-gradient-to-r from-cyan-950/70 to-slate-900/90 border border-cyan-500/40 backdrop-blur-xl shadow-xl transition-all duration-700 delay-150 ${
-              showIntervention ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shrink-0">
-                <HeartHandshake className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">
-                  HỒ SƠ CAN THIỆP SƯ PHẠM
-                </span>
-                <h4 className="text-sm font-bold text-white mt-1">
-                  Kèm Cặp & Ngăn Ngừa Bỏ Học
-                </h4>
-                <p className="text-xs text-slate-300 mt-1 leading-snug">
-                  Tự động liên thông GVCN & Phụ huynh để lập kế hoạch phụ đạo 1-1, lấy lại sự tự tin cho học sinh.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <RealScreenViewer
+      imageSrc={imageSrc}
+      urlPath={urlPath}
+      title="Khoa Học Dữ Liệu Khảo Thí & Phổ Điểm Gauss"
+      campusName="Trường TH Phố Lu • Phân Tích Thực Chứng"
+      progress={isSecondPhase ? (progress - 0.55) * 2.2 : progress * 1.8}
+      initialScale={1.0}
+      targetScale={1.12}
+      initialPanX={0}
+      targetPanX={isSecondPhase ? -1 : -3}
+      initialPanY={0}
+      targetPanY={isSecondPhase ? -3 : -5}
+      cursorX={cursorX}
+      cursorY={cursorY}
+      cursorLabel={cursorLabel}
+      isClicking={isClicking}
+      annotations={annotations}
+      bottomPill={{
+        icon: isSecondPhase ? BarChart2 : BrainCircuit,
+        label: isSecondPhase
+          ? "Sổ Điểm Điện Tử & Bảng Điểm Toàn Diện"
+          : "Khoa Học Khảo Thí & Phổ Điểm Gauss (153.000 Bài Thi)",
+        value: isSecondPhase
+          ? "100% Học Sinh Có Hồ Sơ Theo Dõi • Cảnh Báo Sớm"
+          : "Cảnh Báo Sa Sút Sớm Trước 3-6 Tháng • Phụ Đạo 1-1",
+        subtext: "Dữ liệu thực tế qlthvn.com",
+        badge: isSecondPhase ? "E-TRANSCRIPT" : "AI GAUSS OLS",
+      }}
+    />
   );
 }

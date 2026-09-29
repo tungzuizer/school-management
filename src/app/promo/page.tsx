@@ -30,15 +30,22 @@ export default function PromoPage() {
       {/* ── Top Navigation Bar ── */}
       <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl px-4 lg:px-8 py-3.5 flex items-center justify-between">
         <Link href="/login" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-600 p-0.5 shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform">
-            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center font-black text-white text-base">
-              SM
-            </div>
+          <div className="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 p-1.5 shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform flex items-center justify-center">
+            <img
+              src="/logo.png"
+              alt="QLTHVN Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="flex flex-col">
-            <span className="font-extrabold text-sm tracking-tight text-white group-hover:text-indigo-300 transition-colors">
-              SCHOOL MANAGEMENT
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-sm tracking-tight text-white group-hover:text-indigo-300 transition-colors">
+                QLTHVN
+              </span>
+              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800">
+                qlthvn.com
+              </span>
+            </div>
             <span className="text-[11px] text-slate-400 font-medium">
               Hệ Thống Quản Lý Trường Học Thông Minh Đa Điểm Trường
             </span>

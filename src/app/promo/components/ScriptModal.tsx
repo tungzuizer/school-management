@@ -37,7 +37,7 @@ ${scene.keyPoints.map((p) => `  * ${p}`).join("\n")}
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Kich-Ban-Video-Marketing-School-Management.md`;
+    a.download = `Kich-Ban-Video-Marketing-QLTHVN-qlthvn.com.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -48,8 +48,12 @@ ${scene.keyPoints.map((p) => `  * ${p}`).join("\n")}
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-              <Film className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 p-1.5 flex items-center justify-center">
+              <img
+                src="/logo.png"
+                alt="QLTHVN Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">

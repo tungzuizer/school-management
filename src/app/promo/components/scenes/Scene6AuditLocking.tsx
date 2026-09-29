@@ -1,135 +1,136 @@
 "use client";
 
 import React from "react";
-import { Lock, ShieldCheck, CheckCircle2, ArrowRight, Smartphone, FileCheck2, KeyRound } from "lucide-react";
+import {
+  Lock,
+  ShieldCheck,
+  CheckCircle2,
+  ArrowRight,
+  Smartphone,
+  FileCheck2,
+  KeyRound,
+  FileText,
+  Shield,
+} from "lucide-react";
+import RealScreenViewer, { SpotlightAnnotation } from "../RealScreenViewer";
 
 interface SceneProps {
   progress: number;
 }
 
 export default function Scene6AuditLocking({ progress }: SceneProps) {
-  const showSteps = progress > 0.15;
-  const showLock = progress > 0.55;
+  // Toggle between Electronic Journals and Lesson Plans
+  const isSecondPhase = progress > 0.55;
+  const imageSrc = isSecondPhase
+    ? "/screenshots/real_web/10_admin_lesson_plans.png"
+    : "/screenshots/real_web/07_admin_journals.png";
+  const urlPath = isSecondPhase
+    ? "/admin/lesson-plans"
+    : "/admin/journals";
 
-  const steps = [
-    { num: "1", title: "Bản Nháp", role: "Giáo viên", active: true },
-    { num: "2", title: "Gửi Duyệt", role: "Phân hiệu", active: progress > 0.25 },
-    { num: "3", title: "Thẩm Định", role: "Hiệu phó", active: progress > 0.4 },
-    { num: "4", title: "Niêm Phong", role: "Hiệu trưởng", active: progress > 0.6 },
-  ];
+  // Dynamic cursor trajectory
+  let cursorX = 75;
+  let cursorY = 22;
+  let cursorLabel = "Sổ Đầu Bài Điện Tử & Niêm Phong";
+  let isClicking = false;
+
+  if (progress < 0.3) {
+    const t = progress / 0.3;
+    cursorX = 75 - t * 45; // moves to ~30 (Sổ đầu bài tiết học)
+    cursorY = 22 + t * 20; // moves to ~42
+    cursorLabel = "Ghi Sổ Đầu Bài 1 Chạm Trên Di Động";
+    isClicking = progress > 0.18 && progress < 0.24;
+  } else if (progress < 0.55) {
+    const t = (progress - 0.3) / 0.25;
+    cursorX = 30 + t * 45; // moves to ~75 (Khóa niêm phong)
+    cursorY = 42 + t * 5;  // ~47
+    cursorLabel = "Thẩm Định 4 Cấp & Khóa Niêm Phong SHA-256";
+    isClicking = progress > 0.44 && progress < 0.5;
+  } else if (progress < 0.8) {
+    const t = (progress - 0.55) / 0.25;
+    cursorX = 75 - t * 40; // moves to ~35 (Kế hoạch bài dạy)
+    cursorLabel = "Phê Duyệt Kế Hoạch Bài Dạy (Giáo Án)";
+    cursorY = 47 - t * 15; // moves to ~32
+    isClicking = progress > 0.68 && progress < 0.74;
+  } else {
+    const t = (progress - 0.8) / 0.2;
+    cursorX = 35 + t * 30; // moves to ~65 (Audit log)
+    cursorY = 32 + t * 35; // moves to ~67
+    cursorLabel = "Kỷ Cương Số & Nhật Ký Kiểm Toán Bất Biến";
+    isClicking = progress > 0.88 && progress < 0.94;
+  }
+
+  const annotations: SpotlightAnnotation[] = isSecondPhase
+    ? [
+        {
+          id: "lesson-plans-approval",
+          x: 22,
+          y: 20,
+          width: 58,
+          height: 52,
+          title: "Quản Lý Kế Hoạch Bài Dạy & Giáo Án",
+          badge: "DUYỆT ĐIỆN TỬ",
+          description: "Tổ trưởng & BGH duyệt giáo án trực tuyến, chấm dứt in ấn hàng trăm trang",
+          color: "sky",
+          visibleAfter: 0.58,
+        },
+      ]
+    : [
+        {
+          id: "journal-table",
+          x: 18,
+          y: 20,
+          width: 64,
+          height: 40,
+          title: "Sổ Đầu Bài Điện Tử & Điểm Danh 1 Chạm",
+          badge: "CẮT GIẢM 90% GIẤY TỜ",
+          description: "Giáo viên ghi chép nội dung bài học, nhận xét và xếp loại tiết học tức thì",
+          color: "sky",
+          visibleAfter: 0.1,
+        },
+        {
+          id: "four-level-lock",
+          x: 45,
+          y: 62,
+          width: 48,
+          height: 30,
+          title: "Niêm Phong 4 Cấp & Khóa Kiểm Toán",
+          badge: "BẢO MẬT TUYỆT ĐỐI",
+          description: "Bản nháp ➔ Phân hiệu ➔ Hiệu phó ➔ Hiệu trưởng niêm phong chống sửa số liệu",
+          color: "purple",
+          visibleAfter: 0.32,
+        },
+      ];
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/50 overflow-hidden select-none">
-      {/* Background Grids */}
-      <div className="absolute inset-0 bg-[radial-gradient(#6366f115_1px,transparent_1px)] [background-size:20px_20px] opacity-60" />
-      <div className="absolute top-1/4 right-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
-
-      {/* Header Badge */}
-      <div className="relative z-10 flex flex-col items-center text-center mb-5">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Quy Trình Kỷ Cương & Bảo Mật Số</span>
-        </div>
-        <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
-          Sổ Đầu Bài Số & Khóa Niêm Phong <span className="text-indigo-400">4 Cấp</span>
-        </h2>
-        <p className="text-sm text-slate-300 mt-1 max-w-xl">
-          Cắt giảm 90% áp lực sổ sách • Cơ chế khóa dữ liệu bất biến chống can thiệp số liệu 100%
-        </p>
-      </div>
-
-      {/* Main Container: 4-Step Approval & Audit Lock Card */}
-      <div className="relative z-10 w-full max-w-4xl flex flex-col gap-4 my-2">
-        {/* 4-Step Workflow Horizontal Bar */}
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-indigo-500/30 backdrop-blur-xl shadow-xl">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800 text-xs">
-            <span className="font-bold text-slate-200 flex items-center gap-1.5">
-              <FileCheck2 className="w-4 h-4 text-indigo-400" />
-              Luồng Thẩm Định 4 Cấp - 6 Bước Chuẩn Hóa
-            </span>
-            <span className="text-[11px] font-mono text-indigo-300">Tính Bất Biến Cao</span>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2 mt-4">
-            {steps.map((step, idx) => (
-              <div
-                key={step.num}
-                className={`relative p-3 rounded-xl border flex flex-col items-center text-center transition-all duration-500 ${
-                  step.active
-                    ? "bg-indigo-950/60 border-indigo-500/50 text-white shadow-lg shadow-indigo-950/40 scale-100"
-                    : "bg-slate-800/40 border-slate-700 text-slate-500 scale-95"
-                }`}
-              >
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black mb-1 ${
-                    step.active
-                      ? "bg-indigo-500 text-white shadow-md"
-                      : "bg-slate-700 text-slate-400"
-                  }`}
-                >
-                  {step.num}
-                </div>
-                <h5 className="text-xs font-bold truncate w-full">{step.title}</h5>
-                <span className="text-[10px] text-indigo-200 mt-0.5 truncate">{step.role}</span>
-
-                {idx < 3 && (
-                  <div className="hidden md:block absolute -right-3.5 top-1/2 -translate-y-1/2 z-20 text-indigo-400">
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Audit Lock Feature Card */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Sổ đầu bài số 1 chạm */}
-          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-700/80 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 shrink-0">
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white">Sổ Đầu Bài Điện Tử 1 Chạm</h4>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Điểm danh, ghi nhận tiết dạy và nhận xét trên điện thoại chỉ mất 30 giây; loại bỏ hoàn toàn việc ghi tay sổ giấy 100+ trang.
-              </p>
-            </div>
-          </div>
-
-          {/* Niêm phong khóa dữ liệu */}
-          <div
-            className={`p-4 rounded-xl border flex items-start gap-3 transition-all duration-700 ${
-              showLock
-                ? "bg-indigo-950/80 border-indigo-400/60 shadow-xl shadow-indigo-950/60"
-                : "bg-slate-900/80 border-slate-700/80"
-            }`}
-          >
-            <div
-              className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-all duration-500 ${
-                showLock
-                  ? "bg-amber-500/20 border border-amber-400/50 text-amber-300 animate-pulse"
-                  : "bg-slate-800 text-slate-400"
-              }`}
-            >
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-bold text-white">Niêm Phong Khóa Dữ Liệu</h4>
-                {showLock && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">
-                    LOCKED
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Khi Hiệu trưởng phê duyệt, dữ liệu chuyển sang trạng thái bất biến. Mọi thao tác mở khóa đều bắt buộc giải trình và lưu vết kiểm toán số.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <RealScreenViewer
+      imageSrc={imageSrc}
+      urlPath={urlPath}
+      title="Sổ Đầu Bài Điện Tử & Kỷ Cương Số"
+      campusName="Trường TH Phố Lu • Kỷ Cương & Niêm Phong"
+      progress={isSecondPhase ? (progress - 0.55) * 2.2 : progress * 1.8}
+      initialScale={1.0}
+      targetScale={1.12}
+      initialPanX={0}
+      targetPanX={isSecondPhase ? -1 : -3}
+      initialPanY={0}
+      targetPanY={isSecondPhase ? -3 : -5}
+      cursorX={cursorX}
+      cursorY={cursorY}
+      cursorLabel={cursorLabel}
+      isClicking={isClicking}
+      annotations={annotations}
+      bottomPill={{
+        icon: isSecondPhase ? FileCheck2 : Lock,
+        label: isSecondPhase
+          ? "Phê Duyệt Kế Hoạch Bài Dạy Trực Tuyến"
+          : "Sổ Đầu Bài Điện Tử & Niêm Phong 4 Cấp Bất Biến",
+        value: isSecondPhase
+          ? "Cắt Giảm 90% In Ấn • Ký Duyệt Mọi Lúc Mọi Nơi"
+          : "100% Chống Sửa Đổi Tùy Tiện • Audit Log Bất Biến",
+        subtext: "Dữ liệu thực tế qlthvn.com",
+        badge: isSecondPhase ? "E-LESSON PLAN" : "4-TIER LOCK",
+      }}
+    />
   );
 }
