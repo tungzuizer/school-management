@@ -26,6 +26,7 @@ import { seedSchoolCalendarAndGovernance } from "./seed-data/school-calendar-gov
 import { seedKpiOperations } from "./seed-data/kpi-operations";
 import { seedAiJourneyAnalytics } from "./seed-data/ai-journey-analytics";
 import { seedAccreditationAndSystemAdmin } from "./seed-data/accreditation-system-admin";
+import { seedTranPhuSchool } from "./seed-data/tranphu-school";
 
 const prisma = new PrismaClient({
   datasources: {
@@ -149,7 +150,7 @@ async function cleanDatabase(prismaClient: PrismaClient) {
 
 async function main() {
   console.log("==================================================================================");
-  console.log("🏫 KHỞI TẠO DỮ LIỆU CHUẨN: TRƯỜNG TIỂU HỌC PHỐ LU & 5 PHÂN HIỆU (LÀO CAI)");
+  console.log("🏫 KHỞI TẠO DỮ LIỆU: TH PHỐ LU (LÀO CAI) + THCS TRẦN PHÚ (HÀ NỘI)");
   console.log("==================================================================================");
 
   // 1. Dọn dẹp cơ sở dữ liệu
@@ -257,12 +258,56 @@ async function main() {
     classesStudents
   );
 
+  // ════════════════════════════════════════════════════════════════════════
+  // ▎ TRƯỜNG THCS TRẦN PHÚ (PHÚ XUYÊN, HÀ NỘI)
+  // ════════════════════════════════════════════════════════════════════════
+  console.log("\n══════════════════════════════════════════════════════════════════════════════════");
+  console.log("🏫 KHỞI TẠO DỮ LIỆU: TRƯỜNG THCS TRẦN PHÚ (PHÚ XUYÊN, HÀ NỘI)");
+  console.log("══════════════════════════════════════════════════════════════════════════════════");
+
+  // 15. Tạo Sở GD&ĐT Hà Nội & Phòng GD&ĐT Phú Xuyên (nếu chưa có)
+  const deptHaNoi = await prisma.educationDepartment.create({
+    data: {
+      name: "Sở Giáo dục và Đào tạo Thành phố Hà Nội",
+      code: "HN-SGDDT",
+      address: "23 Quang Trung, Hoàn Kiếm, Hà Nội",
+      phone: "024-3942-2607",
+      email: "sogd.hanoi@hanoi.edu.vn",
+    },
+  });
+
+  const wardPhuXuyen = await prisma.districtWard.create({
+    data: {
+      departmentId: deptHaNoi.id,
+      name: "Phòng Giáo dục và Đào tạo Huyện Phú Xuyên",
+      code: "HN-PHUXUYEN",
+      address: "Thị trấn Phú Xuyên, Huyện Phú Xuyên, TP. Hà Nội",
+      phone: "024-3385-1234",
+    },
+  });
+
+  // 16. Khởi tạo THCS Trần Phú với 58 CBGVNV từ danh sách thật
+  const tranPhuResult = await seedTranPhuSchool(
+    prisma,
+    deptHaNoi.id,
+    wardPhuXuyen.id,
+    standardPassword
+  );
+
   console.log("\n🎉 ==============================================================================");
-  console.log("✨ KHỞI TẠO DỮ LIỆU THÀNH CÔNG RỰC RỠ CHO TRƯỜNG TIỂU HỌC PHỐ LU & 5 PHÂN HIỆU!");
+  console.log("✨ KHỞI TẠO DỮ LIỆU THÀNH CÔNG RỰC RỠ!");
+  console.log("══════════════════════════════════════════════════════════════════════════════════");
+  console.log("📌 TRƯỜNG 1: TIỂU HỌC PHỐ LU & 5 PHÂN HIỆU (LÀO CAI)");
   console.log("   - Đơn vị chủ quản: Sở GD&ĐT Lào Cai & UBND Xã Bảo Thắng");
   console.log("   - Tổng số phân hiệu & điểm trường: 6 (Trung tâm + 4 Phân hiệu + 1 Điểm lẻ)");
   console.log(`   - Tổng số lớp học: ${classesStudents.classes.length} lớp (Chuẩn 62 lớp)`);
   console.log(`   - Tổng số học sinh đã nạp: ${classesStudents.students.length} em`);
+  console.log("----------------------------------------------------------------------------------");
+  console.log("📌 TRƯỜNG 2: THCS TRẦN PHÚ (PHÚ XUYÊN, HÀ NỘI)");
+  console.log("   - Đơn vị chủ quản: Sở GD&ĐT Hà Nội & Phòng GD&ĐT Phú Xuyên");
+  console.log(`   - Tổng số CBGVNV: ${tranPhuResult.teachers.length + tranPhuResult.staffUsers.length} người`);
+  console.log(`   - Hiệu trưởng: ${tranPhuResult.principalUser?.name || "N/A"}`);
+  console.log("══════════════════════════════════════════════════════════════════════════════════");
   console.log("   - Mật khẩu đăng nhập mặc định toàn hệ thống: 123456");
   console.log("----------------------------------------------------------------------------------");
   console.log("📋 DANH SÁCH TÀI KHOẢN ĐĂNG NHẬP CHÍNH:");
@@ -270,15 +315,14 @@ async function main() {
   console.log("   2. Giám đốc Sở GD&ĐT Lào Cai: admin.sogd.laocai@gmail.com / 123456");
   console.log("   3. Phòng GD&ĐT Huyện Bảo Thắng: gd.baothang@gmail.com / 123456");
   console.log("   4. UBND Xã Bảo Thắng: ubnd.baothang@gmail.com / 123456");
-  console.log("   5. Hiệu trưởng Toàn trường: hieutruong.thpholu@gmail.com / 123456 (ThS. Trần Thị Thanh Hà)");
-  console.log("   6. Phó Hiệu trưởng Sơn Hà 1: pht.sonha1@gmail.com / 123456 (Thầy Nguyễn Văn Sơn)");
-  console.log("   7. Phó Hiệu trưởng Sơn Hà 2: pht.sonha2@gmail.com / 123456 (Cô Hoàng Thị Hà)");
-  console.log("   8. Phó Hiệu trưởng Sơn Hải: pht.sonhai@gmail.com / 123456 (Thầy Lê Văn Hải)");
-  console.log("   9. Phó Hiệu trưởng Phố Lu 3: pht.pholu3@gmail.com / 123456 (Cô Đặng Thị Lu)");
-  console.log("   10. Phó Hiệu trưởng An Tiến: pht.antien@gmail.com / 123456 (Thầy Phạm Văn Tiến)");
-  console.log("   11. Kế toán trưởng: ketoan.thpholu@gmail.com / 123456");
-  console.log("   12. Giáo viên Mẫu: giaovien.thpholu@gmail.com / 123456");
-  console.log("   13. Học sinh Mẫu (Lớp 1A1): hocsinh.thpholu@gmail.com / 123456");
+  console.log("   5. Hiệu trưởng TH Phố Lu: hieutruong.thpholu@gmail.com / 123456");
+  console.log("   6. Giáo viên Mẫu (TH Phố Lu): giaovien.thpholu@gmail.com / 123456");
+  console.log("   7. Học sinh Mẫu (Lớp 1A1): hocsinh.thpholu@gmail.com / 123456");
+  console.log("   ── THCS Trần Phú ──");
+  console.log(`   8. Hiệu trưởng THCS Trần Phú: ${tranPhuResult.principalUser?.email || "N/A"} / 123456`);
+  tranPhuResult.vpUsers.forEach((vp, i) => {
+    console.log(`   ${9 + i}. Phó HT THCS Trần Phú: ${vp.email} / 123456`);
+  });
   console.log("==================================================================================\n");
 }
 
