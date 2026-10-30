@@ -68,6 +68,25 @@ entities.json
 *.bak
 *.tmp
 
+# Documentation & Reports (Not needed for deployment)
+docs/
+AGENTS.md
+CLAUDE.md
+COMMANDS_HISTORY.md
+DESIGN.md
+PRODUCT.md
+*.docx
+*.xlsx
+*.xls
+
+# Misc files not needed for deployment
+generate_audio.py
+docker-compose.yml
+vitest.config.ts
+File\ mẫu\ cho\ hồ\ sơ\ sản\ phẩm\ 2026-20261015T035654Z-1-001/
+videos/
+danh\ sách\ Gmial\ CBGVNV.xlsx
+
 # Temporary Scripts & Test Dumps (Non-production)
 chk*.js
 gen.py
