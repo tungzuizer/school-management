@@ -189,6 +189,7 @@ const principalMenuGroups: MenuGroup[] = [
       { label: "Định mức NQ 37", href: "/admin/nq37-compliance", icon: Scale, badge: "NQ 37" },
       { label: "Nhân sự 36T", href: "/admin/support-staff", icon: UserCheck },
       { label: "Đội ngũ giáo viên", href: "/admin/teachers", icon: Users },
+      { label: "Rà soát công việc và nhân sự", href: "/admin/personnel-review", icon: ClipboardList },
       { label: "Dạy thay khẩn cấp", href: "/admin/substitute-dispatch", icon: Clock },
       { label: "Tài khoản trường", href: "/admin/users-manager", icon: ShieldCheck, badge: "VIP" },
     ],

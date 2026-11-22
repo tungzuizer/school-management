@@ -81,6 +81,7 @@ const menuGroups: MenuGroup[] = [
       { label: "Hồ sơ học sinh", href: "/vice-principal/students", icon: Users, description: "Danh sách & hồ sơ học sinh" },
       { label: "Quản lý điểm danh", href: "/vice-principal/attendance", icon: ClipboardCheck, description: "Báo cáo chuyên cần cơ sở" },
       { label: "Đánh giá chuẩn TT15", href: "/vice-principal/tt15-evaluation", icon: Target, badge: "TT 15", description: "Đánh giá điểm trường & minh chứng" },
+      { label: "Rà soát công việc và nhân sự", href: "/vice-principal/personnel-review", icon: ClipboardCheck, description: "Rà soát nhân sự và phân công trong phạm vi được giao" },
     ],
   },
   {

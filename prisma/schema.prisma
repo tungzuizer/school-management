@@ -197,6 +197,7 @@ model User {
   student               Student?
   campus                Campus?              @relation(fields: [campusId], references: [id])
   userRoleScopes        UserRoleScope[]
+  personnelReviewEvents PersonnelReviewEvent[]
   sentNotifications     Notification[]       @relation("SentNotifications")
   receivedNotifications Notification[]       @relation("ReceivedNotifications")
 
@@ -275,6 +276,7 @@ model School {
   examPeriods             ExamPeriod[]
   studentScores           StudentScore[]
   importBatches           StudentImportBatch[]
+  personnelReviews        PersonnelReview[]
 
   @@index([name])
   @@index([departmentId])
@@ -307,6 +309,7 @@ model Campus {
   studentScores           StudentScore[]
   schoolPointEvaluations  SchoolPointEvaluation[]
   dailyKpiEvaluations     DailyKpiEvaluation[]
+  personnelReviews        PersonnelReview[]
 
   @@index([schoolId])
   @@index([name])
@@ -2314,4 +2317,51 @@ model TT15EvidenceFile {
   detail SchoolPointEvaluationDetail @relation(fields: [evaluationDetailId], references: [id], onDelete: Cascade)
 
   @@index([evaluationDetailId])
+}
+
+// Internal personnel review. Snapshot is immutable after confirmation and never
+// changes staffing, assignments or statutory headcount records.
+model PersonnelReview {
+  id                String   @id @default(cuid())
+  schoolId          String
+  campusId          String
+  period            String
+  title             String
+  dueDate           DateTime?
+  status            String   @default("DRAFT")
+  revision          Int      @default(1)
+  sourceSnapshot    Json
+  supplementalTasks Json     @default("[]")
+  notes             String   @default("") @db.Text
+  returnReason      String?  @db.Text
+  submittedAt       DateTime?
+  confirmedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  campus Campus @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  events PersonnelReviewEvent[]
+
+  @@unique([schoolId, campusId, period])
+  @@index([schoolId, status])
+  @@index([campusId, status])
+}
+
+model PersonnelReviewEvent {
+  id        String   @id @default(cuid())
+  reviewId  String
+  actorId   String
+  action    String
+  fromState String?
+  toState   String
+  revision  Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  review PersonnelReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  actor  User            @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([reviewId, createdAt])
+  @@index([actorId])
 }

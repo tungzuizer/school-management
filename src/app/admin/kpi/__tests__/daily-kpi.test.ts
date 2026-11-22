@@ -19,6 +19,8 @@ import { calculateKpiScore } from "../utils";
 import { MeasurementDirection } from "@prisma/client";
 import prisma from "@/lib/prisma";
 
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+
 // Mock next-auth
 vi.mock("next-auth", () => ({
   getServerSession: vi.fn().mockResolvedValue({
@@ -71,6 +73,15 @@ vi.mock("@/lib/prisma", () => ({
     },
     teacher: {
       count: vi.fn().mockResolvedValue(20),
+    },
+    user: {
+      count: vi.fn().mockResolvedValue(20),
+    },
+    substituteAssignment: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    lessonPlan: {
+      count: vi.fn().mockImplementation((args: any) => Promise.resolve(args?.where?.status === "APPROVED" ? 8 : 10)),
     },
     attendance: {
       count: vi.fn().mockImplementation((args: any) => {
@@ -409,7 +420,7 @@ describe("Daily KPI System Verification Suite", () => {
         ],
       });
 
-      expect(saveRes.success).toBe(true);
+      expect(saveRes.success, saveRes.error).toBe(true);
       expect(saveRes.data?.overallScore).toBe(100);
       expect(saveRes.data?.status).toBe("DRAFT");
     });
@@ -439,7 +450,7 @@ describe("Daily KPI System Verification Suite", () => {
         ],
       });
 
-      expect(saveRes.success).toBe(true);
+      expect(saveRes.success, saveRes.error).toBe(true);
       expect(saveRes.data?.overallScore).toBe(100);
       expect(saveRes.data?.status).toBe("FINALIZED");
     });
@@ -471,7 +482,7 @@ describe("Daily KPI System Verification Suite", () => {
         ],
       });
 
-      expect(saveRes.success).toBe(true);
+      expect(saveRes.success, saveRes.error).toBe(true);
       expect(saveRes.data?.overallScore).toBeLessThan(70);
       expect(earlyWarningSpy).toHaveBeenCalled();
     });
